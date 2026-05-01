@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "kdiab",
+  "project_id": "8c949ad0-6df3-4f97-ae13-e89829693759"
+}
