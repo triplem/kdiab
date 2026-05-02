@@ -1,0 +1,375 @@
+# =============================================================================
+# kdiab — Full-stack integration compose
+#
+# Starts all services with a shared Keycloak realm and a single PostgreSQL
+# instance containing all three service databases, pre-seeded with 30 days
+# of realistic CGM + treatment + profile data for sarah and mike.
+#
+# Service URLs (after startup):
+#   Keycloak Admin:       http://localhost:8081  (admin / admin)
+#   pgAdmin:              http://localhost:5050   (admin@kdiab.dev / admin)
+#   Measures   API/UI:    http://localhost:8080 / http://localhost:3000
+#   Profiles   API/UI:    http://localhost:8082 / http://localhost:3001
+#   Treatments API/UI:    http://localhost:8083 / http://localhost:3002
+#   BFF        API/UI:    http://localhost:8084 / http://localhost:3003
+#
+# Test accounts (password: password):
+#   sarah      PATIENT (mg/dL)
+#   mike       PATIENT (mmol/L)
+#   dr_house   DOCTOR  (assigned to sarah)
+#   dr_cameron DOCTOR  (assigned to mike)
+#   admin      ADMIN
+#
+# Shared Keycloak realm: kdiab
+# The BFF client token carries all four JWT audiences (bff, measure, profile,
+# treatment) so it can forward the user's JWT to every upstream service.
+# =============================================================================
+
+services:
+
+  # ── Infrastructure ──────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres/01-init-databases.sh:/docker-entrypoint-initdb.d/01-init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - shared
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./config/keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
+      - ./kdiab-measures/config/keycloak-theme:/opt/keycloak/themes/kdiab:ro
+    ports:
+      - "8081:8080"
+    networks:
+      - shared
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@kdiab.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shared
+    restart: unless-stopped
+
+  # ── Schema migrations ───────────────────────────────────────────────────────
+
+  liquibase-measures:
+    build:
+      context: ./kdiab-measures
+      dockerfile: backend/Dockerfile.liquibase
+    command: >
+      --url=jdbc:postgresql://postgres:5432/kdiab-measures
+      --username=${POSTGRES_USER:-postgres}
+      --password=${POSTGRES_PASSWORD:-password}
+      --searchPath=/liquibase
+      --changeLogFile=db/changelog/db.changelog-root.yaml
+      update
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shared
+
+  liquibase-profiles:
+    build:
+      context: ./kdiab-profiles
+      dockerfile: backend/Dockerfile.liquibase
+    command: >
+      --url=jdbc:postgresql://postgres:5432/kdiab-profiles
+      --username=${POSTGRES_USER:-postgres}
+      --password=${POSTGRES_PASSWORD:-password}
+      --searchPath=/liquibase
+      --changeLogFile=db/changelog/db.changelog-master.yaml
+      update
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shared
+
+  liquibase-treatments:
+    build:
+      context: ./kdiab-treatments
+      dockerfile: backend/Dockerfile.liquibase
+    command: >
+      --url=jdbc:postgresql://postgres:5432/kdiab-treatments
+      --username=${POSTGRES_USER:-postgres}
+      --password=${POSTGRES_PASSWORD:-password}
+      --searchPath=/liquibase
+      --changeLogFile=db/changelog/db.changelog-root.yaml
+      update
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shared
+
+  # Runs after all three Liquibase migrations to insert seed data
+  pg-seed:
+    image: postgres:15
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-password}
+    volumes:
+      - ./config/postgres/02-seed-data.sql:/seed.sql:ro
+    command: >
+      psql -h postgres -U ${POSTGRES_USER:-postgres} -f /seed.sql
+    depends_on:
+      liquibase-measures:
+        condition: service_completed_successfully
+      liquibase-profiles:
+        condition: service_completed_successfully
+      liquibase-treatments:
+        condition: service_completed_successfully
+    networks:
+      - shared
+
+  # ── kdiab-measures ──────────────────────────────────────────────────────────
+
+  measures-backend:
+    build:
+      context: ./kdiab-measures
+      dockerfile: backend/Dockerfile
+    environment:
+      JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-measures
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      JWT_DOMAIN: http://localhost:8081/realms/kdiab
+      JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
+      JWT_AUDIENCE: measure
+      JWT_REALM: kdiab
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      pg-seed:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
+    networks:
+      shared:
+      meas-net:
+        aliases:
+          - backend     # measures nginx.conf uses http://backend:8080
+    restart: unless-stopped
+
+  measures-frontend:
+    build:
+      context: ./kdiab-measures
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
+        VITE_OIDC_CLIENT_ID: kdiab-measures-frontend
+    ports:
+      - "3000:8080"
+    depends_on:
+      measures-backend:
+        condition: service_healthy
+    # nginx.conf hardcodes proxy target as http://backend:8080;
+    # the meas-net alias on measures-backend makes that resolve correctly.
+    networks:
+      - meas-net
+    restart: unless-stopped
+
+  # ── kdiab-profiles ──────────────────────────────────────────────────────────
+
+  profiles-backend:
+    build:
+      context: ./kdiab-profiles
+      dockerfile: backend/Dockerfile
+    environment:
+      JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-profiles
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      JWT_DOMAIN: http://localhost:8081/realms/kdiab
+      JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
+      JWT_AUDIENCE: profile
+      JWT_REALM: kdiab
+    ports:
+      - "8082:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      pg-seed:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
+    networks:
+      - shared
+      - prof-net
+    restart: unless-stopped
+
+  profiles-frontend:
+    build:
+      context: ./kdiab-profiles
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
+        VITE_OIDC_CLIENT_ID: kdiab-profiles-frontend
+    environment:
+      # profiles nginx.conf.template uses these at container startup via envsubst
+      KEYCLOAK_URL: http://localhost:8081
+      BACKEND_URL: http://profiles-backend:8080
+    ports:
+      - "3001:8080"
+    depends_on:
+      profiles-backend:
+        condition: service_healthy
+    networks:
+      - shared
+      - prof-net
+    restart: unless-stopped
+
+  # ── kdiab-treatments ────────────────────────────────────────────────────────
+
+  treatments-backend:
+    build:
+      context: ./kdiab-treatments
+      dockerfile: backend/Dockerfile
+    environment:
+      JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-treatments
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      JWT_DOMAIN: http://localhost:8081/realms/kdiab
+      JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
+      JWT_AUDIENCE: treatment
+      JWT_REALM: kdiab
+    ports:
+      - "8083:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      pg-seed:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
+    networks:
+      shared:
+      treat-net:
+        aliases:
+          - backend     # treatments nginx.conf uses http://backend:8080
+    restart: unless-stopped
+
+  treatments-frontend:
+    build:
+      context: ./kdiab-treatments
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
+        VITE_OIDC_CLIENT_ID: kdiab-treatments-frontend
+    ports:
+      - "3002:8080"
+    depends_on:
+      treatments-backend:
+        condition: service_healthy
+    # nginx.conf hardcodes proxy target as http://backend:8080;
+    # the treat-net alias on treatments-backend makes that resolve correctly.
+    networks:
+      - treat-net
+    restart: unless-stopped
+
+  # ── kdiab-bff ───────────────────────────────────────────────────────────────
+
+  bff-backend:
+    build:
+      context: ./kdiab-bff
+      dockerfile: backend/Dockerfile
+    environment:
+      MEASURES_URL: http://measures-backend:8080
+      PROFILES_URL: http://profiles-backend:8080
+      TREATMENTS_URL: http://treatments-backend:8080
+      JWT_DOMAIN: http://localhost:8081/realms/kdiab
+      JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
+      JWT_AUDIENCE: bff
+      JWT_REALM: kdiab
+    ports:
+      - "8084:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      measures-backend:
+        condition: service_healthy
+      profiles-backend:
+        condition: service_healthy
+      treatments-backend:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - shared
+      - bff-net
+    restart: unless-stopped
+
+  bff-frontend:
+    build:
+      context: ./kdiab-bff
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
+        VITE_OIDC_CLIENT_ID: kdiab-bff-frontend
+    ports:
+      - "3003:8080"
+    depends_on:
+      bff-backend:
+        condition: service_healthy
+    # bff nginx.conf proxies /api/ → bff-backend:8080 (matches service name on bff-net)
+    networks:
+      - bff-net
+    restart: unless-stopped
+
+networks:
+  shared:    # postgres, keycloak, all backends, liquibase, seed
+  meas-net:  # measures-backend (alias: backend) ↔ measures-frontend
+  prof-net:  # profiles-backend ↔ profiles-frontend
+  treat-net: # treatments-backend (alias: backend) ↔ treatments-frontend
+  bff-net:   # bff-backend (alias: bff-backend) ↔ bff-frontend
+
+volumes:
+  postgres_data:
+  pgadmin_data:
