@@ -1,4 +1,76 @@
 {
+  "enabledPlugins": {
+    "kotlin-lsp@claude-plugins-official": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(ls*)",
+      "Bash(cat*)",
+      "Bash(head*)",
+      "Bash(tail*)",
+      "Bash(grep*)",
+      "Bash(find*)",
+      "Bash(wc*)",
+      "Bash(sort*)",
+      "Bash(uniq*)",
+
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git pull*)",
+      "Bash(git push*)",
+      "Bash(git fetch*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(git switch*)",
+      "Bash(git stash*)",
+      "Bash(git tag*)",
+      "Bash(git rebase*)",
+      "Bash(git merge*)",
+      "Bash(git remote*)",
+      "Bash(git ls-files*)",
+      "Bash(git blame*)",
+      "Bash(git -C*)",
+
+      "Bash(gh pr*)",
+      "Bash(gh issue*)",
+      "Bash(gh run*)",
+      "Bash(gh release*)",
+      "Bash(gh repo*)",
+      "Bash(gh api*)",
+
+      "Bash(bd*)",
+
+      "Bash(./build.sh*)",
+      "Bash(./gradlew*)",
+      "Bash(npm*)",
+      "Bash(npx*)",
+      "Bash(node*)",
+
+      "Bash(docker compose*)",
+      "Bash(docker-compose*)",
+      "Bash(docker images*)",
+      "Bash(docker ps*)",
+      "Bash(docker build*)",
+      "Bash(docker rmi*)",
+      "Bash(docker inspect*)",
+      "Bash(docker logs*)",
+
+      "Bash(podman compose*)",
+      "Bash(podman images*)",
+      "Bash(podman ps*)",
+      "Bash(podman build*)",
+      "Bash(podman rmi*)",
+      "Bash(podman inspect*)",
+      "Bash(podman logs*)",
+      "Bash(./manage-podman.sh*)",
+
+      "Bash(asciidoctor*)"
+    ]
+  },
   "hooks": {
     "PreCompact": [
       {
