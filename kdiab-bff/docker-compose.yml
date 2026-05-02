@@ -7,6 +7,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
     volumes:
       - ./config/keycloak-realm.json:/opt/keycloak/data/import/realm.json
+      - ./config/keycloak-theme:/opt/keycloak/themes/kdiab:ro
     ports:
       - "8084:8080"
     restart: unless-stopped
