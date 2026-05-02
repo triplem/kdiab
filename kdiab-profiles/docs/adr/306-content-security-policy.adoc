@@ -1,0 +1,69 @@
+= ADR-306: Content Security Policy for the Frontend
+
+* *Status*: Accepted
+* *Date*: 2026-04-11
+* *Category*: Security / Frontend Deployment
+
+== Context
+
+The React SPA is served by Nginx. Without an explicit `Content-Security-Policy` (CSP) header, browsers apply no restrictions on where the page may load scripts, make network connections, or embed frames. This makes XSS attacks significantly more impactful — injected scripts can freely exfiltrate data or call arbitrary third-party endpoints.
+
+The SPA uses `oidc-client-ts` (via `react-oidc-context`) to implement the OpenID Connect Authorization Code + PKCE flow. The OIDC client makes direct browser-side `fetch` calls to the Identity Provider (Keycloak) for:
+
+* OpenID Connect discovery (`/.well-known/openid-configuration`)
+* Token endpoint
+* Userinfo endpoint
+* End-session endpoint
+
+These calls go to a *different origin* than the SPA itself, so a strict `connect-src 'self'` would block them.
+
+== Decision
+
+Set the following CSP via an Nginx `add_header` directive:
+
+----
+default-src 'self';
+script-src  'self';
+style-src   'self' 'unsafe-inline';
+img-src     'self' data:;
+connect-src 'self' ${KEYCLOAK_URL};
+----
+
+The `${KEYCLOAK_URL}` placeholder is resolved at container startup by the nginx Docker image's built-in `envsubst` mechanism (files placed in `/etc/nginx/templates/` are processed before nginx starts). This makes the CSP environment-specific without requiring a new image build per environment.
+
+The backend API is accessed via nginx's own `/api/` reverse proxy, so those calls are same-origin (`'self'`) and need no extra `connect-src` entry.
+
+== Required Configuration
+
+`KEYCLOAK_URL` must be set to the **browser-facing** origin of the Identity Provider — the URL the *end-user's browser* uses to reach Keycloak, not the internal Docker/Kubernetes service name.
+
+[cols="1,2", options="header"]
+|===
+| Environment | Example value
+
+| Local development
+| `http://localhost:8081`
+
+| Staging / production
+| `https://auth.example.com`
+|===
+
+In `docker-compose.yml` the variable defaults to `http://localhost:8081` and can be overridden via a `.env` file or host environment variable:
+
+----
+KEYCLOAK_URL=https://auth.example.com docker-compose up
+----
+
+An additional variable `BACKEND_URL` controls the internal address nginx uses for the `/api/` proxy (default: `http://backend:8080`). This is an nginx-internal address and is **not** exposed to the browser, so it does not affect the CSP.
+
+== Rationale
+
+* *Defence in depth*: Even if an attacker injects arbitrary HTML/JS, the browser refuses to load external scripts or make unauthorised network calls.
+* *Minimal surface area*: Only the origins that the SPA legitimately needs are whitelisted. All other fetch targets (including potential exfiltration endpoints) are blocked by the browser before the request leaves the machine.
+* *Runtime configurability*: Baking the Keycloak URL into the image at build time would require a separate image per environment. The `envsubst` template approach keeps the image environment-agnostic.
+
+== Consequences
+
+* `KEYCLOAK_URL` **must** be set correctly in every deployment environment. An incorrect value will cause the OIDC login flow to fail with a CSP violation in the browser console.
+* `'unsafe-inline'` is required for `style-src` because the generated component library injects inline styles. Removing it would require a nonce-based approach and changes to the build pipeline.
+* If additional third-party services (e.g. analytics, error tracking) are integrated in future, their origins must be explicitly added to the relevant CSP directives.

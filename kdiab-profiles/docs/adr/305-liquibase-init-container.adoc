@@ -1,0 +1,19 @@
+= ADR-305: Liquibase Init Container for Database Migrations
+
+* *Status*: Accepted
+* *Date*: 2026-03-28
+* *Context*: 
+During application startup, the database schema needs to be reliably created and seeded with necessary initial data (like baseline Insulins). Previously, Exposed logic in `DatabaseFactory` was mixed with startup routines. In production clusters (e.g., Kubernetes), database changelog files are not readily accessible via volume mounts, presenting a significant runtime challenge for zero-downtime, independent schema deployments.
+
+* *Decision*: 
+1. *Dedicated Docker Image*: We use a standalone Liquibase Docker image (`backend/Dockerfile.liquibase`) that safely statically embeds all `db` changelog resources directly into the image at build time.
+2. *Init Container Architecture*: In orchestrated environments (`docker-compose.yml`, Helm charts, etc.), this Liquibase image is executed as an "init container". The main `backend` application explicitly waits for the successful completion (`condition: service_completed_successfully`) of this migration sweep before booting.
+
+* *Rationale*:
+** *Separation of Concerns*: The core Ktor application acts purely as a stateless client to the database and no longer manages DDL structures or initial raw data seeding.
+** *Portability*: By baking the `.yaml` migrations into a ready-to-use Docker image, any infrastructure cluster can safely pull and run the migrations securely without needing host volume paths.
+** *Robust Execution*: The backend is absolutely guaranteed to boot against an up-to-date and consistent schema, averting race conditions.
+
+* *Consequences*:
+** Liquibase updates must strictly be managed through `.yaml` changelogs (separated logically into schema definitions and data seeding).
+** CI/CD pipelines must build and push the custom Liquibase image alongside the backend image.

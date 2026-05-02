@@ -1,0 +1,27 @@
+# ADR-102: Code Quality Standards
+
+* **Status**: Accepted
+* **Date**: 2026-02-13
+* **Category**: Code Structure & Standards
+* **Context**: The project aims for high reliability, maintainability, and security, especially given the medical nature of the domain (T1D Basal Profiles). To ensure code quality, prevent regressions, and identify potential bugs or security vulnerabilities early, measurable metrics and static analysis are required.
+* **Decision**: 
+  * Mandate a minimum of **80% code coverage** using **Kover** (Kotlin) and Vitest (React).
+  * === Static Analysis
+    We will use **SonarQube** and **Detekt** for static code analysis.
+
+    *   **SonarQube**: provides a holistic view of code quality, including bugs, vulnerabilities, and code smells. It also tracks code coverage and duplication.
+    *   **Detekt**: provides Kotlin-specific static analysis, enforcing formatting rules, complexity metrics, and potential bug detection directly within the build process.
+
+    The CI pipeline will run both `sonar` and `detekt` tasks. The build will fail if:
+    * Coverage drops below 80%.
+    * The Quality Gate defined in Sonar (e.g., Clean Code, no new bugs/vulnerabilities) is not met.
+    * Detekt reports violations above the baseline.
+* **Consequences**:
+  * **Pros**: 
+    * Increases confidence in code correctness.
+    * Automates code review for common issues (bugs, smells, security).
+    * Provides a centralized dashboard for project health.
+  * **Cons**: 
+    * Requires setup of Sonar server/cloud account.
+    * Requires maintenance of Quality Gates and potentially tuning logic to avoid false positives.
+    * Increases CI build time slightly.

@@ -1,0 +1,33 @@
+= 16. Doctor-Patient Collaboration Workflow
+
+Date: 2026-02-28
+
+== Status
+
+Accepted
+
+== Context
+
+The system needs to allow medical professionals (Doctors) to suggest adjustments to a patient's Basal Profile, without allowing them to aggressively override the patient's currently active profile without their consent.
+
+IDOR (Insecure Direct Object Reference) and unauthorized mutations must be strictly avoided. We require a mechanism that allows Doctors to collaborate while guaranteeing the Patient retains final authority over their active treatment profile.
+
+== Decision
+
+We will introduce a `PROPOSED` profile status and endpoints for acceptance and rejection.
+
+1.  **PROPOSED Status**: A new state `PROPOSED` is added to the `ProfileStatus` enum alongside `ACTIVE`, `ARCHIVED`, and `DRAFT`.
+2.  **Doctor Read Access**: A doctor can read (list, view, view history) any patient's profiles provided that patient's UUID is present in the `allowed_patients` JWT claim. This is enforced in the `canAccess()` helper on `UserPrincipal` and applies uniformly to all read endpoints. Read access requires no additional API endpoints.
+3.  **Doctor Proposal**: When a user with the `DOCTOR` role (and valid `allowed_patients` claims) creates a profile for a patient, its status is forced to `PROPOSED`. The doctor cannot create `ACTIVE` or `DRAFT` profiles for a patient.
+4.  **Patient Review**: The patient (owner) can review `PROPOSED` profiles.
+5.  **Acceptance/Rejection Flow**:
+    *   **Accept**: The patient can accept a proposed profile. This triggers the existing atomic activation flow: the currently `ACTIVE` profile is marked `ARCHIVED`, and the `PROPOSED` profile becomes `ACTIVE`.
+    *   **Reject**: The patient can reject the proposal, which simply moves the `PROPOSED` profile to `ARCHIVED`, removing it from the pending review queue.
+
+== Consequences
+
+*   **Safety & Consent**: Ensures the patient must explicitly consent to medical adjustments before they are activated.
+*   **Security**: Bypasses the strict `checkWriteAccess` guard only for creation into a quarantined (`PROPOSED`) state, preventing doctors from directly modifying active/historical records. Read access is controlled purely by the `allowed_patients` claim — Keycloak is the authoritative source of doctor-patient relationships.
+*   **Traceability**: Proposed profiles that are rejected are archived rather than deleted, allowing for auditability of medical advice.
+*   **API Complexity**: Requires two new endpoints (`/accept`, `/reject`) and corresponding frontend UI features.
+*   **Frontend read-only mode**: When a doctor selects a patient from their `allowed_patients` list, the profile list and editor are rendered in read-only mode — no edit, activate, or accept/reject buttons are shown. A "Propose Profile for Patient" nav entry creates a new `PROPOSED` profile in the normal create flow.

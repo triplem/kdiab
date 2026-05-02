@@ -1,0 +1,15 @@
+=== ADR-104: Use Kotlinx Serialization and Native Types
+* **Status**: Accepted
+* **Category**: Code Structure & Standards
+* **Context**: The project requires a JSON serialization library. While Jackson is common, the project aims for a pure Kotlin implementation. To fully leverage Kotlin's multiplatform capabilities and type safety, we should avoid Java-specific types (like `java.time`, `java.util.UUID`) in the domain model where possible.
+* **Decision**: 
+** Use **Kotlinx Serialization** for all JSON processing.
+** Use **Kotlin Native Types** (e.g., `kotlinx.datetime`, `kotlin.uuid.Uuid`) instead of Java equivalents in the domain usage.
+* **Rationale**:
+** **Idiomatic Kotlin**: Better integration with Kotlin features.
+** **Multiplatform Ready**: Ensures the domain model is portable (e.g., to KMP frontend).
+** **Performance**: Compile-time serialization.
+* **Consequences**:
+** All DTOs must be annotated with `@Serializable`.
+** Custom serializers are needed for some Java types (e.g., `UUID`, `Instant`, `LocalTime`) if not using `kotlinx-datetime` or additional adaptors.
+** OpenAPI generator configuration must be updated to use `kotlinx-serialization`.

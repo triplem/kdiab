@@ -1,0 +1,30 @@
+= ADR-106: Global Exception Handling
+:status: accepted
+:date: 2026-02-14
+:category: Standards
+
+== Context
+Currently, exception handling is implemented in a scattered manner across different routes and services. This leads to inconsistent error responses and makes it difficult to maintain a uniform API contract. For example, authentication errors might return a generic 500 or 400 instead of a specific 401 or 403, and validation errors might be swallowed or poorly formatted.
+
+== Decision
+We will implement a **Global Exception Handling** mechanism using Ktor's `StatusPages` plugin (or equivalent middleware).
+
+1.  **Generalized Handling**: All exceptions thrown within the application will be caught by a centralized handler.
+2.  **Specific Status Codes**: The handler will map specific exception types to appropriate HTTP status codes:
+    *   `AuthenticationException` -> `401 Unauthorized`
+    *   `AuthorizationException` -> `403 Forbidden`
+    *   `NotFoundException` -> `404 Not Found`
+    *   `IllegalArgumentException` / `ValidationException` -> `400 Bad Request`
+    *   Any other `Exception` -> `500 Internal Server Error`
+3.  **Standardized Error Response**: The API will return a standard JSON error response format (e.g., `{ "error": "code", "message": "description" }`).
+
+== Consequences
+v
+=== Positive
+*   **Consistency**: Clients can rely on standard HTTP codes and error formats.
+*   **Maintainability**: Error handling logic is centralized, reducing code duplication in routes.
+*   **Security**: Prevents leaking stack traces or sensitive internal details by catching generic exceptions.
+
+=== Negative
+*   **Complexity**: Requires defining custom exception classes for different error scenarios (e.g., `ProfileNotFoundException`).
+*   **Migration**: Existing code might need refactoring to throw specific exceptions instead of handling them locally or returning manually constructed responses.

@@ -1,0 +1,95 @@
+=== ADR-113: Liquibase as the Single Schema Authority for All Environments
+* **Status**: Accepted
+* **Category**: Development Tooling / Testing
+* **Relates to**: ADR-101 (Development Tooling), ADR-305 (Liquibase Init Container), ADR-203 (Profile Status Separation)
+
+==== Context
+
+Prior to this decision the codebase had two parallel schema management paths:
+
+[cols="1,2"]
+|===
+| Environment | Schema source
+
+| Production (PostgreSQL)
+| Liquibase — `db/changelog/db.changelog-master.yaml`
+
+| Integration tests (`integrationTest` suite)
+| Mixed: `SchemaUtils.create(Profiles, Insulins)` in most tests; Liquibase only in `ProfileRepositoryConstraintTest`
+
+| E2E tests (`e2eTest` suite — embedded Ktor + H2)
+| `SchemaUtils.create(Profiles, ProfileStatuses, Insulins)` called from `DatabaseFactory.init`
+|===
+
+This divergence had several concrete consequences:
+
+* **Constraint gaps**: Only `ProfileRepositoryConstraintTest` exercised the database-level
+  one-ACTIVE-per-user constraint because it was the only test that ran the Liquibase
+  migration that creates the H2 generated column. All other integration tests had no
+  such constraint — a test suite could pass while production would reject the same data.
+
+* **Seed-data blind spot**: Liquibase changeset 002 seeds 5 reference insulin types.
+  Tests using `SchemaUtils.create` started with an empty `insulins` table, which is a
+  state that cannot occur in a freshly deployed production or staging environment.
+
+* **Migration drift**: A schema change added via Liquibase (e.g. ADR-203's
+  `profile_statuses` table) required a matching manual update to every `SchemaUtils.create`
+  call. Missing one caused runtime errors in the test server (the previous 500 error in
+  the Profile E2E test was exactly this).
+
+* **Database-specific constructs untested**: The H2 generated column and the PostgreSQL
+  partial index are both provisioned by Liquibase. `SchemaUtils.create` only reflects the
+  Exposed ORM table objects and cannot replicate these constructs.
+
+==== Decision
+
+Liquibase is now the **single schema authority** for every environment:
+
+* **`DatabaseFactory.init`** (used by production, the embedded E2E test server, and any
+  future embedded environment) runs `Liquibase.update("")` via a direct JDBC connection
+  before handing connections to the application. `SchemaUtils.create` is removed entirely.
+
+* **All integration test classes** use a shared `LiquibaseTestHelper.setup(dbName)` that
+  connects a uniquely named H2 in-memory database and runs the full Liquibase changelog.
+  Each class passes a distinct `dbName` to prevent state pollution across parallel suites.
+
+* **Data isolation** between tests is achieved with targeted `DELETE` statements in
+  `LiquibaseTestHelper.cleanData(db)` rather than drop/recreate. Liquibase tracks applied
+  changesets in `DATABASECHANGELOG`; dropping the schema mid-suite would force unnecessary
+  re-runs and break the tracking table. Delete-based cleanup is O(rows), not O(schema).
+
+==== Rationale
+
+* **Schema parity**: Every test — integration or E2E — runs against exactly the schema that
+  production sees. Database-specific constructs (the H2 generated column for one-ACTIVE-per-
+  user enforcement, the PostgreSQL partial index) are exercised in the same suite that tests
+  the business logic depending on them.
+
+* **Seed-data realism**: Tests that count rows or assert "no results" now need to account for
+  reference data. This is intentional — it is more representative of real system state and
+  surfaces integration issues earlier.
+
+* **Single point of change**: Adding a column, a new table, or a data migration means
+  editing one Liquibase changeset. No test class needs a parallel `SchemaUtils` update.
+
+* **Operational consistency**: The same Liquibase runner (`ClassLoaderResourceAccessor` +
+  `DriverManager`) is used in `DatabaseFactory`, `LiquibaseTestHelper`, and the Liquibase
+  init container (ADR-305). Operational run-books and migration rollback procedures apply
+  uniformly.
+
+==== Consequences
+
+* **Insulin E2E test** (`InsulinE2ETest`): assertions updated from "0 insulins initially"
+  to "5 insulins initially" (the seeded reference types). The test now verifies that
+  reference data is present on startup — a stronger invariant.
+
+* **`ExposedInsulinRepositoryTest`**: `@BeforeTest` cleanup removes seeded insulins so that
+  `findAll` count assertions remain simple and predictable.
+
+* **H2 URL consistency**: All H2 databases used in tests include
+  `MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE` (via `LiquibaseTestHelper`) to maximise
+  compatibility with the Liquibase changesets. The E2E test databases retain their own
+  URL format (managed by `DatabaseFactory` which accepts whatever URL is configured).
+
+* **No API or domain changes**: `DatabaseFactory` is excluded from Kover coverage
+  measurement (see `build.gradle.kts`), so there is no coverage impact.

@@ -1,0 +1,63 @@
+{
+  "app": {
+    "title": "T1D Measure Manager",
+    "loading": "Loading authentication...",
+    "welcome": "Welcome to T1D Measure Manager",
+    "login": "Log in",
+    "loggedInAs": "Logged in as",
+    "logout": "Log out",
+    "addMeasure": "Add Measure",
+    "somethingWentWrong": "Something went wrong in rendering.",
+    "viewingPatient": "Viewing patient:",
+    "myOwnMeasures": "My own measures"
+  },
+  "list": {
+    "title": "Health Measures",
+    "loading": "Loading measures...",
+    "error": "Failed to load measures. Please try again.",
+    "archiveSelected": "Archive Selected ({{count}})",
+    "deleteSelected": "Delete Selected ({{count}})",
+    "summary": "Summary",
+    "typeSource": "Type / Source",
+    "actions": "Actions",
+    "archive": "Archive",
+    "delete": "Delete",
+    "confirmBulkDelete": "Are you sure you want to permanently delete the selected measures?",
+    "confirmDelete": "Permanently delete measure?",
+    "mutationError": "Operation failed. Please try again.",
+    "empty": "No measures recorded yet.",
+    "details": "Measure Details",
+    "systemId": "System ID",
+    "userId": "User ID",
+    "recordedAt": "Recorded At",
+    "dataPayload": "Data Payload"
+  },
+  "modal": {
+    "title": "Add Measurement",
+    "type": "Type:",
+    "measuredAt": "Measured At:",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "validationError": "Please fill in all required fields with valid values.",
+    "bloodGlucose": "Blood Glucose:",
+    "systolic": "Systolic (mmHg):",
+    "diastolic": "Diastolic (mmHg):",
+    "weight": "Weight:",
+    "heartRate": "Heart Rate (bpm):",
+    "cgmReading": "CGM Reading:",
+    "ketones": "Ketones (mmol/L):",
+    "ketoneMethod": "Measurement method:",
+    "ketoneBlood": "Blood",
+    "ketoneUrine": "Urine",
+    "types": {
+      "BGM": "Blood Glucose (Manual)",
+      "CGM": "CGM Reading (Continuous Glucose)",
+      "BG_CHECK": "Blood Glucose Check",
+      "BLOOD_PRESSURE": "Blood Pressure",
+      "WEIGHT": "Weight",
+      "PULSE": "Pulse / Heart Rate",
+      "KETONE_CHECK": "Ketone Test"
+    }
+  }
+}

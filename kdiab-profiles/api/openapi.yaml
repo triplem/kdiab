@@ -1,0 +1,647 @@
+openapi: 3.0.3
+info:
+  title: T1D Basal Profile Service
+  description: Service for managing Type 1 Diabetes basal pump profiles.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local Development Server
+
+paths:
+  /insulins:
+    get:
+      summary: Get all insulins
+      operationId: getInsulins
+      responses:
+        '200':
+          description: A list of insulins
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Insulin'
+    post:
+      summary: Create a new insulin
+      operationId: createInsulin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  example: "Novolog"
+      responses:
+        '201':
+          description: Created insulin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Insulin'
+        '400':
+          description: Invalid name (blank or too long)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Insulin with that name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /insulins/{id}:
+    put:
+      summary: Update a specific insulin
+      operationId: updateInsulin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Updated insulin
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Insulin'
+        '400':
+          description: Invalid name (blank or too long)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden — admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Insulin not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Insulin with that name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete a specific insulin
+      operationId: deleteInsulin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Insulin deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden — admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Insulin not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{userId}/profiles:
+    get:
+      summary: List all profiles for a user
+      operationId: listProfiles
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: A list of profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Profile'
+    post:
+      summary: Create a new profile
+      operationId: createProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProfileRequest'
+      responses:
+        '201':
+          description: Profile created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete all profiles for a user
+      operationId: deleteProfiles
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: All profiles deleted
+        '404':
+          description: User not found
+
+  /users/{userId}/profiles/history:
+    get:
+      summary: Get profile history for a user
+      operationId: getProfileHistory
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of historical profiles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Profile'
+
+  /users/{userId}/profiles/{profileId}:
+    get:
+      summary: Get a specific profile by ID
+      operationId: getProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Profile details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '404':
+          description: Profile not found
+    put:
+      summary: Update a profile
+      description: Updates an existing profile. If active, creates a new version.
+      operationId: updateProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Profile'
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '404':
+          description: Profile not found
+    delete:
+      summary: Archive a specific profile
+      description: Sets the profile status to ARCHIVED. Does not delete data.
+      operationId: deleteProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Profile deleted
+        '404':
+          description: Profile not found
+
+  /users/{userId}/profiles/{profileId}/activate:
+    post:
+      summary: Activate a profile
+      description: Sets the profile status to ACTIVE and archives the previously active profile.
+      operationId: activateProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Profile activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+
+  /users/{userId}/profiles/{profileId}/accept:
+    post:
+      summary: Accept a proposed profile
+      description: Sets a PROPOSED profile to ACTIVE and archives the previously active profile.
+      operationId: acceptProposedProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Profile accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+
+  /users/{userId}/profiles/{profileId}/reject:
+    post:
+      summary: Reject a proposed profile
+      description: Sets a PROPOSED profile to ARCHIVED.
+      operationId: rejectProposedProfile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Profile rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+
+  /users/{userId}/profiles/{profileId}/{segmentType}/{startTime}:
+    delete:
+      summary: Delete a specific segment from a profile
+      operationId: deleteSegment
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: segmentType
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [basal, icr, isf, targets]
+        - name: startTime
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+      responses:
+        '200':
+          description: Segment deleted, returns updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '404':
+          description: Profile or segment not found
+
+
+components:
+  schemas:
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        previousProfileId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        insulinType:
+          type: string
+        units:
+          type: string
+          description: Blood glucose unit system used for ISF and target segments
+          enum: [mg/dL, mmol/L]
+          default: mg/dL
+        durationOfAction:
+          type: integer
+          description: Duration of insulin action in minutes
+        timeZone:
+          type: string
+          description: IANA timezone identifier for segment times (e.g. "Europe/Berlin")
+          example: UTC
+        status:
+          type: string
+          enum: [ACTIVE, ARCHIVED, DRAFT, PROPOSED]
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        basal:
+          type: array
+          items:
+            $ref: '#/components/schemas/BasalSegment'
+        icr:
+          type: array
+          items:
+            $ref: '#/components/schemas/IcrSegment'
+        isf:
+          type: array
+          items:
+            $ref: '#/components/schemas/IsfSegment'
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/TargetSegment'
+      required:
+        - id
+        - userId
+        - name
+        - status
+        - insulinType
+        - durationOfAction
+
+    CreateProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        insulinType:
+          type: string
+        durationOfAction:
+          type: integer
+        basal:
+          type: array
+          items:
+            $ref: '#/components/schemas/BasalSegment'
+        icr:
+          type: array
+          items:
+            $ref: '#/components/schemas/IcrSegment'
+        isf:
+          type: array
+          items:
+            $ref: '#/components/schemas/IsfSegment'
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/TargetSegment'
+      required:
+        - name
+        - insulinType
+        - durationOfAction
+
+    BasalSegment:
+      type: object
+      properties:
+        startTime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+        value:
+          type: number
+          format: double
+      required:
+        - startTime
+        - value
+
+    IcrSegment:
+      type: object
+      properties:
+        startTime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+        value:
+          type: number
+          format: double
+      required:
+        - startTime
+        - value
+
+    IsfSegment:
+      type: object
+      properties:
+        startTime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+        value:
+          type: number
+          format: double
+      required:
+        - startTime
+        - value
+
+    TargetSegment:
+      type: object
+      properties:
+        startTime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+        low:
+          type: number
+          format: double
+        high:
+          type: number
+          format: double
+      required:
+        - startTime
+        - low
+        - high
+
+    Insulin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    ErrorResponse:
+      type: object
+      description: Standard error envelope returned by all error responses
+      properties:
+        code:
+          type: integer
+          description: HTTP status code
+        message:
+          type: string
+          description: Human-readable error description
+      required:
+        - code
+        - message
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

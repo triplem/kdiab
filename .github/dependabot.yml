@@ -1,0 +1,262 @@
+version: 2
+updates:
+
+  # ── GitHub Actions ──────────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # ── kdiab-measures ──────────────────────────────────────────────────────────
+  - package-ecosystem: "gradle"
+    directory: "/kdiab-measures"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+    groups:
+      measures-gradle-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      measures-gradle-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      measures-gradle-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/kdiab-measures/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "eslint"
+        versions: [">= 10"]
+      - dependency-name: "@eslint/js"
+        versions: [">= 10"]
+    groups:
+      measures-npm-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      measures-npm-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      measures-npm-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  - package-ecosystem: "docker"
+    directory: "/kdiab-measures/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      measures-docker:
+        patterns: ["*"]
+
+  - package-ecosystem: "docker"
+    directory: "/kdiab-measures/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      measures-frontend-docker:
+        patterns: ["*"]
+
+  # ── kdiab-profiles ──────────────────────────────────────────────────────────
+  - package-ecosystem: "gradle"
+    directory: "/kdiab-profiles"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      - dependency-name: "org.cyclonedx.bom"
+        versions: [">= 3.2.3"]
+    groups:
+      profiles-gradle-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      profiles-gradle-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      profiles-gradle-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/kdiab-profiles/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "eslint"
+        versions: [">= 10"]
+      - dependency-name: "@eslint/js"
+        versions: [">= 10"]
+    groups:
+      profiles-npm-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      profiles-npm-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      profiles-npm-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  - package-ecosystem: "docker"
+    directory: "/kdiab-profiles/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      profiles-docker:
+        patterns: ["*"]
+
+  - package-ecosystem: "docker"
+    directory: "/kdiab-profiles/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      profiles-frontend-docker:
+        patterns: ["*"]
+
+  # ── kdiab-treatments ────────────────────────────────────────────────────────
+  - package-ecosystem: "gradle"
+    directory: "/kdiab-treatments"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+    groups:
+      treatments-gradle-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      treatments-gradle-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      treatments-gradle-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/kdiab-treatments/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "eslint"
+        versions: [">= 10"]
+      - dependency-name: "@eslint/js"
+        versions: [">= 10"]
+    groups:
+      treatments-npm-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      treatments-npm-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      treatments-npm-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  - package-ecosystem: "docker"
+    directory: "/kdiab-treatments/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      treatments-docker:
+        patterns: ["*"]
+
+  - package-ecosystem: "docker"
+    directory: "/kdiab-treatments/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      treatments-frontend-docker:
+        patterns: ["*"]
+
+  # ── kdiab-bff ───────────────────────────────────────────────────────────────
+  - package-ecosystem: "gradle"
+    directory: "/kdiab-bff"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+    groups:
+      bff-gradle-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      bff-gradle-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      bff-gradle-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  - package-ecosystem: "npm"
+    directory: "/kdiab-bff/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "eslint"
+        versions: [">= 10"]
+      - dependency-name: "@eslint/js"
+        versions: [">= 10"]
+    groups:
+      bff-npm-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      bff-npm-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      bff-npm-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  - package-ecosystem: "docker"
+    directory: "/kdiab-bff/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      bff-docker:
+        patterns: ["*"]
+
+  - package-ecosystem: "docker"
+    directory: "/kdiab-bff/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      bff-frontend-docker:
+        patterns: ["*"]

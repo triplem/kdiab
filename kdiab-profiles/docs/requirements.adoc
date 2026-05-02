@@ -1,0 +1,145 @@
+= T1D Basal Profile Service - System Requirements & Architecture
+:toc: left
+
+== 1. System Overview
+This service allows multiple users to store and manage their Type 1 Diabetes (T1D) basal pump profiles. It ensures that each user has exactly one *active* profile at any given time, with history preserved via archiving. The system is designed to be API-first and secure.
+
+== 2. Functional Requirements
+
+=== 2.1 User Management
+* **Multi-tenancy**: Support multiple users. Each user acts as a tenant for their profiles.
+* **Authentication**: Secure access using JWT (see ADR-303).
+* **Doctor Access**:
+** Doctors can have **Read-Only** access to a patient's profiles.
+** The association (Doctor-Patient relationship) is managed by an external service.
+** The Profile Service must respect this authorized access (via Token Claims or similar mechanism).
+* **Admin Access**:
+** Admins have **Full Access** (Read/Write) to all resources (all users, all profiles).
+** This is a high-privilege role intended for support and system management.
+
+
+=== 2.2 Profile Management
+* **Structure**: A Profile consists of:
+** Name
+** Insulin Type (Selected from a globally managed list of insulins, e.g., Fiasp, Humalog. Users can add new types if they don't exist.)
+** Duration of Insulin Action (DIA)
+** Time Zones (Time-based settings)
+* **Status**:
+** `ACTIVE`: The profile currently in use. Only one per user.
+** `ARCHIVED`: Past profiles or rejected proposals.
+** `DRAFT`: Profiles being edited by the user.
+** `PROPOSED`: Profiles created by a doctor pending patient approval (see ADR-016).
+* **Properties** (Time-dependent, 30m resolution minimum):
+** Insulin to Carb Ratio (ICR) [g/U]
+** Insulin Sensitivity Factor (ISF) [mg/dl/U]
+** Basal Rate [U/hr]
+** Target Blood Sugar Range [min/max or target value]
+* **Constraints**:
+** Activating a new profile must automatically archive the currently active one.
+** Time segments must cover the full 24-hour cycle.
+
+=== 2.3 Global Insulin Management
+* **Shared Catalog**: There must be a globally managed list of insulins available to all users (stored in a separate table, not queried over all user profiles).
+* **Selection & Addition**: Users can select from this overarching list. If an insulin type does not exist, users must be able to add a new type seamlessly via a dedicated, non-user-specific endpoint.
+
+=== 2.4 User Interface Requirements
+* **Schedule Organization**: The different profile segments (Basal, ICR, ISF) should be presented on distinct tabs to avoid overwhelming vertical scrolling.
+* **Smart Segment Addition**: By default, when a new segment is added to a schedule, it should automatically act as a copy of the previous entry with its start time incremented by exactly one hour.
+* **Time Formatting**: The application must enforce a global "24-hour time" preference (toggle-able) that reliably dictates the display format of all schedule time input fields.
+
+== 3. Architectural Design Records (ADR)
+This section documents the key architectural decisions made regarding the system's design and implementation.
+
+=== ADR-301: Use PostgreSQL for Persistence
+* **Status**: Accepted
+* **Context**: The service requires a reliable, ACID-compliant relational database to store user profiles and medical data. The data structure for profiles (time segments) is structured but may evolve, suggesting a need for robust JSON support alongside relational integrity.
+* **Decision**: Use **PostgreSQL**.
+* **Rationale**:
+** **Reliability**: Proven track record for critical data storage.
+** **JSONB Support**: Excellent JSON support allows flexible storage of complex profile configurations if the relational model becomes too rigid.
+** **Ecosystem**: First-class support in Ktor (via Exposed/HikariCP) and cloud providers.
+** **Constraint Validation**: Strong data integrity checks at the database level.
+
+=== ADR-201: Independent Time Schedules for Profile Parameters
+* **Status**: Accepted
+* **Context**: Diabetes management requires flexible scheduling for different parameters. Basal rates, Insulin-to-Carb Ratios (ICR), Insulin Sensitivity Factors (ISF), and Glucose Targets often change at different times types of the day.
+* **Decision**: The `Profile` model is designed with independent schedules for `basal`, `icr`, `isf`, and `targets`.
+* **Rationale**:
+** **Domain Alignment**: This structure accurately reflects the domain model where patients adjust specific parameters without affecting others.
+** **Data Efficiency**: Independent arrays prevent data duplication that would occur if all parameters were forced into shared time slots.
+
+=== ADR-302: Implicit User Management
+* **Status**: Accepted
+* **Context**: The system is designed to be multi-tenant or multi-user, but currently, there is no requirement for a complex authorization or identity management system. Detailed user profiles (name, email, etc.) are not yet needed for the core profile calculation logic.
+* **Decision**: Do not create a dedicated `Users` table at this stage. Store `userId` directly in the `Profiles` table as a UUID.
+* **Rationale**:
+** **Simplicity**: Reduces schema complexity and foreign key constraints that aren't yet delivering value.
+** **YAGNI (You Aren't Gonna Need It)**: Avoids premature optimization for an auth system that hasn't been designed.
+** **Forward Compatibility**: A `Users` table can be introduced later, and existing `userId`s can be backfilled or migrated if a formal identity provider is integrated.
+
+=== ADR-303: OAuth 2.0 / JWT Authentication
+* **Status**: Accepted
+* **Context**: The service requires secure access control. We need to verify the identity of the caller and ensure they have appropriate permissions (Roles).
+* **Decision**: Use JSON Web Tokens (JWT) for authentication.
+* **Details**:
+** **Domain/Issuer**: `org.javafreedom.kdiab`
+** **Audience**: `profile` (Configurable)
+** **Roles**: Extracted from JWT claims. Supported roles: `PATIENT`, `DOCTOR`, `ADMIN`.
+* **Rationale**:
+** **Standard**: JWT is the industry standard for stateless authentication in microservices.
+** **Interoperability**: Easily integrates with Identity Providers (Keycloak, Auth0, etc.).
+** **Stateless**: No session state required on the server.
+
+=== ADR-103: Package Structure Refactoring
+* **Status**: Accepted
+* **Context**: The project initial setup used a generic package `com.kdiab.profiles`. The project identity has been established as part of the `org.javafreedom` organization.
+* **Decision**: Refactor the codebase to use `org.javafreedom.kdiab.profiles` as the root package.
+* **Rationale**:
+** **Organization Identity**: Aligns with the organization's domain and naming standards.
+** **Consistency**: Ensures all artifacts (Maven coordinates, Java packages) are consistent.
+
+=== ADR-202: JSONB Storage for Profile Segments
+* **Status**: Accepted
+* **Context**: Profile segments (Basal, ICR, ISF, Targets) are complex nested structures. Storing them in a separate relational table `TimeSegments` added complexity to retrieval (joins), updates (delete-insert), and archiving/deletion.
+* **Decision**: Store profile segments directly in the `Profiles` table using a `jsonb` column.
+* **Rationale**:
+** **Simplicity**: CRUD operations become atomic and simpler.
+** **Performance**: Eliminates joins for the most common access pattern (loading a full profile).
+** **Flexibility**: Easier to extend or modify segment structure without schema migrations.
+** **Archiving**: Archiving a profile now archives all its data in a single row, simplifying data lifecycle management.
+
+=== ADR-104: Use Kotlinx Serialization and Native Types
+* **Status**: Accepted
+* **Context**: The project requires a JSON serialization library and aims for a pure Kotlin implementation.
+* **Decision**: 
+** Use **Kotlinx Serialization**.
+** Use **Kotlin Native Types** (e.g., `kotlinx.datetime`, `kotlin.uuid.Uuid`) where possible.
+* **Rationale**:
+** **Idiomatic Kotlin**: Better integration with Kotlin features and KMP support.
+** **Performance**: Compile-time serialization.
+** **Dependency Reduction**: Avoids Jackson and Java-specific dependencies in domain.
+
+== 4. Non-Functional Requirements & Technology Stack
+* **Persistence**: PostgreSQL (ADR-301) with JSONB (ADR-202).
+* **Architecture**: Hexagonal Architecture (Ports and Adapters).
+* **API**: API-First design using OpenAPI 3.0.
+* **Serialization**: Kotlinx Serialization (ADR-104).
+* **Containerization**: Docker support for easy deployment.
+* **Frontend**: React + TypeScript + Vite.
+* **Testing**: 
+** Minimum 80% test coverage (ADR-102).
+** BDD-style End-to-End (E2E) tests for critical user flows (ADR-107).
+
+== 5. User Interface
+* **Web UI** (React/TypeScript).
+* **Visual editors** for time segments (Basal, ICR, ISF).
+* **Charting/Graphing** of profile data.
+
+=== ADR-107: BDD Testing with Kotest
+* **Status**: Accepted
+* **Context**: To ensure the system behaves as expected from a user's perspective, we need high-level End-to-End (E2E) tests. Use of a Behavior-Driven Development (BDD) style (Given/When/Then) improves readability and collaboration between developers and domain experts.
+* **Decision**: Use **Kotest** for E2E tests.
+* **Rationale**:
+** **Expressive DSL**: Kotest provides a powerful `BehaviorSpec` style that naturally maps to BDD requirements.
+** **Kotlin Native**: Fully utilizes Kotlin's language features (coroutines, type safety) unlike other JVM BDD tools (e.g., Cucumber).
+** **Integration**: Seamlessly integrates with JUnit 5 and Gradle.

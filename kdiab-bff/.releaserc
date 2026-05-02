@@ -1,0 +1,17 @@
+{
+  "branches": [
+    "main",
+    {"name": "*", "prerelease": "alpha"},
+    {"name": "*/*", "prerelease": "alpha"}
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    ["@semantic-release/github", {
+      "assets": [
+        {"path": "backend-image.tar", "label": "Backend Docker Image"},
+        {"path": "frontend-image.tar", "label": "Frontend Docker Image"}
+      ]
+    }]
+  ]
+}

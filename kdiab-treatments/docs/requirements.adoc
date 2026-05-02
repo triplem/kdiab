@@ -1,0 +1,55 @@
+= T1D Treatments Service - System Requirements
+:toc: left
+
+== 1. System Overview
+The T1D Treatments Service is responsible for tracking clinical treatment events related to Type 1 Diabetes management. It stores time-stamped treatment records for events such as insulin boluses, carbohydrate intake, basal insulin, blood glucose checks, exercise, and other Nightscout-compatible treatment types.
+
+== 2. Functional Requirements
+
+=== 2.1 Treatment Tracking
+* **Heterogeneous Data**: Support various treatment types including:
+** **BOLUS / CORRECTION_BOLUS**: Rapid-acting insulin doses (meal or correction).
+** **BASAL**: Long-acting basal insulin injections.
+** **CARBS**: Carbohydrate intake events.
+** **COMBO_BOLUS**: Split bolus (immediate + extended).
+** **TEMP_BASAL**: Temporary basal rate changes.
+** **BG_CHECK**: Manual blood glucose readings.
+** **EXERCISE**: Physical activity events.
+** **NOTE**: Free-text clinical notes.
+** **PUMP_SUSPEND**: Insulin pump suspension events.
+** **SITE_CHANGE**: Infusion site replacements.
+** **SENSOR_INSERT**: CGM sensor insertions.
+** **INSULIN_CHANGE**: Insulin cartridge replacements.
+* **Metadata**: Each treatment must track:
+** `treated_at`: The actual time the treatment occurred.
+** `created_at`: When the record was entered into the system.
+** `type`: The classification of the treatment.
+** `notes`: Optional free-text annotation.
+* **User Identity**: The user is identified by the `sub` claim in the JWT. No user data is stored in the treatments database.
+* **Storage**: Use a flexible schema (JSONB) to allow for evolving data models following Nightscout conventions.
+
+=== 2.2 Access Control
+* **PATIENT**: Can create, read, and archive own treatments (BOLUS, CARBS, and all other types).
+* **DOCTOR**: Can read treatments of assigned patients, can archive and permanently delete treatments.
+* **ADMIN**: Full access to all treatments.
+
+=== 2.3 Bulk Operations
+* **Archive**: Mark multiple treatments as ARCHIVED in a single request.
+* **Delete**: Permanently remove multiple treatments (DOCTOR/ADMIN only).
+
+== 3. Non-Functional Requirements
+
+=== 3.1 Data Integrity & Precision
+* **Timestamps**: All times must be stored with high precision and time zone awareness (`TIMESTAMP WITH TIME ZONE`).
+* **Dual timestamps**: Both `treated_at` (clinical time) and `created_at` (system entry time) are stored and indexed.
+
+=== 3.2 Technology Stack
+* **Language**: Kotlin
+* **Framework**: Ktor
+* **Database**: PostgreSQL (with JSONB)
+* **API**: OpenAPI 3.0
+* **Testing**: Minimum 80% coverage (enforced via Kover).
+
+=== 3.3 Nightscout Compatibility
+* Treatment types and JSON payload structures follow Nightscout `eventType` conventions where applicable.
+* This enables future integration with Nightscout-compatible systems.

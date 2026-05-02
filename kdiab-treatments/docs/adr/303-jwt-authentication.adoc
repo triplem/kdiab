@@ -1,0 +1,30 @@
+=== ADR-303: OAuth 2.0 / JWT Authentication
+* **Status**: Accepted
+* **Category**: Service Implementation Details
+* **Context**: The service requires secure access control. We need to verify the identity of the caller and ensure they have appropriate permissions (Roles).
+* **Decision**: Use JSON Web Tokens (JWT) for authentication.
+* **Details**:
+** **Domain/Issuer**: `http://localhost:8081/realms/kdiab-treatments` (Configurable via `JWT_DOMAIN`)
+** **Audience**: `treatment` (Configurable via `JWT_AUDIENCE`)
+** **Roles**: Mapped to strict Enum values (`PATIENT`, `DOCTOR`, `ADMIN`).
+*** `PATIENT`: Standard access to own resources. Can create and archive own treatments.
+*** `DOCTOR`: Read-only access to specific patients (Delegated). Can also archive and permanently delete treatments.
+*** `ADMIN`: Full superuser access to all resources.
+** **Delegated Access**: The token may contain claims that grant access to specific resources.
+*** `allowed_patients`: A list of UUIDs representing the patients this user (e.g., Doctor) is allowed to access.
+*** Example Claim: ` "allowed_patients": ["123e4567-e89b-12d3-a456-426614174000"] `
+** **User Identity**: The `sub` claim in the JWT is used as the user ID. No user data is stored in the treatments database.
+* **Rationale**:
+** **Standard**: JWT is the industry standard for stateless authentication in microservices.
+** **Interoperability**: Easily integrates with Identity Providers (Keycloak, Auth0, etc.).
+** **Stateless**: No session state required on the server.
+** **Implicit user management**: The user ID is taken directly from the JWT `sub` claim; no separate user management service is required.
+
+* **Addendum (OpenID Connect & JWKS)**:
+** **Decision**: Use asymmetric `RS256` token validation via Keycloak's JSON Web Key Set (JWKS).
+** **Details**: The backend dynamically fetches the Identity Provider's public keys via a URL (e.g., `http://keycloak:8080/realms/kdiab-treatments/protocol/openid-connect/certs`).
+** **Rationale**:
+*** Allows Keycloak to rotate keys securely without backend downtime.
+*** Prevents the need to hardcode shared symmetric secrets `jwt.secret` across environments.
+*** Standardized approach for verifying third-party OAuth 2.0 / OIDC provider signatures.
+*** In tests, a symmetric HMAC256 key is used (`jwt.test=true`) to avoid the need for a running Keycloak instance.

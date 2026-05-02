@@ -1,0 +1,11 @@
+=== ADR-301: Use PostgreSQL for Persistence
+* **Status**: Accepted
+* **Category**: Service Implementation Details
+* **Context**: The service requires a reliable, ACID-compliant relational database to store user profiles and medical data. The data structure for profiles (time segments) is structured but may evolve, suggesting a need for robust JSON support alongside relational integrity.
+* **Decision**: Use **PostgreSQL**.
+* **Rationale**:
+** **Reliability**: Proven track record for critical data storage.
+** **JSONB Support**: Excellent JSON support allows flexible storage of complex profile configurations if the relational model becomes too rigid.
+** **Ecosystem**: First-class support in Ktor (via Exposed/HikariCP) and cloud providers.
+** **Constraint Validation**: Strong data integrity checks at the database level.
+** **Partial Index Support**: The `IDX_PROFILES_USER_ACTIVE` index enforces that each user has at most one `ACTIVE` profile using a conditional `WHERE status = 'ACTIVE'` clause — a PostgreSQL-specific feature. H2 (used in integration tests) does not support partial indexes, so this Liquibase changeset is restricted to `dbms: postgresql`. **PostgreSQL is therefore mandatory for production deployments.** Switching to another RDBMS would require replacing this constraint with an application-level check, which is weaker and race-condition-prone.

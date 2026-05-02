@@ -1,0 +1,63 @@
+=== ADR-203: Profile Status Separation into Dedicated Table
+* **Status**: Accepted
+* **Category**: Domain Architecture / Persistence
+* **Relates to**: ADR-015 (Profile History and Archiving), ADR-202 (JSONB Storage), ADR-301 (PostgreSQL)
+
+==== Context
+
+Profiles previously stored all data — including the mutable `status` field — in a single `profiles` table row.
+This created a tension with the copy-on-write semantics introduced in ADR-015: the `status` column was the only field ever mutated in place on an existing row (e.g., archiving an old active profile during activation). Every other field is conceptually immutable once written.
+
+The constraints that enforce _"exactly one ACTIVE profile per user"_ were tied to the `profiles` table via a PostgreSQL-only partial unique index (`IDX_PROFILES_USER_ACTIVE`). H2, used in integration tests, does not support partial/conditional indexes, so the constraint was silently absent in the test environment.
+
+==== Decision
+
+`status` is moved to a dedicated `profile_statuses` table:
+
+[source,sql]
+----
+CREATE TABLE profile_statuses (
+    profile_id  UUID        PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+    user_id     UUID        NOT NULL,
+    status      VARCHAR(50) NOT NULL,
+    valid_from  TIMESTAMP   NOT NULL
+);
+----
+
+* **`profiles` rows are now write-once.** After insert, a profile's data (name, segments, insulin type, etc.) is never updated in place. Status transitions are pure writes to `profile_statuses`.
+* **Copy-on-write** (ADR-015) is unchanged in semantics: updating an active profile still creates a new `profiles` row (with a new UUID) and archives the old one. The difference is that archiving now means updating `profile_statuses` only.
+* **`profile_statuses.profile_id` carries `ON DELETE CASCADE`** so that hard-deleting a DRAFT profile (the only case where rows are physically removed) cleans up both tables automatically.
+
+==== One-ACTIVE-per-user Constraint
+
+The constraint is enforced at the database level with a database-specific mechanism:
+
+[cols="1,3"]
+|===
+| Database | Mechanism
+
+| **PostgreSQL** (production)
+| Partial unique index: +
+`CREATE UNIQUE INDEX IDX_PROFILE_STATUSES_USER_ACTIVE ON profile_statuses(user_id) WHERE status = 'ACTIVE'`
+
+| **H2** (integration tests)
+| Virtual generated column + unique index: +
+`active_user_key UUID GENERATED ALWAYS AS (CASE WHEN status = 'ACTIVE' THEN user_id ELSE NULL END)` +
+`CREATE UNIQUE INDEX IDX_PROFILE_STATUSES_ACTIVE_USER ON profile_statuses(active_user_key)` +
+Because NULL values are not subject to unique-index constraints, only ACTIVE rows compete.
+|===
+
+Both mechanisms are provisioned through Liquibase changesets with `dbms: postgresql` / `dbms: h2` guards (changesets 4 and 5 in `001-initial-schema.yaml` respectively).
+
+==== Rationale
+
+* **Profiles become truly immutable** in the persistence layer. Once written, a profile row captures a point-in-time snapshot of the patient's treatment plan. This strengthens the audit trail and aligns with the clinical data-retention requirements (ADR-304).
+* **Status transitions are cheap and explicit.** Archiving an active profile during a copy-on-write update now performs a single `UPDATE profile_statuses SET status = 'ARCHIVED'` instead of touching the full profiles row.
+* **H2 constraint parity.** The generated-column approach gives integration tests the same enforcement guarantee as PostgreSQL. The earlier gap — where a test could unknowingly insert two ACTIVE profiles in H2 — is eliminated.
+* **No domain model changes.** `Profile` still carries a `status` field. The split is entirely in the infrastructure layer; service, web adapter, and API contract are unchanged.
+
+==== Consequences
+
+* All queries that previously read `profiles.status` now perform an `INNER JOIN profiles ON profile_statuses.profile_id = profiles.id` to retrieve the status. The extra join is minimal — `profile_id` is the primary key of `profile_statuses`.
+* Any direct SQL / raw Exposed code that inserts into `profiles` must also insert a corresponding row into `profile_statuses` to keep the tables consistent.
+* The schema is defined from the start without a `status` column on `profiles` — `profile_statuses` exists as a first-class table in `001-initial-schema.yaml`. No data migration step is needed.

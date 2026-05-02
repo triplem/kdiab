@@ -1,0 +1,21 @@
+= ADR-109: Strict 24-Hour Time Format for Backend and API
+
+* **Status**: Accepted
+* **Date**: 2026-03-01
+* **Context**: 
+As the application expands to support users internationally, we need a consistent way to handle time segments within diabetes profiles (e.g., Basal, ICR, ISF start times). Different locales have different preferences for displaying time (12-hour AM/PM vs. 24-hour). However, allowing mixed formats in the API or database introduces parsing complexity and risks critical errors in insulin dosing calculations if a time is misinterpreted.
+
+* **Decision**: 
+1. **API & Storage**: The backend will strictly accept, validate, and store all time segments in the 24-hour `HH:mm` format (ISO-8601 local time).
+2. *Frontend Display*: The UI natively handles all internationalization/localization. The manual 12-hour (AM/PM) toggle has been removed. The application now purely relies on robust auto-detection using the browser's `navigator.language` and `Intl.DateTimeFormat` API for presentation.
+3. **Frontend Input**: HTML native `<input type="time">` elements will be used for time entry. The browser automatically localizes the input widget based on the user's OS settings, while consistently submitting the value in the reliable 24-hour `HH:mm` format to the API.
+
+* **Rationale**:
+** **Safety**: In critical healthcare applications, ambiguity in time (e.g., "12:00" vs "12:00 PM" vs "00:00") could lead to dangerous miscalculations of insulin delivery. Strict validation of a single standard prevents this.
+** **Simplicity**: The backend `Profile` domain object can cleanly use `kotlinx.datetime.LocalTime` without dealing with locale-specific formatters.
+** **User Experience**: Users in cultures accustomed to AM/PM still get a native experience without burdening the core business logic.
+
+* **Consequences**:
+** The OpenAPI specification enforces a regex pattern `^([01]\d|2[0-3]):([0-5]\d)$` for all time fields.
+** JSON serialization explicitly writes and reads `HH:mm`.
+** Frontend clients must implement their own presentation logic for alternative time formats.

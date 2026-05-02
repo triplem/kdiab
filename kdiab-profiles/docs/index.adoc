@@ -1,0 +1,40 @@
+= KDiab Profiles Developer Documentation
+:toc: left
+:icons: font
+:source-highlighter: rouge
+
+Welcome to the KDiab Profiles project documentation hub. Use the links below to navigate through the core project information and architectural decisions.
+
+== Core Documents
+
+* link:architecture.html[Architecture & Design]
+* link:how-to-run.html[How to Run]
+* link:requirements.html[System Requirements]
+* link:prompts.html[AI Development Prompts]
+* link:ai-agents.html[AI Agent Personas]
+* link:project_status.html[Project Status]
+* link:session_summary.html[Session Summary]
+
+== Architecture Decision Records (ADR)
+
+* link:adr/015-profile-history-and-archiving.html[015 Profile History and Archiving]
+* link:adr/016-doctor-patient-collaboration.html[016 Doctor Patient Collaboration]
+* link:adr/101-development-tooling.html[101 Development Tooling]
+* link:adr/102-code-quality-standards.html[102 Code Quality Standards]
+* link:adr/103-package-structure.html[103 Package Structure]
+* link:adr/104-kotlinx-serialization.html[104 Kotlinx Serialization]
+* link:adr/105-kotlin-native-types.html[105 Kotlin Native Types]
+* link:adr/106-global-exception-handling.html[106 Global Exception Handling]
+* link:adr/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
+* link:adr/108-main-ktor-server.html[108 Main Ktor Server]
+* link:adr/109-strict-24h-time-format.html[109 Strict 24h Time Format]
+* link:adr/110-correlation-id-logging.html[110 Correlation ID Logging]
+* link:adr/111-semantic-release-conventional-commits.html[111 Semantic Release Conventional Commits]
+* link:adr/112-ci-cd-performance-optimizations.html[112 CI/CD Performance Optimizations]
+* link:adr/201-independent-schedules.html[201 Independent Schedules]
+* link:adr/202-jsonb-storage.html[202 JSONB Storage]
+* link:adr/301-postgresql.html[301 PostgreSQL]
+* link:adr/302-implicit-user-management.html[302 Implicit User Management]
+* link:adr/303-jwt-authentication.html[303 JWT Authentication]
+* link:adr/304-data-retention.html[304 Data Retention]
+* link:adr/305-liquibase-init-container.html[305 Liquibase Init Container]

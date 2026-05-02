@@ -1,0 +1,10 @@
+=== ADR-202: JSONB Storage for Profile Segments
+* **Status**: Accepted
+* **Category**: Domain Architecture
+* **Context**: Profile segments (Basal, ICR, ISF, Targets) are complex nested structures. Storing them in a separate relational table `TimeSegments` added complexity to retrieval (joins), updates (delete-insert), and archiving/deletion.
+* **Decision**: Store profile segments directly in the `Profiles` table using a `jsonb` column.
+* **Rationale**:
+** **Simplicity**: CRUD operations become atomic and simpler.
+** **Performance**: Eliminates joins for the most common access pattern (loading a full profile).
+** **Flexibility**: Easier to extend or modify segment structure without schema migrations.
+** **Archiving**: Archiving a profile now archives all its data in a single row, simplifying data lifecycle management.

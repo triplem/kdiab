@@ -1,0 +1,50 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006
+      author: javafreedom
+      changes:
+        - insert:
+            tableName: insulins
+            columns:
+              - column:
+                  name: id
+                  value: "0195a850-2527-7cdb-8fde-6cd2e9122fb1"
+              - column:
+                  name: name
+                  value: "Humalog"
+        - insert:
+            tableName: insulins
+            columns:
+              - column:
+                  name: id
+                  value: "0195a850-2527-7cdb-8fde-6cd2e9122fb2"
+              - column:
+                  name: name
+                  value: "Novolog"
+        - insert:
+            tableName: insulins
+            columns:
+              - column:
+                  name: id
+                  value: "0195a850-2527-7cdb-8fde-6cd2e9122fb3"
+              - column:
+                  name: name
+                  value: "Fiasp"
+        - insert:
+            tableName: insulins
+            columns:
+              - column:
+                  name: id
+                  value: "0195a850-2527-7cdb-8fde-6cd2e9122fb4"
+              - column:
+                  name: name
+                  value: "Lyumjev"
+        - insert:
+            tableName: insulins
+            columns:
+              - column:
+                  name: id
+                  value: "0195a850-2527-7cdb-8fde-6cd2e9122fb5"
+              - column:
+                  name: name
+                  value: "Apidra"

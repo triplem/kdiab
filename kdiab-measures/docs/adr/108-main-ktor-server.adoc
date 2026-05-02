@@ -1,0 +1,24 @@
+= ADR-108: Main Ktor Server vs Embedded Server Configuration
+
+* **Status**: Accepted
+* **Date**: 2026-03-01
+* **Context**: 
+We are building a Ktor application and need to decide how the server should be instantiated and configured. Ktor offers two primary ways to run an application:
+1.  **Embedded Server (`embeddedServer`)**: Configured programmatically entirely in code, usually inside the `main` function.
+2.  **EngineMain (HOCON based)**: Configured via an external configuration file (like `application.conf` or `application.yaml`) using Typesafe Config (HOCON). The server bootstrap relies on `EngineMain`.
+
+We need a flexible approach that works well in different environments (local development, testing, and Docker/Kubernetes deployments) without requiring code recompilation for configuration changes.
+
+* **Decision**: 
+Use the **`EngineMain`** approach with `application.conf` for configuring and running the Ktor server, instead of the programmatic `embeddedServer`.
+
+* **Rationale**:
+** **Externalized Configuration**: Using `EngineMain` allows us to define server parameters (port, host, modules) and custom application settings (JWT audience, issuer, database URL) in `application.conf`. This aligns with the Twelve-Factor App methodology (Store config in the environment).
+** **Environment Variables override**: HOCON natively supports environment variable substitutions (e.g., `port = ${?PORT}`). This makes it trivial to change runtime behavior in Docker Compose or Kubernetes simply by passing env vars.
+** **Separation of Concerns**: It separates the server infrastructure configuration from the application routing and business logic.
+** **Simplified Testing**: `testApplication` integrates well with HOCON configuration, allowing tests to easily load the same config structure or override specific properties for different test scenarios.
+
+* **Consequences**:
+** Developers need to be familiar with the HOCON format.
+** We lose some compile-time safety for configuration keys, as they are resolved at runtime. We mitigate this by reading configuration values immediately on application startup or within plugin configuration blocks to fail fast if something is missing.
+** The `main` function will simply be `fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)`.

@@ -1,0 +1,31 @@
+package org.javafreedom.kdiab.measures
+
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.server.config.*
+import io.ktor.server.testing.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+class ApplicationTest {
+
+    private fun ApplicationTestBuilder.configureTestEnv() {
+        environment {
+            config = MapApplicationConfig(
+                "jwt.domain"   to "http://localhost:8081/realms/kdiab-measures",
+                "jwt.audience" to "measure",
+                "jwt.realm"    to "kdiab-measures",
+                "jwt.test"     to "true",
+                "jwt.secret"   to "test-secret-for-unit-tests-only",
+            )
+        }
+    }
+
+    @Test
+    fun `unknown route returns 404`() = testApplication {
+        configureTestEnv()
+        application { module(initDatabase = false) }
+        val response = client.get("/unknown-route")
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+}

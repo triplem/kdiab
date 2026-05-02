@@ -1,0 +1,13 @@
+=== ADR-101: Standard Development Tooling
+* **Status**: Accepted
+* **Category**: Code Structure & Standards
+* **Date**: 2026-02-14
+* **Context**: To ensure consistency, reproducibility, and effective collaboration, the project requires a standard set of tools for building, versioning, and documenting the software.
+* **Decision**:
+** **Build System**: **Gradle** (Kotlin DSL).
+** **Version Control & CI**: **GitHub** (Source Control) and **GitHub Actions** (CI/CD).
+** **Documentation**: **AsciiDoc**.
+* **Rationale**:
+** **Gradle**: The de-facto standard for Kotlin projects, offering flexible build configuration via Kotlin DSL and excellent performance (incremental builds, caching).
+** **GitHub**: Provides a unified platform for code hosting, issue tracking, and automation (Actions), reducing tooling fragmentation.
+** **AsciiDoc**: Superior to Markdown for technical documentation due to features like `include::`, conditional rendering, and standardized output generation (HTML/PDF), making it ideal for maintaining the Architecture Decision Records and other long-form docs.

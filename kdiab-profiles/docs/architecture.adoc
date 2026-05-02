@@ -1,0 +1,126 @@
+= T1D Basal Profile Service Architecture
+:toc: left
+
+== Project Overview & Principles
+
+=== Technology Stack
+* **Language**: Kotlin
+* **Framework**: Ktor (Server)
+* **Build Tool**: Gradle Kotlin DSL
+* **Persistence**: PostgreSQL
+* **ORM/SQL**: Exposed
+* **Frontend**: React + TypeScript + Vite
+* **Containerization**: Docker / Docker Compose
+
+=== AI Development Strategy
+We utilize specific **AI Agent Personas** to guide development. See link:ai-agents.html[AI Agent Personas] for details on roles like QA, Security, and DevOps agents.
+
+image::images/architecture.png[Architecture Diagram, align="center"]
+
+== 2. Testing Strategy
+We employ a multi-layered testing strategy to ensure the reliability and correctness of the T1D Profile Service.
+
+=== 2.1 Unit Testing (Domain Logic)
+* **Goal**: Verify core business rules (e.g., profile activation, validation).
+* **Tools**: JUnit 5, Mockk.
+* **Scope**: Domain models and services, isolated from external dependencies.
+
+=== 2.2 Integration Testing (Persistence & API)
+* **Goal**: Verify database interactions and API routing.
+* **Tools**: Ktor Test Host, H2 (In-memory) or Testcontainers (PostgreSQL).
+* **Scope**: Repositories, API controllers, and Liquibase migrations.
+
+=== 2.3 End-to-End (E2E) Testing
+* **Goal**: Verify critical user flows (e.g., "Create and Activate Profile").
+* **Tools**: Kotest (BehaviorSpec DSL).
+* **ADR**: See link:adr/107-bdd-testing-with-kotest.html[ADR-107] for rationale.
+
+== 3. Authorization & Roles
+The system implements a role-based access control (RBAC) mechanism.
+
+* **PATIENT**: Full access to their own profiles.
+* **DOCTOR**: Read-only access to patient profiles (authorized via external service relationship).
+* **ADMIN**: Full read/write access to all system resources.
+
+The authorization is enforced in the **Domain Layer** (Use Cases) to ensure that even if the API layer is bypassed, business rules are still respected.
+
+== Code Structure & Standards
+
+=== Package Structure (ADR-103)
+* **Root Package**: `org.javafreedom.kdiab.profiles`
+* **Rationale**: Aligns with the organization's domain identity and ensures consistency across artifacts.
+
+=== Coding Standards & Serialization (ADR-104, ADR-105)
+* **Serialization**: We use **Kotlinx Serialization** for a pure Kotlin approach, better performance, and multiplatform readiness.
+* **Native Types**:
+** **UUID**: `kotlin.uuid.Uuid` (replacing `java.util.UUID` in domain).
+** **Date/Time**: `kotlinx.datetime` (replacing `java.time` in domain).
+* **Rationale**: Idiomatic Kotlin code, avoiding Java-specific dependencies in the core domain.
+
+=== Quality Assurance (ADR-102)
+* **Testing**: Minimum **80% code coverage** enforced via **Kover** (Kotlin Native).
+* **Static Analysis**: **SonarQube** analysis integrated into the build pipeline.
+* **CI/CD**:
+** **Build & Test**: Automated Gradle build and test suite.
+** **Analysis**: SonarQube quality gate verification.
+** **Containerization**: Docker image creation (`backend/Dockerfile`).
+
+== Domain Architecture
+
+=== Data Model (Preliminary)
+* **Profiles**: The central entity relying on `jsonb` storage for flexibility.
+* **Time Segments**: Independent schedules for Basal, ICR, ISF, and Targets.
+
+==== Tables
+* `profiles` (Stores core metadata and time segments as JSON)
+** `id` (UUID)
+** `user_id` (UUID) - *Implicit User Management*
+** `status` (ACTIVE, ARCHIVED, DRAFT, PROPOSED)
+** `data` (JSONB) - Contains `basal`, `icr`, `isf`, `targets` arrays.
+
+=== Independent Schedules (ADR-201)
+Each profile parameter (Basal, ICR, etc.) has its own independent timeline. This prevents data duplication and aligns with the domain reality where patients adjust specific factors independently.
+
+=== JSONB Storage (ADR-202)
+Complex profile segments are stored as a JSON blob within the `profiles` table. This simplifies retrieval (no joins), ensures atomic updates, and facilitates easy archiving.
+
+== API Design & Integration
+
+=== OpenAPI Specification
+* **Spec**: OpenAPI 3.0.
+* **Tooling**: We use the **OpenAPI Generator** Gradle plugin to generate Ktor server stubs and data classes from the specification.
+* **Benefits**: 
+** Contract-First Development.
+** Client SDK generation.
+** Documentation UI (Swagger UI).
+
+== Service Implementation Details
+
+=== Authentication & Security (ADR-303)
+* **Mechanism**: OAuth 2.0 / JWT (JSON Web Tokens).
+* **Roles**: `user` (Self), `doctor` (ReadOnly Delegated), `admin` (Full Access).
+* **Delegation**: Supports read-only access for Doctors based on token claims/relationships.
+* **Stateless**: No server-side session storage.
+
+=== User Management (ADR-302)
+**Decision**: Implicit User Management.
+* We do **not** have a dedicated `Users` table.
+* User IDs are stored directly as UUIDs in the `profiles` table.
+
+=== Persistence (ADR-301)
+* **Database**: PostgreSQL.
+* **Why**: Reliability, ACID compliance, and excellent JSONB support which is critical for our hybrid data model.
+
+== Architectural Decision Records (Log)
+* link:adr/101-development-tooling.adoc[ADR-101: Standard Development Tooling]
+* link:adr/102-code-quality-standards.adoc[ADR-102: Code Quality Standards]
+* link:adr/103-package-structure.adoc[ADR-103: Package Structure Refactoring]
+* link:adr/104-kotlinx-serialization.adoc[ADR-104: Use Kotlinx Serialization and Native Types]
+* link:adr/105-kotlin-native-types.adoc[ADR-105: Use Kotlin Native Types in Domain Layer]
+* link:adr/106-global-exception-handling.adoc[ADR-106: Global Exception Handling]
+* link:adr/201-independent-schedules.adoc[ADR-201: Independent Time Schedules for Profile Parameters]
+* link:adr/202-jsonb-storage.adoc[ADR-202: JSONB Storage for Profile Segments]
+* link:adr/301-postgresql.adoc[ADR-301: Use PostgreSQL for Persistence]
+* link:adr/302-implicit-user-management.adoc[ADR-302: Implicit User Management]
+* link:adr/303-jwt-authentication.adoc[ADR-303: OAuth 2.0 / JWT Authentication]
+* link:adr/016-doctor-patient-collaboration.adoc[ADR-016: Doctor-Patient Collaboration Workflow]

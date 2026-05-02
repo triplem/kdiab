@@ -1,0 +1,38 @@
+= 15. Profile History and Archiving
+
+Date: 2026-02-16
+
+== Status
+
+Proposed
+
+== Context
+
+The system requires strict management of active profiles to ensure safety and auditability.
+* Only one profile can be active at a time.
+* Active profiles cannot be permanently deleted.
+* Changes to an active profile must not overwrite the existing state but create a new version (history).
+
+== Decision
+
+We will implement a "Copy-on-Write" strategy for active profiles and use "Archiving" instead of "Hard Deletion".
+
+1.  **Archiving**: The `ProfileStatus` enum already contains `ACTIVE` and `ARCHIVED`. We will repurpose the `delete` operation to set the status to `ARCHIVED`. Hard deletion will be removed from the public API for profiles.
+
+2.  **Copy-on-Write for Updates**:
+    When an `ACTIVE` profile is updated:
+    *   The existing profile record becomes `ARCHIVED`.
+    *   A copy of the profile is created with the new values.
+    *   The new copy is saved with a new `id` and `createdAt` timestamp.
+    *   The new copy is marked `ACTIVE`.
+    *   We will add a `previousProfileId` field to link the new profile to its predecessor (the one just archived).
+
+3.  **Concurrency**:
+    *   The Service layer will ensure only one profile is `ACTIVE` for a user by archiving any existing active profile before activating a new one.
+
+== Consequences
+
+*   **Audit Trail**: We gain a complete history of profile changes for active profiles.
+*   **Data Safety**: No data is accidentally lost via deletion.
+*   **Client Complexity**: Clients updating an active profile will receive a *new* profile ID. They must update their local state references.
+*   **Storage**: Database size will grow faster as every update creates a new row. Given the likely frequency of profile changes profile data size, this is acceptable.

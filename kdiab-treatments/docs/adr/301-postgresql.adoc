@@ -1,0 +1,10 @@
+=== ADR-301: Use PostgreSQL for Persistence
+* **Status**: Accepted
+* **Category**: Service Implementation Details
+* **Context**: The service requires a reliable, ACID-compliant relational database to store user profiles and medical data. The data structure for profiles (time segments) is structured but may evolve, suggesting a need for robust JSON support alongside relational integrity.
+* **Decision**: Use **PostgreSQL**.
+* **Rationale**:
+** **Reliability**: Proven track record for critical data storage.
+** **JSONB Support**: Excellent JSON support allows flexible storage of complex profile configurations if the relational model becomes too rigid.
+** **Ecosystem**: First-class support in Ktor (via Exposed/HikariCP) and cloud providers.
+** **Constraint Validation**: Strong data integrity checks at the database level.

@@ -1,0 +1,265 @@
+openapi: 3.0.3
+info:
+  title: kdiab-measures API
+  version: 0.0.1
+  description: API for managing Type 1 Diabetes health measurements
+
+servers:
+  - url: http://localhost:8080/api/v1
+
+security:
+  - bearerAuth: []
+
+paths:
+  /users/{userId}/measures:
+    get:
+      summary: List all measures for a user
+      operationId: listMeasures
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of active measures
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeasureResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Create a new measure
+      operationId: createMeasure
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMeasureRequest'
+      responses:
+        '201':
+          description: Measure created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeasureResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}/measures/archive:
+    post:
+      summary: Archive multiple measures
+      description: Patients can archive their own measures. Doctors can archive for their allowed patients.
+      operationId: archiveMeasures
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkMeasureRequest'
+      responses:
+        '200':
+          description: Measures archived successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}/measures/delete:
+    post:
+      summary: Permanently delete measures
+      description: Only doctors and admins can permanently delete measures.
+      operationId: deleteMeasures
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkMeasureRequest'
+      responses:
+        '200':
+          description: Measures deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    MeasureResponse:
+      type: object
+      required:
+        - id
+        - userId
+        - measuredAt
+        - createdAt
+        - type
+        - source
+        - data
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        measuredAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        type:
+          $ref: '#/components/schemas/MeasureType'
+        source:
+          $ref: '#/components/schemas/MeasureSource'
+        data:
+          $ref: '#/components/schemas/MeasurePayload'
+        status:
+          $ref: '#/components/schemas/MeasureStatus'
+
+    CreateMeasureRequest:
+      type: object
+      required:
+        - measuredAt
+        - type
+        - source
+        - data
+      properties:
+        measuredAt:
+          type: string
+          format: date-time
+        type:
+          $ref: '#/components/schemas/MeasureType'
+        source:
+          $ref: '#/components/schemas/MeasureSource'
+        data:
+          $ref: '#/components/schemas/MeasurePayload'
+
+    BulkMeasureRequest:
+      type: object
+      required:
+        - measureIds
+      properties:
+        measureIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    MeasurePayload:
+      type: object
+      description: Flexible JSON payload whose structure depends on the measure type
+      additionalProperties: true
+
+    MeasureType:
+      type: string
+      description: |
+        The type of health measurement, which defines the expected structure of the data payload:
+        - CGM: Continuous Glucose Monitor reading in mg/dL (e.g. `{"value": 120, "trend": "Flat"}`)
+        - BGM: Blood Glucose Meter reading in mg/dL (e.g. `{"value": 110}`)
+        - BLOOD_PRESSURE: (e.g. `{"systolic": 120, "diastolic": 80}`) — two values, both in mmHg
+        - WEIGHT: (e.g. `{"value": 75.5, "unit": "kg"}`)
+        - PULSE: Heart rate in bpm (e.g. `{"value": 72}`)
+        - BG_CHECK: Manual blood glucose check, stored in mg/dL (e.g. `{"value": 100}`)
+        - KETONE_CHECK: Blood or urine ketone measurement in mmol/L (e.g. `{"value": 1.5, "method": "blood"}`). `method` is `blood` or `urine`.
+      enum:
+        - CGM
+        - BGM
+        - BLOOD_PRESSURE
+        - WEIGHT
+        - PULSE
+        - BG_CHECK
+        - KETONE_CHECK
+
+    MeasureSource:
+      type: string
+      description: The origin of the measurement data
+      enum:
+        - MANUAL
+        - NIGHTSCOUT
+        - GOOGLE_FIT
+        - APPLE_HEALTH
+
+    MeasureStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - ARCHIVED
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+        message:
+          type: string

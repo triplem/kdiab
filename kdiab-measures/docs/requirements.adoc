@@ -1,0 +1,45 @@
+= T1D Measures Service - System Requirements
+:toc: left
+
+== 1. System Overview
+The T1D Measures Service is responsible for tracking health measurements related to Type 1 Diabetes management. It stores time-stamped data points for various metrics like blood glucose (SGV), weight, blood pressure, and insulin doses. The service is designed to be highly flexible, supporting heterogeneous data types from multiple sources (manual entry, CGM cloud APIs, fitness trackers).
+
+== 2. Functional Requirements
+
+=== 2.1 Measurement Tracking
+* **Heterogeneous Data**: Support various measurement types including:
+** **CGM (Continuous Glucose Monitor)**: Blood sugar values, trend arrows, and timestamps.
+** **Vitals**: Blood pressure (systolic/diastolic), Heart rate, Respiratory rate.
+** **Physical Body**: Weight, Body Fat percentage.
+** **Insulin**: Pump boluses, manual injections.
+* **Metadata**: Each measurement must track:
+** `measured_at`: The actual time the measurement was taken.
+** `source`: The origin of the data (e.g., "Nightscout", "GoogleFit", "Manual").
+** `type`: The classification of the data.
+* **Storage**: Use a flexible schema (JSONB) to allow for evolving data models without frequent database migrations.
+
+=== 2.2 Integration (Future/Planned)
+* **Nightscout Sync**: Pull data from Nightscout APIs.
+* **Google Fit / Apple Health**: Synchronize physical activity and weight data.
+
+=== 2.3 User Management & Security
+* **Multi-tenancy**: Data is partitioned by `user_id` (UUID).
+* **Implicit User Management**: Rely on external identity providers (Keycloak) and validate access via JWT.
+* **Doctor Access**: Support read-only access for authorized healthcare providers (consistent with the Profiles project).
+
+== 3. Non-Functional Requirements
+
+=== 3.1 Data Integrity & Precision
+* **Timestamps**: All times must be stored with high precision and time zone awareness (`TIMESTAMP WITH TIME ZONE`).
+* **Availability**: High availability for continuous data ingestion from medical devices.
+
+=== 3.2 Performance
+* **Query Efficiency**: Fast retrieval of historical data for graphing and analysis.
+* **Batch Ingestion**: Ability to handle bulk uploads from cloud sync operations.
+
+=== 3.3 Technology Stack
+* **Language**: Kotlin
+* **Framework**: Ktor
+* **Database**: PostgreSQL (with JSONB)
+* **API**: OpenAPI 3.0
+* **Testing**: Minimum 80% coverage (enforced via Kover).

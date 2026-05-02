@@ -1,0 +1,100 @@
+name: kdiab-treatments / Frontend CI
+
+on:
+  push:
+    branches: [ "**" ]
+    paths:
+      - 'kdiab-treatments/frontend/**'
+      - 'kdiab-treatments/api/openapi.yaml'
+      - '.github/workflows/ci-treatments-frontend.yml'
+  pull_request:
+    branches: [ "**" ]
+    paths:
+      - 'kdiab-treatments/frontend/**'
+      - 'kdiab-treatments/api/openapi.yaml'
+      - '.github/workflows/ci-treatments-frontend.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: kdiab-treatments/frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: kdiab-treatments/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Determine Version
+        run: |
+          if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
+            echo "VERSION=latest" >> $GITHUB_ENV
+          else
+            BRANCH_NAME=${GITHUB_REF#refs/heads/}
+            SAFE_BRANCH_NAME=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+            SHORT_SHA=$(git rev-parse --short HEAD)
+            echo "VERSION=${SAFE_BRANCH_NAME}-${SHORT_SHA}-SNAPSHOT" >> $GITHUB_ENV
+          fi
+
+      - name: Update package version
+        if: env.VERSION != 'latest'
+        run: npm version ${{ env.VERSION }} --no-git-tag-version --allow-same-version
+
+      - name: Generate API Client
+        run: npm run api:generate
+
+      - name: Run Tests
+        run: npm test -- --run
+
+      - name: Generate SBOM
+        run: |
+          npx @cyclonedx/cyclonedx-npm --output-format JSON --output-file frontend-bom.json
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v7
+        with:
+          context: kdiab-treatments
+          file: kdiab-treatments/frontend/Dockerfile
+          push: false
+          tags: |
+            kdiab-treatments-frontend:latest
+            kdiab-treatments-frontend:${{ env.VERSION }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          outputs: type=docker,dest=/tmp/frontend-image.tar
+
+      - name: Upload Docker Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: treatments-frontend-image
+          path: /tmp/frontend-image.tar
+          retention-days: 7
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: treatments-frontend-bom
+          path: kdiab-treatments/frontend/frontend-bom.json
+          retention-days: 7

@@ -1,0 +1,52 @@
+{
+  "app": {
+    "title": "kdiab Analyse",
+    "loading": "Laden...",
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "loggedInAs": "Angemeldet als",
+    "welcome": "Melden Sie sich an, um Ihr Diabetes-Analyse-Dashboard zu sehen.",
+    "viewingPatient": "Patient ansehen:",
+    "myOwnData": "Eigene Daten"
+  },
+  "tabs": {
+    "timeline": "Zeitverlauf",
+    "analytics": "Analyse"
+  },
+  "timeframe": {
+    "label": "Zeitraum",
+    "preset1d": "1 Tag",
+    "preset7d": "7 Tage",
+    "preset14d": "14 Tage",
+    "preset30d": "30 Tage",
+    "custom": "Benutzerdefiniert",
+    "from": "Von",
+    "to": "Bis"
+  },
+  "timeline": {
+    "title": "CGM & Behandlungsverlauf",
+    "glucose": "Glukose",
+    "treatment": "Behandlung",
+    "noData": "Keine Daten für diesen Zeitraum."
+  },
+  "analytics": {
+    "title": "Analyse",
+    "hba1c": "Geschätzter HbA1c",
+    "meanGlucose": "Mittlere Glukose",
+    "tir": "Zeit im Zielbereich",
+    "tirBelow": "Zu niedrig (<70)",
+    "tirTarget": "Zielbereich (70–180)",
+    "tirAbove": "Erhöht (180–250)",
+    "tirHigh": "Sehr hoch (>250)",
+    "agp": "Ambulantes Glukoseprofil",
+    "agpHour": "Tagesstunde",
+    "profiles": "Aktive Profile",
+    "noData": "Keine Daten für diesen Zeitraum."
+  },
+  "profile": {
+    "id": "Profil-ID",
+    "name": "Name",
+    "status": "Status",
+    "createdAt": "Erstellt am"
+  }
+}

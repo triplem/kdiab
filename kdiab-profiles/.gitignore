@@ -1,0 +1,44 @@
+# Gradle
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# IntelliJ IDEA
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# VS Code
+.vscode/
+
+# Kotlin / Java
+target/
+bin/
+.kotlin/
+
+# OS Specifics
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Secrets / Local Environment
+.env
+.env.local
+secrets.properties
+
+# Node.js / Frontend (Future proofing)
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*output.log*
+build.log*
+debug.log*

@@ -1,0 +1,37 @@
+# ADR-105: Use Kotlin Native Types in Domain Layer
+
+Date: 2026-02-12
+Category: Code Structure & Standards
+
+## Status
+
+Accepted
+
+## Context
+
+The project follows a Hexagonal Architecture (Ports and Adapters). Currently, the Domain layer uses Java standard library types (`java.time.*`, `java.util.UUID`) for dates, times, and unique identifiers. While these integrate well with the JVM ecosystem (Hibernate, Exposed, etc.), they couple the Domain logic to the Java platform and are not "idiomatic" Kotlin in a multiplatform sense.
+
+Additionally, Kotlin 2.0+ introduced `kotlin.uuid.Uuid` and `kotlinx-datetime` offers a multiplatform-friendly date/time library. Refactoring to these types aligns the domain model with the language's native ecosystem.
+
+## Decision
+
+We will use **Kotlin Native Types** within the **Domain Layer** exclusively:
+
+*   `java.util.UUID` -> `kotlin.uuid.Uuid`
+*   `java.time.Instant` -> `kotlinx.datetime.Instant`
+*   `java.time.LocalTime` -> `kotlinx.datetime.LocalTime`
+*   `java.time.LocalDate` -> `kotlinx.datetime.LocalDate`
+
+**Infrastructure Layers** (Persistence, API) are responsible for mapping these domain types to the platform-specific types required by libraries (e.g., Exposed requires `java.time` for SQL mapping, Ktor/Jackson/KotlinxSerialization might need specific serializers).
+
+## Consequences
+
+*   **Positive**:
+    *   Domain layer is decoupled from Java SDK, closer to pure Kotlin.
+    *   Better support for potential future Multiplatform (KMP) adoption.
+    *   Use of `kotlin.uuid.Uuid` (Experimental) allows testing new language features.
+
+*   **Negative**:
+    *   Overhead of mapping values at boundaries (Repository, Controller).
+    *   `kotlin.uuid.Uuid` is currently Experimental and requires Opt-in.
+    *   `Exposed` (ORM) does not natively support `kotlinx-datetime` or `kotlin.uuid` columns yet, requiring manual mapping or custom column types.

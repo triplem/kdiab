@@ -1,0 +1,145 @@
+= T1D Basal Profile Service - Project Plan
+
+* [*] *Project Setup & Documentation* // id: 0 
+** [*] Initialize Project Structure (Backend & Frontend roots) // id: 1 
+** [*] Create Documentation Directory (`docs/`) // id: 2 
+** [*] Document Requirements in AsciiDoc (`docs/requirements.adoc`) (Updated with ADRs) // id: 3 
+** [*] Document Architecture Decisions (`docs/architecture.adoc`) // id: 4 
+* [*] *Backend Core & API Design* // id: 5 
+** [*] Create OpenAPI Specification (`api/openapi.yaml`) // id: 6 
+** [*] Setup Gradle Multi-module project (if needed) or Single module with correct source sets // id: 7 
+** [*] Configure Ktor + OpenAPI Generator // id: 8 
+** [*] Implement Domain Entities (Hexagonal Core) // id: 9 
+*** [*] User, Profile, TimeSegments, MedicalData // id: 10 
+** [*] Implement Business Logic (Use Cases) // id: 11 
+*** [*] Create Profile, Activate Profile, Archive Profile // id: 12 
+*** [*] Implement Profile History & Versioning (Copy-on-Write) // id: 130 
+* [-] *Persistence Layer* // id: 13 
+** [*] Setup PostgreSQL Database (Docker Compose) // id: 14 
+** [*] Implement Repository Adapters (Exposed/Ktorm) // id: 15 
+* [*] *Verification & Deployment* // id: 23 
+** [*] Dockerize Application (Dockerfile) // id: 24 
+** [-] Comprehensive Testing (Unit/Integration) // id: 25 
+*** [*] Enforce 80% Test Coverage (ADR-008) (Expanding Coverage) // id: 56 
+*** [*] Implement BDD E2E Tests using Kotest // id: 131 
+* [*] *Refactor Profile Model* // id: 26 
+** [*] Decouple TimeSegments into independent schedules // id: 27 
+** [*] Update API Spec and Domain Models // id: 28 
+** [*] Update Persistence (Schema + Repository) // id: 29 
+* [*] *Security Implementation* // id: 34 
+** [*] Add JWT Authentication Dependency // id: 35 
+** [*] Configure JWT (Audience, Domain, Realm) // id: 36 
+** [*] Implement Role-Based Access Control (RBAC) // id: 37 
+** [*] Protect API Routes // id: 38 
+** [*] Update ADR // id: 39 
+* [*] *Refactor Package Structure* // id: 40 
+** [*] Move files to `org/javafreedom/kdiab/profiles` // id: 41 
+** [*] Update package declarations and imports // id: 42 
+** [*] Update build configuration (Gradle, OpenApi) // id: 43 
+** [*] Update Application Config // id: 44 
+** [*] Add ADR-005 // id: 45 
+* [*] *Refactor to JSONB Storage* // id: 46 
+** [*] Add Exposed JSON dependency // id: 47 
+** [*] Update Schema (Profiles table with JSONB) // id: 48 
+** [*] Update Repository (Serialize/Deserialize) // id: 49 
+** [*] Add ADR-006 (or update existing) // id: 50 
+* [*] *Implement Kotlinx Serialization* // id: 51 
+** [*] Remove Jackson dependencies // id: 52 
+** [*] Update OpenAPI Config // id: 53 
+** [*] Implement Kotlinx in Codebase (using java.time serializers) // id: 54 
+** [*] Add ADR-007 // id: 55 
+* [*] *Refactor to Kotlin Native Types* // id: 57 
+** [*] Add `kotlinx-datetime` and `kotlin.uuid` usage // id: 58 
+** [*] Refactor Domain Models (Profile, etc.) // id: 59 
+** [*] Refactor Persistence Adapter (Mapping) // id: 60 
+** [*] Create ADR-009 (Kotlin Native Types) // id: 61 
+* [*] *Remove Users Table* // id: 30 
+** [*] Remove Users object from Tables.kt // id: 31 
+** [*] Update Profiles table definition // id: 32 
+** [*] Add ADR-003 // id: 33 
+* [*] *Frontend Application (React/TS)* // id: 19 
+** [*] Setup Vite + React + TypeScript // id: 20 
+** [*] Implement Profile Management UI (Viewing, Expanding, and Editing) // id: 21 
+* [*] *Verification & Deployment* // id: 23 
+** [*] Dockerize Application (Dockerfile) // id: 24 
+** [*] Comprehensive Testing (Unit/Integration) // id: 25 
+* [*] *Adopt Sonar for Static Analysis* // id: 62 
+** [*] Update ADR-008 to include Sonar // id: 63 
+** [*] Add Sonar Gradle Plugin // id: 64 
+** [*] Configure Sonar Properties // id: 65 
+** [*] Verify Sonar Integration // id: 66 
+* [*] *Implement Detekt for Static Analysis* // id: 106 
+** [*] Add Detekt Gradle Plugin // id: 107 
+** [*] Configure Detekt Rules (detekt.yml) // id: 108 
+** [*] Integrate with Gradle Check // id: 109 
+* [*] *Implement Backend CI Workflow* // id: 67 
+** [*] Create GitHub Action Workflow // id: 68 
+** [*] Document CI Process in Architecture Doc // id: 69 
+* [*] *Replace Jacoco with Kover* // id: 117 
+** [*] Remove Jacoco Plugin & Config // id: 118 
+** [*] Add Kover Plugin // id: 119 
+** [*] Configure Kover Rules & Exclusions // id: 120 
+** [*] Verify Coverage Report Generation // id: 121 
+
+* [*] *Detailed Documentation & Best Practices* // id: 70 
+** [*] Configure Asciidoctor Plugin // id: 71 
+** [*] Optimize CI with Gradle Build Action // id: 72 
+** [*] Create GitHub Pages Workflow // id: 73 
+
+* [*] *Refactor Architecture Documentation* // id: 74 
+** [*] Restructure for logical flow (Common -> Specific) // id: 75 
+** [*] Group ADRs by Topic // id: 76 
+* [*] Group ADRs by Topic // id: 76 
+
+* [*] *Refactor API Documentation & ADRs* // id: 77 
+** [*] Create Separate API Section // id: 78 
+** [*] Renumber ADRs logically // id: 79 
+
+* [*] *Document Development Tooling* // id: 80 
+** [*] Create ADR-010 (Gradle, GitHub, AsciiDoc) // id: 81 
+** [*] Update Architecture Doc // id: 82 
+
+* [*] *Restructure ADRs by Category* // id: 83 
+** [*] Renumber to 1xx, 2xx, 3xx // id: 84 
+** [*] Rename files and update headers // id: 85 
+** [*] Update references in docs // id: 86 
+
+* [*] *Define AI Agent Personas* // id: 87 
+** [*] Create docs/ai-agents.adoc // id: 88 
+** [*] Link in Architecture Doc // id: 89 
+
+* [*] *Configure Dependabot* // id: 90 
+** [*] Create .github/dependabot.yml // id: 91 
+
+* [*] *Configure AI Agents* // id: 92 
+** [*] Create .cursorrules // id: 93 
+
+* [*] *Implement Role-Based Access (Doctor/Admin)* // id: 94 
+** [*] Update Requirements // id: 95 
+** [*] Update ADR-303 // id: 96 
+** [*] Implement UserPrincipal & Rules // id: 97 
+
+* [*] *Implement Delete Operations* // id: 98 
+** [*] Update Repository Interface & Impl // id: 99 
+** [*] Implement Service Logic (Segment Deletion) // id: 100 
+** [*] Add Delete Routes // id: 101 
+
+* [*] *Implement Global Exception Handling (ADR-106)* // id: 102 
+** [*] Create Custom Exception Classes // id: 103 
+** [*] Configure Ktor StatusPages Plugin // id: 104 
+** [*] Refactor Routes to throw exceptions // id: 105 
+
+* [*] *Refactor to Idiomatic Kotlin* // id: 140 
+** [*] Use Expression Bodies in Service/Repo // id: 141 
+** [*] Use StatusPages for Route Error Handling // id: 142 
+** [*] Restore Principal interface in Security // id: 143 
+** [*] Clean up imports and lint errors // id: 144 
+
+* [*] *Maintenance & Optimization* // id: 150 
+** [*] Refactor Gradle Build & Dependencies // id: 151 
+** [*] Standardize Experimental Opt-ins (Global) // id: 152 
+
+* [*] *Insulin Management Feature* // id: 160 
+** [*] Backend Domain and Persistence (ExposedInsulinRepository) // id: 161 
+** [*] Backend API Routes (InsulinRoutes) and E2E Tests // id: 162 
+** [*] Frontend Integration (TimeInput, ProfileEditor schema logic, 00:00 constraints) // id: 163 

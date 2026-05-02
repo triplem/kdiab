@@ -1,0 +1,93 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-kdiab-measures}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-kdiab-measures}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./config/keycloak-realm.json:/opt/keycloak/data/import/realm.json
+      - ./config/keycloak-theme:/opt/keycloak/themes/kdiab
+    ports:
+      - "8081:8080"
+    restart: unless-stopped
+
+  liquibase:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.liquibase
+    command: >
+      --url=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-kdiab-measures}
+      --username=${POSTGRES_USER:-postgres}
+      --password=${POSTGRES_PASSWORD:-password}
+      --searchPath=/liquibase
+      --changeLogFile=db/changelog/db.changelog-master.yaml
+      update
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-kdiab-measures}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      JWT_DOMAIN: http://localhost:8081/realms/kdiab-measures
+      JWKS_URL: http://keycloak:8080/realms/kdiab-measures/protocol/openid-connect/certs
+      JWT_AUDIENCE: measure
+      JWT_REALM: kdiab-measures
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+      liquibase:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      # Browser-facing Keycloak origin — must be reachable from the end-user's browser.
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://localhost:8081}
+      # Internal address nginx uses to proxy /api/* — never exposed to the browser.
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8080}
+    ports:
+      - "3000:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

@@ -1,0 +1,15 @@
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{YYYY-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - [CorrelationId=%X{Correlation-ID}] - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Map configuring log level via environment variable, falling back to INFO -->
+    <root level="${LOG_LEVEL:-INFO}">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+    <!-- Configure Ktor Application Call Logging to be specific -->
+    <logger name="io.ktor.server.application.Application" level="TRACE"/>
+</configuration>

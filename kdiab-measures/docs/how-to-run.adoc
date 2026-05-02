@@ -1,0 +1,97 @@
+= How to Run the KDiab Measures Application
+:toc: left
+:icons: font
+
+This guide provide instructions on how to set up and run the KDiab Measures application locally for development or testing.
+
+== Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+* **Docker** and **Docker Compose**
+* OR **Podman** and **podman-compose**
+
+== Quick Start
+
+To start the complete application stack (Backend, Frontend, Database, and Keycloak), run the following command from the project root:
+
+[source,bash]
+----
+docker-compose up --build
+----
+
+If you are using Podman:
+
+[source,bash]
+----
+podman-compose up --build
+----
+
+=== Accessing the Services
+
+Once the containers are running, you can access the various components via your web browser:
+
+* **Frontend UI**: link:http://localhost:3000[http://localhost:3000]
+* **Backend API**: link:http://localhost:8080/api/v1[http://localhost:8080/api/v1]
+* **Keycloak Admin**: link:http://localhost:8081[http://localhost:8081]
+* **pgAdmin**: link:http://localhost:5050[http://localhost:5050]
+
+== Test Accounts
+
+The local development environment is pre-seeded with Keycloak users for testing different roles.
+The default password for all accounts is `password`.
+
+[cols="1,1,2"]
+|===
+| Username | Role | Description
+
+| `sarah`
+| `PATIENT`
+| T1D Patient
+
+| `mike`
+| `PATIENT`
+| T1D Patient
+
+| `dr_house`
+| `DOCTOR`
+| Doctor (Assigned to Sarah)
+
+| `dr_cameron`
+| `DOCTOR`
+| Doctor (Assigned to Mike)
+
+| `admin`
+| `ADMIN`
+| Super Administrator
+|===
+
+== Database Management
+
+PostgreSQL data is persisted in a Docker volume named `postgres_data`. 
+
+To reset the database (including all data), run:
+
+[source,bash]
+----
+docker-compose down -v
+----
+
+== Development Setup
+
+If you wish to run the components individually without Docker:
+
+=== Backend (Ktor)
+The backend requires a running PostgreSQL instance and a Keycloak server.
+[source,bash]
+----
+./gradlew :backend:run
+----
+
+=== Frontend (React)
+[source,bash]
+----
+cd frontend
+npm install
+npm run dev
+----

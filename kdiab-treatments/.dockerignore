@@ -1,0 +1,12 @@
+**/.git
+**/.gitignore
+**/node_modules
+**/build
+**/.gradle
+**/dist
+**/.idea
+**/*.log
+**/*.class
+**/coverage
+**/.env
+**/.env.*

@@ -1,0 +1,94 @@
+= ADR-202: Nightscout-Compatible Treatment Types
+:date: 2026-04-15
+:status: Accepted
+:deciders: Architect Persona, Domain Expert
+
+== Context
+The `kdiab-treatments` service must define a set of treatment types that cover the clinical needs of T1D management. The Nightscout open-source platform is the de-facto standard for T1D data interchange and defines a comprehensive `eventType` taxonomy.
+
+By aligning with Nightscout's taxonomy, the service ensures future interoperability with:
+* Nightscout servers
+* AAPS (AndroidAPS)
+* Loop
+* Other T1D management applications
+
+== Decision
+We adopt the following 13 treatment types, mapped to Nightscout `eventType` values:
+
+[cols="1,2,2"]
+|===
+| Type | Nightscout eventType | Payload Structure
+
+| BOLUS
+| "Meal Bolus" / "Bolus"
+| `{"insulin": 2.5, "insulinType": "NovoRapid"}`
+
+| BASAL
+| "Basal"
+| `{"insulin": 10.0, "insulinType": "Lantus", "duration": 1440}`
+
+| CARBS
+| "Carbs Only"
+| `{"carbs": 45, "absorptionTime": 3}`
+
+| CORRECTION_BOLUS
+| "Correction Bolus"
+| `{"insulin": 1.0}`
+
+| COMBO_BOLUS
+| "Combo Bolus"
+| `{"insulin": 3.0, "splitNow": 50, "splitExt": 50, "duration": 120}`
+
+| TEMP_BASAL
+| "Temp Basal"
+| `{"rate": 0.5, "duration": 30, "absolute": true}`
+
+| EXERCISE
+| "Exercise"
+| `{"duration": 60, "intensity": "moderate"}`
+
+| NOTE
+| "Note"
+| `{"text": "felt low before dinner"}`
+
+| BG_CHECK
+| "BG Check"
+| `{"glucose": 5.6, "units": "mmol"}`
+
+| PUMP_SUSPEND
+| "Pump Suspend"
+| `{"duration": 30, "reason": "exercise"}`
+
+| SITE_CHANGE
+| "Site Change"
+| `{"location": "left abdomen"}`
+
+| SENSOR_INSERT
+| "Sensor Insert"
+| `{"sensor": "Dexcom G7"}`
+
+| INSULIN_CHANGE
+| "Insulin Change"
+| `{"insulinType": "NovoRapid"}`
+|===
+
+== Duration Unit Convention
+
+All `duration` fields in treatment payloads are stored in **minutes**. This applies to all types: BASAL (e.g. 1440 for 24 hours), COMBO_BOLUS, TEMP_BASAL, EXERCISE, and PUMP_SUSPEND.
+
+The frontend converts human-friendly units (e.g. hours for BASAL) to minutes before submitting, and converts back to human-readable form (e.g. "24h" or "30 min") for display.
+
+== Access Control by Type
+Patients can create all treatment types. The service does not restrict which treatment types a PATIENT can enter, as all are clinically valid self-reported events.
+
+Doctors and admins follow the general access control rules (see ADR-303).
+
+== Rationale
+* **Nightscout compatibility**: Future sync/import features will be easier to implement.
+* **Completeness**: The 13 types cover the full T1D management spectrum.
+* **Extensibility**: New types can be added to the enum without schema changes (JSONB payload).
+
+== Consequences
+* **Positive**: Interoperability with Nightscout ecosystem.
+* **Positive**: Patients can log all clinically relevant events from a single interface.
+* **Negative**: The UI must provide sensible input forms for each type — more UI complexity than a single-type system.

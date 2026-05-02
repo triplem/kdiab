@@ -1,0 +1,8 @@
+=== ADR-201: Independent Time Schedules for Profile Parameters
+* **Status**: Accepted
+* **Category**: Domain Architecture
+* **Context**: Diabetes management requires flexible scheduling for different parameters. Basal rates, Insulin-to-Carb Ratios (ICR), Insulin Sensitivity Factors (ISF), and Glucose Targets often change at different times types of the day.
+* **Decision**: The `Profile` model is designed with independent schedules for `basal`, `icr`, `isf`, and `targets`.
+* **Rationale**:
+** **Domain Alignment**: This structure accurately reflects the domain model where patients adjust specific parameters without affecting others.
+** **Data Efficiency**: Independent arrays prevent data duplication that would occur if all parameters were forced into shared time slots.

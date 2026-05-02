@@ -1,0 +1,103 @@
+= How to Run the KDiab Treatments Application
+:toc: left
+:icons: font
+
+This guide provides instructions on how to set up and run the KDiab Treatments application locally for development or testing.
+
+== Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+* **Docker** and **Docker Compose**
+* OR **Podman** and **podman-compose**
+
+== Quick Start
+
+To start the complete application stack (Backend, Frontend, Database, and Keycloak), run the following command from the project root:
+
+[source,bash]
+----
+docker-compose up --build
+----
+
+If you are using Podman:
+
+[source,bash]
+----
+./manage-podman.sh start
+----
+
+=== Accessing the Services
+
+Once the containers are running, you can access the various components via your web browser:
+
+* **Frontend UI**: http://localhost:3000
+* **Backend API**: http://localhost:8080/api/v1
+* **Swagger UI**: http://localhost:8080/swagger
+* **Keycloak Admin**: http://localhost:8081
+* **pgAdmin** (dev only): http://localhost:5050
+
+To start with pgAdmin, use:
+
+[source,bash]
+----
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+----
+
+== Test Accounts
+
+The local development environment is pre-seeded with Keycloak users for testing different roles.
+The default password for all accounts is `password`.
+
+[cols="1,1,2"]
+|===
+| Username | Role | Description
+
+| `sarah`
+| `PATIENT`
+| T1D Patient
+
+| `mike`
+| `PATIENT`
+| T1D Patient
+
+| `dr_house`
+| `DOCTOR`
+| Doctor (Assigned to Sarah)
+
+| `dr_cameron`
+| `DOCTOR`
+| Doctor (Assigned to Mike)
+
+| `admin`
+| `ADMIN`
+| System Administrator
+|===
+
+== Backend Development (without Docker)
+
+If you want to run the backend independently:
+
+1. Start PostgreSQL and Keycloak (e.g., via `docker-compose up postgres keycloak liquibase`)
+2. Run the backend:
+
+[source,bash]
+----
+./gradlew :backend:run
+----
+
+== Running Tests
+
+[source,bash]
+----
+./gradlew :backend:test              # Unit tests
+./gradlew :backend:integrationTest   # Integration tests
+./gradlew :backend:check             # All checks (tests + detekt + kover)
+----
+
+== Tearing Down
+
+[source,bash]
+----
+docker-compose down -v    # Remove all containers and volumes
+----

@@ -1,0 +1,8 @@
+=== ADR-103: Package Structure Refactoring
+* **Status**: Accepted
+* **Category**: Code Structure & Standards
+* **Context**: The project initial setup used a generic package `com.kdiab.profiles`. The project identity has been established as part of the `org.javafreedom` organization.
+* **Decision**: Refactor the codebase to use `org.javafreedom.kdiab.profiles` as the root package.
+* **Rationale**:
+** **Organization Identity**: Aligns with the organization's domain and naming standards.
+** **Consistency**: Ensures all artifacts (Maven coordinates, Java packages) are consistent.

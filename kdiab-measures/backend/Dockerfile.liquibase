@@ -1,0 +1,6 @@
+FROM liquibase/liquibase:4.20
+
+# Kopiere den kompletten Ordner 'db', damit die relativen Pfade wie 'db/changelog/changes/...' in den Master-YAMLs stimmen
+COPY backend/src/main/resources/db /liquibase/db
+
+CMD ["update"]

@@ -1,0 +1,30 @@
+= ADR-304: Data Retention & Deletion Strategy
+:status: accepted
+:date: 2026-02-14
+:category: Domain Architecture
+
+== Context
+Medical data, including basal profiles, is sensitive and critical for patient history. However, users also need control over their data (GDPR "Right to be Forgotten") and the ability to correct mistakes. We need a clear strategy for when data is permanently removed vs. when it is preserved.
+
+== Decision
+We will implement a **Hybrid Deletion Strategy**:
+
+1.  **Soft Delete (Archiving)**:
+    *   **Scope**: Profile updates and "deletions" intended for history preservation.
+    *   **Mechanism**: When a profile is updated or "deleted" by the user in the UI, the old version is marked as `ARCHIVED` (status). It is **not** removed from the database.
+    *   **Rationale**: Preserves the history of medical settings for safety and auditability.
+
+2.  **Hard Delete (GDPR/Cleanup)**:
+    *   **Scope**: "Delete My Account" requests or specific "Purge" actions by Admins.
+    *   **Mechanism**: Physically remove rows from the `profiles` table.
+    *   **Rationale**: Compliance with legal requirements to permanently erase data upon request.
+
+== Consequences
+=== Positive
+*   **Safety**: Accidental deletions don't lose critical medical history.
+*   **Compliance**: Meets GDPR requirements for permanent deletion when explicitly requested.
+*   **Auditability**: Complete history of profile changes is available for review.
+
+=== Negative
+*   **Storage**: Database grows over time as "deleted" profiles are kept.
+*   **Complexity**: Queries often need to filter by `status != ARCHIVED` to show current data.

@@ -3,3 +3,49 @@
 .dolt/
 *.db
 .beads-credential-key
+
+# ── Gradle ────────────────────────────────────────────────────────────────────
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ── Node.js / Frontend ────────────────────────────────────────────────────────
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Build logs ────────────────────────────────────────────────────────────────
+.build-logs/
+*.log
+
+# ── IntelliJ IDEA ─────────────────────────────────────────────────────────────
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# ── VS Code ───────────────────────────────────────────────────────────────────
+.vscode/
+
+# ── Kotlin / Java ─────────────────────────────────────────────────────────────
+target/
+bin/
+.kotlin/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── Secrets / Local environment ───────────────────────────────────────────────
+.env
+.env.local
+secrets.properties

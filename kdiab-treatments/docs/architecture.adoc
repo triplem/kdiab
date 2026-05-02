@@ -1,0 +1,177 @@
+= KDiab Treatments - Architecture & Design
+:toc: left
+:icons: font
+
+== Overview
+
+The `kdiab-treatments` service follows a hexagonal (ports-and-adapters) architecture built on Kotlin/Ktor. It stores T1D treatment events in PostgreSQL using a flexible JSONB payload following Nightscout conventions.
+
+== System Components
+
+[cols="1,2"]
+|===
+| Component | Technology
+
+| Backend
+| Kotlin 2.x, Ktor 3.x, Exposed ORM
+
+| Frontend
+| React 19, TypeScript, Vite, react-oidc-context
+
+| Database
+| PostgreSQL 15 (JSONB storage)
+
+| Auth
+| Keycloak 23 (OIDC/JWT)
+
+| DB Migrations
+| Liquibase 4.20
+
+| API Contract
+| OpenAPI 3.0 (code generation for both sides)
+|===
+
+== Backend Package Structure
+
+----
+org.javafreedom.kdiab.treatments
+├── Application.kt                          # Ktor entry point + module wiring
+├── adapters/inbound/web/
+│   ├── TreatmentRoutes.kt                  # HTTP routes, access control
+│   └── TreatmentMapper.kt                  # API ↔ domain model conversion
+├── application/service/
+│   └── TreatmentService.kt                 # Business logic
+├── domain/
+│   ├── model/
+│   │   ├── Treatment.kt                    # Treatment, TreatmentType, TreatmentStatus
+│   │   └── Role.kt                         # PATIENT, DOCTOR, ADMIN
+│   ├── repository/
+│   │   └── TreatmentRepository.kt          # Repository port (interface)
+│   └── exception/
+│       └── DomainExceptions.kt             # Domain exception hierarchy
+├── infrastructure/persistence/
+│   ├── ExposedTreatmentRepository.kt       # Exposed ORM adapter
+│   └── DatabaseFactory.kt                  # HikariCP connection setup
+└── plugins/
+    ├── Security.kt                         # JWT/JWKS auth + UserPrincipal
+    ├── StatusPages.kt                       # Exception → HTTP status mapping
+    ├── Logging.kt                           # X-Correlation-ID tracing
+    └── ErrorResponse.kt                    # Serializable error body
+----
+
+== Data Flow
+
+----
+HTTP Request
+  → authenticate("auth-jwt")         [Security.kt]
+  → TreatmentRoutes.kt               [access control check]
+  → TreatmentMapper.toDomain()       [API model → domain]
+  → TreatmentService                 [business logic]
+  → TreatmentRepository (interface)  [port]
+  → ExposedTreatmentRepository       [Exposed ORM, Dispatchers.IO]
+  → PostgreSQL
+
+HTTP Response
+  ← TreatmentMapper.toApi()          [domain → API model]
+  ← StatusPages                      [exception → ErrorResponse JSON]
+----
+
+== Treatment Data Model
+
+The `treatments` table stores all treatment events:
+
+[source,sql]
+----
+CREATE TABLE treatments (
+    id          UUID PRIMARY KEY,
+    user_id     UUID NOT NULL,
+    treated_at  TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+    type        VARCHAR(50) NOT NULL,
+    data        JSONB NOT NULL,
+    status      VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    notes       TEXT
+);
+----
+
+Indexes are maintained on `user_id`, `(user_id, type)`, and `treated_at` for efficient querying.
+
+== API Endpoints
+
+All endpoints require JWT bearer auth and are scoped under `/api/v1`.
+
+[cols="1,1,2"]
+|===
+| Method | Path | Description
+
+| GET
+| /users/{userId}/treatments
+| List active treatments (optional `?type=` filter)
+
+| POST
+| /users/{userId}/treatments
+| Create a new treatment
+
+| POST
+| /users/{userId}/treatments/archive
+| Bulk archive treatments
+
+| POST
+| /users/{userId}/treatments/delete
+| Bulk delete treatments (DOCTOR/ADMIN only)
+|===
+
+== Access Control
+
+[cols="1,1,1,1"]
+|===
+| Operation | PATIENT (own) | DOCTOR (assigned) | ADMIN
+
+| List
+| Yes
+| Yes
+| Yes
+
+| Create
+| Yes
+| Yes
+| Yes
+
+| Archive
+| Yes
+| Yes
+| Yes
+
+| Delete
+| No
+| Yes
+| Yes
+|===
+
+== Nightscout Payload Conventions
+
+Treatment payloads follow Nightscout `eventType` JSON structures.
+All `duration` fields are stored in **minutes** regardless of treatment type.
+
+[cols="1,2"]
+|===
+| Type | Example payload
+
+| BOLUS
+| `{"insulin": 2.5, "insulinType": "NovoRapid"}`
+
+| BASAL
+| `{"insulin": 10.0, "insulinType": "Lantus", "duration": 1440}`
+
+| CARBS
+| `{"carbs": 45, "absorptionTime": 3}`
+
+| BG_CHECK
+| `{"glucose": 5.6, "units": "mmol"}`
+
+| EXERCISE
+| `{"duration": 60, "intensity": "moderate"}`
+
+| NOTE
+| `{"text": "felt low before dinner"}`
+|===

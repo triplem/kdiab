@@ -1,0 +1,70 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: treatments
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: treated_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: data
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notes
+                  type: text
+                  constraints:
+                    nullable: true
+
+  - changeSet:
+      id: 002
+      author: javafreedom
+      changes:
+        - createIndex:
+            indexName: idx_treatments_user_id
+            tableName: treatments
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            indexName: idx_treatments_user_type
+            tableName: treatments
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: type
+        - createIndex:
+            indexName: idx_treatments_treated_at
+            tableName: treatments
+            columns:
+              - column:
+                  name: treated_at

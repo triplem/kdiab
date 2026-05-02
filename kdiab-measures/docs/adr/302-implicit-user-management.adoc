@@ -1,0 +1,9 @@
+=== ADR-302: Implicit User Management
+* **Status**: Accepted
+* **Category**: Service Implementation Details
+* **Context**: The system is designed to be multi-tenant or multi-user, but currently, there is no requirement for a complex authorization or identity management system. Detailed user profiles (name, email, etc.) are not yet needed for the core profile calculation logic.
+* **Decision**: Do not create a dedicated `Users` table at this stage. Store `userId` directly in the `Profiles` table as a UUID.
+* **Rationale**:
+** **Simplicity**: Reduces schema complexity and foreign key constraints that aren't yet delivering value.
+** **YAGNI (You Aren't Gonna Need It)**: Avoids premature optimization for an auth system that hasn't been designed.
+** **Forward Compatibility**: A `Users` table can be introduced later, and existing `userId`s can be backfilled or migrated if a formal identity provider is integrated.

@@ -1,0 +1,36 @@
+= AI Development Prompts & Guidelines
+:toc: left
+
+This document provides a set of reusable prompts and guidelines for AI agents working on the KDiab project. These prompts should be used to ensure consistency, quality, and adherence to the project's architectural principles.
+
+== 1. Persona-Based Development
+
+To achieve the best results, always invoke a specific **AI Agent Persona** before starting a task. 
+
+* **QA Agent**: "Analyze the coverage gaps in the `backend` module and write JUnit 5 tests using Mockk to reach 80% coverage."
+* **Security Agent**: "Perform a security audit of the `ProfileService` and check for authorization bypasses and SQL injection risks in the `jsonb` queries."
+* **Functional Agent**: "Review the `CreateProfile` flow against `docs/requirements.adoc` and identify any missing validation logic."
+* **DevOps Agent**: "Optimize the `backend/Dockerfile` for faster build times and smaller image size."
+
+== 2. Common Development Tasks
+
+=== 2.1 Refactoring
+When asking an agent to refactor code:
+"Refactor the `ProfileRepository` to use the new `kotlin.uuid.Uuid` type and ensure all existing integration tests pass. Keep the logic separated from the framework-specific adapters."
+
+=== 2.2 Adding New Features
+"Add a new `BODY_FAT` measurement type to the `MeasuresService`. Follow the established pattern of using JSONB for data storage and update the OpenAPI specification accordingly."
+
+=== 2.3 Debugging
+"Analyze the failing `InsulinE2ETest.kt` and identify the root cause of the assertion error. Focus on the database state initialization and the Liquibase migrations."
+
+== 3. Architectural Adherence
+
+* **Hexagonal Architecture**: "Ensure this new service implementation remains in the `domain` layer and does not depend on any Ktor or Exposed classes. Use ports for external dependencies."
+* **ADR Compliance**: "Ensure this change respects ADR-202 (JSONB Storage) and does not introduce unnecessary relational tables for complex segments."
+* **Kotlin-Native First**: "Use `kotlinx.datetime` and `kotlinx-serialization` for all data handling. Avoid using Java-specific standard library classes in the domain layer."
+
+== 4. Documentation
+
+* **Writing ADRs**: "Draft a new ADR for using Redux Toolkit in the frontend. Use the standard project template and provide a clear rationale based on the complexity of profile management."
+* **Updating Architecture**: "Update `docs/architecture.adoc` to reflect the newly implemented `Measures` synchronization logic."

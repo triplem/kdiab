@@ -1,0 +1,37 @@
+= ADR-201: Flexible Measures Model with JSONB
+:date: 2026-03-28
+:status: Accepted
+:deciders: Architect Persona, Domain Expert
+
+== Context
+The `kdiab-measures` service must store health and wellness data from various sources (e.g., Nightscout API, Google Fit API, manual input).
+The types of measurements are heterogeneous:
+* **CGM (Continuous Glucose Monitor)**: Contains `sgv` (glucose value), `trend`, etc.
+* **Blood Pressure**: Contains `systolic` and `diastolic` values (mmHg).
+* **Weight**: Contains a single `value` and a `unit` (e.g., kg).
+* **Blood Glucose (BGM)**: Contains a `value`, `unit`, and optional `meal context`.
+
+Creating strict relational columns for all these diverse attributes (e.g., a `systolic` column that is always null for CGM data) would result in a highly sparse and wide table. Creating separate tables for each type complicates common queries (like "get all measures for a user on this day").
+
+== Decision
+We will use a single `measures` table in PostgreSQL, leveraging the **JSONB** datatype to store the type-specific measurement values.
+
+The table schema will include common indexing fields and a flexible JSON payload:
+* `id` (UUID) - Primary Key
+* `user_id` (UUID) - User identifier
+* `measured_at` (TIMESTAMP WITH TIME ZONE) - When the measurement actually occurred
+* `created_at` (TIMESTAMP WITH TIME ZONE) - When the data was entered into the system
+* `type` (VARCHAR) - Enum defining the structure of the JSON payload (e.g., CGM, BLOOD_PRESSURE, WEIGHT)
+* `source` (VARCHAR) - The origin of the data (Nightscout, GoogleFit, Manual)
+* `data` (JSONB) - The type-specific payload
+
+== Constraints & Assumptions
+* Domain models in Kotlin will use `kotlinx.serialization` with polymorphic parsing (or `JsonElement`) to bind the `data` field according to the `type` field.
+* PostgreSQL 12+ JSONB indexing capabilities (e.g., GIN indices) can be utilized if querying inside the JSON payload becomes necessary (e.g., finding all glucose values > 200).
+* The primary queries will filter by `user_id`, `type`, and `measured_at`, which are standard relational columns and can be efficiently indexed conventionally.
+
+== Consequences
+* **Positive**: High flexibility; adding a new measure type (e.g., Body Temperature) requires zero database schema migrations.
+* **Positive**: Simple, unified time-series queries (e.g., getting a unified timeline of all health events).
+* **Negative**: Slightly less type safety at the database level; the application layer must enforce the schema for the `data` payload based on the `type`.
+* **Negative**: Complex JSON manipulations in SQL might be harder to read compared to standard column queries.

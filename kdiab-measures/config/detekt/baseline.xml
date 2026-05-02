@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MagicNumber:Profile.kt$Profile$20.0</ID>
+    <ID>MagicNumber:Profile.kt$Profile$30.0</ID>
+    <ID>MagicNumber:Profile.kt$Profile$5.0</ID>
+    <ID>MagicNumber:Tables.kt$Profiles$50</ID>
+    <ID>MatchingDeclarationName:StatusPages.kt$ErrorResponse</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$if (basal.any { it.value &lt; 0 }) throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException("Basal values cannot be negative")</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$if (basal.isEmpty()) throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException("Profile must have at least one basal segment")</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$if (icr.any { it.value &lt; 0 }) throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException("ICR values cannot be negative")</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$if (isf.any { it.value &lt; 0 }) throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException("ISF values cannot be negative")</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$if (targets.any { it.low &lt; 0 || it.high &lt; 0 }) throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException("Target values cannot be negative")</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException("Basal profile must start at 00:00")</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException("ISF value too low for mg/dL (suspected mmol/L)")</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException("Target value too low for mg/dL (suspected mmol/L)")</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException("Value too high for mmol/L (suspected mg/dL)")</ID>
+    <ID>MaxLineLength:ProfileRepository.kt$ProfileRepository$suspend fun deleteByUserIdAndStatus(userId: Uuid, status: org.javafreedom.kdiab.profiles.domain.model.ProfileStatus): Boolean</ID>
+    <ID>MaxLineLength:ProfileStateMachineTest.kt$ProfileStateMachineTest$coEvery { repository.updateActiveProfile(any(), any()) } returns updateData</ID>
+  </CurrentIssues>
+</SmellBaseline>

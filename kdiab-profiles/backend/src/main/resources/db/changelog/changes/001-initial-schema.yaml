@@ -1,0 +1,169 @@
+databaseChangeLog:
+
+  # ── 1. profiles ──────────────────────────────────────────────────────────────
+  # Immutable data record for each pump profile version.
+  # Status is intentionally absent: it lives in the profile_statuses table so that
+  # lifecycle transitions never mutate a profile row (see ADR-203).
+  - changeSet:
+      id: 001
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: profiles
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: previous_profile_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_profiles_previous_profile_id
+                    references: profiles(id)
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: insulin_type
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: units
+                  type: varchar(20)
+                  defaultValue: "mg/dl"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: duration_of_action
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: time_zone
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: segments
+                  type: jsonb
+                  constraints:
+                    nullable: false
+
+  # ── 2. profile_statuses ───────────────────────────────────────────────────────
+  # Mutable lifecycle state per profile. One row per profile; updated on every
+  # status transition (DRAFT → ACTIVE → ARCHIVED, PROPOSED → ACTIVE/ARCHIVED).
+  # ON DELETE CASCADE keeps the tables consistent when DRAFTs are hard-deleted.
+  - changeSet:
+      id: 002
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: profile_statuses
+            columns:
+              - column:
+                  name: profile_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                    foreignKeyName: fk_profile_statuses_profile_id
+                    references: profiles(id)
+                    deleteCascade: true
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: valid_from
+                  type: timestamp
+                  constraints:
+                    nullable: false
+
+  # ── 3. insulins ───────────────────────────────────────────────────────────────
+  - changeSet:
+      id: 003
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: insulins
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+
+  # ── 4. One-ACTIVE-per-user — PostgreSQL (production) ─────────────────────────
+  # Partial unique index: only ACTIVE rows compete for the uniqueness slot.
+  # DRAFT, ARCHIVED, and PROPOSED profiles are unconstrained.
+  - changeSet:
+      id: 004
+      author: javafreedom
+      dbms: postgresql
+      changes:
+        - sql:
+            sql: >-
+              CREATE UNIQUE INDEX IDX_PROFILE_STATUSES_USER_ACTIVE
+              ON profile_statuses(user_id)
+              WHERE status = 'ACTIVE'
+      rollback:
+        - sql:
+            sql: >-
+              DROP INDEX IF EXISTS IDX_PROFILE_STATUSES_USER_ACTIVE
+
+  # ── 5. One-ACTIVE-per-user — H2 (integration / E2E tests) ────────────────────
+  # H2 does not support partial/conditional indexes. A virtual generated column
+  # equals user_id when status = 'ACTIVE' and NULL otherwise. A unique index on
+  # this column enforces the invariant because NULL values are not constrained.
+  - changeSet:
+      id: 005
+      author: javafreedom
+      dbms: h2
+      changes:
+        - sql:
+            sql: >-
+              ALTER TABLE profile_statuses
+              ADD COLUMN active_user_key UUID
+              GENERATED ALWAYS AS (CASE WHEN status = 'ACTIVE' THEN user_id ELSE NULL END)
+        - sql:
+            sql: >-
+              CREATE UNIQUE INDEX IDX_PROFILE_STATUSES_ACTIVE_USER
+              ON profile_statuses(active_user_key)
+      rollback:
+        - sql:
+            sql: >-
+              DROP INDEX IF EXISTS IDX_PROFILE_STATUSES_ACTIVE_USER
+        - sql:
+            sql: >-
+              ALTER TABLE profile_statuses
+              DROP COLUMN IF EXISTS active_user_key

@@ -1,0 +1,44 @@
+= ADR-201: Flexible Treatments Model with JSONB
+:date: 2026-04-15
+:status: Accepted
+:deciders: Architect Persona, Domain Expert
+
+== Context
+The `kdiab-treatments` service must store clinical treatment events for Type 1 Diabetes management. The types of treatments are heterogeneous:
+
+* **BOLUS / CORRECTION_BOLUS**: Contains `insulin` (units) and optional `insulinType`.
+* **BASAL**: Contains `insulin` (units), optional `insulinType`, and optional `duration` (hours).
+* **CARBS**: Contains `carbs` (grams) and optional `absorptionTime` (hours).
+* **BG_CHECK**: Contains `glucose` value and `units` (mmol or mgdl).
+* **EXERCISE**: Contains `duration` (minutes) and `intensity`.
+* **NOTE**: Contains `text`.
+* **PUMP_SUSPEND / SITE_CHANGE / SENSOR_INSERT / INSULIN_CHANGE**: Various device-specific payloads.
+
+Creating strict relational columns for all these diverse attributes would result in a highly sparse and wide table. Creating separate tables per type complicates common queries.
+
+== Decision
+We use a single `treatments` table in PostgreSQL, leveraging the **JSONB** datatype for type-specific treatment payloads.
+
+The table schema:
+
+* `id` (UUID) - Primary Key
+* `user_id` (UUID) - User identifier from JWT `sub` claim
+* `treated_at` (TIMESTAMP WITH TIME ZONE) - When the treatment occurred
+* `created_at` (TIMESTAMP WITH TIME ZONE) - When the record was entered
+* `type` (VARCHAR) - Enum defining the expected structure of the JSON payload
+* `data` (JSONB) - The type-specific payload following Nightscout conventions
+* `status` (VARCHAR) - ACTIVE or ARCHIVED
+* `notes` (TEXT, nullable) - Optional free-text annotation
+
+== Rationale
+* **Nightscout compatibility**: Using Nightscout JSON structures allows future interoperability with Nightscout-compatible systems and clients.
+* **Flexibility**: Adding a new treatment type (e.g., KETONE_CHECK) requires zero database schema migrations.
+* **Dual timestamps**: `treated_at` captures clinical reality; `created_at` captures system entry time — both are clinically important for retrospective data analysis.
+* **Notes field**: A dedicated optional `notes` field at the top level (not inside the JSONB payload) allows easy filtering and indexing if needed.
+* **Duration in minutes**: All `duration` fields inside JSONB payloads are stored in **minutes**. The frontend converts user-facing units (e.g. hours for BASAL) to minutes before submission and formats them back for display. This removes ambiguity from the stored data.
+
+== Consequences
+* **Positive**: High flexibility; unified time-series queries across treatment types.
+* **Positive**: Dual timestamps enable accurate retrospective analysis.
+* **Negative**: Schema enforcement is at the application layer based on `type`.
+* **Negative**: Complex JSON manipulations in SQL are harder to read.

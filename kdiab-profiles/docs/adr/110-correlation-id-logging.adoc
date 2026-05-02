@@ -1,0 +1,25 @@
+= ADR-110: Full-Stack Correlation ID Logging
+
+* **Status**: Accepted
+* **Date**: 2026-03-01
+* **Context**: 
+As the application grows, debugging issues that span both the frontend (React) and the backend (Ktor) becomes difficult without a trace identifier. Furthermore, the backend requires explicit, idiomatic logging for incoming HTTP requests, domain logic execution, and global exception handling (like validation errors and unhandled exceptions). 
+
+* **Decision**: 
+1. **Correlation ID**: We establish `X-Correlation-ID` as the standard HTTP header for request tracing.
+2. **Frontend Interceptors**: The React frontend uses an Axios request interceptor to generate a unique UUID (`crypto.randomUUID()`) and injects it into the `X-Correlation-ID` header of every outgoing API request.
+3. **Backend Integration**: The Ktor backend utilizes the standard `CallId` and `CallLogging` plugins to:
+    - Extract the `X-Correlation-ID` header from the incoming request (or generate one if missing).
+    - Reply with the same header in the HTTP response (`replyToHeader`).
+    - Bind the extracted identifier to the SLF4J Mapped Diagnostic Context (MDC) using the key `Correlation-ID`.
+4. **Backend Loggers**: The backend standardizes on `io.github.oshai:kotlin-logging-jvm` for idiomatic Kotlin logging. Explicit loggers have been added to routes (`ProfileRoutes`), domain services (`ProfileService`), and global exception handlers (`StatusPages`).
+5. **Log Format**: The `logback.xml` pattern has been updated to consistently output the MDC value: `[CorrelationId=%X{Correlation-ID}]`.
+
+* **Rationale**:
+** **End-to-End Traceability**: By generating the Correlation ID in the browser, any frontend error reports or user interactions can be perfectly matched to the respective backend server logs.
+** **Kotlin Idiomatic**: `kotlin-logging` allows lazy message evaluation via lambda expressions (`logger.debug { "Msg" }`), preventing unnecessary string interpolation when a log level is disabled.
+** **MDC Context**: Binding to the MDC means the developer doesn't need to manually pass the `correlationId` through every function call in the backend; the logging framework handles it automatically for the current call context.
+
+* **Consequences**:
+** Any new asynchronous jobs or detached coroutines spawned by the Ktor application might need `MDCContext()` explicitly passed to their dispatcher to retain the `Correlation-ID`.
+** All backend logs, including unhandled exceptions printed via `StatusPages`, are securely tagged and easily filterable via the correlation tag.

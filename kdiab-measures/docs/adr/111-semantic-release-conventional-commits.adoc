@@ -1,0 +1,23 @@
+= ADR-111: Semantic Release and Conventional Commits
+
+* **Status**: Accepted
+* **Date**: 2026-03-01
+* **Context**: 
+As the project matures and features are built concurrently across branches, managing version numbers manually in `package.json`, Gradle, and Docker tags becomes error-prone and tedious. We need a standardized way to convey intent through source control history and automatically release immutable, strictly versioned artifacts when pushing changes to the production baseline.
+
+* **Decision**: 
+1. **Conventional Commits**: All commit messages must follow the Angular Conventional Commits specification (e.g., `feat:`, `fix:`, `chore:`, `refactor:`).
+2. **Semantic Release**: We integrate `semantic-release` (using the Angular preset) into a dedicated GitHub Actions workflow (`release.yml`) running *only* on the `main` branch. This tool parses the git history of conventional commits since the last tag, automatically determining the next semver bump (Major/Minor/Patch), generating release notes, and pushing the new Git Tag / GitHub Release.
+3. **Branch-Based Pre-releases**: Since Semantic Release only creates official version tags on `main`, any Continuous Integration build on a feature branch (or `develop`) will dynamically orchestrate its version identifier as `${SANITIZED_BRANCH_NAME}-${SHORT_GIT_HASH}-SNAPSHOT` (e.g., `feature-xyz-a1b2c3d-SNAPSHOT`).
+4. **Build Tool Integration**: 
+   ** **Backend**: The dynamically determined version (or the standard tag if building an official release) is fed into Gradle via CLI property (`-Pversion=...`) and is additionally used to uniquely tag the Docker image alongside the `latest` tag.
+   ** **Frontend**: The dynamic version is temporarily applied to `package.json` natively via `npm version ... --no-git-tag-version --allow-same-version` just before the Vite build script compiles the static assets.
+
+* **Rationale**:
+** **Automation**: Fully frees developers from maintaining `version` strings or debating version bumps.
+** **Safety**: Branch-derived `-SNAPSHOT` tracking allows QA and reviewers to explicitly test isolated, uniquely identifiable Docker containers or artifacts straight out of the CI pipeline without tainting the production registry's semver namespace.
+** **Rich Changelogs**: Utilizing the Angular prefix system guarantees we can automatically generate and attach clean release notes to each GitHub Release.
+
+* **Consequences**:
+** Developers must be disciplined with commit formats or squash merging Pull Requests with a conventionally formatted squashed message.
+** Feature branches continuously push moving `-SNAPSHOT` tags. Depending on the container registry retention policy, these may need periodic cleanup.

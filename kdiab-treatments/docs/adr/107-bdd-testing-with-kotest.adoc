@@ -1,0 +1,20 @@
+= ADR-107: BDD Testing with Kotest
+
+* **Status**: Accepted
+* **Date**: 2026-02-15
+* **Context**: 
+To ensure the system behaves as expected from a user's perspective, we need high-level End-to-End (E2E) tests. While unit and integration tests cover technical correctness, they often miss user-centric workflows. A Behavior-Driven Development (BDD) style (Given/When/Then) improves readability and bridges the gap between requirements and verification. We need a tool that supports this style while remaining idiomatic to our Kotlin codebase.
+
+* **Decision**: 
+Use **Kotest** for E2E tests, specifically adopting the `BehaviorSpec` style.
+
+* **Rationale**:
+** **Expressive DSL**: Kotest provides a powerful `BehaviorSpec` style that naturally maps to user stories and BDD requirements (Given/When/Then).
+** **Kotlin First**: Unlike Cucumber or JGiven, Kotest is built for Kotlin, fully exploiting language features like trailing lambdas, coroutines, and type-safe builders.
+** **Powerful Assertions**: Kotest's assertion library (`kotest-assertions-core`) is rich and readable.
+** **Integration**: It runs on the JUnit 5 platform, ensuring seamless integration with our existing Gradle build and CI pipeline.
+** **Data Testing**: Strong support for data-driven testing (Table-driven property checks).
+
+* **Consequences**:
+** Developers need to learn the Kotest DSL.
+** E2E tests will run in a separate source set (`e2eTest`) to keep them distinct from fast unit tests.
