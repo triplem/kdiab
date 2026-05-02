@@ -68,7 +68,7 @@ services:
 
   pgadmin:
     container_name: kdiab-pgadmin
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:9.9.0
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@kdiab.dev
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -179,6 +179,7 @@ services:
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: measure
       JWT_REALM: kdiab
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
     ports:
       - "8080:8080"
     healthcheck:
@@ -235,6 +236,7 @@ services:
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: profile
       JWT_REALM: kdiab
+      CORS_ALLOWED_ORIGINS: http://localhost:3001
     ports:
       - "8082:8080"
     healthcheck:
@@ -292,6 +294,7 @@ services:
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: treatment
       JWT_REALM: kdiab
+      CORS_ALLOWED_ORIGINS: http://localhost:3002
     ports:
       - "8083:8080"
     healthcheck:
@@ -348,6 +351,7 @@ services:
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: bff
       JWT_REALM: kdiab
+      CORS_ALLOWED_ORIGINS: http://localhost:3003
     ports:
       - "8084:8080"
     healthcheck:
