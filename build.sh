@@ -135,7 +135,10 @@ clean() {
     docker rmi $images 2>/dev/null || podman rmi $images 2>/dev/null || true
   fi
 
-  ok "Clean complete — all kdiab images and volumes removed"
+  log "Pruning Docker/Podman build cache"
+  docker builder prune -af 2>/dev/null || podman builder prune -af 2>/dev/null || true
+
+  ok "Clean complete — all kdiab images, volumes, and build cache removed"
 }
 
 # ── Build Docker images ────────────────────────────────────────────────────────
