@@ -38,7 +38,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '2rem', color: 'red', background: 'white' }}>
+        <div style={{ padding: '2rem', color: 'var(--accent-danger)' }}>
           <h2>Root Level Catastrophic Error</h2>
           <pre>{this.state.error?.message}</pre>
           <pre>{this.state.error?.stack}</pre>

@@ -140,12 +140,12 @@ export const MeasureList: React.FC<MeasureListProps> = ({ userId, canArchive, ca
   };
 
   if (isLoading) return <div style={{ padding: '2rem' }}>{t('list.loading')}</div>;
-  if (isError) return <div style={{ padding: '2rem', color: 'red' }}>{t('list.error')}</div>;
+  if (isError) return <div style={{ padding: '2rem', color: 'var(--accent-danger)' }}>{t('list.error')}</div>;
 
   return (
     <div className="measure-list-container">
       {mutationError && (
-        <div role="alert" style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: '#fee', border: '1px solid #fcc', borderRadius: '4px', color: '#c00' }}>
+        <div role="alert" className="error" style={{ padding: '0.75rem 1rem', marginBottom: '1rem' }}>
           {mutationError}
         </div>
       )}
@@ -177,7 +177,7 @@ export const MeasureList: React.FC<MeasureListProps> = ({ userId, canArchive, ca
 
       <table className="measure-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
         <thead>
-          <tr style={{ borderBottom: '2px solid #ccc' }}>
+          <tr style={{ borderBottom: '2px solid var(--table-border-header)' }}>
             <th style={{ padding: '12px 8px' }}>
               <input
                 type="checkbox"
@@ -197,7 +197,7 @@ export const MeasureList: React.FC<MeasureListProps> = ({ userId, canArchive, ca
             return (
               <React.Fragment key={m.id}>
                 <tr
-                  style={{ borderBottom: '1px solid #eee', cursor: 'pointer', background: selectedIds.has(m.id) ? '#f0f8ff' : 'transparent' }}
+                  style={{ borderBottom: '1px solid var(--table-border)', cursor: 'pointer', background: selectedIds.has(m.id) ? 'var(--table-row-selected)' : 'transparent' }}
                   onClick={() => toggleExpand(m.id)}
                 >
                   <td style={{ padding: '12px 8px' }} onClick={e => e.stopPropagation()}>
@@ -209,11 +209,11 @@ export const MeasureList: React.FC<MeasureListProps> = ({ userId, canArchive, ca
                   </td>
                   <td style={{ padding: '12px 8px' }}>
                     <strong>{formatDate(m.measuredAt)}</strong>
-                    <span style={{ marginLeft: '12px', color: '#444' }}>{renderDataSummary(m)}</span>
+                    <span style={{ marginLeft: '12px', color: 'var(--text-primary)' }}>{renderDataSummary(m)}</span>
                   </td>
                   <td style={{ padding: '12px 8px' }}>
-                    <span style={{ padding: '2px 6px', background: '#e0e0e0', borderRadius: '4px', fontSize: '0.8rem' }}>{m.type}</span>
-                    <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: '#666' }}>{m.source}</span>
+                    <span style={{ padding: '2px 6px', background: 'var(--badge-bg)', borderRadius: '4px', fontSize: '0.8rem', color: 'var(--text-primary)' }}>{m.type}</span>
+                    <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>{m.source}</span>
                   </td>
                   <td style={{ padding: '12px 8px' }} onClick={e => e.stopPropagation()}>
                     {canArchive && (
@@ -239,8 +239,8 @@ export const MeasureList: React.FC<MeasureListProps> = ({ userId, canArchive, ca
                   </td>
                 </tr>
                 {isExpanded && (
-                  <tr style={{ background: '#fafafa' }}>
-                    <td colSpan={4} style={{ padding: '16px', borderBottom: '1px solid #ddd' }}>
+                  <tr style={{ background: 'var(--table-row-alt)' }}>
+                    <td colSpan={4} style={{ padding: '16px', borderBottom: '1px solid var(--table-border)' }}>
                       <h4>{t('list.details')}</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '10px' }}>
                         <div>
@@ -250,7 +250,7 @@ export const MeasureList: React.FC<MeasureListProps> = ({ userId, canArchive, ca
                         </div>
                         <div>
                           <p><strong>{t('list.dataPayload')}:</strong></p>
-                          <pre style={{ background: '#eef2f5', padding: '8px', borderRadius: '4px', fontSize: '0.9rem', overflowX: 'auto' }}>
+                          <pre style={{ background: 'var(--code-bg)', padding: '8px', borderRadius: '4px', fontSize: '0.9rem', overflowX: 'auto' }}>
                             {JSON.stringify(m.data, null, 2)}
                           </pre>
                         </div>

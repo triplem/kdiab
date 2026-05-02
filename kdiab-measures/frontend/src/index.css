@@ -10,10 +10,28 @@
   
   --accent-primary: #38bdf8;
   --accent-primary-hover: #0284c7;
+  --accent-primary-glow: rgba(56, 189, 248, 0.3);
   --accent-success: #10b981;
   --accent-warning: #f59e0b;
   --accent-danger: #ef4444;
+  --accent-danger-hover: #dc2626;
+  --accent-danger-glow: rgba(239, 68, 68, 0.3);
   --accent-draft: #8b5cf6;
+
+  /* Overlay & Modal */
+  --overlay-bg: rgba(0, 0, 0, 0.55);
+  --modal-bg: rgba(15, 23, 42, 0.97);
+  --modal-border: rgba(255, 255, 255, 0.12);
+
+  /* Tables */
+  --table-border: rgba(255, 255, 255, 0.08);
+  --table-border-header: rgba(255, 255, 255, 0.15);
+  --table-row-alt: rgba(255, 255, 255, 0.02);
+  --table-row-selected: rgba(56, 189, 248, 0.08);
+
+  /* Components */
+  --badge-bg: rgba(255, 255, 255, 0.08);
+  --code-bg: rgba(15, 23, 42, 0.6);
 
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.5;
@@ -83,7 +101,7 @@ button.primary {
 }
 button.primary:hover {
   background-color: var(--accent-primary-hover);
-  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+  box-shadow: 0 4px 12px var(--accent-primary-glow);
 }
 
 button.danger {
@@ -92,8 +110,8 @@ button.danger {
   color: white;
 }
 button.danger:hover {
-  background-color: #dc2626;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  background-color: var(--accent-danger-hover);
+  box-shadow: 0 4px 12px var(--accent-danger-glow);
 }
 
 button.outline {

@@ -117,8 +117,8 @@ export function TimelineChart({ measures, treatments, glucoseUnit }: Props) {
 
         {/* TIR target shaded band */}
         <ReferenceArea y1={tirLow} y2={tirHigh} fill="rgba(16, 185, 129, 0.07)" />
-        <ReferenceLine y={tirLow} stroke="#ef4444" strokeDasharray="4 4" label={{ value: String(tirLow), fill: '#ef4444', fontSize: 11 }} />
-        <ReferenceLine y={tirHigh} stroke="#f59e0b" strokeDasharray="4 4" label={{ value: String(tirHigh), fill: '#f59e0b', fontSize: 11 }} />
+        <ReferenceLine y={tirLow} stroke="var(--accent-danger)" strokeDasharray="4 4" label={{ value: String(tirLow), fill: 'var(--accent-danger)', fontSize: 11 }} />
+        <ReferenceLine y={tirHigh} stroke="var(--accent-warning)" strokeDasharray="4 4" label={{ value: String(tirHigh), fill: 'var(--accent-warning)', fontSize: 11 }} />
 
         {/* CGM line */}
         <Line

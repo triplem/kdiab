@@ -205,7 +205,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false }: Profi
         <>
           {proposedProfiles.length > 0 && (
             <div className="proposed-section" style={{ marginBottom: '2rem' }}>
-              <h3 style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ color: 'var(--accent-warning)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 ⚠️ {t('profileList.pendingTitle')}
               </h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>

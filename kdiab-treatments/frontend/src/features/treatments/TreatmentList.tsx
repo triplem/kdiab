@@ -105,12 +105,12 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
   };
 
   if (isLoading) return <div style={{ padding: '2rem' }}>{t('list.loading')}</div>;
-  if (isError) return <div style={{ padding: '2rem', color: 'red' }}>{t('list.error')}</div>;
+  if (isError) return <div style={{ padding: '2rem', color: 'var(--accent-danger)' }}>{t('list.error')}</div>;
 
   return (
     <div className="measure-list-container">
       {mutationError && (
-        <div role="alert" style={{ padding: '0.75rem 1rem', marginBottom: '1rem', background: '#fee', border: '1px solid #fcc', borderRadius: '4px', color: '#c00' }}>
+        <div role="alert" className="error" style={{ padding: '0.75rem 1rem', marginBottom: '1rem' }}>
           {mutationError}
         </div>
       )}
@@ -132,7 +132,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
 
       <table className="measure-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
         <thead>
-          <tr style={{ borderBottom: '2px solid #ccc' }}>
+          <tr style={{ borderBottom: '2px solid var(--table-border-header)' }}>
             {canDelete && (
               <th style={{ padding: '12px 8px' }}>
                 <input
@@ -154,7 +154,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
             return (
               <React.Fragment key={tr.id}>
                 <tr
-                  style={{ borderBottom: '1px solid #eee', cursor: 'pointer', background: selectedIds.has(tr.id) ? 'rgba(56, 189, 248, 0.12)' : 'transparent' }}
+                  style={{ borderBottom: '1px solid var(--table-border)', cursor: 'pointer', background: selectedIds.has(tr.id) ? 'var(--table-row-selected)' : 'transparent' }}
                   onClick={() => toggleExpand(tr.id)}
                 >
                   {canDelete && (
@@ -168,11 +168,11 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
                   )}
                   <td style={{ padding: '12px 8px' }}>
                     <strong>{formatDate(tr.treatedAt)}</strong>
-                    <span style={{ marginLeft: '12px', color: '#444' }}>{renderDataSummary(tr)}</span>
-                    {tr.notes && <span style={{ marginLeft: '8px', color: '#888', fontStyle: 'italic', fontSize: '0.85rem' }}>— {tr.notes}</span>}
+                    <span style={{ marginLeft: '12px', color: 'var(--text-primary)' }}>{renderDataSummary(tr)}</span>
+                    {tr.notes && <span style={{ marginLeft: '8px', color: 'var(--text-secondary)', fontStyle: 'italic', fontSize: '0.85rem' }}>— {tr.notes}</span>}
                   </td>
                   <td style={{ padding: '12px 8px' }}>
-                    <span style={{ padding: '2px 6px', background: '#e0e0e0', borderRadius: '4px', fontSize: '0.8rem', color: '#111' }}>{tr.type}</span>
+                    <span style={{ padding: '2px 6px', background: 'var(--badge-bg)', borderRadius: '4px', fontSize: '0.8rem', color: 'var(--text-primary)' }}>{tr.type}</span>
                   </td>
                   <td style={{ padding: '12px 8px' }} onClick={e => e.stopPropagation()}>
                     {canDelete && (
@@ -188,9 +188,9 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
                   </td>
                 </tr>
                 {isExpanded && (
-                  <tr style={{ background: '#fafafa' }}>
-                    <td colSpan={canDelete ? 4 : 3} style={{ padding: '16px', borderBottom: '1px solid #ddd', color: '#111' }}>
-                      <h4 style={{ color: '#111' }}>{t('list.details')}</h4>
+                  <tr style={{ background: 'var(--table-row-alt)' }}>
+                    <td colSpan={canDelete ? 4 : 3} style={{ padding: '16px', borderBottom: '1px solid var(--table-border)' }}>
+                      <h4>{t('list.details')}</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '10px' }}>
                         <div>
                           <p><strong>{t('list.systemId')}:</strong> <span style={{ fontFamily: 'monospace' }}>{tr.id}</span></p>
@@ -200,7 +200,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
                         </div>
                         <div>
                           <p><strong>{t('list.dataPayload')}:</strong></p>
-                          <pre style={{ background: '#eef2f5', padding: '8px', borderRadius: '4px', fontSize: '0.9rem', overflowX: 'auto', color: '#111' }}>
+                          <pre style={{ background: 'var(--code-bg)', padding: '8px', borderRadius: '4px', fontSize: '0.9rem', overflowX: 'auto' }}>
                             {JSON.stringify(tr.data, null, 2)}
                           </pre>
                         </div>

@@ -29,7 +29,7 @@ const TREATMENT_TYPES: PatientTreatmentType[] = [
 
 const inputStyle: React.CSSProperties = {
   padding: '8px',
-  border: '1px solid #ccc',
+  border: '1px solid var(--border-color)',
   borderRadius: '4px',
   fontSize: '1rem',
   width: '100%',
@@ -404,11 +404,11 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({ isOpen, on
 
   return (
     <div
-      style={{ background: 'rgba(0,0,0,0.5)', position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+      style={{ background: 'var(--overlay-bg)', position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
       onClick={onClose}
     >
       <div
-        style={{ background: 'rgba(15, 23, 42, 0.97)', border: '1px solid rgba(255,255,255,0.12)', padding: '24px', borderRadius: '16px', minWidth: '380px', maxWidth: '480px', width: '90%', boxShadow: '0 25px 50px rgba(0,0,0,0.6)', maxHeight: '90vh', overflowY: 'auto' }}
+        style={{ background: 'var(--modal-bg)', border: '1px solid var(--modal-border)', padding: '24px', borderRadius: '16px', minWidth: '380px', maxWidth: '480px', width: '90%', boxShadow: '0 25px 50px rgba(0,0,0,0.6)', maxHeight: '90vh', overflowY: 'auto' }}
         onClick={e => e.stopPropagation()}
       >
         <h2 style={{ marginTop: 0, marginBottom: '20px' }}>{t('modal.title')}</h2>
@@ -443,7 +443,8 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({ isOpen, on
             </button>
             <button type="submit"
               disabled={isSaving}
-              style={{ padding: '8px 16px', background: isSaving ? '#93c5fd' : '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: isSaving ? 'not-allowed' : 'pointer', fontWeight: 'bold' }}>
+              className="primary"
+              style={{ padding: '8px 16px', cursor: isSaving ? 'not-allowed' : 'pointer' }}>
               {isSaving ? t('modal.saving') : t('modal.save')}
             </button>
           </div>

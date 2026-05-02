@@ -67,7 +67,7 @@ export const AdminInsulinManager: React.FC = () => {
           {mutationError}
         </div>
       )}
-      <p style={{ fontSize: '0.9rem', color: 'var(--text-color, #ccc)', marginBottom: '20px' }}>
+      <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '20px' }}>
         {t('admin.description')}
       </p>
 
@@ -109,7 +109,7 @@ export const AdminInsulinManager: React.FC = () => {
                       }
                     }}
                     className="btn danger"
-                    style={{ fontSize: '0.8rem', padding: '2px 8px', background: '#e53e3e', color: 'white' }}
+                    style={{ fontSize: '0.8rem', padding: '2px 8px' }}
                   >{t('admin.delete')}</button>
                 </div>
               </div>

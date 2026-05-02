@@ -261,7 +261,7 @@ export function ProfileEditor({ userId, initialProfile, onProfileSaved, readOnly
         {!readOnly && isDirty && <span className="unsaved-indicator" aria-live="polite"> — Unsaved changes</span>}
       </h3>
       {readOnly && (
-        <div role="status" style={{ marginBottom: '1rem', padding: '0.5rem 1rem', background: '#f0f4ff', border: '1px solid #aac', borderRadius: '6px', fontSize: '0.9rem' }}>
+        <div role="status" style={{ marginBottom: '1rem', padding: '0.5rem 1rem', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '6px', fontSize: '0.9rem' }}>
           Read-only view — you cannot edit this patient's profile directly. Use "Propose Profile for Patient" to suggest a new configuration.
         </div>
       )}

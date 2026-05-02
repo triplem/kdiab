@@ -24,7 +24,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '2rem', color: 'red' }}>
+        <div style={{ padding: '2rem', color: 'var(--accent-danger)' }}>
           <h2>Something went wrong in rendering.</h2>
           <pre>{this.state.error?.message}</pre>
         </div>
@@ -103,7 +103,7 @@ function App() {
       </div>
 
       {isDoctor && allowedPatients.length > 0 && (
-        <div className="patient-selector" style={{ padding: '0.5rem 1rem', background: '#f0f4ff', borderBottom: '1px solid #ccd' }}>
+        <div className="patient-selector">
           <label htmlFor="patient-select" style={{ marginRight: '0.5rem', fontWeight: 500 }}>{t('app.viewingPatient')}</label>
           <select
             id="patient-select"

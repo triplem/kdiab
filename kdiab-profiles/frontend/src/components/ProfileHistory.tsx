@@ -173,8 +173,8 @@ export const ProfileHistory: React.FC<ProfileHistoryProps> = ({ userId, onSelect
       </div>
 
       {loading && <div>{t('history.loading')}</div>}
-      {error && <div style={{ color: 'red' }}>{error}</div>}
-      {activeProfileWarning && <div style={{ color: 'orange' }}>{activeProfileWarning}</div>}
+      {error && <div style={{ color: 'var(--accent-danger)' }}>{error}</div>}
+      {activeProfileWarning && <div style={{ color: 'var(--accent-warning)' }}>{activeProfileWarning}</div>}
 
       {!loading && !error && history.length === 0 ? (
         <p>{t('history.empty')}</p>

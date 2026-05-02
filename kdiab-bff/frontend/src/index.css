@@ -10,10 +10,21 @@
 
   --accent-primary: #38bdf8;
   --accent-primary-hover: #0284c7;
+  --accent-primary-glow: rgba(56, 189, 248, 0.3);
   --accent-success: #10b981;
   --accent-warning: #f59e0b;
   --accent-danger: #ef4444;
+  --accent-danger-hover: #dc2626;
+  --accent-danger-glow: rgba(239, 68, 68, 0.3);
   --accent-draft: #8b5cf6;
+
+  /* Overlay & Modal */
+  --overlay-bg: rgba(0, 0, 0, 0.55);
+  --modal-bg: rgba(15, 23, 42, 0.97);
+  --modal-border: rgba(255, 255, 255, 0.12);
+
+  /* Patient selector */
+  --patient-selector-bg: var(--surface-color);
 
   /* TIR colours */
   --tir-below: #ef4444;
@@ -186,7 +197,7 @@ label {
 }
 
 .recharts-tooltip-wrapper .recharts-default-tooltip {
-  background: rgba(15, 23, 42, 0.95) !important;
+  background: var(--modal-bg) !important;
   border: 1px solid var(--border-color) !important;
   border-radius: 8px !important;
 }

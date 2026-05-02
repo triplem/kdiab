@@ -21,7 +21,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '2rem', color: 'red' }}>
+        <div style={{ padding: '2rem', color: 'var(--accent-danger)' }}>
           <h2>Something went wrong in rendering.</h2>
           <pre>{this.state.error?.message}</pre>
         </div>
@@ -78,14 +78,14 @@ function App() {
   if (auth.isLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: '#94a3b8', fontSize: '1.1rem' }}>{t('app.loading')}</span>
+        <span style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>{t('app.loading')}</span>
       </div>
     );
   }
   if (auth.error) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: '#ef4444' }}>Oops... {auth.error.message}</span>
+        <span style={{ color: 'var(--accent-danger)' }}>Oops... {auth.error.message}</span>
       </div>
     );
   }
@@ -93,10 +93,10 @@ function App() {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <div style={{
-          background: 'rgba(30, 41, 59, 0.8)',
+          background: 'var(--surface-color)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          border: '1px solid var(--border-color)',
           borderRadius: '20px',
           padding: '3rem 2.5rem',
           maxWidth: '420px',
@@ -105,14 +105,14 @@ function App() {
           boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
         }}>
           <h1 style={{
-            background: 'linear-gradient(135deg, #f8fafc 0%, #38bdf8 100%)',
+            background: 'linear-gradient(135deg, var(--text-primary) 0%, var(--accent-primary) 100%)',
             WebkitBackgroundClip: 'text',
             backgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             marginBottom: '0.5rem',
             fontSize: '2rem',
           }}>{t('app.title')}</h1>
-          <p style={{ color: '#94a3b8', marginBottom: '2.5rem', fontSize: '1rem' }}>{t('app.welcome')}</p>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', fontSize: '1rem' }}>{t('app.welcome')}</p>
           <button
             className="primary"
             onClick={() => void auth.signinRedirect()}
@@ -140,7 +140,7 @@ function App() {
       </div>
 
       {isDoctor && allowedPatients.length > 0 && (
-        <div className="patient-selector" style={{ padding: '0.5rem 1rem', background: '#f0f4ff', borderBottom: '1px solid #ccd' }}>
+        <div className="patient-selector">
           <label htmlFor="patient-select" style={{ marginRight: '0.5rem', fontWeight: 500 }}>{t('app.viewingPatient')}</label>
           <select
             id="patient-select"

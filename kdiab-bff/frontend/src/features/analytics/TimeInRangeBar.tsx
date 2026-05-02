@@ -50,7 +50,7 @@ export function TimeInRangeBar({ tir }: Props) {
                 justifyContent: 'center',
                 fontSize: '0.8rem',
                 fontWeight: 600,
-                color: '#fff',
+                color: 'var(--text-primary)',
                 overflow: 'hidden',
                 whiteSpace: 'nowrap',
               }}

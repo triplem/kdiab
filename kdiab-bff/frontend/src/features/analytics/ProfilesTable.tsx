@@ -40,7 +40,7 @@ export function ProfilesTable({ profiles }: Props) {
           </thead>
           <tbody>
             {profiles.map(p => (
-              <tr key={p.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <tr key={p.id} style={{ borderBottom: '1px solid var(--table-border)' }}>
                 <td style={{ padding: '0.5rem 0.75rem', fontWeight: 500 }}>{p.name}</td>
                 <td style={{ padding: '0.5rem 0.75rem' }}>
                   <span className={`status-badge status-${p.status.toLowerCase()}`}>{p.status}</span>

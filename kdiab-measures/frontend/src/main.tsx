@@ -38,7 +38,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: '2rem', color: 'red', background: 'white' }}>
+        <div style={{ padding: '2rem', color: 'var(--accent-danger)' }}>
           <h2>Something went wrong. Please reload the page.</h2>
           <pre>{this.state.error?.message}</pre>
         </div>
