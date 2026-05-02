@@ -84,6 +84,7 @@ services:
   # ── Schema migrations ───────────────────────────────────────────────────────
 
   liquibase-measures:
+    image: localhost/kdiab-liquibase-measures:latest
     build:
       context: ./kdiab-measures
       dockerfile: backend/Dockerfile.liquibase
@@ -101,6 +102,7 @@ services:
       - shared
 
   liquibase-profiles:
+    image: localhost/kdiab-liquibase-profiles:latest
     build:
       context: ./kdiab-profiles
       dockerfile: backend/Dockerfile.liquibase
@@ -118,6 +120,7 @@ services:
       - shared
 
   liquibase-treatments:
+    image: localhost/kdiab-liquibase-treatments:latest
     build:
       context: ./kdiab-treatments
       dockerfile: backend/Dockerfile.liquibase
@@ -156,6 +159,7 @@ services:
   # ── kdiab-measures ──────────────────────────────────────────────────────────
 
   measures-backend:
+    image: localhost/kdiab-measures-backend:latest
     build:
       context: ./kdiab-measures
       dockerfile: backend/Dockerfile
@@ -188,6 +192,7 @@ services:
     restart: unless-stopped
 
   measures-frontend:
+    image: localhost/kdiab-measures-frontend:latest
     build:
       context: ./kdiab-measures
       dockerfile: frontend/Dockerfile
@@ -208,6 +213,7 @@ services:
   # ── kdiab-profiles ──────────────────────────────────────────────────────────
 
   profiles-backend:
+    image: localhost/kdiab-profiles-backend:latest
     build:
       context: ./kdiab-profiles
       dockerfile: backend/Dockerfile
@@ -238,6 +244,7 @@ services:
     restart: unless-stopped
 
   profiles-frontend:
+    image: localhost/kdiab-profiles-frontend:latest
     build:
       context: ./kdiab-profiles
       dockerfile: frontend/Dockerfile
@@ -261,6 +268,7 @@ services:
   # ── kdiab-treatments ────────────────────────────────────────────────────────
 
   treatments-backend:
+    image: localhost/kdiab-treatments-backend:latest
     build:
       context: ./kdiab-treatments
       dockerfile: backend/Dockerfile
@@ -293,6 +301,7 @@ services:
     restart: unless-stopped
 
   treatments-frontend:
+    image: localhost/kdiab-treatments-frontend:latest
     build:
       context: ./kdiab-treatments
       dockerfile: frontend/Dockerfile
@@ -313,6 +322,7 @@ services:
   # ── kdiab-bff ───────────────────────────────────────────────────────────────
 
   bff-backend:
+    image: localhost/kdiab-bff-backend:latest
     build:
       context: ./kdiab-bff
       dockerfile: backend/Dockerfile
@@ -347,6 +357,7 @@ services:
     restart: unless-stopped
 
   bff-frontend:
+    image: localhost/kdiab-bff-frontend:latest
     build:
       context: ./kdiab-bff
       dockerfile: frontend/Dockerfile
