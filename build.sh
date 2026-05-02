@@ -118,18 +118,23 @@ DOCKER_SERVICES=(
 )
 
 build_docker() {
-  # Detect docker compose v2 (plugin) vs v1 (standalone)
-  if docker compose version &>/dev/null; then
+  # Detect available compose tool: docker compose v2, podman compose, or docker-compose v1
+  if docker compose version &>/dev/null 2>&1; then
     COMPOSE_CMD="docker compose"
+  elif podman compose version &>/dev/null 2>&1; then
+    COMPOSE_CMD="podman compose"
   elif command -v docker-compose &>/dev/null; then
     COMPOSE_CMD="docker-compose"
   else
-    fail "Neither 'docker compose' nor 'docker-compose' found"
+    fail "No compose tool found (tried: docker compose, podman compose, docker-compose)"
     return 1
   fi
 
+  # --parallel is a docker compose flag; podman compose handles concurrency internally
   local parallel_flag=""
-  $PARALLEL && parallel_flag="--parallel"
+  if $PARALLEL && [[ "$COMPOSE_CMD" == "docker compose" ]]; then
+    parallel_flag="--parallel"
+  fi
 
   run_step "docker images" \
     bash -c "cd '$ROOT' && $COMPOSE_CMD build $parallel_flag ${DOCKER_SERVICES[*]}"
