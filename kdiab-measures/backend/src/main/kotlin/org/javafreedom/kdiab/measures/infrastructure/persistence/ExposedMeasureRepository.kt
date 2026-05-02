@@ -54,12 +54,29 @@ class ExposedMeasureRepository(
         }
     }
 
-    override suspend fun findByUserId(userId: Uuid): List<Measure> = withContext(ioDispatcher) {
+    override suspend fun findByUserId(userId: Uuid, page: Int, size: Int): List<Measure> =
+        withContext(ioDispatcher) {
+            suspendTransaction {
+                MeasuresTable.selectAll()
+                    .where {
+                        (MeasuresTable.userId eq userId) and
+                        (MeasuresTable.status eq MeasureStatus.ACTIVE.name)
+                    }
+                    .orderBy(MeasuresTable.measuredAt, SortOrder.DESC)
+                    .limit(size)
+                    .offset(page.toLong() * size)
+                    .map { it.toMeasure() }
+            }
+        }
+
+    override suspend fun countByUserId(userId: Uuid): Long = withContext(ioDispatcher) {
         suspendTransaction {
             MeasuresTable.selectAll()
-                .where { MeasuresTable.userId eq userId }
-                .orderBy(MeasuresTable.measuredAt, SortOrder.DESC)
-                .map { it.toMeasure() }
+                .where {
+                    (MeasuresTable.userId eq userId) and
+                    (MeasuresTable.status eq MeasureStatus.ACTIVE.name)
+                }
+                .count()
         }
     }
 

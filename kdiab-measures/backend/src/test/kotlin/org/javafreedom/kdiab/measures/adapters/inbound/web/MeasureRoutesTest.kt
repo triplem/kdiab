@@ -111,7 +111,8 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 patient reads own measures`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID)) } returns listOf(testMeasure())
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns listOf(testMeasure())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID)) } returns 1L
         val resp = client.get("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(sarahToken)
         }
@@ -128,7 +129,8 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 doctor reads allowed patient measures`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID)) } returns listOf(testMeasure())
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns listOf(testMeasure())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID)) } returns 1L
         val resp = client.get("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(doctorToken)
         }
@@ -145,7 +147,8 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 admin reads any user measures`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(MIKE_ID)) } returns emptyList()
+        coEvery { repo.findByUserId(Uuid.parse(MIKE_ID), any(), any()) } returns emptyList()
+        coEvery { repo.countByUserId(Uuid.parse(MIKE_ID)) } returns 0L
         val resp = client.get("/api/v1/users/$MIKE_ID/measures") {
             bearerAuth(adminToken)
         }

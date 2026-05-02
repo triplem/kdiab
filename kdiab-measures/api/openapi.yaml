@@ -13,7 +13,7 @@ security:
 paths:
   /users/{userId}/measures:
     get:
-      summary: List all measures for a user
+      summary: List active measures for a user (paginated)
       operationId: listMeasures
       parameters:
         - name: userId
@@ -22,15 +22,28 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
       responses:
         '200':
-          description: List of active measures
+          description: Paginated list of active measures
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MeasureResponse'
+                $ref: '#/components/schemas/PagedMeasureResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -151,6 +164,26 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
 
   schemas:
+    PagedMeasureResponse:
+      type: object
+      required:
+        - items
+        - page
+        - size
+        - totalCount
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeasureResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalCount:
+          type: integer
+          format: int64
+
     MeasureResponse:
       type: object
       required:

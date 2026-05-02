@@ -37,3 +37,10 @@ data class Measure(
     val data: JsonObject,
     val status: MeasureStatus = MeasureStatus.ACTIVE
 )
+
+data class PagedMeasures(
+    val items: List<Measure>,
+    val page: Int,
+    val size: Int,
+    val totalCount: Long,
+)

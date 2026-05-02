@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import type { MeasureResponse } from '../../api/generated';
 import { useTimeFormat } from '../../context/TimeFormatContext';
 import { useTranslation } from 'react-i18next';
+
+const PAGE_SIZE = 50;
 
 interface MeasureListProps {
   userId: string;
@@ -57,38 +59,53 @@ export const MeasureList: React.FC<MeasureListProps> = ({ userId, canArchive, ca
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [mutationError, setMutationError] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [measures, setMeasures] = useState<MeasureResponse[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const { data: measures = [], isLoading, isError } = useQuery<MeasureResponse[]>({
-    queryKey: ['measures', userId],
+  const { isLoading, isError } = useQuery({
+    queryKey: ['measures', userId, page],
     queryFn: async () => {
-      const res = await api.listMeasures(userId);
-      return res.data.filter(m => m.status === 'ACTIVE');
+      const res = await api.listMeasures(userId, page, PAGE_SIZE);
+      const paged = res.data as { items: MeasureResponse[]; page: number; size: number; totalCount: number };
+      if (page === 0) {
+        setMeasures(paged.items ?? []);
+      } else {
+        setMeasures(prev => [...prev, ...(paged.items ?? [])]);
+      }
+      setTotalCount(paged.totalCount ?? 0);
+      return paged;
     },
     enabled: !!userId,
   });
+
+  useEffect(() => {
+    setPage(0);
+    setMeasures([]);
+  }, [userId]);
 
   const onMutationError = (err: unknown) => {
     const apiErr = err as { response?: { data?: { message?: string } }; message?: string };
     setMutationError(apiErr?.response?.data?.message ?? apiErr?.message ?? t('list.mutationError'));
   };
 
+  const resetAndRefetch = () => {
+    setMutationError(null);
+    setSelectedIds(new Set());
+    setMeasures([]);
+    setPage(0);
+    void queryClient.invalidateQueries({ queryKey: ['measures', userId] });
+  };
+
   const archiveMutation = useMutation({
     mutationFn: (ids: string[]) => api.archiveMeasures(userId, { measureIds: ids }),
-    onSuccess: () => {
-      setMutationError(null);
-      setSelectedIds(new Set());
-      void queryClient.invalidateQueries({ queryKey: ['measures', userId] });
-    },
+    onSuccess: resetAndRefetch,
     onError: onMutationError,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (ids: string[]) => api.deleteMeasures(userId, { measureIds: ids }),
-    onSuccess: () => {
-      setMutationError(null);
-      setSelectedIds(new Set());
-      void queryClient.invalidateQueries({ queryKey: ['measures', userId] });
-    },
+    onSuccess: resetAndRefetch,
     onError: onMutationError,
   });
 
@@ -100,7 +117,7 @@ export const MeasureList: React.FC<MeasureListProps> = ({ userId, canArchive, ca
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === measures.length) setSelectedIds(new Set());
+    if (selectedIds.size === measures.length && measures.length > 0) setSelectedIds(new Set());
     else setSelectedIds(new Set(measures.map(m => m.id)));
   };
 
@@ -251,6 +268,19 @@ export const MeasureList: React.FC<MeasureListProps> = ({ userId, canArchive, ca
           )}
         </tbody>
       </table>
+
+      {measures.length < totalCount && (
+        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+          <button
+            className="btn outline"
+            disabled={isLoading}
+            onClick={() => setPage(p => p + 1)}
+            style={{ padding: '0.5rem 1.5rem' }}
+          >
+            {isLoading ? t('list.loading') : t('list.loadMore', { loaded: measures.length, total: totalCount })}
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -26,6 +26,7 @@
     "confirmDelete": "Messung dauerhaft löschen?",
     "mutationError": "Vorgang fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "empty": "Noch keine Messungen erfasst.",
+    "loadMore": "Weitere laden ({{loaded}} von {{total}})",
     "details": "Messungsdetails",
     "systemId": "System-ID",
     "userId": "Benutzer-ID",

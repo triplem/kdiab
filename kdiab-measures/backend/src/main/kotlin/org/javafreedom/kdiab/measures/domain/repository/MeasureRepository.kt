@@ -7,7 +7,8 @@ import org.javafreedom.kdiab.measures.domain.model.MeasureType
 
 interface MeasureRepository {
     suspend fun save(measure: Measure): Measure
-    suspend fun findByUserId(userId: Uuid): List<Measure>
+    suspend fun findByUserId(userId: Uuid, page: Int, size: Int): List<Measure>
+    suspend fun countByUserId(userId: Uuid): Long
     suspend fun findByUserIdAndType(userId: Uuid, type: MeasureType): List<Measure>
     suspend fun archive(ids: List<Uuid>, userId: Uuid)
     suspend fun deleteAll(ids: List<Uuid>, userId: Uuid)

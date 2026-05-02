@@ -26,6 +26,7 @@
     "confirmDelete": "Permanently delete measure?",
     "mutationError": "Operation failed. Please try again.",
     "empty": "No measures recorded yet.",
+    "loadMore": "Load more ({{loaded}} of {{total}})",
     "details": "Measure Details",
     "systemId": "System ID",
     "userId": "User ID",

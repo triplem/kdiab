@@ -11,13 +11,26 @@ import io.ktor.server.resources.post
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
+import kotlinx.serialization.Serializable
 import org.javafreedom.kdiab.measures.api.Paths
 import org.javafreedom.kdiab.measures.api.models.CreateMeasureRequest
 import org.javafreedom.kdiab.measures.api.models.BulkMeasureRequest
+import org.javafreedom.kdiab.measures.api.models.MeasureResponse
 import org.javafreedom.kdiab.measures.application.service.MeasureService
 import org.javafreedom.kdiab.measures.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.measures.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.measures.plugins.UserPrincipal
+
+private const val DEFAULT_PAGE_SIZE = 50
+private const val MAX_PAGE_SIZE = 200
+
+@Serializable
+private data class PagedMeasureResponse(
+    val items: List<MeasureResponse>,
+    val page: Int,
+    val size: Int,
+    val totalCount: Long,
+)
 
 private val logger = KotlinLogging.logger {}
 
@@ -41,10 +54,19 @@ private fun Route.listMeasures(measureService: MeasureService) {
         val targetUserId = parseUuid(params.userId)
         checkReadAccess(principal, targetUserId)
 
+        val page = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+        val size = call.request.queryParameters["size"]?.toIntOrNull()
+            ?.coerceIn(1, MAX_PAGE_SIZE) ?: DEFAULT_PAGE_SIZE
+
         val glucoseUnit = principal?.glucoseUnit ?: "mg/dL"
         val weightUnit = principal?.weightUnit ?: "kg"
-        val measures = measureService.getMeasures(targetUserId)
-        call.respond(measures.map { it.toApi(glucoseUnit, weightUnit) })
+        val paged = measureService.getMeasures(targetUserId, page, size)
+        call.respond(PagedMeasureResponse(
+            items = paged.items.map { it.toApi(glucoseUnit, weightUnit) },
+            page = paged.page,
+            size = paged.size,
+            totalCount = paged.totalCount,
+        ))
     }
 }
 

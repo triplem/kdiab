@@ -50,16 +50,22 @@ class MeasureServiceTest {
     }
 
     @Test
-    fun `getMeasures returns list from repository`() = runTest {
+    fun `getMeasures returns paged result from repository`() = runTest {
         val measures = listOf(testMeasure())
-        coEvery { repo.findByUserId(userId) } returns measures
-        assertEquals(measures, service.getMeasures(userId))
+        coEvery { repo.findByUserId(userId, 0, 50) } returns measures
+        coEvery { repo.countByUserId(userId) } returns 1L
+        val result = service.getMeasures(userId, 0, 50)
+        assertEquals(measures, result.items)
+        assertEquals(1L, result.totalCount)
     }
 
     @Test
-    fun `getMeasures returns empty list when no measures found`() = runTest {
-        coEvery { repo.findByUserId(userId) } returns emptyList()
-        assertEquals(emptyList(), service.getMeasures(userId))
+    fun `getMeasures returns empty paged result when no measures found`() = runTest {
+        coEvery { repo.findByUserId(userId, 0, 50) } returns emptyList()
+        coEvery { repo.countByUserId(userId) } returns 0L
+        val result = service.getMeasures(userId, 0, 50)
+        assertEquals(emptyList(), result.items)
+        assertEquals(0L, result.totalCount)
     }
 
     @Test
