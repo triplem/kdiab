@@ -4,6 +4,7 @@ on:
   push:
     branches: ["main"]
     paths:
+      - 'docs/**'
       - 'kdiab-measures/docs/**'
       - 'kdiab-measures/backend/docs/**'
       - 'kdiab-profiles/docs/**'
@@ -39,6 +40,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Install AsciiDoctor
+        run: gem install asciidoctor
+
       - name: Build measures docs
         run: cd kdiab-measures && ./gradlew asciidoctor --no-configuration-cache
 
@@ -48,23 +52,26 @@ jobs:
       - name: Build treatments docs
         run: cd kdiab-treatments && ./gradlew asciidoctor --no-configuration-cache
 
+      - name: Build root docs
+        run: |
+          mkdir -p pages/root pages/root/adr
+          asciidoctor -D pages/root       docs/index.adoc docs/architecture.adoc docs/how-to-run.adoc
+          asciidoctor -D pages/root/adr   docs/adr/*.adoc
+
       - name: Assemble pages
         run: |
           mkdir -p pages/measures pages/profiles pages/treatments
           cp -r kdiab-measures/build/docs/asciidoc/. pages/measures/
-          cp -r kdiab-profiles/build/docs/asciidoc/. pages/profiles/
+          cp -r kdiab-profiles/build/docs/asciidoc/.  pages/profiles/
           cp -r kdiab-treatments/build/docs/asciidoc/. pages/treatments/
           cat > pages/index.html <<'EOF'
           <!DOCTYPE html>
           <html lang="en">
-          <head><meta charset="UTF-8"><title>kdiab Documentation</title></head>
+          <head><meta charset="UTF-8"><title>kdiab Documentation</title>
+          <meta http-equiv="refresh" content="0; url=root/index.html">
+          </head>
           <body>
-          <h1>kdiab Documentation</h1>
-          <ul>
-            <li><a href="measures/">kdiab-measures</a></li>
-            <li><a href="profiles/">kdiab-profiles</a></li>
-            <li><a href="treatments/">kdiab-treatments</a></li>
-          </ul>
+          <p>Redirecting to <a href="root/index.html">platform documentation</a>…</p>
           </body>
           </html>
           EOF

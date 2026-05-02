@@ -1,0 +1,204 @@
+= How to Build and Run kdiab
+:toc: left
+:icons: font
+
+This guide covers building, testing, and running the full kdiab platform locally.
+All commands are run from the repository root unless noted otherwise.
+
+== Prerequisites
+
+* *JDK 21* (e.g. Eclipse Temurin)
+* *Node.js LTS* + npm
+* *Docker* or *Podman* with a compose plugin
+
+== Building
+
+`build.sh` is the monorepo build orchestrator. It runs all Gradle backends and npm frontends
+in parallel and logs per-service output to `.build-logs/`.
+
+=== Available Flags
+
+[cols="2,3"]
+|===
+| Flag | Effect
+
+| _(none)_         | Build all backends (`:backend:build`) and all frontends
+| `--check`        | Build + run all tests, Detekt, Kover (80% coverage gate)
+| `--backend-only` | Gradle builds only, skip npm
+| `--frontend-only`| npm builds only, skip Gradle
+| `--docker`       | Build all Docker images (service + liquibase migration images)
+| `--no-parallel`  | Sequential execution — useful when disk / RAM is tight
+|===
+
+Flags are composable:
+
+[source,bash]
+----
+./build.sh                   # build everything, skip tests
+./build.sh --check           # build + full test suite
+./build.sh --check --docker  # test + build Docker images
+./build.sh --no-parallel     # sequential build (saves RAM)
+----
+
+=== What `--docker` Builds
+
+`--docker` calls `docker compose build` (or `podman compose build` when Docker is not available)
+for every image defined in the root `docker-compose.yml` that has a local `build:` context:
+
+[cols="1,2"]
+|===
+| Image | Dockerfile
+
+| `liquibase-measures`   | `kdiab-measures/backend/Dockerfile.liquibase`
+| `liquibase-profiles`   | `kdiab-profiles/backend/Dockerfile.liquibase`
+| `liquibase-treatments` | `kdiab-treatments/backend/Dockerfile.liquibase`
+| `measures-backend`     | `kdiab-measures/backend/Dockerfile`
+| `measures-frontend`    | `kdiab-measures/frontend/Dockerfile`
+| `profiles-backend`     | `kdiab-profiles/backend/Dockerfile`
+| `profiles-frontend`    | `kdiab-profiles/frontend/Dockerfile`
+| `treatments-backend`   | `kdiab-treatments/backend/Dockerfile`
+| `treatments-frontend`  | `kdiab-treatments/frontend/Dockerfile`
+| `bff-backend`          | `kdiab-bff/backend/Dockerfile`
+| `bff-frontend`         | `kdiab-bff/frontend/Dockerfile`
+|===
+
+Externally pulled images (`postgres`, `keycloak`, `pgadmin`) are not rebuilt by this flag.
+
+NOTE: `--parallel` is only passed to `docker compose build`. `podman compose` manages concurrency
+internally and does not accept that flag.
+
+Build logs land in `.build-logs/docker images.log` on failure.
+
+== Running the Full Platform
+
+The root `docker-compose.yml` starts the entire platform: all four services, Keycloak, PostgreSQL,
+pgAdmin, Liquibase migrations, and a seed-data job.
+
+[source,bash]
+----
+# Docker
+docker compose up --build
+
+# Podman
+podman compose up --build
+----
+
+To tear down and wipe all volumes (database, pgAdmin state):
+
+[source,bash]
+----
+docker compose down -v
+podman compose down -v    # Podman equivalent
+----
+
+=== Database Initialisation
+
+The database is initialised automatically in three steps:
+
+1. `config/postgres/01-init-databases.sh` — creates `kdiab-measures`, `kdiab-profiles`,
+   and `kdiab-treatments` databases on first Postgres startup.
+2. `liquibase-measures` / `liquibase-profiles` / `liquibase-treatments` — run schema migrations.
+3. `pg-seed` — inserts 30 days of realistic CGM, treatment, and profile data for `sarah` and `mike`.
+
+== Running a Single Service
+
+Each service has its own compose file for standalone development:
+
+[source,bash]
+----
+cd kdiab-<service>
+docker compose up --build          # service + its own Keycloak + Postgres
+docker compose down -v
+
+# With pgAdmin
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+# Podman
+./manage-podman.sh start
+./manage-podman.sh cleanup
+----
+
+=== Service URLs (Full Platform)
+
+[cols="2,1,1"]
+|===
+| Service | Frontend | Backend / Swagger
+
+| kdiab-measures   | http://localhost:3000 | http://localhost:8080 / http://localhost:8080/swagger
+| kdiab-profiles   | http://localhost:3001 | http://localhost:8082 / http://localhost:8082/swagger
+| kdiab-treatments | http://localhost:3002 | http://localhost:8083 / http://localhost:8083/swagger
+| kdiab-bff        | http://localhost:3003 | http://localhost:8084 / http://localhost:8084/swagger
+| Keycloak Admin   | —                     | http://localhost:8081 (admin / admin)
+| pgAdmin          | —                     | http://localhost:5050 (admin@kdiab.dev / admin)
+|===
+
+=== Service URLs (Standalone per-service)
+
+* Frontend: http://localhost:3000
+* Backend API: http://localhost:8080/api/v1
+* Swagger UI: http://localhost:8080/swagger
+* Keycloak Admin: http://localhost:8081
+* pgAdmin: http://localhost:5050
+
+== Test Accounts
+
+All accounts use the password `password`.
+
+[cols="1,1,2"]
+|===
+| Username | Role | Notes
+
+| `sarah`      | PATIENT | Glucose unit mg/dL; assigned doctor: dr_house
+| `mike`       | PATIENT | Glucose unit mmol/L; assigned doctor: dr_cameron
+| `dr_house`   | DOCTOR  | Allowed to access sarah's data
+| `dr_cameron` | DOCTOR  | Allowed to access mike's data
+| `admin`      | ADMIN   | Full access to all patient data
+|===
+
+== Running Components Without Docker
+
+=== Backend (Kotlin / Ktor)
+
+Requires a running PostgreSQL instance and a Keycloak server (use the per-service compose for these).
+
+[source,bash]
+----
+cd kdiab-<service>
+./gradlew :backend:run
+----
+
+=== Frontend (React / TypeScript)
+
+[source,bash]
+----
+cd kdiab-<service>/frontend
+npm install
+npm run dev          # dev server on port 3000, proxies /api to backend on 8080
+----
+
+== Running Tests
+
+=== All Services
+
+[source,bash]
+----
+./build.sh --check
+----
+
+=== Single Service
+
+[source,bash]
+----
+cd kdiab-<service>
+./gradlew :backend:test              # unit tests
+./gradlew :backend:integrationTest   # integration tests
+./gradlew :backend:e2eTest           # E2E tests
+./gradlew :backend:check             # all tests + detekt + kover
+----
+
+[source,bash]
+----
+cd kdiab-<service>/frontend
+npm run test                         # Vitest unit tests
+npx playwright test                  # E2E tests (requires running app)
+----

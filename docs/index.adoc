@@ -1,0 +1,33 @@
+= kdiab Platform Documentation
+:toc: left
+:icons: font
+
+*kdiab* is a Type 1 Diabetes (T1D) management platform consisting of four services hosted in a single monorepo.
+
+== Services
+
+[cols="1,3"]
+|===
+| Service | Description
+
+| link:../measures/index.html[kdiab-measures]
+| Health measurement tracking — CGM, BGM, blood pressure, weight, pulse
+
+| link:../profiles/index.html[kdiab-profiles]
+| Insulin pump basal profile management
+
+| link:../treatments/index.html[kdiab-treatments]
+| Treatment event tracking — bolus, basal, carbs, corrections
+
+| kdiab-bff
+| Stateless Backend-for-Frontend: aggregates data from all three services and provides a unified analytics dashboard (timeline, HbA1c, AGP, profiles)
+|===
+
+== Platform Documents
+
+* link:how-to-run.html[How to Build and Run]
+* link:architecture.html[Platform Architecture]
+
+== Architecture Decision Records
+
+* link:adr/ADR-001-monorepo-consolidation.html[ADR-001 Monorepo Consolidation]
