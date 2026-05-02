@@ -29,6 +29,9 @@ DECLARE
   trends   TEXT[] := ARRAY['Flat','FortyFiveUp','FortyFiveDown','SingleUp','SingleDown'];
   base_ts  TIMESTAMPTZ := NOW() - INTERVAL '30 days';
 BEGIN
+  -- Skip if already seeded (idempotent re-run guard)
+  IF EXISTS (SELECT 1 FROM measures LIMIT 1) THEN RETURN; END IF;
+
   -- Sarah — CGM readings every 5 minutes for 30 days
   FOR i IN 0..8639 LOOP
     t   := base_ts + (i * INTERVAL '5 minutes');
@@ -105,6 +108,9 @@ DECLARE
   carbs    INTEGER;
   units    NUMERIC;
 BEGIN
+  -- Skip if already seeded (idempotent re-run guard)
+  IF EXISTS (SELECT 1 FROM treatments LIMIT 1) THEN RETURN; END IF;
+
   -- 3 bolus+carbs pairs per day per user for 30 days (breakfast, lunch, dinner)
   FOR day IN 0..29 LOOP
     -- Breakfast ~08:00
@@ -207,7 +213,8 @@ INSERT INTO insulins(id, name) VALUES
   ('0195a850-2527-7cdb-8fde-6cd2e9122fb2', 'Novolog'),
   ('0195a850-2527-7cdb-8fde-6cd2e9122fb3', 'Fiasp'),
   ('0195a850-2527-7cdb-8fde-6cd2e9122fb4', 'Lyumjev'),
-  ('0195a850-2527-7cdb-8fde-6cd2e9122fb5', 'Apidra');
+  ('0195a850-2527-7cdb-8fde-6cd2e9122fb5', 'Apidra')
+ON CONFLICT DO NOTHING;
 
 -- Sarah — archived profile from 60 days ago, active profile from 30 days ago
 INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments)
@@ -221,7 +228,8 @@ VALUES (
   'Europe/Berlin',
   NOW() - INTERVAL '65 days',
   '[{"start":"00:00","basal":0.85},{"start":"06:00","basal":1.10},{"start":"12:00","basal":0.90},{"start":"18:00","basal":1.00}]'
-);
+)
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO profile_statuses(profile_id, user_id, status, valid_from)
 VALUES (
@@ -229,7 +237,8 @@ VALUES (
   '11111111-1111-1111-1111-111111111111',
   'ARCHIVED',
   NOW() - INTERVAL '65 days'
-);
+)
+ON CONFLICT (profile_id) DO NOTHING;
 
 INSERT INTO profiles(id, user_id, previous_profile_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments)
 VALUES (
@@ -243,7 +252,8 @@ VALUES (
   'Europe/Berlin',
   NOW() - INTERVAL '31 days',
   '[{"start":"00:00","basal":0.90},{"start":"06:00","basal":1.20},{"start":"10:00","basal":1.00},{"start":"18:00","basal":1.05},{"start":"22:00","basal":0.80}]'
-);
+)
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO profile_statuses(profile_id, user_id, status, valid_from)
 VALUES (
@@ -251,7 +261,8 @@ VALUES (
   '11111111-1111-1111-1111-111111111111',
   'ACTIVE',
   NOW() - INTERVAL '30 days'
-);
+)
+ON CONFLICT (profile_id) DO NOTHING;
 
 -- Mike — one active profile
 INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments)
@@ -265,7 +276,8 @@ VALUES (
   'America/New_York',
   NOW() - INTERVAL '45 days',
   '[{"start":"00:00","basal":0.70},{"start":"06:00","basal":0.95},{"start":"12:00","basal":0.75},{"start":"20:00","basal":0.65}]'
-);
+)
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO profile_statuses(profile_id, user_id, status, valid_from)
 VALUES (
@@ -273,4 +285,5 @@ VALUES (
   '22222222-2222-2222-2222-222222222222',
   'ACTIVE',
   NOW() - INTERVAL '45 days'
-);
+)
+ON CONFLICT (profile_id) DO NOTHING;
