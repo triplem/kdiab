@@ -162,6 +162,9 @@ build_docker() {
     return 1
   fi
 
+  # Podman defaults to OCI image format, which drops HEALTHCHECK. Force Docker format.
+  [[ "$COMPOSE_CMD" == "podman compose" ]] && export BUILDAH_FORMAT=docker
+
   # --parallel is a docker compose flag; podman compose handles concurrency internally
   local parallel_flag=""
   if $PARALLEL && [[ "$COMPOSE_CMD" == "docker compose" ]]; then
