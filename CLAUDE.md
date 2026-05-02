@@ -225,6 +225,54 @@ bd close <id>         # Complete work
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
 
+## Parallel Agent Workflow
+
+For non-trivial work, use the three-phase workflow: **Spec → Parallel → Merge**.
+
+### Three Phases
+
+```
+Phase 1 — Spec      /spec <id> [id2 id3...]
+Phase 2 — Parallel  /parallel [id1 id2...]     (or leave blank to pick up all specced ready issues)
+Phase 3 — Merge     git worktree list           (inspect branches, merge to main)
+```
+
+### Slash Commands
+
+| Command | What it does |
+|---|---|
+| `/spec <id> [id2...]` | Enters plan mode, explores code, writes an OpenSpec to each issue's `--design` field. Requires user approval before storing. |
+| `/parallel [id1 id2...]` | Reads each issue's OpenSpec, spawns one Agent per issue in an isolated git worktree (all in parallel). Leave args blank to pick up all ready specced issues. |
+| `/implement <id>` | Worker command — claims an issue, follows its OpenSpec, runs quality gates, commits, closes. Embedded by `/parallel` into each agent prompt; also callable directly for a single issue. |
+
+### Rules for the Parallel Workflow
+
+1. **Spec is mandatory before parallel.** Never run `/parallel` on an issue whose `--design` field is empty.
+2. **One issue = one worktree = one branch.** Agents never share a worktree.
+3. **Quality gates must be green before commit.** Agents may not skip `--no-verify` or bypass coverage checks.
+4. **All Agent calls in a single message.** The orchestrator sends all parallel agents in one response — do not await between them.
+5. **Worktree branches are named `<issue-id>` or similar.** Use `git worktree list` to inspect active agents.
+
+### Example Session
+
+```bash
+# 1. Create a batch of issues
+bd create --title="Add pagination to MeasureList" --type=feature
+bd create --title="Add weight unit toggle" --type=feature
+
+# 2. Spec them (enters plan mode, writes OpenSpec to each issue's design field)
+/spec kdiab-abc kdiab-def
+
+# 3. Spawn parallel agents — each works in its own git worktree
+/parallel kdiab-abc kdiab-def
+
+# 4. Inspect results and merge branches
+git worktree list
+git merge kdiab-abc
+git merge kdiab-def
+git worktree prune
+```
+
 ## Session Completion
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
