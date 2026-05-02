@@ -6,8 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { setAccessToken, parseRolesFromToken, parseAllowedPatientsFromToken, parseGlucoseUnitFromToken } from './api/tokenProvider';
 import { TimelineView } from './features/timeline/TimelineView';
 import { AnalyticsView } from './features/analytics/AnalyticsView';
+import { ProfilesView } from './features/analytics/ProfilesView';
 
-type Tab = 'timeline' | 'analytics';
+type Tab = 'timeline' | 'analytics' | 'profiles';
 
 class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
   constructor(props: {children: React.ReactNode}) {
@@ -153,6 +154,9 @@ function App() {
           <button className={tab === 'analytics' ? 'active-tab' : ''} onClick={() => setTab('analytics')}>
             {t('tabs.analytics')}
           </button>
+          <button className={tab === 'profiles' ? 'active-tab' : ''} onClick={() => setTab('profiles')}>
+            {t('tabs.profiles')}
+          </button>
         </nav>
 
         <main>
@@ -161,6 +165,9 @@ function App() {
           )}
           {tab === 'analytics' && (
             <AnalyticsView userId={viewingUserId} glucoseUnit={glucoseUnit} />
+          )}
+          {tab === 'profiles' && (
+            <ProfilesView userId={viewingUserId} />
           )}
         </main>
       </div>

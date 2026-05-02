@@ -1,8 +1,8 @@
 {
   "app": {
-    "title": "T1D Messmanager",
+    "title": "T1D Messungen",
     "loading": "Authentifizierung wird geladen...",
-    "welcome": "Willkommen beim T1D Messmanager",
+    "welcome": "Willkommen bei T1D Messungen",
     "login": "Anmelden",
     "loggedInAs": "Angemeldet als",
     "logout": "Abmelden",

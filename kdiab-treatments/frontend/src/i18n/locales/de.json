@@ -1,8 +1,8 @@
 {
   "app": {
-    "title": "T1D Behandlungsmanager",
+    "title": "T1D Behandlungen",
     "loading": "Authentifizierung wird geladen...",
-    "welcome": "Willkommen beim T1D Behandlungsmanager",
+    "welcome": "Willkommen bei T1D Behandlungen",
     "login": "Anmelden",
     "loggedInAs": "Angemeldet als",
     "logout": "Abmelden",
@@ -61,6 +61,9 @@
     "intensityLight": "Leicht",
     "intensityModerate": "Moderat",
     "intensityIntense": "Intensiv",
+    "activityName": "Aktivitätsname (z.B. Laufen, Radfahren):",
+    "activityDuration": "Dauer (Minuten):",
+    "activityIntensity": "Intensität:",
     "types": {
       "BOLUS": "Bolus (schnellwirkendes Insulin)",
       "CORRECTION_BOLUS": "Korrekturbolus",
@@ -73,7 +76,8 @@
       "INSULIN_CHANGE": "Insulinkartuschenwechsel",
       "COMBO_BOLUS": "Kombibolus (sofort/verlängert)",
       "TEMP_BASAL": "Temporäre Basalrate",
-      "PUMP_SUSPEND": "Pumpe pausieren"
+      "PUMP_SUSPEND": "Pumpe pausieren",
+      "ACTIVITY": "Körperliche Aktivität"
     }
   }
 }

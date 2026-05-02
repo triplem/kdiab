@@ -113,7 +113,7 @@ BEGIN
     units := ROUND((carbs / 10.0 + 0.5)::NUMERIC, 1);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t, 'CARBS',
-            jsonb_build_object('carbs', carbs), 'Breakfast');
+            jsonb_build_object('carbs', carbs), 'Frühstück');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Breakfast bolus');
@@ -124,7 +124,7 @@ BEGIN
     units := ROUND((carbs / 10.0 + 0.3)::NUMERIC, 1);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t, 'CARBS',
-            jsonb_build_object('carbs', carbs), 'Lunch');
+            jsonb_build_object('carbs', carbs), 'Mittagessen');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Lunch bolus');
@@ -135,7 +135,7 @@ BEGIN
     units := ROUND((carbs / 10.0 + 0.8)::NUMERIC, 1);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t, 'CARBS',
-            jsonb_build_object('carbs', carbs), 'Dinner');
+            jsonb_build_object('carbs', carbs), 'Abendessen');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Dinner bolus');
@@ -146,7 +146,7 @@ BEGIN
     units := ROUND((carbs / 10.0 + 0.4)::NUMERIC, 1);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t, 'CARBS',
-            jsonb_build_object('carbs', carbs), 'Breakfast');
+            jsonb_build_object('carbs', carbs), 'Frühstück');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Breakfast bolus');
@@ -156,7 +156,7 @@ BEGIN
     units := ROUND((carbs / 10.0 + 0.2)::NUMERIC, 1);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t, 'CARBS',
-            jsonb_build_object('carbs', carbs), 'Lunch');
+            jsonb_build_object('carbs', carbs), 'Mittagessen');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Lunch bolus');
@@ -166,7 +166,7 @@ BEGIN
     units := ROUND((carbs / 10.0 + 0.6)::NUMERIC, 1);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t, 'CARBS',
-            jsonb_build_object('carbs', carbs), 'Dinner');
+            jsonb_build_object('carbs', carbs), 'Abendessen');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Dinner bolus');
@@ -179,6 +179,22 @@ BEGIN
               jsonb_build_object('insulin', 1.5, 'insulinType', 'Humalog'), 'High correction');
     END IF;
   END LOOP;
+
+  -- Weekly activity entries for sarah (running, moderate)
+  INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+  VALUES (gen_random_uuid(), sarah_id, NOW() - INTERVAL '7 days', 'ACTIVITY',
+          jsonb_build_object('name', 'Laufen', 'duration', 45, 'intensity', 'moderate'), 'Morgenrunde');
+  INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+  VALUES (gen_random_uuid(), sarah_id, NOW() - INTERVAL '14 days', 'ACTIVITY',
+          jsonb_build_object('name', 'Radfahren', 'duration', 60, 'intensity', 'low'), 'Abendtour');
+
+  -- Weekly activity entries for mike (cycling, jogging)
+  INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+  VALUES (gen_random_uuid(), mike_id, NOW() - INTERVAL '5 days', 'ACTIVITY',
+          jsonb_build_object('name', 'Joggen', 'duration', 30, 'intensity', 'moderate'), 'Mittagspause');
+  INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+  VALUES (gen_random_uuid(), mike_id, NOW() - INTERVAL '10 days', 'ACTIVITY',
+          jsonb_build_object('name', 'Schwimmen', 'duration', 45, 'intensity', 'high'), 'Abendtraining');
 END $$;
 
 -- ── Profiles ──────────────────────────────────────────────────────────────────

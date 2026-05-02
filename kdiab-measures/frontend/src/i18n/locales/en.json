@@ -1,8 +1,8 @@
 {
   "app": {
-    "title": "T1D Measure Manager",
+    "title": "T1D Measurements",
     "loading": "Loading authentication...",
-    "welcome": "Welcome to T1D Measure Manager",
+    "welcome": "Welcome to T1D Measurements",
     "login": "Log in",
     "loggedInAs": "Logged in as",
     "logout": "Log out",

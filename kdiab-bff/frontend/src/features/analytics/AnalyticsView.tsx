@@ -6,7 +6,6 @@ import { TimeframePicker, Timeframe, defaultTimeframe } from '../timeframe/Timef
 import { HbA1cCard } from './HbA1cCard';
 import { TimeInRangeBar } from './TimeInRangeBar';
 import { AgpChart } from './AgpChart';
-import { ProfilesTable } from './ProfilesTable';
 
 interface TirBreakdown {
   belowCount: number;
@@ -35,18 +34,6 @@ interface AgpHourlyData {
 
 interface AgpResponse {
   hourlyData: AgpHourlyData[];
-}
-
-interface ProfileSummary {
-  id: string;
-  status: string;
-  name: string;
-  createdAt?: string;
-  previousProfileId?: string;
-}
-
-interface ProfilesResponse {
-  profiles: ProfileSummary[];
 }
 
 interface Props {
@@ -82,18 +69,7 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
     enabled,
   });
 
-  const profilesQuery = useQuery({
-    queryKey: ['profiles-active', userId, timeframe.from, timeframe.to],
-    queryFn: async () => {
-      const res = await axiosInstance.get<ProfilesResponse>(`/users/${userId}/profiles/active`, {
-        params: { from: timeframe.from, to: timeframe.to },
-      });
-      return res.data;
-    },
-    enabled,
-  });
-
-  const loading = hba1cQuery.isLoading || agpQuery.isLoading || profilesQuery.isLoading;
+  const loading = hba1cQuery.isLoading || agpQuery.isLoading;
 
   return (
     <div>
@@ -115,10 +91,6 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
 
       {agpQuery.data && (
         <AgpChart hourlyData={agpQuery.data.hourlyData} glucoseUnit={glucoseUnit} />
-      )}
-
-      {profilesQuery.data && (
-        <ProfilesTable profiles={profilesQuery.data.profiles} />
       )}
     </div>
   );

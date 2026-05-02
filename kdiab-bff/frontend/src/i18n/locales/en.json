@@ -11,7 +11,8 @@
   },
   "tabs": {
     "timeline": "Timeline",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "profiles": "Profiles"
   },
   "timeframe": {
     "label": "Timeframe",

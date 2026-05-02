@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 type PatientTreatmentType =
   | 'BOLUS' | 'CARBS' | 'CORRECTION_BOLUS' | 'BASAL'
   | 'COMBO_BOLUS' | 'TEMP_BASAL' | 'PUMP_SUSPEND'
-  | 'EXERCISE' | 'NOTE' | 'SITE_CHANGE' | 'SENSOR_INSERT' | 'INSULIN_CHANGE';
+  | 'EXERCISE' | 'NOTE' | 'SITE_CHANGE' | 'SENSOR_INSERT' | 'INSULIN_CHANGE' | 'ACTIVITY';
 
 export interface TreatmentInput {
   type: string;
@@ -24,7 +24,7 @@ interface AddTreatmentModalProps {
 const TREATMENT_TYPES: PatientTreatmentType[] = [
   'BOLUS', 'CORRECTION_BOLUS', 'COMBO_BOLUS', 'CARBS', 'BASAL',
   'TEMP_BASAL', 'PUMP_SUSPEND', 'EXERCISE', 'NOTE',
-  'SITE_CHANGE', 'SENSOR_INSERT', 'INSULIN_CHANGE',
+  'SITE_CHANGE', 'SENSOR_INSERT', 'INSULIN_CHANGE', 'ACTIVITY',
 ];
 
 const inputStyle: React.CSSProperties = {
@@ -83,6 +83,9 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({ isOpen, on
   const [siteLocation, setSiteLocation] = useState('');
   const [sensorModel, setSensorModel] = useState('');
   const [newInsulinType, setNewInsulinType] = useState('');
+  const [activityName, setActivityName] = useState('');
+  const [activityDuration, setActivityDuration] = useState('');
+  const [activityIntensity, setActivityIntensity] = useState<'low' | 'moderate' | 'high'>('moderate');
 
   if (!isOpen) return null;
 
@@ -155,6 +158,11 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({ isOpen, on
         return sensorModel ? { sensor: sensorModel } : {};
       case 'INSULIN_CHANGE':
         return newInsulinType ? { insulinType: newInsulinType } : {};
+      case 'ACTIVITY': {
+        const dur = parseInt(activityDuration, 10);
+        if (!activityName.trim() || isNaN(dur) || dur <= 0) return null;
+        return { name: activityName.trim(), duration: dur, intensity: activityIntensity };
+      }
     }
   };
 
@@ -362,6 +370,34 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({ isOpen, on
               value={newInsulinType} onChange={e => setNewInsulinType(e.target.value)}
               style={inputStyle} autoFocus />
           </label>
+        );
+
+      case 'ACTIVITY':
+        return (
+          <>
+            <label style={labelStyle}>
+              <span>{t('modal.activityName')}</span>
+              <input type="text" placeholder="e.g. running, cycling"
+                value={activityName} onChange={e => setActivityName(e.target.value)}
+                style={inputStyle} required autoFocus />
+            </label>
+            <label style={labelStyle}>
+              <span>{t('modal.activityDuration')}</span>
+              <input type="number" min="1" max="600" step="1" placeholder="e.g. 45"
+                value={activityDuration} onChange={e => setActivityDuration(e.target.value)}
+                style={inputStyle} required />
+            </label>
+            <label style={labelStyle}>
+              <span>{t('modal.activityIntensity')}</span>
+              <select value={activityIntensity}
+                onChange={e => setActivityIntensity(e.target.value as 'low' | 'moderate' | 'high')}
+                style={inputStyle}>
+                <option value="low">{t('modal.intensityLight')}</option>
+                <option value="moderate">{t('modal.intensityModerate')}</option>
+                <option value="high">{t('modal.intensityIntense')}</option>
+              </select>
+            </label>
+          </>
         );
     }
   };

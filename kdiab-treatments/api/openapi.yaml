@@ -214,6 +214,7 @@ components:
         - SITE_CHANGE: `{"location": "left abdomen"}`
         - SENSOR_INSERT: `{"sensor": "Dexcom G7"}`
         - INSULIN_CHANGE: `{"insulinType": "NovoRapid"}`
+        - ACTIVITY: `{"name": "running", "duration": 45, "intensity": "moderate"}`
       additionalProperties: true
 
     TreatmentType:
@@ -233,6 +234,7 @@ components:
         - SITE_CHANGE: Infusion site/cannula replacement ("Site Change")
         - SENSOR_INSERT: CGM sensor insertion ("Sensor Insert")
         - INSULIN_CHANGE: Insulin cartridge/pen replacement ("Insulin Change")
+        - ACTIVITY: Physical activity log with name, duration (minutes), and intensity level (low/moderate/high)
       enum:
         - BOLUS
         - BASAL
@@ -246,6 +248,7 @@ components:
         - SITE_CHANGE
         - SENSOR_INSERT
         - INSULIN_CHANGE
+        - ACTIVITY
 
     ErrorResponse:
       type: object

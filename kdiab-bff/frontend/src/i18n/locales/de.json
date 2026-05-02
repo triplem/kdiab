@@ -11,7 +11,8 @@
   },
   "tabs": {
     "timeline": "Zeitverlauf",
-    "analytics": "Analyse"
+    "analytics": "Analyse",
+    "profiles": "Profile"
   },
   "timeframe": {
     "label": "Zeitraum",
