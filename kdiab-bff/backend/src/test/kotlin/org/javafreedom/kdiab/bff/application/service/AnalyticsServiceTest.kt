@@ -139,9 +139,9 @@ class AnalyticsServiceTest {
         val bucket14 = result.hourlyData.first { it.hour == 14 }
         assertEquals(2, bucket14.count)
         // linear interpolation: p10 = 120 + 0.1*(130-120) = 121, p90 = 120 + 0.9*(130-120) = 129
-        assertEquals(121.0, bucket14.p10!!, absoluteTolerance = 0.01)
-        assertEquals(129.0, bucket14.p90!!, absoluteTolerance = 0.01)
-        assertEquals(125.0, bucket14.median!!, absoluteTolerance = 0.01)
+        assertEquals(121.0, bucket14.p10, absoluteTolerance = 0.01)
+        assertEquals(129.0, bucket14.p90, absoluteTolerance = 0.01)
+        assertEquals(125.0, bucket14.median, absoluteTolerance = 0.01)
     }
 
     @Test
@@ -162,7 +162,7 @@ class AnalyticsServiceTest {
         )
         val result = service.getAgp(userId, from, to, auth, "mmol/L")
         val bucket8 = result.hourlyData.first { it.hour == 8 }
-        assertEquals(108.0, bucket8.median!!, absoluteTolerance = 0.01)
+        assertEquals(108.0, bucket8.median, absoluteTolerance = 0.01)
     }
 }
 

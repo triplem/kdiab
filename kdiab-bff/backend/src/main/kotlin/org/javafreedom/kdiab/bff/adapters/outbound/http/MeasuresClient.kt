@@ -30,6 +30,8 @@ private data class PagedMeasureDto(
     val totalCount: Long,
 )
 
+private const val PAGE_SIZE = 200   // upstream maximum (see api/openapi.yaml size.maximum)
+
 class MeasuresClient(
     private val httpClient: HttpClient,
     private val baseUrl: String,
@@ -38,7 +40,7 @@ class MeasuresClient(
         logger.debug { "Fetching measures for user $userId from $baseUrl" }
         val result = mutableListOf<MeasureDto>()
         var page = 0
-        val pageSize = 200   // upstream maximum
+        val pageSize = PAGE_SIZE
         var totalCount = Long.MAX_VALUE
 
         while (result.size < totalCount) {
