@@ -6,8 +6,10 @@
 #   ./build.sh --check         # build + run all tests, detekt, kover
 #   ./build.sh --backend-only  # backends only
 #   ./build.sh --frontend-only # frontends only
+#   ./build.sh --docker        # build all Docker images (service + liquibase images)
 #   ./build.sh --no-parallel   # sequential (useful when disk/RAM is tight)
 #
+# Flags can be combined, e.g.: ./build.sh --check --docker
 # Exit code is non-zero if any service fails to build.
 
 set -euo pipefail
@@ -17,6 +19,7 @@ SERVICES=(kdiab-measures kdiab-profiles kdiab-treatments kdiab-bff)
 # ── Flags ─────────────────────────────────────────────────────────────────────
 BUILD_BACKEND=true
 BUILD_FRONTEND=true
+BUILD_DOCKER=false
 GRADLE_TASK=":backend:build"
 PARALLEL=true
 
@@ -25,9 +28,10 @@ for arg in "$@"; do
     --backend-only)  BUILD_FRONTEND=false ;;
     --frontend-only) BUILD_BACKEND=false  ;;
     --check)         GRADLE_TASK=":backend:check" ;;
+    --docker)        BUILD_DOCKER=true ;;
     --no-parallel)   PARALLEL=false ;;
     --help|-h)
-      sed -n '2,10p' "$0" | sed 's/^# //'
+      sed -n '3,13p' "$0" | sed 's/^# *//'
       exit 0
       ;;
     *)
@@ -102,6 +106,35 @@ run_parallel() {
   return $rc
 }
 
+# ── Build Docker images ────────────────────────────────────────────────────────
+# All buildable images in the root docker-compose.yml (excludes pulled images:
+# postgres, keycloak, pgadmin, pg-seed).
+DOCKER_SERVICES=(
+  liquibase-measures liquibase-profiles liquibase-treatments
+  measures-backend   measures-frontend
+  profiles-backend   profiles-frontend
+  treatments-backend treatments-frontend
+  bff-backend        bff-frontend
+)
+
+build_docker() {
+  # Detect docker compose v2 (plugin) vs v1 (standalone)
+  if docker compose version &>/dev/null; then
+    COMPOSE_CMD="docker compose"
+  elif command -v docker-compose &>/dev/null; then
+    COMPOSE_CMD="docker-compose"
+  else
+    fail "Neither 'docker compose' nor 'docker-compose' found"
+    return 1
+  fi
+
+  local parallel_flag=""
+  $PARALLEL && parallel_flag="--parallel"
+
+  run_step "docker images" \
+    bash -c "cd '$ROOT' && $COMPOSE_CMD build $parallel_flag ${DOCKER_SERVICES[*]}"
+}
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 START=$(date +%s)
 FAILED=0
@@ -128,6 +161,12 @@ if $BUILD_FRONTEND; then
       build_frontend "$svc" || FAILED=1
     done
   fi
+fi
+
+if $BUILD_DOCKER; then
+  echo ""
+  echo -e "${YELLOW}═══ Docker images ═══${NC}"
+  build_docker || FAILED=1
 fi
 
 # ── Summary ───────────────────────────────────────────────────────────────────
