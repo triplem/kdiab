@@ -227,7 +227,7 @@ VALUES (
   240,
   'Europe/Berlin',
   NOW() - INTERVAL '65 days',
-  '[{"start":"00:00","basal":0.85},{"start":"06:00","basal":1.10},{"start":"12:00","basal":0.90},{"start":"18:00","basal":1.00}]'
+  '{"basal":[{"startTime":"00:00","value":0.85},{"startTime":"06:00","value":1.10},{"startTime":"12:00","value":0.90},{"startTime":"18:00","value":1.00}],"icr":[],"isf":[],"targets":[]}'
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -251,7 +251,7 @@ VALUES (
   240,
   'Europe/Berlin',
   NOW() - INTERVAL '31 days',
-  '[{"start":"00:00","basal":0.90},{"start":"06:00","basal":1.20},{"start":"10:00","basal":1.00},{"start":"18:00","basal":1.05},{"start":"22:00","basal":0.80}]'
+  '{"basal":[{"startTime":"00:00","value":0.90},{"startTime":"06:00","value":1.20},{"startTime":"10:00","value":1.00},{"startTime":"18:00","value":1.05},{"startTime":"22:00","value":0.80}],"icr":[],"isf":[],"targets":[]}'
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -275,7 +275,7 @@ VALUES (
   210,
   'America/New_York',
   NOW() - INTERVAL '45 days',
-  '[{"start":"00:00","basal":0.70},{"start":"06:00","basal":0.95},{"start":"12:00","basal":0.75},{"start":"20:00","basal":0.65}]'
+  '{"basal":[{"startTime":"00:00","value":0.70},{"startTime":"06:00","value":0.95},{"startTime":"12:00","value":0.75},{"startTime":"20:00","value":0.65}],"icr":[],"isf":[],"targets":[]}'
 )
 ON CONFLICT (id) DO NOTHING;
 

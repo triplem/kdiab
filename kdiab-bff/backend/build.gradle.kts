@@ -54,6 +54,7 @@ dependencies {
     testImplementation(kotlin("test-junit5"))
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.client.content.negotiation)
+    testImplementation(libs.ktor.client.mock)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
 }
