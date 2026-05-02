@@ -31,3 +31,4 @@
 == Architecture Decision Records
 
 * link:adr/ADR-001-monorepo-consolidation.html[ADR-001 Monorepo Consolidation]
+* link:adr/ADR-002-docker-image-naming.html[ADR-002 Docker Image Naming Convention]

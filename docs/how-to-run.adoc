@@ -45,21 +45,21 @@ Flags are composable:
 `--docker` calls `docker compose build` (or `podman compose build` when Docker is not available)
 for every image defined in the root `docker-compose.yml` that has a local `build:` context:
 
-[cols="1,2"]
+[cols="2,2,3"]
 |===
-| Image | Dockerfile
+| Compose service | Image name | Dockerfile
 
-| `liquibase-measures`   | `kdiab-measures/backend/Dockerfile.liquibase`
-| `liquibase-profiles`   | `kdiab-profiles/backend/Dockerfile.liquibase`
-| `liquibase-treatments` | `kdiab-treatments/backend/Dockerfile.liquibase`
-| `measures-backend`     | `kdiab-measures/backend/Dockerfile`
-| `measures-frontend`    | `kdiab-measures/frontend/Dockerfile`
-| `profiles-backend`     | `kdiab-profiles/backend/Dockerfile`
-| `profiles-frontend`    | `kdiab-profiles/frontend/Dockerfile`
-| `treatments-backend`   | `kdiab-treatments/backend/Dockerfile`
-| `treatments-frontend`  | `kdiab-treatments/frontend/Dockerfile`
-| `bff-backend`          | `kdiab-bff/backend/Dockerfile`
-| `bff-frontend`         | `kdiab-bff/frontend/Dockerfile`
+| `liquibase-measures`   | `localhost/kdiab-measures-liquibase:latest`   | `kdiab-measures/backend/Dockerfile.liquibase`
+| `liquibase-profiles`   | `localhost/kdiab-profiles-liquibase:latest`   | `kdiab-profiles/backend/Dockerfile.liquibase`
+| `liquibase-treatments` | `localhost/kdiab-treatments-liquibase:latest` | `kdiab-treatments/backend/Dockerfile.liquibase`
+| `measures-backend`     | `localhost/kdiab-measures-backend:latest`     | `kdiab-measures/backend/Dockerfile`
+| `measures-frontend`    | `localhost/kdiab-measures-frontend:latest`    | `kdiab-measures/frontend/Dockerfile`
+| `profiles-backend`     | `localhost/kdiab-profiles-backend:latest`     | `kdiab-profiles/backend/Dockerfile`
+| `profiles-frontend`    | `localhost/kdiab-profiles-frontend:latest`    | `kdiab-profiles/frontend/Dockerfile`
+| `treatments-backend`   | `localhost/kdiab-treatments-backend:latest`   | `kdiab-treatments/backend/Dockerfile`
+| `treatments-frontend`  | `localhost/kdiab-treatments-frontend:latest`  | `kdiab-treatments/frontend/Dockerfile`
+| `bff-backend`          | `localhost/kdiab-bff-backend:latest`          | `kdiab-bff/backend/Dockerfile`
+| `bff-frontend`         | `localhost/kdiab-bff-frontend:latest`         | `kdiab-bff/frontend/Dockerfile`
 |===
 
 Externally pulled images (`postgres`, `keycloak`, `pgadmin`) are not rebuilt by this flag.

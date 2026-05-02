@@ -1,0 +1,104 @@
+= ADR-002: Docker Image Naming Convention
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-02
+* *Deciders*: triplem
+
+== Context
+
+The root `docker-compose.yml` defines 11 buildable images (service backends, service frontends,
+and Liquibase schema migration runners). Without explicit `image:` names in the compose file,
+`podman compose` / `docker compose` derives image names from `<project_name>_<service_name>`,
+where `project_name` is the name of the current working directory at the time the command is run.
+
+This caused two problems:
+
+* Images built by `build.sh --docker` (run from repo root, project `kdiab`) had names like
+  `kdiab_measures-backend`, which differed from images built from inside a service directory
+  (project `kdiab-measures`) that had names like `kdiab-measures_backend`.
+* `podman compose up` / `podman compose start` could not find images built by `build.sh --docker`
+  unless the user ran it from exactly the same directory.
+
+== Decision
+
+Add explicit `image:` tags to every service with a `build:` context in `docker-compose.yml`.
+Image names follow the fixed pattern:
+
+----
+localhost/kdiab-<service>-<function>:latest
+----
+
+Where:
+
+* `<service>` is one of: `measures`, `profiles`, `treatments`, `bff`
+* `<function>` is one of: `backend`, `frontend`, `liquibase`
+
+The `localhost/` prefix marks these as locally built images (not pulled from a registry).
+
+=== Full Image Name Table
+
+[cols="1,2,2"]
+|===
+| Compose service | Image | Dockerfile
+
+| `liquibase-measures`   | `localhost/kdiab-measures-liquibase:latest`   | `kdiab-measures/backend/Dockerfile.liquibase`
+| `liquibase-profiles`   | `localhost/kdiab-profiles-liquibase:latest`   | `kdiab-profiles/backend/Dockerfile.liquibase`
+| `liquibase-treatments` | `localhost/kdiab-treatments-liquibase:latest` | `kdiab-treatments/backend/Dockerfile.liquibase`
+| `measures-backend`     | `localhost/kdiab-measures-backend:latest`     | `kdiab-measures/backend/Dockerfile`
+| `measures-frontend`    | `localhost/kdiab-measures-frontend:latest`    | `kdiab-measures/frontend/Dockerfile`
+| `profiles-backend`     | `localhost/kdiab-profiles-backend:latest`     | `kdiab-profiles/backend/Dockerfile`
+| `profiles-frontend`    | `localhost/kdiab-profiles-frontend:latest`    | `kdiab-profiles/frontend/Dockerfile`
+| `treatments-backend`   | `localhost/kdiab-treatments-backend:latest`   | `kdiab-treatments/backend/Dockerfile`
+| `treatments-frontend`  | `localhost/kdiab-treatments-frontend:latest`  | `kdiab-treatments/frontend/Dockerfile`
+| `bff-backend`          | `localhost/kdiab-bff-backend:latest`          | `kdiab-bff/backend/Dockerfile`
+| `bff-frontend`         | `localhost/kdiab-bff-frontend:latest`         | `kdiab-bff/frontend/Dockerfile`
+|===
+
+Externally pulled images (`postgres`, `keycloak`, `pgadmin`) are unaffected — they already have
+explicit `image:` tags pointing to public registries.
+
+== Build Workflow
+
+Images are built via `build.sh --docker`, which calls `podman compose build` (or `docker compose build`)
+on all 11 services. The compose tool reads the `image:` tag from `docker-compose.yml` and stores the
+result under that fixed name regardless of the working directory.
+
+After a successful build:
+
+[source,bash]
+----
+podman compose up        # images found by their fixed names
+podman compose start     # containers restarted without re-pull
+----
+
+== Consequences
+
+=== Positive
+
+* `podman compose up` always finds the images built by `build.sh --docker`, regardless of where
+  either command is invoked.
+* Image names are predictable and grep-able across `docker-compose.yml`, `build.sh`,
+  and documentation.
+* Stale images from previous directory-derived naming (e.g. `kdiab_measures-backend`) can
+  be safely pruned with `podman image prune`.
+
+=== Negative
+
+* If a new service or function is added, both the `image:` tag in `docker-compose.yml` and
+  the `DOCKER_SERVICES` array in `build.sh` must be updated consistently.
+
+== Alternatives Considered
+
+=== Rely on compose project name (`--project-name`)
+
+Pass a fixed `--project-name kdiab` to every compose invocation. Rejected: this requires every
+developer and every CI script to remember the flag; one missing invocation reverts to the
+directory-derived name.
+
+=== Use a `.env` file with `COMPOSE_PROJECT_NAME`
+
+Set `COMPOSE_PROJECT_NAME=kdiab` in a root `.env`. Partially equivalent to explicit `image:`
+tags but less explicit — the image name is still derived (`kdiab_measures-backend`) rather than
+stated, and the `.env` is optional and easy to miss.

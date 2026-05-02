@@ -84,7 +84,7 @@ services:
   # ── Schema migrations ───────────────────────────────────────────────────────
 
   liquibase-measures:
-    image: localhost/kdiab-liquibase-measures:latest
+    image: localhost/kdiab-measures-liquibase:latest
     build:
       context: ./kdiab-measures
       dockerfile: backend/Dockerfile.liquibase
@@ -102,7 +102,7 @@ services:
       - shared
 
   liquibase-profiles:
-    image: localhost/kdiab-liquibase-profiles:latest
+    image: localhost/kdiab-profiles-liquibase:latest
     build:
       context: ./kdiab-profiles
       dockerfile: backend/Dockerfile.liquibase
@@ -120,7 +120,7 @@ services:
       - shared
 
   liquibase-treatments:
-    image: localhost/kdiab-liquibase-treatments:latest
+    image: localhost/kdiab-treatments-liquibase:latest
     build:
       context: ./kdiab-treatments
       dockerfile: backend/Dockerfile.liquibase
