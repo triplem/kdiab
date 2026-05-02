@@ -7,6 +7,7 @@
 #   ./build.sh --backend-only  # backends only
 #   ./build.sh --frontend-only # frontends only
 #   ./build.sh --docker        # build all Docker images (service + liquibase images)
+#   ./build.sh --clean         # stop containers, remove all local images and volumes (DB reset)
 #   ./build.sh --no-parallel   # sequential (useful when disk/RAM is tight)
 #
 # Flags can be combined, e.g.: ./build.sh --check --docker
@@ -20,6 +21,7 @@ SERVICES=(kdiab-measures kdiab-profiles kdiab-treatments kdiab-bff)
 BUILD_BACKEND=true
 BUILD_FRONTEND=true
 BUILD_DOCKER=false
+BUILD_CLEAN=false
 GRADLE_TASK=":backend:build"
 PARALLEL=true
 
@@ -29,9 +31,10 @@ for arg in "$@"; do
     --frontend-only) BUILD_BACKEND=false  ;;
     --check)         GRADLE_TASK=":backend:check" ;;
     --docker)        BUILD_DOCKER=true ;;
+    --clean)         BUILD_CLEAN=true ;;
     --no-parallel)   PARALLEL=false ;;
     --help|-h)
-      sed -n '3,13p' "$0" | sed 's/^# *//'
+      sed -n '3,14p' "$0" | sed 's/^# *//'
       exit 0
       ;;
     *)
@@ -106,6 +109,35 @@ run_parallel() {
   return $rc
 }
 
+# ── Clean images and volumes ──────────────────────────────────────────────────
+clean() {
+  # Detect available compose tool
+  if docker compose version &>/dev/null 2>&1; then
+    COMPOSE_CMD="docker compose"
+  elif podman compose version &>/dev/null 2>&1; then
+    COMPOSE_CMD="podman compose"
+  elif command -v docker-compose &>/dev/null; then
+    COMPOSE_CMD="docker-compose"
+  else
+    fail "No compose tool found (tried: docker compose, podman compose, docker-compose)"
+    return 1
+  fi
+
+  log "Stopping containers and removing volumes"
+  (cd "$ROOT" && $COMPOSE_CMD down -v --remove-orphans) || true
+
+  log "Removing local kdiab images"
+  local images
+  images=$(docker images --filter "reference=localhost/kdiab-*" -q 2>/dev/null || \
+           podman images --filter "reference=localhost/kdiab-*" -q 2>/dev/null || true)
+  if [[ -n "$images" ]]; then
+    # shellcheck disable=SC2086
+    docker rmi $images 2>/dev/null || podman rmi $images 2>/dev/null || true
+  fi
+
+  ok "Clean complete — all kdiab images and volumes removed"
+}
+
 # ── Build Docker images ────────────────────────────────────────────────────────
 # All buildable images in the root docker-compose.yml (excludes pulled images:
 # postgres, keycloak, pgadmin, pg-seed).
@@ -143,6 +175,12 @@ build_docker() {
 # ── Main ───────────────────────────────────────────────────────────────────────
 START=$(date +%s)
 FAILED=0
+
+if $BUILD_CLEAN; then
+  echo ""
+  echo -e "${YELLOW}═══ Clean ═══${NC}"
+  clean || FAILED=1
+fi
 
 if $BUILD_BACKEND; then
   echo ""
