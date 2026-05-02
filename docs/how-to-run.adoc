@@ -74,21 +74,38 @@ Build logs land in `.build-logs/docker images.log` on failure.
 The root `docker-compose.yml` starts the entire platform: all four services, Keycloak, PostgreSQL,
 pgAdmin, Liquibase migrations, and a seed-data job.
 
-[source,bash]
-----
-# Docker
-docker compose up --build
-
-# Podman
-podman compose up --build
-----
-
-To tear down and wipe all volumes (database, pgAdmin state):
+=== Container Lifecycle
 
 [source,bash]
 ----
+# First run — build images then create and start containers
+./build.sh --docker
+podman compose up -d          # -d runs detached (background)
+
+# Subsequent runs — start already-created containers
+podman compose start
+
+# Stop without removing containers
+podman compose stop
+
+# Remove containers (images are kept; next start requires `up` again)
+podman compose down
+
+# Remove containers AND volumes (wipes database and pgAdmin state)
+podman compose down -v
+----
+
+NOTE: `podman compose start` only works on *existing stopped* containers. Always run
+`podman compose up -d` first. After `podman compose down`, run `up -d` again before `start`.
+
+Equivalent commands with Docker:
+
+[source,bash]
+----
+docker compose up -d
+docker compose start
+docker compose stop
 docker compose down -v
-podman compose down -v    # Podman equivalent
 ----
 
 === Database Initialisation

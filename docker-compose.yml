@@ -30,6 +30,7 @@ services:
   # ── Infrastructure ──────────────────────────────────────────────────────────
 
   postgres:
+    container_name: kdiab-postgres
     image: postgres:15
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -50,6 +51,7 @@ services:
     restart: unless-stopped
 
   keycloak:
+    container_name: kdiab-keycloak
     image: quay.io/keycloak/keycloak:23.0
     command: start-dev --import-realm
     environment:
@@ -65,6 +67,7 @@ services:
     restart: unless-stopped
 
   pgadmin:
+    container_name: kdiab-pgadmin
     image: dpage/pgadmin4:latest
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@kdiab.dev
@@ -84,6 +87,7 @@ services:
   # ── Schema migrations ───────────────────────────────────────────────────────
 
   liquibase-measures:
+    container_name: kdiab-measures-liquibase
     image: localhost/kdiab-measures-liquibase:latest
     build:
       context: ./kdiab-measures
@@ -102,6 +106,7 @@ services:
       - shared
 
   liquibase-profiles:
+    container_name: kdiab-profiles-liquibase
     image: localhost/kdiab-profiles-liquibase:latest
     build:
       context: ./kdiab-profiles
@@ -120,6 +125,7 @@ services:
       - shared
 
   liquibase-treatments:
+    container_name: kdiab-treatments-liquibase
     image: localhost/kdiab-treatments-liquibase:latest
     build:
       context: ./kdiab-treatments
@@ -139,6 +145,7 @@ services:
 
   # Runs after all three Liquibase migrations to insert seed data
   pg-seed:
+    container_name: kdiab-pg-seed
     image: postgres:15
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD:-password}
@@ -159,6 +166,7 @@ services:
   # ── kdiab-measures ──────────────────────────────────────────────────────────
 
   measures-backend:
+    container_name: kdiab-measures-backend
     image: localhost/kdiab-measures-backend:latest
     build:
       context: ./kdiab-measures
@@ -192,6 +200,7 @@ services:
     restart: unless-stopped
 
   measures-frontend:
+    container_name: kdiab-measures-frontend
     image: localhost/kdiab-measures-frontend:latest
     build:
       context: ./kdiab-measures
@@ -213,6 +222,7 @@ services:
   # ── kdiab-profiles ──────────────────────────────────────────────────────────
 
   profiles-backend:
+    container_name: kdiab-profiles-backend
     image: localhost/kdiab-profiles-backend:latest
     build:
       context: ./kdiab-profiles
@@ -244,6 +254,7 @@ services:
     restart: unless-stopped
 
   profiles-frontend:
+    container_name: kdiab-profiles-frontend
     image: localhost/kdiab-profiles-frontend:latest
     build:
       context: ./kdiab-profiles
@@ -268,6 +279,7 @@ services:
   # ── kdiab-treatments ────────────────────────────────────────────────────────
 
   treatments-backend:
+    container_name: kdiab-treatments-backend
     image: localhost/kdiab-treatments-backend:latest
     build:
       context: ./kdiab-treatments
@@ -301,6 +313,7 @@ services:
     restart: unless-stopped
 
   treatments-frontend:
+    container_name: kdiab-treatments-frontend
     image: localhost/kdiab-treatments-frontend:latest
     build:
       context: ./kdiab-treatments
@@ -322,6 +335,7 @@ services:
   # ── kdiab-bff ───────────────────────────────────────────────────────────────
 
   bff-backend:
+    container_name: kdiab-bff-backend
     image: localhost/kdiab-bff-backend:latest
     build:
       context: ./kdiab-bff
@@ -357,6 +371,7 @@ services:
     restart: unless-stopped
 
   bff-frontend:
+    container_name: kdiab-bff-frontend
     image: localhost/kdiab-bff-frontend:latest
     build:
       context: ./kdiab-bff

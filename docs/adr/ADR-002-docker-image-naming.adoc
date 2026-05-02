@@ -1,4 +1,4 @@
-= ADR-002: Docker Image Naming Convention
+= ADR-002: Docker Image and Container Naming Convention
 :toc: left
 :icons: font
 
@@ -9,25 +9,27 @@
 == Context
 
 The root `docker-compose.yml` defines 11 buildable images (service backends, service frontends,
-and Liquibase schema migration runners). Without explicit `image:` names in the compose file,
-`podman compose` / `docker compose` derives image names from `<project_name>_<service_name>`,
-where `project_name` is the name of the current working directory at the time the command is run.
+and Liquibase schema migration runners) and 15 containers in total (including pulled infrastructure
+images). Without explicit `image:` and `container_name:` fields, `podman compose` / `docker compose`
+derives both names from `<project_name>_<service_name>`, where `project_name` is the name of the
+current working directory at the time the command is run.
 
 This caused two problems:
 
 * Images built by `build.sh --docker` (run from repo root, project `kdiab`) had names like
   `kdiab_measures-backend`, which differed from images built from inside a service directory
   (project `kdiab-measures`) that had names like `kdiab-measures_backend`.
-* `podman compose up` / `podman compose start` could not find images built by `build.sh --docker`
-  unless the user ran it from exactly the same directory.
+* `podman compose start` looked for containers named `kdiab_liquibase-profiles_1` etc. — names
+  that were never created because `podman compose up` had not been run, and even when it had been,
+  the `_1` suffix and project-derived prefix made the names unpredictable.
 
 == Decision
 
-Add explicit `image:` tags to every service with a `build:` context in `docker-compose.yml`.
-Image names follow the fixed pattern:
+Add explicit `image:` tags to every service with a `build:` context, and `container_name:` tags
+to every service in `docker-compose.yml`. Both follow the same fixed pattern:
 
 ----
-localhost/kdiab-<service>-<function>:latest
+kdiab-<service>-<function>
 ----
 
 Where:
@@ -35,43 +37,60 @@ Where:
 * `<service>` is one of: `measures`, `profiles`, `treatments`, `bff`
 * `<function>` is one of: `backend`, `frontend`, `liquibase`
 
-The `localhost/` prefix marks these as locally built images (not pulled from a registry).
+Image names carry the `localhost/` registry prefix; container names do not:
 
-=== Full Image Name Table
+[source,yaml]
+----
+measures-backend:
+  container_name: kdiab-measures-backend
+  image: localhost/kdiab-measures-backend:latest
+----
 
-[cols="1,2,2"]
+Infrastructure services that use pulled images follow the simpler `kdiab-<component>` pattern
+(`kdiab-postgres`, `kdiab-keycloak`, `kdiab-pgadmin`, `kdiab-pg-seed`).
+
+=== Full Naming Table
+
+[cols="2,2,2,2"]
 |===
-| Compose service | Image | Dockerfile
+| Compose service | Container name | Image | Dockerfile
 
-| `liquibase-measures`   | `localhost/kdiab-measures-liquibase:latest`   | `kdiab-measures/backend/Dockerfile.liquibase`
-| `liquibase-profiles`   | `localhost/kdiab-profiles-liquibase:latest`   | `kdiab-profiles/backend/Dockerfile.liquibase`
-| `liquibase-treatments` | `localhost/kdiab-treatments-liquibase:latest` | `kdiab-treatments/backend/Dockerfile.liquibase`
-| `measures-backend`     | `localhost/kdiab-measures-backend:latest`     | `kdiab-measures/backend/Dockerfile`
-| `measures-frontend`    | `localhost/kdiab-measures-frontend:latest`    | `kdiab-measures/frontend/Dockerfile`
-| `profiles-backend`     | `localhost/kdiab-profiles-backend:latest`     | `kdiab-profiles/backend/Dockerfile`
-| `profiles-frontend`    | `localhost/kdiab-profiles-frontend:latest`    | `kdiab-profiles/frontend/Dockerfile`
-| `treatments-backend`   | `localhost/kdiab-treatments-backend:latest`   | `kdiab-treatments/backend/Dockerfile`
-| `treatments-frontend`  | `localhost/kdiab-treatments-frontend:latest`  | `kdiab-treatments/frontend/Dockerfile`
-| `bff-backend`          | `localhost/kdiab-bff-backend:latest`          | `kdiab-bff/backend/Dockerfile`
-| `bff-frontend`         | `localhost/kdiab-bff-frontend:latest`         | `kdiab-bff/frontend/Dockerfile`
+| `liquibase-measures`   | `kdiab-measures-liquibase`   | `localhost/kdiab-measures-liquibase:latest`   | `kdiab-measures/backend/Dockerfile.liquibase`
+| `liquibase-profiles`   | `kdiab-profiles-liquibase`   | `localhost/kdiab-profiles-liquibase:latest`   | `kdiab-profiles/backend/Dockerfile.liquibase`
+| `liquibase-treatments` | `kdiab-treatments-liquibase` | `localhost/kdiab-treatments-liquibase:latest` | `kdiab-treatments/backend/Dockerfile.liquibase`
+| `measures-backend`     | `kdiab-measures-backend`     | `localhost/kdiab-measures-backend:latest`     | `kdiab-measures/backend/Dockerfile`
+| `measures-frontend`    | `kdiab-measures-frontend`    | `localhost/kdiab-measures-frontend:latest`    | `kdiab-measures/frontend/Dockerfile`
+| `profiles-backend`     | `kdiab-profiles-backend`     | `localhost/kdiab-profiles-backend:latest`     | `kdiab-profiles/backend/Dockerfile`
+| `profiles-frontend`    | `kdiab-profiles-frontend`    | `localhost/kdiab-profiles-frontend:latest`    | `kdiab-profiles/frontend/Dockerfile`
+| `treatments-backend`   | `kdiab-treatments-backend`   | `localhost/kdiab-treatments-backend:latest`   | `kdiab-treatments/backend/Dockerfile`
+| `treatments-frontend`  | `kdiab-treatments-frontend`  | `localhost/kdiab-treatments-frontend:latest`  | `kdiab-treatments/frontend/Dockerfile`
+| `bff-backend`          | `kdiab-bff-backend`          | `localhost/kdiab-bff-backend:latest`          | `kdiab-bff/backend/Dockerfile`
+| `bff-frontend`         | `kdiab-bff-frontend`         | `localhost/kdiab-bff-frontend:latest`         | `kdiab-bff/frontend/Dockerfile`
 |===
 
 Externally pulled images (`postgres`, `keycloak`, `pgadmin`) are unaffected — they already have
 explicit `image:` tags pointing to public registries.
 
-== Build Workflow
+== Build and Run Workflow
 
 Images are built via `build.sh --docker`, which calls `podman compose build` (or `docker compose build`)
 on all 11 services. The compose tool reads the `image:` tag from `docker-compose.yml` and stores the
 result under that fixed name regardless of the working directory.
 
-After a successful build:
+Container lifecycle:
 
 [source,bash]
 ----
-podman compose up        # images found by their fixed names
-podman compose start     # containers restarted without re-pull
+./build.sh --docker          # build / rebuild images
+podman compose up -d         # create containers and start (first time, or after down)
+podman compose stop          # stop running containers (containers still exist)
+podman compose start         # start stopped containers (requires prior `up`)
+podman compose down          # stop and remove containers
+podman compose down -v       # also remove volumes (wipes database)
 ----
+
+`podman compose start` only works on *existing* stopped containers. Run `podman compose up -d`
+first to create them.
 
 == Consequences
 
