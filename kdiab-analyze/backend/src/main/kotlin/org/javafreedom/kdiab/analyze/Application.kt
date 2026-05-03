@@ -24,6 +24,10 @@ import org.javafreedom.kdiab.analyze.plugins.configureMetrics
 import org.javafreedom.kdiab.analyze.plugins.configureSecurity
 import org.javafreedom.kdiab.analyze.plugins.configureStatusPages
 
+private const val HTTP_CONNECT_TIMEOUT_MS = 5_000L
+private const val HTTP_REQUEST_TIMEOUT_MS = 10_000L
+private const val HTTP_SOCKET_TIMEOUT_MS = 5_000L
+
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @Suppress("LongMethod")
@@ -74,7 +78,13 @@ fun Application.module(
     } else {
         val httpClient = HttpClient(CIO) {
             install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) { json(json) }
+            install(io.ktor.client.plugins.HttpTimeout) {
+                connectTimeoutMillis = HTTP_CONNECT_TIMEOUT_MS
+                requestTimeoutMillis = HTTP_REQUEST_TIMEOUT_MS
+                socketTimeoutMillis = HTTP_SOCKET_TIMEOUT_MS
+            }
         }
+        monitor.subscribe(ApplicationStopping) { httpClient.close() }
         val measuresUrl = environment.config.property("upstream.measuresUrl").getString()
         val profilesUrl = environment.config.property("upstream.profilesUrl").getString()
         val treatmentsUrl = environment.config.property("upstream.treatmentsUrl").getString()
