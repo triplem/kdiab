@@ -67,6 +67,8 @@ fun Application.module(
         DatabaseFactory.init(environment.config)
     }
 
+    val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
+
     routing {
         get("/") { call.respondText("T1D Treatments Service is running!") }
         get("/healthz") { call.respond(io.ktor.http.HttpStatusCode.OK) }
@@ -75,6 +77,8 @@ fun Application.module(
             treatmentRoutes(treatmentService)
         }
 
-        swaggerUI(path = "swagger", swaggerFile = "openapi.yaml")
+        if (swaggerEnabled) {
+            swaggerUI(path = "swagger", swaggerFile = "openapi.yaml")
+        }
     }
 }

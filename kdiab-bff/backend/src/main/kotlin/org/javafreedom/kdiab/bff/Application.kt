@@ -88,12 +88,16 @@ fun Application.module(
         resolvedProfilesService = ProfilesService(profilesClient)
     }
 
+    val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
+
     routing {
         get("/") { call.respondText("kdiab BFF is running!") }
         get("/healthz") { call.respond(HttpStatusCode.OK) }
 
         bffRoutes(resolvedTimelineService, resolvedAnalyticsService, resolvedProfilesService)
 
-        swaggerUI(path = "swagger", swaggerFile = "openapi.yaml")
+        if (swaggerEnabled) {
+            swaggerUI(path = "swagger", swaggerFile = "openapi.yaml")
+        }
     }
 }

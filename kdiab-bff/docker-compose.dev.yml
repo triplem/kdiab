@@ -1,4 +1,7 @@
 # Development-only services. Not loaded automatically — must be added explicitly:
 #   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 #   podman-compose -f docker-compose.yml -f docker-compose.dev.yml up
-services: {}
+services:
+  bff-backend:
+    environment:
+      SWAGGER_ENABLED: "true"
