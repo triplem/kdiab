@@ -27,8 +27,7 @@ fun Route.bffRoutes(
         route("/api/v1/users/{userId}") {
             get("/timeline") {
                 val ctx = extractContext(call)
-                val from = requireParam(call, "from")
-                val to = requireParam(call, "to")
+                val (from, to) = requireDateRange(call)
 
                 val timeline = timelineService.getTimeline(
                     userId = ctx.targetUserId.toString(),
@@ -42,8 +41,7 @@ fun Route.bffRoutes(
 
             get("/analytics/hba1c") {
                 val ctx = extractContext(call)
-                val from = requireParam(call, "from")
-                val to = requireParam(call, "to")
+                val (from, to) = requireDateRange(call)
 
                 val result = analyticsService.getHba1c(
                     userId = ctx.targetUserId.toString(),
@@ -58,8 +56,7 @@ fun Route.bffRoutes(
 
             get("/analytics/agp") {
                 val ctx = extractContext(call)
-                val from = requireParam(call, "from")
-                val to = requireParam(call, "to")
+                val (from, to) = requireDateRange(call)
 
                 val result = analyticsService.getAgp(
                     userId = ctx.targetUserId.toString(),
@@ -74,8 +71,7 @@ fun Route.bffRoutes(
 
             get("/profiles/active") {
                 val ctx = extractContext(call)
-                val from = requireParam(call, "from")
-                val to = requireParam(call, "to")
+                val (from, to) = requireDateRange(call)
 
                 val result = profilesService.getProfiles(
                     userId = ctx.targetUserId.toString(),
@@ -117,6 +113,19 @@ private fun extractContext(call: ApplicationCall): RequestContext {
     return RequestContext(principal!!, targetUserId, authorization, correlationId)
 }
 
-private fun requireParam(call: ApplicationCall, name: String): String =
-    call.request.queryParameters[name]
-        ?: throw BusinessValidationException("Query parameter '$name' is required")
+private fun requireDateRange(call: ApplicationCall): Pair<String, String> {
+    val from = call.request.queryParameters["from"]
+        ?: throw BusinessValidationException("Query parameter 'from' is required")
+    val to = call.request.queryParameters["to"]
+        ?: throw BusinessValidationException("Query parameter 'to' is required")
+    val fromInstant = runCatching { kotlinx.datetime.Instant.parse(from) }.getOrElse {
+        throw BusinessValidationException("Invalid 'from' date: must be ISO-8601 (e.g. 2024-01-01T00:00:00Z)")
+    }
+    val toInstant = runCatching { kotlinx.datetime.Instant.parse(to) }.getOrElse {
+        throw BusinessValidationException("Invalid 'to' date: must be ISO-8601 (e.g. 2024-01-31T23:59:59Z)")
+    }
+    if (fromInstant >= toInstant) {
+        throw BusinessValidationException("'from' must be before 'to'")
+    }
+    return from to to
+}
