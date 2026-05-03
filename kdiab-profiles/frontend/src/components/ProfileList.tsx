@@ -75,8 +75,8 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false }: Profi
   if (isLoading) return <div className="loading">{t('profileList.loading')}</div>;
   if (isError) return <div className="error">{t('profileList.error')} {(error as Error).message}</div>;
 
-  const proposedProfiles = profiles.filter(p => (p.status as string || '') === 'PROPOSED');
-  const otherProfiles = profiles.filter(p => (p.status as string || '') === 'ACTIVE' || (p.status as string || '') === 'DRAFT');
+  const proposedProfiles = profiles.filter(p => p.status === 'PROPOSED');
+  const otherProfiles = profiles.filter(p => p.status === 'ACTIVE' || p.status === 'DRAFT');
 
   const toggleExpand = (profileId: string) => {
     setExpandedProfileId(prev => prev === profileId ? null : profileId);
@@ -84,7 +84,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false }: Profi
 
   const renderProfileCard = (profile: Profile) => {
     const isExpanded = expandedProfileId === profile.id;
-    const isActive = (profile.status as string) === 'ACTIVE';
+    const isActive = profile.status === 'ACTIVE';
     return (
       <div key={profile.id} className={`profile-card ${isActive ? 'active' : ''}`} onClick={() => {
         toggleExpand(profile.id);
@@ -93,7 +93,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false }: Profi
         <div className="profile-card-header">
           <strong>{profile.name}{isActive && <span className="active-label" aria-label="Currently active profile"> ✓ {t('profileList.active')}</span>}</strong>
           <div>
-            <span className={`status-badge status-${(profile.status as string || 'Unknown').toLowerCase()}`}>{profile.status as string || 'Unknown'}</span>
+            <span className={`status-badge status-${profile.status.toLowerCase()}`}>{profile.status}</span>
             {!readOnly && (
               <button
                 onClick={(e) => { e.stopPropagation(); onSelectProfile?.(profile); }}
@@ -158,7 +158,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false }: Profi
             </div>
           )}
         </div>
-        {(profile.status as string) === 'PROPOSED' && !readOnly && (
+        {profile.status === 'PROPOSED' && !readOnly && (
           <div className="proposal-actions">
             {profile.createdAt && (
               <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)', width: '100%' }}>

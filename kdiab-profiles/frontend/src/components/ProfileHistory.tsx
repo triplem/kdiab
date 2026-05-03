@@ -20,7 +20,7 @@ const ProfileHistoryItem = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'basal' | 'icr' | 'isf'>('basal');
   const { t } = useTranslation();
-  const status = profile.status as string || 'Unknown';
+  const status = profile.status;
 
   return (
     <li className="history-item">
