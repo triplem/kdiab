@@ -39,6 +39,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# OpenAPI generated client
+frontend/src/api/generated/
+
 # Beads
 .dolt/
 .beads-credential-key
