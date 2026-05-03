@@ -23,6 +23,8 @@ interface ProfileRepository {
         status: ProfileStatus
     ): Boolean
 
+    suspend fun existsActiveOrDraftWithName(userId: Uuid, name: String, excludeId: Uuid? = null): Boolean
+
     // Atomic operations
     suspend fun updateActiveProfile(oldProfile: Profile, newProfile: Profile): Profile
     suspend fun activateProfile(oldActive: Profile?, newActive: Profile): Profile

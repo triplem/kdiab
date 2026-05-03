@@ -40,7 +40,7 @@ class ProfileServiceTest {
                                 targets = emptyList()
                         )
 
-                coEvery { repository.findAllByUserId(userId) } returns emptyList()
+                coEvery { repository.existsActiveOrDraftWithName(userId, profile.name) } returns false
                 coEvery { repository.save(any()) } returns profile
 
                 val result = service.createProfile(profile)
@@ -585,7 +585,7 @@ class ProfileServiceTest {
                         )
 
                 coEvery { repository.findById(profile.id) } returns profile
-                coEvery { repository.findAllByUserId(userId) } returns emptyList()
+                coEvery { repository.existsActiveOrDraftWithName(userId, profile.name, profile.id) } returns false
                 coEvery { repository.update(profile) } returns profile
                 val result = service.updateProfile(profile)
                 assertEquals(profile, result)
@@ -621,7 +621,7 @@ class ProfileServiceTest {
                         insulinType = "Fiasp", durationOfAction = 180
                 )
                 coEvery { repository.findById(profileId) } returns profile
-                coEvery { repository.findAllByUserId(userId) } returns emptyList()
+                coEvery { repository.existsActiveOrDraftWithName(userId, "Updated Active", profileId) } returns false
                 coEvery { repository.updateActiveProfile(any(), any()) } answers { secondArg() }
 
                 val updated = profile.copy(name = "Updated Active")
@@ -719,7 +719,7 @@ class ProfileServiceTest {
                         icr = emptyList(), isf = emptyList(), targets = emptyList(),
                         insulinType = "Fiasp", durationOfAction = 180
                 )
-                coEvery { repository.findAllByUserId(userId) } returns listOf(existingDraft)
+                coEvery { repository.existsActiveOrDraftWithName(userId, "Basal Plan") } returns true
 
                 assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.ConflictException> {
                         service.createProfile(newProfile)
@@ -744,7 +744,7 @@ class ProfileServiceTest {
                         icr = emptyList(), isf = emptyList(), targets = emptyList(),
                         insulinType = "Fiasp", durationOfAction = 180
                 )
-                coEvery { repository.findAllByUserId(userId) } returns listOf(archived)
+                coEvery { repository.existsActiveOrDraftWithName(userId, "Old Plan") } returns false
                 coEvery { repository.save(any()) } returns newProfile
 
                 val result = service.createProfile(newProfile)
@@ -773,7 +773,7 @@ class ProfileServiceTest {
                 // User tries to rename profileBeingUpdated to "Morning Plan" which is taken
                 val renamed = profileBeingUpdated.copy(name = "Morning Plan")
                 coEvery { repository.findById(profileBeingUpdated.id) } returns profileBeingUpdated
-                coEvery { repository.findAllByUserId(userId) } returns listOf(existingDraft, profileBeingUpdated)
+                coEvery { repository.existsActiveOrDraftWithName(userId, "Morning Plan", profileBeingUpdated.id) } returns true
 
                 assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.ConflictException> {
                         service.updateProfile(renamed)
@@ -791,8 +791,8 @@ class ProfileServiceTest {
                         insulinType = "Fiasp", durationOfAction = 180
                 )
                 coEvery { repository.findById(profile.id) } returns profile
-                // Returns itself — must be excluded from the name check
-                coEvery { repository.findAllByUserId(userId) } returns listOf(profile)
+                // Self is excluded from the name check — must return false
+                coEvery { repository.existsActiveOrDraftWithName(userId, "My Plan", profile.id) } returns false
                 coEvery { repository.update(any()) } answers { firstArg() }
 
                 val result = service.updateProfile(profile)

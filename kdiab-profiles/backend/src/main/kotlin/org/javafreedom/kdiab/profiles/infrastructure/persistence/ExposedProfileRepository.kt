@@ -132,6 +132,23 @@ class ExposedProfileRepository(
         }
     }
 
+    override suspend fun existsActiveOrDraftWithName(userId: Uuid, name: String, excludeId: Uuid?): Boolean =
+        withContext(ioDispatcher) {
+            suspendTransaction {
+                val query = (Profiles innerJoin ProfileStatuses)
+                    .select(Profiles.id)
+                    .where {
+                        (ProfileStatuses.userId eq userId) and
+                            (Profiles.name eq name) and
+                            (ProfileStatuses.status neq ProfileStatus.ARCHIVED)
+                    }
+                if (excludeId != null) {
+                    query.andWhere { Profiles.id neq excludeId }
+                }
+                query.limit(1).count() > 0
+            }
+        }
+
     // ── Writes ────────────────────────────────────────────────────────────────
 
     override suspend fun save(profile: Profile): Profile = withContext(ioDispatcher) {

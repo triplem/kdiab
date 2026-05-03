@@ -277,11 +277,7 @@ class ProfileService(private val profileRepository: ProfileRepository) {
          * updating so that keeping the same name is allowed.
          */
         private suspend fun assertUniqueNameForUser(userId: Uuid, name: String, excludeProfileId: Uuid? = null) {
-                val conflict = profileRepository.findAllByUserId(userId)
-                        .filter { it.status != ProfileStatus.ARCHIVED }
-                        .filter { it.id != excludeProfileId }
-                        .any { it.name == name }
-                if (conflict) {
+                if (profileRepository.existsActiveOrDraftWithName(userId, name, excludeProfileId)) {
                         throw ConflictException("A profile named '$name' already exists for this user")
                 }
         }
