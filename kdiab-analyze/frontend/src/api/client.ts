@@ -3,7 +3,7 @@ import axios from 'axios';
 import { getAccessToken } from './tokenProvider';
 
 const axiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: (import.meta.env.VITE_API_PREFIX ?? '') + '/api/v1',
 });
 
 axiosInstance.interceptors.request.use((config) => {
@@ -26,4 +26,4 @@ axiosInstance.interceptors.response.use((response) => {
 });
 
 export { axiosInstance };
-export const api = new DefaultApi(undefined, '/api/v1', axiosInstance);
+export const api = new DefaultApi(undefined, (import.meta.env.VITE_API_PREFIX ?? '') + '/api/v1', axiosInstance);

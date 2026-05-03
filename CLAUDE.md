@@ -92,13 +92,14 @@ npx playwright test              # E2E tests (requires running app)
 |---|---|
 | Keycloak Admin | http://localhost:8081 (admin / admin) |
 | pgAdmin | http://localhost:5050 (admin@kdiab.dev / admin) |
-| kdiab-measures frontend | http://localhost:3000 |
+| Gateway (all UIs) | http://localhost:3000 → /measures/ /profiles/ /treatments/ /analyze/ |
+| kdiab-measures frontend | http://localhost:3004 (also via gateway /measures/) |
 | kdiab-measures backend / Swagger | http://localhost:8080 / http://localhost:8080/swagger |
-| kdiab-profiles frontend | http://localhost:3001 |
+| kdiab-profiles frontend | http://localhost:3001 (also via gateway /profiles/) |
 | kdiab-profiles backend / Swagger | http://localhost:8082 / http://localhost:8082/swagger |
-| kdiab-treatments frontend | http://localhost:3002 |
+| kdiab-treatments frontend | http://localhost:3002 (also via gateway /treatments/) |
 | kdiab-treatments backend / Swagger | http://localhost:8083 / http://localhost:8083/swagger |
-| kdiab-analyze frontend | http://localhost:3003 |
+| kdiab-analyze frontend | http://localhost:3003 (also via gateway /analyze/) |
 | kdiab-analyze backend / Swagger | http://localhost:8084 / http://localhost:8084/swagger |
 
 **Per-service compose (standalone):**

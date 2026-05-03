@@ -8,10 +8,11 @@
 # Service URLs (after startup):
 #   Keycloak Admin:       http://localhost:8081  (admin / admin)
 #   pgAdmin:              http://localhost:5050   (admin@kdiab.dev / admin)
-#   Measures   API/UI:    http://localhost:8080 / http://localhost:3000
-#   Profiles   API/UI:    http://localhost:8082 / http://localhost:3001
-#   Treatments API/UI:    http://localhost:8083 / http://localhost:3002
-#   BFF        API/UI:    http://localhost:8084 / http://localhost:3003
+#   Gateway (all UIs):    http://localhost:3000   → /measures/ /profiles/ /treatments/ /analyze/
+#   Measures   API/UI:    http://localhost:8080 / http://localhost:3004  (also via gateway)
+#   Profiles   API/UI:    http://localhost:8082 / http://localhost:3001  (also via gateway)
+#   Treatments API/UI:    http://localhost:8083 / http://localhost:3002  (also via gateway)
+#   Analyze    API/UI:    http://localhost:8084 / http://localhost:3003  (also via gateway)
 #
 # Test accounts (password: password):
 #   sarah      PATIENT (mg/dL)
@@ -209,8 +210,10 @@ services:
       args:
         VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
         VITE_OIDC_CLIENT_ID: kdiab-measures-frontend
+        VITE_BASE_PATH: /measures/
+        VITE_API_PREFIX: /measures
     ports:
-      - "3000:8080"
+      - "3004:8080"
     depends_on:
       measures-backend:
         condition: service_healthy
@@ -264,6 +267,8 @@ services:
       args:
         VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
         VITE_OIDC_CLIENT_ID: kdiab-profiles-frontend
+        VITE_BASE_PATH: /profiles/
+        VITE_API_PREFIX: /profiles
     environment:
       # profiles nginx.conf.template uses these at container startup via envsubst
       KEYCLOAK_URL: http://localhost:8081
@@ -324,6 +329,8 @@ services:
       args:
         VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
         VITE_OIDC_CLIENT_ID: kdiab-treatments-frontend
+        VITE_BASE_PATH: /treatments/
+        VITE_API_PREFIX: /treatments
     ports:
       - "3002:8080"
     depends_on:
@@ -383,6 +390,8 @@ services:
       args:
         VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
         VITE_OIDC_CLIENT_ID: kdiab-analyze-frontend
+        VITE_BASE_PATH: /analyze/
+        VITE_API_PREFIX: /analyze
     ports:
       - "3003:8080"
     depends_on:
@@ -393,12 +402,37 @@ services:
       - analyze-net
     restart: unless-stopped
 
+  # ── Gateway ─────────────────────────────────────────────────────────────────
+  # Unified reverse proxy: localhost:3000/{measures,profiles,treatments,analyze}/
+  # Routes requests to the appropriate frontend by stripping the service path prefix.
+  # Each frontend is built with VITE_BASE_PATH matching its location block so
+  # asset references and API calls are prefixed correctly.
+
+  gateway:
+    container_name: kdiab-gateway
+    image: nginx:alpine
+    volumes:
+      - ./config/gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "3000:8080"
+    depends_on:
+      - measures-frontend
+      - profiles-frontend
+      - treatments-frontend
+      - analyze-frontend
+    networks:
+      - meas-net
+      - prof-net
+      - treat-net
+      - analyze-net
+    restart: unless-stopped
+
 networks:
   shared:    # postgres, keycloak, all backends, liquibase, seed
-  meas-net:  # measures-backend (alias: backend) ↔ measures-frontend
-  prof-net:  # profiles-backend ↔ profiles-frontend
-  treat-net: # treatments-backend (alias: backend) ↔ treatments-frontend
-  analyze-net:   # analyze-backend (alias: analyze-backend) ↔ analyze-frontend
+  meas-net:  # measures-backend (alias: backend) ↔ measures-frontend ↔ gateway
+  prof-net:  # profiles-backend ↔ profiles-frontend ↔ gateway
+  treat-net: # treatments-backend (alias: backend) ↔ treatments-frontend ↔ gateway
+  analyze-net:   # analyze-backend ↔ analyze-frontend ↔ gateway
 
 volumes:
   postgres_data:

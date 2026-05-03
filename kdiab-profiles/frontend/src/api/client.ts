@@ -4,7 +4,7 @@ import { getAccessToken } from './tokenProvider';
 
 // Create a single axios instance
 const axiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: (import.meta.env.VITE_API_PREFIX ?? '') + '/api/v1',
 });
 
 axiosInstance.interceptors.request.use((config) => {
@@ -34,7 +34,7 @@ axiosInstance.interceptors.response.use((response) => {
 export { axiosInstance };
 
 // Export the API client
-export const api = new DefaultApi(undefined, '/api/v1', axiosInstance);
+export const api = new DefaultApi(undefined, (import.meta.env.VITE_API_PREFIX ?? '') + '/api/v1', axiosInstance);
 
 export const customApi = {
   acceptProposedProfile: (userId: string, profileId: string) => 
