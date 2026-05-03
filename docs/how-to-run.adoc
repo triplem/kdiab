@@ -35,7 +35,7 @@ Individual subprojects and tasks can be targeted directly from the root:
 
 [source,bash]
 ----
-./gradlew :kdiab-bff:backend:build
+./gradlew :kdiab-analyze:backend:build
 ./gradlew :kdiab-measures:backend:check
 ./gradlew :kdiab-profiles:buildFrontend
 ----
@@ -90,8 +90,8 @@ for every image defined in the root `docker-compose.yml` that has a local `build
 | `profiles-frontend`    | `localhost/kdiab-profiles-frontend:latest`    | `kdiab-profiles/frontend/Dockerfile`
 | `treatments-backend`   | `localhost/kdiab-treatments-backend:latest`   | `kdiab-treatments/backend/Dockerfile`
 | `treatments-frontend`  | `localhost/kdiab-treatments-frontend:latest`  | `kdiab-treatments/frontend/Dockerfile`
-| `bff-backend`          | `localhost/kdiab-bff-backend:latest`          | `kdiab-bff/backend/Dockerfile`
-| `bff-frontend`         | `localhost/kdiab-bff-frontend:latest`         | `kdiab-bff/frontend/Dockerfile`
+| `bff-backend`          | `localhost/kdiab-analyze-backend:latest`          | `kdiab-analyze/backend/Dockerfile`
+| `bff-frontend`         | `localhost/kdiab-analyze-frontend:latest`         | `kdiab-analyze/frontend/Dockerfile`
 |===
 
 Externally pulled images (`postgres`, `keycloak`, `pgadmin`) are not rebuilt by this flag.
@@ -176,7 +176,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 | kdiab-measures   | http://localhost:3000 | http://localhost:8080 / http://localhost:8080/swagger
 | kdiab-profiles   | http://localhost:3001 | http://localhost:8082 / http://localhost:8082/swagger
 | kdiab-treatments | http://localhost:3002 | http://localhost:8083 / http://localhost:8083/swagger
-| kdiab-bff        | http://localhost:3003 | http://localhost:8084 / http://localhost:8084/swagger
+| kdiab-analyze        | http://localhost:3003 | http://localhost:8084 / http://localhost:8084/swagger
 | Keycloak Admin   | —                     | http://localhost:8081 (admin / admin)
 | pgAdmin          | —                     | http://localhost:5050 (admin@kdiab.dev / admin)
 |===

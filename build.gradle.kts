@@ -5,7 +5,7 @@ tasks.register("build") {
         gradle.includedBuild("kdiab-measures").task(":buildAll"),
         gradle.includedBuild("kdiab-profiles").task(":buildAll"),
         gradle.includedBuild("kdiab-treatments").task(":buildAll"),
-        gradle.includedBuild("kdiab-bff").task(":buildAll"),
+        gradle.includedBuild("kdiab-analyze").task(":buildAll"),
     )
 }
 
@@ -16,7 +16,7 @@ tasks.register("check") {
         gradle.includedBuild("kdiab-measures").task(":checkAll"),
         gradle.includedBuild("kdiab-profiles").task(":checkAll"),
         gradle.includedBuild("kdiab-treatments").task(":checkAll"),
-        gradle.includedBuild("kdiab-bff").task(":checkAll"),
+        gradle.includedBuild("kdiab-analyze").task(":checkAll"),
     )
 }
 
@@ -27,6 +27,6 @@ tasks.register("clean") {
         gradle.includedBuild("kdiab-measures").task(":cleanAll"),
         gradle.includedBuild("kdiab-profiles").task(":cleanAll"),
         gradle.includedBuild("kdiab-treatments").task(":cleanAll"),
-        gradle.includedBuild("kdiab-bff").task(":cleanAll"),
+        gradle.includedBuild("kdiab-analyze").task(":cleanAll"),
     )
 }

@@ -89,7 +89,7 @@ tasks.register("cleanAll") {
 | `./gradlew build`  | `buildAll` in all four services (parallel via `org.gradle.parallel`)
 | `./gradlew check`  | `checkAll` in all four services (tests + Detekt + Kover + frontend lint/test)
 | `./gradlew clean`  | `cleanAll` in all four services
-| `./gradlew :kdiab-bff:backend:build` | Any subproject task can be targeted directly
+| `./gradlew :kdiab-analyze:backend:build` | Any subproject task can be targeted directly
 |===
 
 == Consequences

@@ -199,9 +199,9 @@ updates:
       treatments-frontend-docker:
         patterns: ["*"]
 
-  # ── kdiab-bff ───────────────────────────────────────────────────────────────
+  # ── kdiab-analyze ───────────────────────────────────────────────────────────────
   - package-ecosystem: "gradle"
-    directory: "/kdiab-bff"
+    directory: "/kdiab-analyze"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
@@ -209,18 +209,18 @@ updates:
       - dependency-name: "org.jetbrains.kotlin*"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
     groups:
-      bff-gradle-major:
+      analyze-gradle-major:
         patterns: ["*"]
         update-types: ["major"]
-      bff-gradle-minor:
+      analyze-gradle-minor:
         patterns: ["*"]
         update-types: ["minor"]
-      bff-gradle-patch:
+      analyze-gradle-patch:
         patterns: ["*"]
         update-types: ["patch"]
 
   - package-ecosystem: "npm"
-    directory: "/kdiab-bff/frontend"
+    directory: "/kdiab-analyze/frontend"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
@@ -230,18 +230,18 @@ updates:
       - dependency-name: "@eslint/js"
         versions: [">= 10"]
     groups:
-      bff-npm-major:
+      analyze-npm-major:
         patterns: ["*"]
         update-types: ["major"]
-      bff-npm-minor:
+      analyze-npm-minor:
         patterns: ["*"]
         update-types: ["minor"]
-      bff-npm-patch:
+      analyze-npm-patch:
         patterns: ["*"]
         update-types: ["patch"]
 
   - package-ecosystem: "docker"
-    directory: "/kdiab-bff/backend"
+    directory: "/kdiab-analyze/backend"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
@@ -249,14 +249,14 @@ updates:
       - dependency-name: "eclipse-temurin"
         versions: [">= 22"]
     groups:
-      bff-docker:
+      analyze-docker:
         patterns: ["*"]
 
   - package-ecosystem: "docker"
-    directory: "/kdiab-bff/frontend"
+    directory: "/kdiab-analyze/frontend"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
     groups:
-      bff-frontend-docker:
+      analyze-frontend-docker:
         patterns: ["*"]

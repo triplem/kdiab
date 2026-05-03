@@ -31,7 +31,7 @@ Do not create any issues — return findings as a structured list only.
 **Agent 2 — Kotlin/Ktor specialist**
 ```
 You are a senior Kotlin and Ktor specialist. Review all four backend services at
-/home/triplem/projects/kdiab (kdiab-measures, kdiab-profiles, kdiab-treatments, kdiab-bff).
+/home/triplem/projects/kdiab (kdiab-measures, kdiab-profiles, kdiab-treatments, kdiab-analyze).
 Focus on: idiomatic Kotlin usage, Ktor plugin configuration, coroutine correctness,
 kotlinx.datetime vs java.time usage, exception handling completeness in StatusPages,
 HttpClient lifecycle, serialisation edge cases.
@@ -52,7 +52,7 @@ Do not create any issues — return findings as a structured list only.
 **Agent 4 — UI/UX expert**
 ```
 You are a senior UI/UX expert. Review all four frontends at /home/triplem/projects/kdiab
-(kdiab-measures/frontend, kdiab-profiles/frontend, kdiab-treatments/frontend, kdiab-bff/frontend).
+(kdiab-measures/frontend, kdiab-profiles/frontend, kdiab-treatments/frontend, kdiab-analyze/frontend).
 Focus on: WCAG 2.1 AA accessibility violations, colour-only information encoding, modal
 accessibility (role, aria-modal, focus trap), keyboard navigation, loading/empty/error states,
 clinical data presentation clarity, and doctor-patient workflow gaps.
@@ -94,7 +94,7 @@ Do not create any issues — return findings as a structured list only.
 **Agent 8 — Patient perspective**
 ```
 You are a T1D patient who uses this app daily. Review the kdiab frontends at
-/home/triplem/projects/kdiab (measures, treatments, bff).
+/home/triplem/projects/kdiab (measures, treatments, analyze).
 Focus on: clinical workflow gaps (missing treatment types, missing data entry feedback, confusing
 labels), data display accuracy, glucose unit handling (mg/dL vs mmol/L), missing features that
 matter for daily T1D management, and any flows where a missed or incorrect entry could be a safety
@@ -106,7 +106,7 @@ Do not create any issues — return findings as a structured list only.
 **Agent 9 — Doctor perspective**
 ```
 You are a diabetologist reviewing the kdiab platform for your patients. Review the kdiab frontends
-at /home/triplem/projects/kdiab (bff, profiles, measures, treatments).
+at /home/triplem/projects/kdiab (analyze, profiles, measures, treatments).
 Focus on: information needed to make clinical decisions (AGP quality, HbA1c context, profile
 change visibility, audit trail), missing clinical context in the UI, doctor access controls,
 patient notification of data access, and any clinical safety concerns.

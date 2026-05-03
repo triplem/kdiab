@@ -305,7 +305,7 @@
       ]
     },
     {
-      "clientId": "kdiab-bff-frontend",
+      "clientId": "kdiab-analyze-frontend",
       "enabled": true,
       "publicClient": true,
       "redirectUris": ["http://localhost:*"],
@@ -339,11 +339,11 @@
           }
         },
         {
-          "name": "audience-bff",
+          "name": "audience-analyze",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-audience-mapper",
           "config": {
-            "included.custom.audience": "bff",
+            "included.custom.audience": "analyze",
             "id.token.claim": "false",
             "access.token.claim": "true"
           }

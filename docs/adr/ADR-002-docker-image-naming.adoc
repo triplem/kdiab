@@ -34,7 +34,7 @@ kdiab-<service>-<function>
 
 Where:
 
-* `<service>` is one of: `measures`, `profiles`, `treatments`, `bff`
+* `<service>` is one of: `measures`, `profiles`, `treatments`, `analyze`
 * `<function>` is one of: `backend`, `frontend`, `liquibase`
 
 Image names carry the `localhost/` registry prefix; container names do not:
@@ -64,8 +64,8 @@ Infrastructure services that use pulled images follow the simpler `kdiab-<compon
 | `profiles-frontend`    | `kdiab-profiles-frontend`    | `localhost/kdiab-profiles-frontend:latest`    | `kdiab-profiles/frontend/Dockerfile`
 | `treatments-backend`   | `kdiab-treatments-backend`   | `localhost/kdiab-treatments-backend:latest`   | `kdiab-treatments/backend/Dockerfile`
 | `treatments-frontend`  | `kdiab-treatments-frontend`  | `localhost/kdiab-treatments-frontend:latest`  | `kdiab-treatments/frontend/Dockerfile`
-| `bff-backend`          | `kdiab-bff-backend`          | `localhost/kdiab-bff-backend:latest`          | `kdiab-bff/backend/Dockerfile`
-| `bff-frontend`         | `kdiab-bff-frontend`         | `localhost/kdiab-bff-frontend:latest`         | `kdiab-bff/frontend/Dockerfile`
+| `bff-backend`          | `kdiab-analyze-backend`          | `localhost/kdiab-analyze-backend:latest`          | `kdiab-analyze/backend/Dockerfile`
+| `bff-frontend`         | `kdiab-analyze-frontend`         | `localhost/kdiab-analyze-frontend:latest`         | `kdiab-analyze/frontend/Dockerfile`
 |===
 
 Externally pulled images (`postgres`, `keycloak`, `pgadmin`) are unaffected — they already have

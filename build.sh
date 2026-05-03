@@ -15,7 +15,7 @@
 
 set -euo pipefail
 
-SERVICES=(kdiab-measures kdiab-profiles kdiab-treatments kdiab-bff)
+SERVICES=(kdiab-measures kdiab-profiles kdiab-treatments kdiab-analyze)
 
 # ── Flags ─────────────────────────────────────────────────────────────────────
 BUILD_BACKEND=true
@@ -149,7 +149,7 @@ DOCKER_SERVICES=(
   measures-backend   measures-frontend
   profiles-backend   profiles-frontend
   treatments-backend treatments-frontend
-  bff-backend        bff-frontend
+  analyze-backend        analyze-frontend
 )
 
 build_docker() {

@@ -25,7 +25,7 @@ kdiab/
 ├── kdiab-measures/         # Health measurement service
 ├── kdiab-profiles/         # Basal profile service
 ├── kdiab-treatments/       # Treatment event service
-├── kdiab-bff/              # Backend-for-Frontend aggregation service
+├── kdiab-analyze/              # Backend-for-Frontend aggregation service
 ├── build.sh                # Monorepo build orchestrator
 └── docker-compose.yml      # Full platform stack
 ----
@@ -59,10 +59,10 @@ All services follow *Hexagonal Architecture* (Ports and Adapters):
 adapters/inbound/web/        HTTP layer: route handlers + mapper (API ↔ domain)
 application/service/         Business logic (orchestrates domain + ports)
 domain/model/                Pure domain model (no framework dependencies)
-domain/repository/           Port interfaces (not in kdiab-bff — no DB)
+domain/repository/           Port interfaces (not in kdiab-analyze — no DB)
 domain/exception/            DomainExceptions mapped to HTTP status by StatusPages
 infrastructure/persistence/  Exposed ORM + PostgreSQL adapter
-adapters/outbound/http/      Ktor HTTP clients (kdiab-bff only — calls upstream services)
+adapters/outbound/http/      Ktor HTTP clients (kdiab-analyze only — calls upstream services)
 plugins/                     Ktor plugin config (Security, StatusPages, Logging, CallId)
 ----
 
@@ -89,11 +89,11 @@ JWT-based via Keycloak. `UserPrincipal` extracted from the JWT carries:
 Access control rule: `UserPrincipal.canAccess(targetUserId)` returns true for self, any admin,
 or a doctor whose `allowedPatients` contains `targetUserId`.
 
-=== kdiab-bff JWT Forwarding
+=== kdiab-analyze JWT Forwarding
 
 The BFF receives a user JWT and forwards it unchanged to all upstream services. For this to work
-the Keycloak client must have audience mappers for all four audiences (`bff`, `measure`, `profile`,
-`treatment`). The root `config/keycloak-realm.json` configures the `kdiab-bff-frontend` client
+the Keycloak client must have audience mappers for all four audiences (`analyze`, `measure`, `profile`,
+`treatment`). The root `config/keycloak-realm.json` configures the `kdiab-analyze-frontend` client
 with all four audience mappers.
 
 == Service Ports (Full Stack)
@@ -105,7 +105,7 @@ with all four audience mappers.
 | kdiab-measures  | 3000 | 8080 / 8080/swagger
 | kdiab-profiles  | 3001 | 8082 / 8082/swagger
 | kdiab-treatments| 3002 | 8083 / 8083/swagger
-| kdiab-bff       | 3003 | 8084 / 8084/swagger
+| kdiab-analyze       | 3003 | 8084 / 8084/swagger
 | Keycloak Admin  | —    | 8081
 | pgAdmin         | —    | 5050
 |===

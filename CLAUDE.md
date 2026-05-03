@@ -9,7 +9,7 @@ Service-specific details are in each service's own `CLAUDE.md`.
 - **kdiab-measures** — health measurement tracking (CGM, BGM, blood pressure, weight, pulse)
 - **kdiab-profiles** — insulin pump basal profile management
 - **kdiab-treatments** — treatment event tracking (bolus, basal, carbs, corrections, etc.)
-- **kdiab-bff** — stateless Backend-for-Frontend: aggregates data from all three services and provides a unified analytics dashboard (timeline, HbA1c, AGP, profiles)
+- **kdiab-analyze** — stateless Backend-for-Frontend: aggregates data from all three services and provides a unified analytics dashboard (timeline, HbA1c, AGP, profiles)
 
 Each service follows the same stack and architecture conventions. All commands below must be run from the service directory.
 
@@ -98,8 +98,8 @@ npx playwright test              # E2E tests (requires running app)
 | kdiab-profiles backend / Swagger | http://localhost:8082 / http://localhost:8082/swagger |
 | kdiab-treatments frontend | http://localhost:3002 |
 | kdiab-treatments backend / Swagger | http://localhost:8083 / http://localhost:8083/swagger |
-| kdiab-bff frontend | http://localhost:3003 |
-| kdiab-bff backend / Swagger | http://localhost:8084 / http://localhost:8084/swagger |
+| kdiab-analyze frontend | http://localhost:3003 |
+| kdiab-analyze backend / Swagger | http://localhost:8084 / http://localhost:8084/swagger |
 
 **Per-service compose (standalone):**
 - Frontend: http://localhost:3000
@@ -124,11 +124,11 @@ adapters/inbound/web/       # HTTP layer: Ktor route handlers + mapper (API↔do
 application/service/        # Business logic
 domain/model/               # Pure domain model (no framework dependencies)
   Role.kt                   # PATIENT, DOCTOR, ADMIN
-domain/repository/          # Port interfaces (not present in kdiab-bff — no DB)
+domain/repository/          # Port interfaces (not present in kdiab-analyze — no DB)
 domain/exception/           # DomainExceptions: AuthenticationException, AuthorizationException,
                             # ResourceNotFoundException, BusinessValidationException, ConflictException
-infrastructure/persistence/ # Adapter: Exposed ORM + PostgreSQL (not present in kdiab-bff)
-adapters/outbound/http/     # Ktor HTTP clients for upstream calls (kdiab-bff only)
+infrastructure/persistence/ # Adapter: Exposed ORM + PostgreSQL (not present in kdiab-analyze)
+adapters/outbound/http/     # Ktor HTTP clients for upstream calls (kdiab-analyze only)
 plugins/                    # Ktor plugin config
   Security.kt               # JWT/JWKS auth, UserPrincipal extraction
   StatusPages.kt            # Exception → HTTP status mapping
@@ -148,12 +148,12 @@ In tests, JWT uses HMAC256 symmetric signing (`jwt.test=true`, `jwt.secret` in c
 
 ### Route Pattern
 - One private function per endpoint
-- Type-safe routing via generated `Paths` from OpenAPI spec (kdiab-bff uses manual routing — no generated Paths)
+- Type-safe routing via generated `Paths` from OpenAPI spec (kdiab-analyze uses manual routing — no generated Paths)
 - Access control checked at route entry via `checkReadAccess`/`checkWriteAccess` helpers
 - Domain exceptions thrown instead of manual HTTP status codes — caught by `StatusPages`
 
-### JWT Forwarding (kdiab-bff)
-The BFF receives a user JWT and forwards it unchanged to all upstream services. For this to work, the Keycloak client used to log in must have audience mappers for all four audiences (`bff`, `measure`, `profile`, `treatment`). The root `config/keycloak-realm.json` configures the `kdiab-bff-frontend` client with all four audience mappers so a single token is accepted by every upstream service.
+### JWT Forwarding (kdiab-analyze)
+The BFF receives a user JWT and forwards it unchanged to all upstream services. For this to work, the Keycloak client used to log in must have audience mappers for all four audiences (`analyze`, `measure`, `profile`, `treatment`). The root `config/keycloak-realm.json` configures the `kdiab-analyze-frontend` client with all four audience mappers so a single token is accepted by every upstream service.
 
 ### Test Suites (Backend)
 ```
@@ -182,7 +182,7 @@ Roles are parsed from the JWT access token directly (Keycloak's OIDC profile doe
 ```
 config/
   keycloak-realm.json          # Unified Keycloak realm "kdiab" used by root docker-compose.yml.
-                               # Contains all clients, roles, and test users. The kdiab-bff-frontend
+                               # Contains all clients, roles, and test users. The kdiab-analyze-frontend
                                # client has 4 audience mappers (bff, measure, profile, treatment).
   postgres/
     01-init-databases.sh       # Creates kdiab-measures, kdiab-profiles, kdiab-treatments databases.

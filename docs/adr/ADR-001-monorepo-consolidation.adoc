@@ -8,14 +8,14 @@
 
 == Context
 
-The four kdiab services (`kdiab-measures`, `kdiab-profiles`, `kdiab-treatments`, `kdiab-bff`) share a root
+The four kdiab services (`kdiab-measures`, `kdiab-profiles`, `kdiab-treatments`, `kdiab-analyze`) share a root
 directory under a single parent git repository, but were developed as partially independent repositories:
 
 * `kdiab-profiles` and `kdiab-treatments` each had their own `.git` directory with independent commit history.
 * All four service directories were *untracked* in the root repository.
 * Each service had its own `.github/workflows/` directory containing CI/CD pipelines that only functioned
   when that service directory was the git root — making them effectively dead code in the monorepo context.
-* `kdiab-treatments` had no release pipeline at all; `kdiab-bff` had no CI pipelines.
+* `kdiab-treatments` had no release pipeline at all; `kdiab-analyze` had no CI pipelines.
 
 This fragmented setup caused several problems:
 
@@ -33,7 +33,7 @@ Consolidate all services into a single true monorepo under the existing root `.g
 2. *Track all service directories* in the root repository via `git add`.
 3. *Consolidate all CI/CD* into a single root `.github/` directory, with per-service workflow files
    that use path filters (`kdiab-<service>/`) to trigger only on relevant changes.
-4. *Add missing pipelines*: release workflows for `kdiab-treatments` and `kdiab-bff`, which were
+4. *Add missing pipelines*: release workflows for `kdiab-treatments` and `kdiab-analyze`, which were
    previously absent.
 5. *Unify Dependabot* into a single root `.github/dependabot.yml` covering all services.
 6. *Unify GitHub Pages* documentation into a single deployment covering all services.
@@ -58,12 +58,12 @@ triggers reference them by name. Each workflow is named `kdiab-<service> / <Type
 | `ci-profiles-frontend.yml`  | `kdiab-profiles / Frontend CI`
 | `ci-treatments-backend.yml` | `kdiab-treatments / Backend CI`
 | `ci-treatments-frontend.yml`| `kdiab-treatments / Frontend CI`
-| `ci-bff-backend.yml`        | `kdiab-bff / Backend CI`
-| `ci-bff-frontend.yml`       | `kdiab-bff / Frontend CI`
+| `ci-bff-backend.yml`        | `kdiab-analyze / Backend CI`
+| `ci-bff-frontend.yml`       | `kdiab-analyze / Frontend CI`
 | `release-measures.yml`      | `kdiab-measures / Release`
 | `release-profiles.yml`      | `kdiab-profiles / Release`
 | `release-treatments.yml`    | `kdiab-treatments / Release`
-| `release-bff.yml`           | `kdiab-bff / Release`
+| `release-bff.yml`           | `kdiab-analyze / Release`
 | `docs-pages.yml`            | `Deploy Documentation`
 |===
 

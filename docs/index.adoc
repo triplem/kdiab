@@ -19,7 +19,7 @@
 | link:../treatments/index.html[kdiab-treatments]
 | Treatment event tracking — bolus, basal, carbs, corrections
 
-| kdiab-bff
+| kdiab-analyze
 | Stateless Backend-for-Frontend: aggregates data from all three services and provides a unified analytics dashboard (timeline, HbA1c, AGP, profiles)
 |===
 

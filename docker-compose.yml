@@ -21,7 +21,7 @@
 #   admin      ADMIN
 #
 # Shared Keycloak realm: kdiab
-# The BFF client token carries all four JWT audiences (bff, measure, profile,
+# The BFF client token carries all four JWT audiences (analyze, measure, profile,
 # treatment) so it can forward the user's JWT to every upstream service.
 # =============================================================================
 
@@ -335,13 +335,13 @@ services:
       - treat-net
     restart: unless-stopped
 
-  # ── kdiab-bff ───────────────────────────────────────────────────────────────
+  # ── kdiab-analyze ───────────────────────────────────────────────────────────────
 
-  bff-backend:
-    container_name: kdiab-bff-backend
-    image: localhost/kdiab-bff-backend:latest
+  analyze-backend:
+    container_name: kdiab-analyze-backend
+    image: localhost/kdiab-analyze-backend:latest
     build:
-      context: ./kdiab-bff
+      context: ./kdiab-analyze
       dockerfile: backend/Dockerfile
     environment:
       MEASURES_URL: http://measures-backend:8080
@@ -349,7 +349,7 @@ services:
       TREATMENTS_URL: http://treatments-backend:8080
       JWT_DOMAIN: http://localhost:8081/realms/kdiab
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
-      JWT_AUDIENCE: bff
+      JWT_AUDIENCE: analyze
       JWT_REALM: kdiab
       CORS_ALLOWED_ORIGINS: http://localhost:3003
     ports:
@@ -371,26 +371,26 @@ services:
         condition: service_started
     networks:
       - shared
-      - bff-net
+      - analyze-net
     restart: unless-stopped
 
-  bff-frontend:
-    container_name: kdiab-bff-frontend
-    image: localhost/kdiab-bff-frontend:latest
+  analyze-frontend:
+    container_name: kdiab-analyze-frontend
+    image: localhost/kdiab-analyze-frontend:latest
     build:
-      context: ./kdiab-bff
+      context: ./kdiab-analyze
       dockerfile: frontend/Dockerfile
       args:
         VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
-        VITE_OIDC_CLIENT_ID: kdiab-bff-frontend
+        VITE_OIDC_CLIENT_ID: kdiab-analyze-frontend
     ports:
       - "3003:8080"
     depends_on:
-      bff-backend:
+      analyze-backend:
         condition: service_healthy
-    # bff nginx.conf proxies /api/ → bff-backend:8080 (matches service name on bff-net)
+    # analyze nginx.conf proxies /api/ → analyze-backend:8080 (matches service name on analyze-net)
     networks:
-      - bff-net
+      - analyze-net
     restart: unless-stopped
 
 networks:
@@ -398,7 +398,7 @@ networks:
   meas-net:  # measures-backend (alias: backend) ↔ measures-frontend
   prof-net:  # profiles-backend ↔ profiles-frontend
   treat-net: # treatments-backend (alias: backend) ↔ treatments-frontend
-  bff-net:   # bff-backend (alias: bff-backend) ↔ bff-frontend
+  analyze-net:   # analyze-backend (alias: analyze-backend) ↔ analyze-frontend
 
 volumes:
   postgres_data:
