@@ -56,9 +56,10 @@ services:
       JWKS_URL: http://keycloak:8080/realms/kdiab-profiles/protocol/openid-connect/certs
       JWT_AUDIENCE: profile
       JWT_REALM: kdiab-profiles
+      CORS_ALLOWED_ORIGINS: http://localhost:3001
       LOG_LEVEL: DEBUG
     ports:
-      - "8080:8080"
+      - "8082:8080"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/healthz || exit 1"]
       interval: 10s
@@ -84,7 +85,7 @@ services:
       # Internal address nginx uses to proxy /api/* — never exposed to the browser.
       BACKEND_URL: ${BACKEND_URL:-http://backend:8080}
     ports:
-      - "3000:8080"
+      - "3001:8080"
     depends_on:
       backend:
         condition: service_healthy

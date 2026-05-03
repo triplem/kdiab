@@ -29,23 +29,14 @@ If you are using Podman:
 
 === Accessing the Services
 
-==== Standalone compose (this service only)
-
-Once the containers are running, you can access the various components via your web browser:
-
-* **Frontend UI**: http://localhost:3000
-* **Backend API**: http://localhost:8080/api/v1
-* **Swagger UI**: http://localhost:8080/swagger
-* **Keycloak Admin**: http://localhost:8081
-* **pgAdmin** (dev only): http://localhost:5050
-
-==== Root compose (all four kdiab services)
-
-When running via the root `docker-compose.yml` from the monorepo root, kdiab-treatments is exposed on different ports to avoid conflicts with the other services:
+Once the containers are running, you can access the various components via your web browser.
+Ports are the same whether running the standalone compose or the root compose:
 
 * **Frontend UI**: http://localhost:3002
 * **Backend API**: http://localhost:8083/api/v1
 * **Swagger UI**: http://localhost:8083/swagger
+* **Keycloak Admin**: http://localhost:8081
+* **pgAdmin** (dev only): http://localhost:5050
 
 To start with pgAdmin, use:
 

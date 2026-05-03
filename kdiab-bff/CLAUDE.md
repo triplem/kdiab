@@ -16,9 +16,9 @@ Features:
 
 | Component | Standalone compose | Root compose |
 |---|---|---|
-| bff-backend | 8083 | 8084 |
+| bff-backend | 8084 | 8084 |
 | bff-frontend | 3003 | 3003 |
-| keycloak (standalone only) | 8084 | — (shared at 8081) |
+| keycloak (standalone only) | 8085 | — (shared at 8081) |
 
 ## Commands
 
@@ -44,8 +44,8 @@ npm run test                         # Vitest unit tests
 | `MEASURES_URL` | `http://localhost:8080` | kdiab-measures backend base URL |
 | `PROFILES_URL` | `http://localhost:8082` | kdiab-profiles backend base URL |
 | `TREATMENTS_URL` | `http://localhost:8083` | kdiab-treatments backend base URL |
-| `JWT_DOMAIN` | `http://localhost:8084/realms/kdiab-bff` | Keycloak issuer URL |
-| `JWKS_URL` | `http://localhost:8084/realms/kdiab-bff/...` | JWKS endpoint |
+| `JWT_DOMAIN` | `http://localhost:8085/realms/kdiab-bff` | Keycloak issuer URL (standalone; root compose uses 8081) |
+| `JWKS_URL` | `http://localhost:8085/realms/kdiab-bff/...` | JWKS endpoint |
 | `JWT_AUDIENCE` | `bff` | Expected JWT audience |
 | `JWT_REALM` | `kdiab-bff` | Keycloak realm name |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3003` | Allowed CORS origins |
@@ -65,7 +65,7 @@ All endpoints are under `/api/v1/users/{userId}/` and require a Bearer JWT.
 
 All endpoints accept `from` and `to` query parameters (ISO-8601 datetime, required).
 
-Full schema: `api/openapi.yaml`. Swagger UI at http://localhost:8083/swagger (standalone) or http://localhost:8084/swagger (root compose).
+Full schema: `api/openapi.yaml`. Swagger UI at http://localhost:8084/swagger (both standalone and root compose).
 
 ## JWT Forwarding
 
