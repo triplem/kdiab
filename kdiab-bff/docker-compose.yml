@@ -18,8 +18,8 @@ services:
       dockerfile: backend/Dockerfile
     environment:
       MEASURES_URL: ${MEASURES_URL:-http://host.docker.internal:8080}
-      PROFILES_URL: ${PROFILES_URL:-http://host.docker.internal:8081}
-      TREATMENTS_URL: ${TREATMENTS_URL:-http://host.docker.internal:8082}
+      PROFILES_URL: ${PROFILES_URL:-http://host.docker.internal:8082}
+      TREATMENTS_URL: ${TREATMENTS_URL:-http://host.docker.internal:8083}
       JWT_DOMAIN: ${JWT_DOMAIN:-http://localhost:8084/realms/kdiab-bff}
       JWKS_URL: ${JWKS_URL:-http://keycloak:8080/realms/kdiab-bff/protocol/openid-connect/certs}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-bff}

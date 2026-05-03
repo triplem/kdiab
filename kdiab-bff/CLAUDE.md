@@ -42,8 +42,8 @@ npm run test                         # Vitest unit tests
 | Variable | Default (application.conf) | Description |
 |---|---|---|
 | `MEASURES_URL` | `http://localhost:8080` | kdiab-measures backend base URL |
-| `PROFILES_URL` | `http://localhost:8081` | kdiab-profiles backend base URL |
-| `TREATMENTS_URL` | `http://localhost:8082` | kdiab-treatments backend base URL |
+| `PROFILES_URL` | `http://localhost:8082` | kdiab-profiles backend base URL |
+| `TREATMENTS_URL` | `http://localhost:8083` | kdiab-treatments backend base URL |
 | `JWT_DOMAIN` | `http://localhost:8084/realms/kdiab-bff` | Keycloak issuer URL |
 | `JWKS_URL` | `http://localhost:8084/realms/kdiab-bff/...` | JWKS endpoint |
 | `JWT_AUDIENCE` | `bff` | Expected JWT audience |
