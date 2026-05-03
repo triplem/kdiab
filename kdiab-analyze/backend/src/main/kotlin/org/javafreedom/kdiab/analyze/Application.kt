@@ -93,6 +93,7 @@ fun Application.module(
     routing {
         get("/") { call.respondText("kdiab BFF is running!") }
         get("/healthz") { call.respond(HttpStatusCode.OK) }
+        get("/readyz") { call.respond(HttpStatusCode.OK) }
 
         bffRoutes(resolvedTimelineService, resolvedAnalyticsService, resolvedProfilesService)
 

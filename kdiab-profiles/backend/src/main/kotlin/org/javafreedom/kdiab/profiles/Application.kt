@@ -10,6 +10,7 @@ import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.profiles.adapters.inbound.web.profileRoutes
 import org.javafreedom.kdiab.profiles.adapters.inbound.web.insulinRoutes
@@ -77,6 +78,13 @@ fun Application.module(
     routing {
         get("/") { call.respondText("T1D Profile Service is running!") }
         get("/healthz") { call.respond(io.ktor.http.HttpStatusCode.OK) }
+        get("/readyz") {
+            val ready = runCatching {
+                transaction { exec("SELECT 1") }
+            }.isSuccess
+            if (ready) call.respond(HttpStatusCode.OK)
+            else call.respond(HttpStatusCode.ServiceUnavailable)
+        }
 
         route("/api/v1") {
             profileRoutes(profileService)
