@@ -245,6 +245,9 @@ services:
       meas-net:
         aliases:
           - backend     # measures nginx.conf uses http://backend:8080
+      kdiab-ui-net:
+        aliases:
+          - measures-backend
     restart: unless-stopped
     deploy:
       resources:
@@ -318,6 +321,7 @@ services:
     networks:
       - shared
       - prof-net
+      - kdiab-ui-net
     restart: unless-stopped
     deploy:
       resources:
@@ -396,6 +400,9 @@ services:
       treat-net:
         aliases:
           - backend     # treatments nginx.conf uses http://backend:8080
+      kdiab-ui-net:
+        aliases:
+          - treatments-backend
     restart: unless-stopped
     deploy:
       resources:
@@ -473,6 +480,7 @@ services:
     networks:
       - shared
       - analyze-net
+      - kdiab-ui-net
     restart: unless-stopped
     deploy:
       resources:
@@ -502,6 +510,40 @@ services:
     # analyze nginx.conf proxies /api/ → analyze-backend:8080 (matches service name on analyze-net)
     networks:
       - analyze-net
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.25'
+        reservations:
+          memory: 32M
+          cpus: '0.1'
+
+  # ── kdiab-ui ─────────────────────────────────────────────────────────────────
+  # Consolidated single-page frontend that accesses all four backends directly.
+  kdiab-ui:
+    container_name: kdiab-ui
+    image: localhost/kdiab-ui:latest
+    build:
+      context: ./kdiab-ui
+      dockerfile: Dockerfile
+      args:
+        VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
+        VITE_OIDC_CLIENT_ID: kdiab-ui
+    ports:
+      - "3005:8080"
+    depends_on:
+      measures-backend:
+        condition: service_healthy
+      profiles-backend:
+        condition: service_healthy
+      treatments-backend:
+        condition: service_healthy
+      analyze-backend:
+        condition: service_healthy
+    networks:
+      - kdiab-ui-net
     restart: unless-stopped
     deploy:
       resources:
@@ -551,6 +593,7 @@ networks:
   prof-net:  # profiles-backend ↔ profiles-frontend ↔ gateway
   treat-net: # treatments-backend (alias: backend) ↔ treatments-frontend ↔ gateway
   analyze-net:   # analyze-backend ↔ analyze-frontend ↔ gateway
+  kdiab-ui-net:  # kdiab-ui ↔ all four backends
 
 volumes:
   postgres_data:

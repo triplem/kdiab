@@ -1,0 +1,51 @@
+{
+  "name": "kdiab-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "api:generate": "npm run api:generate:measures && npm run api:generate:profiles && npm run api:generate:treatments && npm run api:generate:analyze",
+    "api:generate:measures": "openapi-generator-cli generate -i ../kdiab-measures/api/openapi.yaml -g typescript-axios -o src/api/generated/measures",
+    "api:generate:profiles": "openapi-generator-cli generate -i ../kdiab-profiles/api/openapi.yaml -g typescript-axios -o src/api/generated/profiles",
+    "api:generate:treatments": "openapi-generator-cli generate -i ../kdiab-treatments/api/openapi.yaml -g typescript-axios -o src/api/generated/treatments",
+    "api:generate:analyze": "openapi-generator-cli generate -i ../kdiab-analyze/api/openapi.yaml -g typescript-axios -o src/api/generated/analyze",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@tanstack/react-query": "^5.99.0",
+    "axios": "^1.15.0",
+    "date-fns": "^4.1.0",
+    "i18next": "^23.0.0",
+    "oidc-client-ts": "^3.5.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-hook-form": "^7.72.1",
+    "react-i18next": "^14.0.0",
+    "react-oidc-context": "^3.3.1",
+    "recharts": "^2.15.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.1.6",
+    "@types/react-dom": "^19.1.5",
+    "@vitejs/plugin-react": "^4.5.2",
+    "eslint": "^9.29.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "globals": "^16.2.0",
+    "jsdom": "^26.1.0",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.34.0",
+    "vite": "^6.3.5",
+    "vitest": "^3.0.0"
+  }
+}
