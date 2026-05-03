@@ -5,8 +5,9 @@ import org.javafreedom.kdiab.bff.domain.model.AgpHourlyData
 import org.javafreedom.kdiab.bff.domain.model.AgpResult
 import org.javafreedom.kdiab.bff.domain.model.Hba1cResult
 import org.javafreedom.kdiab.bff.domain.model.TirBreakdown
-import java.time.Instant
-import java.time.ZoneOffset
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 private const val DCCT_ADDEND = 46.7
 private const val DCCT_DIVISOR = 28.7
@@ -71,7 +72,7 @@ class AnalyticsService(
             if (t < fromInstant || t > toInstant) return@forEach
             val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach
             val mgDl = if (glucoseUnit == "mmol/L") sgv * MMOL_TO_MGDL else sgv
-            val hour = t.atZone(ZoneOffset.UTC).hour
+            val hour = t.toLocalDateTime(TimeZone.UTC).hour
             byHour[hour].add(mgDl)
         }
 
