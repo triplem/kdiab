@@ -22,21 +22,21 @@ const renderDataSummary = (tr: TreatmentResponse): string => {
   switch (tr.type) {
     case 'BOLUS':
     case 'CORRECTION_BOLUS':
-      return d.insulin != null ? `${d.insulin} U${d.insulinType ? ` (${d.insulinType})` : ''}` : JSON.stringify(d);
+      return d.insulin != null ? `${d.insulin} U${typeof d.insulinType === 'string' ? ` (${d.insulinType})` : ''}` : JSON.stringify(d);
     case 'COMBO_BOLUS':
       return d.insulin != null ? `${d.insulin} U combo` : JSON.stringify(d);
     case 'BASAL':
-      return d.insulin != null ? `${d.insulin} U${d.insulinType ? ` (${d.insulinType})` : ''}${d.duration ? ` / ${formatDuration(d.duration as number)}` : ''}` : JSON.stringify(d);
+      return d.insulin != null ? `${d.insulin} U${typeof d.insulinType === 'string' ? ` (${d.insulinType})` : ''}${typeof d.duration === 'number' ? ` / ${formatDuration(d.duration)}` : ''}` : JSON.stringify(d);
     case 'CARBS':
-      return d.carbs != null ? `${d.carbs} g${d.absorptionTime ? ` (${d.absorptionTime}h abs.)` : ''}` : JSON.stringify(d);
+      return d.carbs != null ? `${d.carbs} g${typeof d.absorptionTime === 'number' ? ` (${d.absorptionTime}h abs.)` : ''}` : JSON.stringify(d);
     case 'TEMP_BASAL':
-      return d.rate != null ? `${d.rate} U/h${d.duration ? ` for ${formatDuration(d.duration as number)}` : ''}` : JSON.stringify(d);
+      return d.rate != null ? `${d.rate} U/h${typeof d.duration === 'number' ? ` for ${formatDuration(d.duration)}` : ''}` : JSON.stringify(d);
     case 'EXERCISE':
-      return d.duration != null ? `${formatDuration(d.duration as number)}${d.intensity ? ` (${d.intensity})` : ''}` : JSON.stringify(d);
+      return typeof d.duration === 'number' ? `${formatDuration(d.duration)}${typeof d.intensity === 'string' ? ` (${d.intensity})` : ''}` : JSON.stringify(d);
     case 'NOTE':
       return d.text ? String(d.text).slice(0, 50) : JSON.stringify(d);
     case 'PUMP_SUSPEND':
-      return d.duration != null ? `Suspended ${formatDuration(d.duration as number)}` : 'Pump suspended';
+      return typeof d.duration === 'number' ? `Suspended ${formatDuration(d.duration)}` : 'Pump suspended';
     case 'SITE_CHANGE':
       return d.location ? `Site: ${d.location}` : 'Site change';
     case 'SENSOR_INSERT':

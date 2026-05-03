@@ -19,7 +19,7 @@ export const renderDataSummary = (m: MeasureResponse): string => {
   const d = m.data as Record<string, unknown>;
   switch (m.type as MeasureType) {
     case 'CGM': {
-      const trend = d.trend ? ` (${d.trend})` : '';
+      const trend = typeof d.trend === 'string' ? ` (${d.trend})` : '';
       const unit = typeof d.unit === 'string' ? d.unit : 'mg/dL';
       return d.value != null ? `${d.value} ${unit}${trend}` : JSON.stringify(d);
     }
