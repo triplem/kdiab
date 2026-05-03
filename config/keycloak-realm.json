@@ -87,7 +87,8 @@
       "enabled": true,
       "publicClient": true,
       "redirectUris": ["http://localhost:*"],
-      "webOrigins": ["*"],
+      "webOrigins": ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004"],
+      "attributes": {"pkce.code.challenge.method": "S256"},
       "protocolMappers": [
         {
           "name": "roles",
@@ -161,7 +162,8 @@
       "enabled": true,
       "publicClient": true,
       "redirectUris": ["http://localhost:*"],
-      "webOrigins": ["*"],
+      "webOrigins": ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004"],
+      "attributes": {"pkce.code.challenge.method": "S256"},
       "protocolMappers": [
         {
           "name": "roles",
@@ -235,7 +237,8 @@
       "enabled": true,
       "publicClient": true,
       "redirectUris": ["http://localhost:*"],
-      "webOrigins": ["*"],
+      "webOrigins": ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004"],
+      "attributes": {"pkce.code.challenge.method": "S256"},
       "protocolMappers": [
         {
           "name": "roles",
@@ -309,7 +312,8 @@
       "enabled": true,
       "publicClient": true,
       "redirectUris": ["http://localhost:*"],
-      "webOrigins": ["*"],
+      "webOrigins": ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004"],
+      "attributes": {"pkce.code.challenge.method": "S256"},
       "protocolMappers": [
         {
           "name": "roles",
