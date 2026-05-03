@@ -5,6 +5,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
+import io.ktor.server.plugins.callid.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
@@ -25,59 +26,63 @@ fun Route.bffRoutes(
     authenticate("auth-jwt") {
         route("/api/v1/users/{userId}") {
             get("/timeline") {
-                val (principal, targetUserId, authorization) = extractContext(call)
+                val ctx = extractContext(call)
                 val from = requireParam(call, "from")
                 val to = requireParam(call, "to")
 
                 val timeline = timelineService.getTimeline(
-                    userId = targetUserId.toString(),
+                    userId = ctx.targetUserId.toString(),
                     from = from,
                     to = to,
-                    authorization = authorization,
+                    authorization = ctx.authorization,
+                    correlationId = ctx.correlationId,
                 )
                 call.respond(timeline.toResponse())
             }
 
             get("/analytics/hba1c") {
-                val (principal, targetUserId, authorization) = extractContext(call)
+                val ctx = extractContext(call)
                 val from = requireParam(call, "from")
                 val to = requireParam(call, "to")
 
                 val result = analyticsService.getHba1c(
-                    userId = targetUserId.toString(),
+                    userId = ctx.targetUserId.toString(),
                     from = from,
                     to = to,
-                    authorization = authorization,
-                    glucoseUnit = principal.glucoseUnit,
+                    authorization = ctx.authorization,
+                    glucoseUnit = ctx.principal.glucoseUnit,
+                    correlationId = ctx.correlationId,
                 )
                 call.respond(result.toResponse())
             }
 
             get("/analytics/agp") {
-                val (principal, targetUserId, authorization) = extractContext(call)
+                val ctx = extractContext(call)
                 val from = requireParam(call, "from")
                 val to = requireParam(call, "to")
 
                 val result = analyticsService.getAgp(
-                    userId = targetUserId.toString(),
+                    userId = ctx.targetUserId.toString(),
                     from = from,
                     to = to,
-                    authorization = authorization,
-                    glucoseUnit = principal.glucoseUnit,
+                    authorization = ctx.authorization,
+                    glucoseUnit = ctx.principal.glucoseUnit,
+                    correlationId = ctx.correlationId,
                 )
                 call.respond(result.toResponse())
             }
 
             get("/profiles/active") {
-                val (principal, targetUserId, authorization) = extractContext(call)
+                val ctx = extractContext(call)
                 val from = requireParam(call, "from")
                 val to = requireParam(call, "to")
 
                 val result = profilesService.getProfiles(
-                    userId = targetUserId.toString(),
+                    userId = ctx.targetUserId.toString(),
                     from = from,
                     to = to,
-                    authorization = authorization,
+                    authorization = ctx.authorization,
+                    correlationId = ctx.correlationId,
                 )
                 call.respond(result.toResponse())
             }
@@ -89,6 +94,7 @@ private data class RequestContext(
     val principal: UserPrincipal,
     val targetUserId: Uuid,
     val authorization: String,
+    val correlationId: String,
 )
 
 private fun extractContext(call: ApplicationCall): RequestContext {
@@ -107,7 +113,8 @@ private fun extractContext(call: ApplicationCall): RequestContext {
     }
     val authorization = call.request.headers[HttpHeaders.Authorization]
         ?: throw AuthorizationException("Missing Authorization header")
-    return RequestContext(principal!!, targetUserId, authorization)
+    val correlationId = call.callId ?: ""
+    return RequestContext(principal!!, targetUserId, authorization, correlationId)
 }
 
 private fun requireParam(call: ApplicationCall, name: String): String =

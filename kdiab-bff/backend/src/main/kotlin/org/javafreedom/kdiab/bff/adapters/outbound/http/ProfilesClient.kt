@@ -24,10 +24,11 @@ class ProfilesClient(
     private val httpClient: HttpClient,
     private val baseUrl: String,
 ) {
-    suspend fun getProfiles(userId: String, authorization: String): List<ProfileDto> {
+    suspend fun getProfiles(userId: String, authorization: String, correlationId: String): List<ProfileDto> {
         logger.debug { "Fetching profiles for user $userId from $baseUrl" }
         val response = httpClient.get("$baseUrl/api/v1/users/$userId/profiles") {
             header(HttpHeaders.Authorization, authorization)
+            header("X-Correlation-ID", correlationId)
         }
         if (!response.status.isSuccess()) {
             throw UpstreamException("profiles", response.status.value, response.status.description)

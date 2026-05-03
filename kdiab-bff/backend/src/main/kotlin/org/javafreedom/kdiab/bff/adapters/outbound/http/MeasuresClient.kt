@@ -36,7 +36,7 @@ class MeasuresClient(
     private val httpClient: HttpClient,
     private val baseUrl: String,
 ) {
-    suspend fun getMeasures(userId: String, authorization: String): List<MeasureDto> {
+    suspend fun getMeasures(userId: String, authorization: String, correlationId: String): List<MeasureDto> {
         logger.debug { "Fetching measures for user $userId from $baseUrl" }
         val result = mutableListOf<MeasureDto>()
         var page = 0
@@ -46,6 +46,7 @@ class MeasuresClient(
         while (result.size < totalCount) {
             val response = httpClient.get("$baseUrl/api/v1/users/$userId/measures") {
                 header(HttpHeaders.Authorization, authorization)
+                header("X-Correlation-ID", correlationId)
                 parameter("page", page)
                 parameter("size", pageSize)
             }

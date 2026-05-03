@@ -26,63 +26,63 @@ class ProfilesServiceTest {
 
     @Test
     fun `getProfiles returns empty list when no profiles`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth) } returns emptyList()
-        val result = service.getProfiles(userId, from, to, auth)
+        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns emptyList()
+        val result = service.getProfiles(userId, from, to, auth, "")
         assertTrue(result.profiles.isEmpty())
     }
 
     @Test
     fun `getProfiles includes ACTIVE profiles`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth) } returns listOf(
+        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", "ACTIVE"),
         )
-        val result = service.getProfiles(userId, from, to, auth)
+        val result = service.getProfiles(userId, from, to, auth, "")
         assertEquals(1, result.profiles.size)
         assertEquals("ACTIVE", result.profiles.first().status)
     }
 
     @Test
     fun `getProfiles includes ARCHIVED profiles`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth) } returns listOf(
+        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", "ARCHIVED"),
         )
-        val result = service.getProfiles(userId, from, to, auth)
+        val result = service.getProfiles(userId, from, to, auth, "")
         assertEquals(1, result.profiles.size)
         assertEquals("ARCHIVED", result.profiles.first().status)
     }
 
     @Test
     fun `getProfiles excludes DRAFT profiles`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth) } returns listOf(
+        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", "DRAFT"),
             profile("p2", "ACTIVE"),
         )
-        val result = service.getProfiles(userId, from, to, auth)
+        val result = service.getProfiles(userId, from, to, auth, "")
         assertEquals(1, result.profiles.size)
         assertEquals("p2", result.profiles.first().id)
     }
 
     @Test
     fun `getProfiles excludes PROPOSED profiles`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth) } returns listOf(
+        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", "PROPOSED"),
             profile("p2", "ACTIVE"),
         )
-        val result = service.getProfiles(userId, from, to, auth)
+        val result = service.getProfiles(userId, from, to, auth, "")
         assertEquals(1, result.profiles.size)
         assertEquals("p2", result.profiles.first().id)
     }
 
     @Test
     fun `getProfiles maps profile fields correctly`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth) } returns listOf(
+        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
             ProfileDto(
                 id = "p-xyz", userId = userId, status = "ACTIVE",
                 name = "Basal A", createdAt = "2024-01-10T08:00:00Z",
                 previousProfileId = "p-prev",
             )
         )
-        val result = service.getProfiles(userId, from, to, auth)
+        val result = service.getProfiles(userId, from, to, auth, "")
         val p = result.profiles.first()
         assertEquals("p-xyz", p.id)
         assertEquals("ACTIVE", p.status)
@@ -93,13 +93,13 @@ class ProfilesServiceTest {
 
     @Test
     fun `getProfiles returns both ACTIVE and ARCHIVED when mixed`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth) } returns listOf(
+        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", "ARCHIVED"),
             profile("p2", "ACTIVE"),
             profile("p3", "DRAFT"),
             profile("p4", "PROPOSED"),
         )
-        val result = service.getProfiles(userId, from, to, auth)
+        val result = service.getProfiles(userId, from, to, auth, "")
         assertEquals(2, result.profiles.size)
         assertTrue(result.profiles.any { it.id == "p1" })
         assertTrue(result.profiles.any { it.id == "p2" })
