@@ -30,7 +30,8 @@ private data class PagedMeasureDto(
     val totalCount: Long,
 )
 
-private const val PAGE_SIZE = 200   // upstream maximum (see api/openapi.yaml size.maximum)
+private const val PAGE_SIZE = 200    // upstream maximum (see api/openapi.yaml size.maximum)
+private const val MAX_MEASURES = 50_000 // ~120 days of CGM at 5-min intervals
 
 class MeasuresClient(
     private val httpClient: HttpClient,
@@ -44,6 +45,9 @@ class MeasuresClient(
         var totalCount = Long.MAX_VALUE
 
         while (result.size < totalCount) {
+            check(result.size < MAX_MEASURES) {
+                "Too many measures for user $userId ($totalCount total). Narrow the timeframe."
+            }
             val response = httpClient.get("$baseUrl/api/v1/users/$userId/measures") {
                 header(HttpHeaders.Authorization, authorization)
                 header("X-Correlation-ID", correlationId)
