@@ -85,7 +85,7 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
             tir={hba1cQuery.data.tir}
             glucoseUnit={glucoseUnit}
           />
-          <TimeInRangeBar tir={hba1cQuery.data.tir} />
+          <TimeInRangeBar tir={hba1cQuery.data.tir} glucoseUnit={glucoseUnit} />
         </>
       )}
 

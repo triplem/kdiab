@@ -8,19 +8,28 @@ interface TirBreakdown {
   totalCount: number;
 }
 
-interface Props {
-  tir: TirBreakdown;
+const MGDL_TO_MMOL = 1 / 18.0182;
+
+function fmtThreshold(mgDl: number, unit: string): string {
+  if (unit === 'mmol/L') return (mgDl * MGDL_TO_MMOL).toFixed(1);
+  return String(mgDl);
 }
 
-export function TimeInRangeBar({ tir }: Props) {
+interface Props {
+  tir: TirBreakdown;
+  glucoseUnit: string;
+}
+
+export function TimeInRangeBar({ tir, glucoseUnit }: Props) {
   const { t } = useTranslation();
   const total = tir.totalCount || 1;
+  const u = glucoseUnit;
 
   const segments = [
-    { key: 'below', count: tir.belowCount, color: 'var(--tir-below)', label: t('analytics.tirBelow') },
-    { key: 'target', count: tir.inRangeCount, color: 'var(--tir-target)', label: t('analytics.tirTarget') },
-    { key: 'above', count: tir.aboveCount, color: 'var(--tir-above)', label: t('analytics.tirAbove') },
-    { key: 'high', count: tir.highCount, color: 'var(--tir-high)', label: t('analytics.tirHigh') },
+    { key: 'below',  count: tir.belowCount,   color: 'var(--tir-below)',  label: t('analytics.tirBelow',  { low: fmtThreshold(70, u), unit: u }) },
+    { key: 'target', count: tir.inRangeCount,  color: 'var(--tir-target)', label: t('analytics.tirTarget', { low: fmtThreshold(70, u), high: fmtThreshold(180, u), unit: u }) },
+    { key: 'above',  count: tir.aboveCount,    color: 'var(--tir-above)',  label: t('analytics.tirAbove',  { low: fmtThreshold(180, u), high: fmtThreshold(250, u), unit: u }) },
+    { key: 'high',   count: tir.highCount,     color: 'var(--tir-high)',   label: t('analytics.tirHigh',   { high: fmtThreshold(250, u), unit: u }) },
   ];
 
   return (
