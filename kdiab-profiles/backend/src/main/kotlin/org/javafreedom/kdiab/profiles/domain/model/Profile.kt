@@ -28,6 +28,7 @@ data class Profile(
         val timeZone: TimeZone = TimeZone.UTC,
         val status: ProfileStatus,
         val createdAt: Instant = Clock.System.now(),
+        val validFrom: Instant? = null,
         val basal: List<BasalSegment>,
         val icr: List<IcrSegment>,
         val isf: List<IsfSegment>,

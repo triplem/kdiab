@@ -102,6 +102,7 @@ fun DomainProfile.toApi(): Profile {
         timeZone = this.timeZone.id,
         status = Profile.Status.valueOf(this.status.name),
         createdAt = this.createdAt.toString(),
+        validFrom = this.validFrom?.toString(),
         basal = this.basal.map { BasalSegment(it.startTime.toString(), it.value) },
         icr = this.icr.map { IcrSegment(it.startTime.toString(), it.value) },
         isf = this.isf.map { IsfSegment(it.startTime.toString(), it.value) },

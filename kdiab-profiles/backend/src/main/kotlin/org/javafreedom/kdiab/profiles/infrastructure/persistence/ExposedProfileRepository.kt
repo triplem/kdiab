@@ -328,6 +328,7 @@ class ExposedProfileRepository(
             timeZone = tz,
             status = row[ProfileStatuses.status],
             createdAt = Instant.fromEpochMilliseconds(row[Profiles.createdAt].toEpochMilli()),
+            validFrom = Instant.fromEpochMilliseconds(row[ProfileStatuses.validFrom].toEpochMilli()),
             basal = pSectors.basal,
             icr = pSectors.icr,
             isf = pSectors.isf,

@@ -75,6 +75,7 @@ data class ProfileSummaryDto(
     val status: String,
     val name: String,
     val createdAt: String? = null,
+    val validFrom: String? = null,
     val previousProfileId: String? = null,
 )
 
@@ -102,6 +103,6 @@ fun AgpResult.toResponse() = AgpResponseDto(
 
 fun ProfilesResult.toResponse() = ProfilesResponseDto(
     profiles = profiles.map {
-        ProfileSummaryDto(it.id, it.userId, it.status, it.name, it.createdAt, it.previousProfileId)
+        ProfileSummaryDto(it.id, it.userId, it.status, it.name, it.createdAt, it.validFrom, it.previousProfileId)
     },
 )

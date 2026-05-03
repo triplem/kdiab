@@ -35,6 +35,7 @@ data class ProfileSummary(
     val status: String,
     val name: String,
     val createdAt: String?,
+    val validFrom: String?,
     val previousProfileId: String?,
 )
 

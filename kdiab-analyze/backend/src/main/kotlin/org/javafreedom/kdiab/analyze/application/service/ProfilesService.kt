@@ -29,6 +29,7 @@ class ProfilesService(
                     status = dto.status,
                     name = dto.name,
                     createdAt = dto.createdAt,
+                    validFrom = dto.validFrom,
                     previousProfileId = dto.previousProfileId,
                 )
             }

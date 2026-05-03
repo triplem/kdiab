@@ -22,6 +22,7 @@ class ProfilesServiceTest {
     private fun profile(id: String, status: String) = ProfileDto(
         id = id, userId = userId, status = status,
         name = "Profile $id", createdAt = "2024-01-01T00:00:00Z",
+        validFrom = "2024-01-01T00:00:00Z",
     )
 
     @Test
@@ -79,6 +80,7 @@ class ProfilesServiceTest {
             ProfileDto(
                 id = "p-xyz", userId = userId, status = "ACTIVE",
                 name = "Basal A", createdAt = "2024-01-10T08:00:00Z",
+                validFrom = "2024-01-10T09:00:00Z",
                 previousProfileId = "p-prev",
             )
         )
@@ -88,6 +90,7 @@ class ProfilesServiceTest {
         assertEquals("ACTIVE", p.status)
         assertEquals("Basal A", p.name)
         assertEquals("2024-01-10T08:00:00Z", p.createdAt)
+        assertEquals("2024-01-10T09:00:00Z", p.validFrom)
         assertEquals("p-prev", p.previousProfileId)
     }
 

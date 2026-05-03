@@ -17,6 +17,7 @@ data class ProfileDto(
     val status: String,
     val name: String,
     val createdAt: String? = null,
+    val validFrom: String? = null,
     val previousProfileId: String? = null,
 )
 
