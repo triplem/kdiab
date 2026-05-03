@@ -1,11 +1,16 @@
+import type { AxiosInstance } from 'axios';
+
 let accessToken: string | null = null;
 
 export function setAccessToken(token: string | null): void {
   accessToken = token;
 }
 
-export function getAccessToken(): string | null {
-  return accessToken;
+export function configureAuthInterceptor(instance: AxiosInstance): void {
+  instance.interceptors.request.use((config) => {
+    if (accessToken) config.headers['Authorization'] = `Bearer ${accessToken}`;
+    return config;
+  });
 }
 
 function decodeJwtPayload(token: string): Record<string, unknown> {
