@@ -32,3 +32,4 @@
 
 * link:adr/ADR-001-monorepo-consolidation.html[ADR-001 Monorepo Consolidation]
 * link:adr/ADR-002-docker-image-naming.html[ADR-002 Docker Image Naming Convention]
+* link:adr/ADR-003-root-gradle-composite-build.html[ADR-003 Root Gradle Composite Build]

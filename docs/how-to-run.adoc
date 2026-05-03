@@ -13,8 +13,40 @@ All commands are run from the repository root unless noted otherwise.
 
 == Building
 
-`build.sh` is the monorepo build orchestrator. It runs all Gradle backends and npm frontends
-in parallel and logs per-service output to `.build-logs/`.
+Two build orchestrators are available at the repo root:
+
+* `./gradlew` — the primary orchestrator for build and test; integrates with IDEs and uses
+  Gradle's incremental build and build cache.
+* `build.sh` — retained for Docker-specific workflows (`--docker`, `--clean`).
+
+=== Gradle (primary)
+
+The root Gradle project is a composite build that includes all four services. Each service
+remains independently buildable via its own `./gradlew`.
+
+[source,bash]
+----
+./gradlew build    # build all backends (Kotlin/Ktor) and all frontends (npm) — parallel
+./gradlew check    # build + all tests + Detekt + Kover (80% gate) + frontend lint/test
+./gradlew clean    # remove all build outputs and frontend/dist directories
+----
+
+Individual subprojects and tasks can be targeted directly from the root:
+
+[source,bash]
+----
+./gradlew :kdiab-bff:backend:build
+./gradlew :kdiab-measures:backend:check
+./gradlew :kdiab-profiles:buildFrontend
+----
+
+TIP: IntelliJ IDEA — open the root `settings.gradle.kts` to import all four services as modules
+with full cross-service navigation and refactoring support.
+
+=== build.sh (Docker and clean)
+
+`build.sh` is the monorepo build orchestrator for Docker image builds and full environment resets.
+It logs per-service output to `.build-logs/`.
 
 === Available Flags
 
@@ -199,7 +231,8 @@ npm run dev          # dev server on port 3000, proxies /api to backend on 8080
 
 [source,bash]
 ----
-./build.sh --check
+./gradlew check        # preferred: tests + Detekt + Kover + frontend lint/test, all services
+./build.sh --check     # alternative: same scope via shell orchestrator
 ----
 
 === Single Service

@@ -1,0 +1,134 @@
+= ADR-003: Root Gradle Composite Build
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-03
+* *Deciders*: triplem
+
+== Context
+
+The monorepo previously relied on `build.sh` — a shell script — as its sole orchestrator for
+building all four service backends (Gradle) and frontends (npm). While functional, this had
+several drawbacks:
+
+* No IDE integration: IntelliJ cannot import a shell script as a project model. Opening any
+  individual service worked, but there was no way to load all four services as a single IDE
+  project with cross-service navigation.
+* No incremental build awareness at the root level: `build.sh` always re-runs every step;
+  Gradle's build cache and up-to-date checks are only exploited within each service.
+* Shell-only: developers on Windows or environments without Bash must use WSL or replicate the
+  logic manually.
+* No unified task graph: `./gradlew :kdiab-measures:backend:test` style invocations from the root
+  were impossible; users had to `cd` into each service directory.
+
+Each service already used Gradle 9.4.1 with `settings.gradle.kts`, a version catalog
+(`gradle/libs.versions.toml`), and `gradle.properties`. All four services are structurally
+independent Gradle builds.
+
+== Decision
+
+Add a root-level Gradle project that composes all four services using Gradle's
+https://docs.gradle.org/current/userguide/composite_builds.html[composite build] feature
+(`includeBuild`). Each service remains a fully independent Gradle project — they still build
+standalone via their own `./gradlew`. The root project adds three aggregate tasks (`build`,
+`check`, `clean`) that delegate to the services in parallel.
+
+=== Root files added
+
+[cols="2,3"]
+|===
+| File | Purpose
+
+| `settings.gradle.kts`           | Declares `rootProject.name = "kdiab"` and four `includeBuild()` entries
+| `build.gradle.kts`              | Registers `build`, `check`, `clean` tasks that delegate to each service's `buildAll` / `checkAll` / `cleanAll`
+| `gradle.properties`             | Enables `org.gradle.parallel`, `org.gradle.caching`, `org.gradle.configuration-cache`
+| `gradlew` / `gradlew.bat`       | Gradle wrapper copied from `kdiab-measures` (all services use Gradle 9.4.1)
+| `gradle/wrapper/`               | Wrapper JAR and properties (same version as services)
+|===
+
+=== Per-service aggregate tasks added (each `build.gradle.kts`)
+
+Each service's root `build.gradle.kts` gains:
+
+[source,kotlin]
+----
+tasks.register<Exec>("buildFrontend") {
+    workingDir = file("frontend")
+    commandLine("bash", "-c", "npm ci --silent && npm run build")
+    inputs.dir("frontend/src")
+    inputs.files("frontend/package-lock.json", "frontend/package.json")
+    outputs.dir("frontend/dist")
+}
+
+tasks.register<Exec>("checkFrontend") {
+    workingDir = file("frontend")
+    commandLine("bash", "-c", "npm ci --silent && npm run lint && npm run test")
+}
+
+tasks.register("buildAll") {
+    dependsOn(":backend:build", "buildFrontend")
+}
+
+tasks.register("checkAll") {
+    dependsOn(":backend:check", "checkFrontend")
+}
+
+tasks.register("cleanAll") {
+    dependsOn(":backend:clean")
+    doLast { delete("frontend/dist") }
+}
+----
+
+=== Root task mapping
+
+[cols="2,3"]
+|===
+| Root command | What runs
+
+| `./gradlew build`  | `buildAll` in all four services (parallel via `org.gradle.parallel`)
+| `./gradlew check`  | `checkAll` in all four services (tests + Detekt + Kover + frontend lint/test)
+| `./gradlew clean`  | `cleanAll` in all four services
+| `./gradlew :kdiab-bff:backend:build` | Any subproject task can be targeted directly
+|===
+
+== Consequences
+
+=== Positive
+
+* IntelliJ can import the root `settings.gradle.kts` and see all four services as modules
+  with cross-service navigation and refactoring.
+* `./gradlew build` replaces `./build.sh` for pure build/test workflows; Gradle handles
+  parallelism, incremental builds, and build cache automatically.
+* Developers can target any subproject task directly from the root without `cd`.
+* The Gradle wrapper ensures a reproducible Gradle version across all environments and on Windows.
+
+=== Negative / Limitations
+
+* `build.sh` is retained for Docker-specific workflows (`--docker`, `--clean`) that have no
+  Gradle equivalent. It is no longer needed for build and test.
+* The `buildFrontend` and `checkFrontend` tasks wrap npm in `Exec`, so they benefit from
+  Gradle's up-to-date checks (declared `inputs`/`outputs`) but not from Gradle's build cache
+  (npm is not a Gradle-native tool).
+* If a service is upgraded to a different Gradle version in the future, the root wrapper version
+  must be updated to match the highest required version, or each service must remain compatible
+  with the root wrapper.
+
+== Alternatives Considered
+
+=== Keep `build.sh` as sole orchestrator
+
+Rejected as the only option going forward: it cannot provide IDE project model, has no
+incremental awareness, and is not portable across operating systems.
+
+=== Gradle multi-project build (single `settings.gradle.kts` for all)
+
+Would require all services to share one version catalog and one `pluginManagement` block.
+Rejected because services evolved independently with separate catalogs and may diverge further.
+Composite builds preserve full service autonomy.
+
+=== Taskfile / Makefile
+
+Cross-platform task runners (Taskfile, Just, Make) could orchestrate builds but provide no IDE
+integration and no incremental build caching. Rejected in favour of Gradle, which is already
+present in every service.
