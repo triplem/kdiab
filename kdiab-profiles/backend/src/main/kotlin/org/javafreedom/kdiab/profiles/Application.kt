@@ -18,9 +18,10 @@ import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedProfileRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedInsulinRepository
+import org.javafreedom.kdiab.profiles.plugins.configureLogging
+import org.javafreedom.kdiab.profiles.plugins.configureMetrics
 import org.javafreedom.kdiab.profiles.plugins.configureSecurity
 import org.javafreedom.kdiab.profiles.plugins.configureStatusPages
-import org.javafreedom.kdiab.profiles.plugins.configureLogging
 import io.ktor.server.plugins.swagger.*
 import io.ktor.server.resources.Resources
 
@@ -32,6 +33,7 @@ fun Application.module(
         initDatabase: Boolean = true
 ) {
     configureLogging()
+    configureMetrics()
     configureSecurity()
     configureStatusPages()
     install(ContentNegotiation) {

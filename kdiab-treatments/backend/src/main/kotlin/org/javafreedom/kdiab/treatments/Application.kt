@@ -18,6 +18,7 @@ import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedTreatmentRepository
 import org.javafreedom.kdiab.treatments.plugins.configureLogging
+import org.javafreedom.kdiab.treatments.plugins.configureMetrics
 import org.javafreedom.kdiab.treatments.plugins.configureSecurity
 import org.javafreedom.kdiab.treatments.plugins.configureStatusPages
 
@@ -28,6 +29,7 @@ fun Application.module(
     initDatabase: Boolean = true
 ) {
     configureLogging()
+    configureMetrics()
     configureSecurity()
     configureStatusPages()
     val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")

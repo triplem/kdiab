@@ -20,6 +20,7 @@ import org.javafreedom.kdiab.bff.application.service.AnalyticsService
 import org.javafreedom.kdiab.bff.application.service.ProfilesService
 import org.javafreedom.kdiab.bff.application.service.TimelineService
 import org.javafreedom.kdiab.bff.plugins.configureLogging
+import org.javafreedom.kdiab.bff.plugins.configureMetrics
 import org.javafreedom.kdiab.bff.plugins.configureSecurity
 import org.javafreedom.kdiab.bff.plugins.configureStatusPages
 
@@ -32,6 +33,7 @@ fun Application.module(
     profilesService: ProfilesService? = null,
 ) {
     configureLogging()
+    configureMetrics()
     configureSecurity()
     configureStatusPages()
 

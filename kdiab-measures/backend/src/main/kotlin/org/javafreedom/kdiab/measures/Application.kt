@@ -18,6 +18,7 @@ import org.javafreedom.kdiab.measures.application.service.MeasureService
 import org.javafreedom.kdiab.measures.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository
 import org.javafreedom.kdiab.measures.plugins.configureLogging
+import org.javafreedom.kdiab.measures.plugins.configureMetrics
 import org.javafreedom.kdiab.measures.plugins.configureSecurity
 import org.javafreedom.kdiab.measures.plugins.configureStatusPages
 
@@ -28,6 +29,7 @@ fun Application.module(
     initDatabase: Boolean = true
 ) {
     configureLogging()
+    configureMetrics()
     configureSecurity()
     configureStatusPages()
     install(ContentNegotiation) {

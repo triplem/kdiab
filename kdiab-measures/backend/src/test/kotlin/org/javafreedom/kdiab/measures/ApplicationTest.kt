@@ -28,4 +28,13 @@ class ApplicationTest {
         val response = client.get("/unknown-route")
         assertEquals(HttpStatusCode.NotFound, response.status)
     }
+
+    @Test
+    fun `GET metrics returns 200 with text content`() = testApplication {
+        configureTestEnv()
+        application { module(initDatabase = false) }
+        val response = client.get("/metrics")
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertEquals(ContentType.Text.Plain, response.contentType()?.withoutParameters())
+    }
 }
