@@ -41,6 +41,8 @@
     "save": "Save",
     "saving": "Saving…",
     "validationError": "Please fill in all required fields with valid values.",
+    "saveError": "Failed to save. Please try again.",
+    "sessionExpired": "Session expired — please log in again.",
     "insulinUnits": "Insulin Units:",
     "insulinType": "Insulin Type (optional):",
     "durationHours": "Duration in hours (optional):",

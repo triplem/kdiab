@@ -19,6 +19,7 @@ interface AddTreatmentModalProps {
   onClose: () => void;
   onSave: (treatment: TreatmentInput) => void;
   isSaving?: boolean;
+  error?: string | null;
 }
 
 const TREATMENT_TYPES: PatientTreatmentType[] = [
@@ -48,7 +49,7 @@ function nowRounded(): string {
   return d.toISOString().slice(0, 16);
 }
 
-export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({ isOpen, onClose, onSave, isSaving = false }) => {
+export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({ isOpen, onClose, onSave, isSaving = false, error }) => {
   const { locale } = useTimeFormat();
   const { t } = useTranslation();
   const [type, setType] = useState<PatientTreatmentType>('BOLUS');
@@ -179,7 +180,6 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({ isOpen, on
       data,
       ...(notes.trim() && { notes: notes.trim() }),
     });
-    onClose();
   };
 
   const renderTypeFields = () => {
@@ -435,6 +435,8 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({ isOpen, on
             <input type="text" placeholder={t('modal.notesPlaceholder')}
               value={notes} onChange={e => setNotes(e.target.value)} style={inputStyle} />
           </label>
+
+          {error && <div role="alert" className="error">{error}</div>}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
             <button type="button" onClick={onClose}

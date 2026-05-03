@@ -15,14 +15,17 @@ interface MeasureListProps {
 
 type MeasureType = MeasureResponse['type'];
 
-const renderDataSummary = (m: MeasureResponse): string => {
+export const renderDataSummary = (m: MeasureResponse): string => {
   const d = m.data as Record<string, unknown>;
   switch (m.type as MeasureType) {
-    case 'BGM':
     case 'CGM': {
       const trend = d.trend ? ` (${d.trend})` : '';
       const unit = typeof d.unit === 'string' ? d.unit : 'mg/dL';
       return d.value != null ? `${d.value} ${unit}${trend}` : JSON.stringify(d);
+    }
+    case 'BGM': {
+      const unit = typeof d.unit === 'string' ? d.unit : 'mg/dL';
+      return d.value != null ? `${d.value} ${unit}` : JSON.stringify(d);
     }
     case 'BLOOD_PRESSURE': {
       const unit = typeof d.unit === 'string' ? d.unit : 'mmHg';

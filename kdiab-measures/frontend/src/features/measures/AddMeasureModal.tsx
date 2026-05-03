@@ -18,6 +18,7 @@ interface AddMeasureModalProps {
   glucoseUnit?: string;
   weightUnit?: string;
   isSaving?: boolean;
+  error?: string | null;
 }
 
 const MEASURE_TYPES: MeasureType[] = ['BGM', 'CGM', 'BG_CHECK', 'BLOOD_PRESSURE', 'WEIGHT', 'PULSE', 'KETONE_CHECK'];
@@ -43,7 +44,7 @@ function nowRounded(): string {
   return d.toISOString().slice(0, 16);
 }
 
-export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({ isOpen, onClose, onSave, glucoseUnit = 'mg/dL', weightUnit = 'kg', isSaving = false }) => {
+export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({ isOpen, onClose, onSave, glucoseUnit = 'mg/dL', weightUnit = 'kg', isSaving = false, error }) => {
   const { locale } = useTimeFormat();
   const { t } = useTranslation();
   const [type, setType] = useState<MeasureType>('BGM');
@@ -115,7 +116,6 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({ isOpen, onClos
       source: 'MANUAL',
       data,
     });
-    onClose();
   };
 
   const renderTypeFields = () => {
@@ -312,6 +312,8 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({ isOpen, onClos
           </label>
 
           {renderTypeFields()}
+
+          {error && <div role="alert" className="error">{error}</div>}
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
             <button

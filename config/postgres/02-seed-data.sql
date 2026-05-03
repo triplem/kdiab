@@ -24,7 +24,7 @@ DECLARE
   sarah_id UUID := '11111111-1111-1111-1111-111111111111';
   mike_id  UUID := '22222222-2222-2222-2222-222222222222';
   t        TIMESTAMPTZ;
-  sgv      INTEGER;
+  glucose  INTEGER;
   trend    TEXT;
   trends   TEXT[] := ARRAY['Flat','FortyFiveUp','FortyFiveDown','SingleUp','SingleDown'];
   base_ts  TIMESTAMPTZ := NOW() - INTERVAL '30 days';
@@ -34,61 +34,61 @@ BEGIN
 
   -- Sarah — CGM readings every 5 minutes for 30 days
   FOR i IN 0..8639 LOOP
-    t   := base_ts + (i * INTERVAL '5 minutes');
+    t       := base_ts + (i * INTERVAL '5 minutes');
     -- Simulate a realistic CGM curve: mostly in-range with some excursions
-    sgv := 100 + ROUND(
-              70 * SIN(EXTRACT(EPOCH FROM t) / 7200.0)
-            + 25 * SIN(EXTRACT(EPOCH FROM t) / 1800.0)
-            + 10 * (RANDOM() - 0.5)
-           )::INTEGER;
-    sgv := GREATEST(55, LEAST(300, sgv));
-    trend := trends[1 + (i % 5)];
+    glucose := 100 + ROUND(
+                 70 * SIN(EXTRACT(EPOCH FROM t) / 7200.0)
+               + 25 * SIN(EXTRACT(EPOCH FROM t) / 1800.0)
+               + 10 * (RANDOM() - 0.5)
+              )::INTEGER;
+    glucose := GREATEST(55, LEAST(300, glucose));
+    trend   := trends[1 + (i % 5)];
     INSERT INTO measures(id, user_id, measured_at, type, source, data, status)
     VALUES (
-      gen_random_uuid(), sarah_id, t, 'CGM', 'NIGHTSCOUT',
-      jsonb_build_object('sgv', sgv, 'trend', trend),
+      gen_random_uuid(), sarah_id, t, 'CGM', 'MANUAL',
+      jsonb_build_object('value', glucose, 'unit', 'mg/dL', 'trend', trend),
       'ACTIVE'
     );
   END LOOP;
 
   -- Sarah — BGM spot checks (~4 per day, clustered around meals)
   FOR i IN 0..119 LOOP
-    t   := base_ts + (i * INTERVAL '6 hours') + (INTERVAL '30 minutes' * (i % 3));
-    sgv := 85 + (i * 7 % 100);
+    t       := base_ts + (i * INTERVAL '6 hours') + (INTERVAL '30 minutes' * (i % 3));
+    glucose := 85 + (i * 7 % 100);
     INSERT INTO measures(id, user_id, measured_at, type, source, data, status)
     VALUES (
       gen_random_uuid(), sarah_id, t, 'BGM', 'MANUAL',
-      jsonb_build_object('mbg', sgv),
+      jsonb_build_object('value', glucose, 'unit', 'mg/dL'),
       'ACTIVE'
     );
   END LOOP;
 
   -- Mike — CGM readings every 5 minutes for 30 days (slightly different profile)
   FOR i IN 0..8639 LOOP
-    t   := base_ts + (i * INTERVAL '5 minutes');
-    sgv := 115 + ROUND(
-              60 * SIN(EXTRACT(EPOCH FROM t) / 7200.0 + 1.0)
-            + 20 * SIN(EXTRACT(EPOCH FROM t) / 3600.0)
-            + 8  * (RANDOM() - 0.5)
-           )::INTEGER;
-    sgv := GREATEST(55, LEAST(280, sgv));
-    trend := trends[1 + ((i + 2) % 5)];
+    t       := base_ts + (i * INTERVAL '5 minutes');
+    glucose := 115 + ROUND(
+                 60 * SIN(EXTRACT(EPOCH FROM t) / 7200.0 + 1.0)
+               + 20 * SIN(EXTRACT(EPOCH FROM t) / 3600.0)
+               + 8  * (RANDOM() - 0.5)
+              )::INTEGER;
+    glucose := GREATEST(55, LEAST(280, glucose));
+    trend   := trends[1 + ((i + 2) % 5)];
     INSERT INTO measures(id, user_id, measured_at, type, source, data, status)
     VALUES (
-      gen_random_uuid(), mike_id, t, 'CGM', 'NIGHTSCOUT',
-      jsonb_build_object('sgv', sgv, 'trend', trend),
+      gen_random_uuid(), mike_id, t, 'CGM', 'MANUAL',
+      jsonb_build_object('value', glucose, 'unit', 'mg/dL', 'trend', trend),
       'ACTIVE'
     );
   END LOOP;
 
   -- Mike — BGM spot checks
   FOR i IN 0..119 LOOP
-    t   := base_ts + (i * INTERVAL '6 hours') + (INTERVAL '15 minutes' * (i % 4));
-    sgv := 90 + (i * 11 % 90);
+    t       := base_ts + (i * INTERVAL '6 hours') + (INTERVAL '15 minutes' * (i % 4));
+    glucose := 90 + (i * 11 % 90);
     INSERT INTO measures(id, user_id, measured_at, type, source, data, status)
     VALUES (
       gen_random_uuid(), mike_id, t, 'BGM', 'MANUAL',
-      jsonb_build_object('mbg', sgv),
+      jsonb_build_object('value', glucose, 'unit', 'mg/dL'),
       'ACTIVE'
     );
   END LOOP;

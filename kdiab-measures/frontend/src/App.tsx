@@ -37,6 +37,7 @@ function App() {
   const queryClient = useQueryClient()
   const [isModalOpen, setModalOpen] = useState(false)
   const [activePatientId, setActivePatientId] = useState<string | null>(null)
+  const [createError, setCreateError] = useState<string | null>(null)
 
   useEffect(() => {
     setAccessToken(auth.user?.access_token ?? null);
@@ -71,7 +72,17 @@ function App() {
     }),
     onSuccess: () => {
       setModalOpen(false);
+      setCreateError(null);
       void queryClient.invalidateQueries({ queryKey: ['measures', viewingUserId] });
+    },
+    onError: (err: unknown) => {
+      const status = (err as { response?: { status?: number } }).response?.status;
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string };
+      setCreateError(
+        status === 401
+          ? t('modal.sessionExpired')
+          : (apiErr?.response?.data?.message ?? apiErr?.message ?? t('modal.saveError'))
+      );
     },
   });
 
@@ -171,11 +182,12 @@ function App() {
         />
         <AddMeasureModal
           isOpen={isModalOpen}
-          onClose={() => setModalOpen(false)}
+          onClose={() => { setModalOpen(false); setCreateError(null); }}
           onSave={handleSaved}
           glucoseUnit={glucoseUnit}
           weightUnit={weightUnit}
           isSaving={createMutation.isPending}
+          error={createError}
         />
       </main>
     </div>

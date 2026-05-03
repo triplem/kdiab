@@ -41,6 +41,8 @@
     "save": "Speichern",
     "saving": "Wird gespeichert…",
     "validationError": "Bitte füllen Sie alle Pflichtfelder mit gültigen Werten aus.",
+    "saveError": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "sessionExpired": "Sitzung abgelaufen – bitte melden Sie sich erneut an.",
     "bloodGlucose": "Blutzucker:",
     "systolic": "Systolisch (mmHg):",
     "diastolic": "Diastolisch (mmHg):",
