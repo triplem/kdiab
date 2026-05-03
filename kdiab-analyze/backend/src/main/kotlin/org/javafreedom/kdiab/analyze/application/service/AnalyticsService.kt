@@ -82,7 +82,7 @@ class AnalyticsService(
 
         val hourlyData = byHour.mapIndexed { hour, values ->
             if (values.isEmpty()) {
-                AgpHourlyData(hour = hour, p10 = 0.0, p25 = 0.0, median = 0.0, p75 = 0.0, p90 = 0.0, count = 0)
+                AgpHourlyData(hour = hour, p10 = null, p25 = null, median = null, p75 = null, p90 = null, count = 0)
             } else {
                 values.sort()
                 AgpHourlyData(

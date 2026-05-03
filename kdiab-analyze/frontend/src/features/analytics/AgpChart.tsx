@@ -13,11 +13,11 @@ import { useTranslation } from 'react-i18next';
 
 interface AgpHourlyData {
   hour: number;
-  p10: number;
-  p25: number;
-  median: number;
-  p75: number;
-  p90: number;
+  p10: number | null;
+  p25: number | null;
+  median: number | null;
+  p75: number | null;
+  p90: number | null;
   count: number;
 }
 
@@ -39,14 +39,16 @@ export function AgpChart({ hourlyData, glucoseUnit }: Props) {
   const tirLow = convert(70, glucoseUnit);
   const tirHigh = convert(180, glucoseUnit);
 
-  const chartData = hourlyData.map(d => ({
-    hour: d.hour,
-    // Recharts stacked areas: provide [lo, hi] pairs
-    p10_p90: [convert(d.p10, glucoseUnit), convert(d.p90, glucoseUnit)] as [number, number],
-    p25_p75: [convert(d.p25, glucoseUnit), convert(d.p75, glucoseUnit)] as [number, number],
-    median: convert(d.median, glucoseUnit),
-    count: d.count,
-  }));
+  const chartData = hourlyData
+    .filter(d => d.median !== null)
+    .map(d => ({
+      hour: d.hour,
+      // Recharts stacked areas: provide [lo, hi] pairs
+      p10_p90: [convert(d.p10!, glucoseUnit), convert(d.p90!, glucoseUnit)] as [number, number],
+      p25_p75: [convert(d.p25!, glucoseUnit), convert(d.p75!, glucoseUnit)] as [number, number],
+      median: convert(d.median!, glucoseUnit),
+      count: d.count,
+    }));
 
   const formatHour = (h: number) => `${String(h).padStart(2, '0')}:00`;
 

@@ -17,11 +17,11 @@ data class Hba1cResult(
 
 data class AgpHourlyData(
     val hour: Int,
-    val p10: Double,
-    val p25: Double,
-    val median: Double,
-    val p75: Double,
-    val p90: Double,
+    val p10: Double?,
+    val p25: Double?,
+    val median: Double?,
+    val p75: Double?,
+    val p90: Double?,
     val count: Int,
 )
 
