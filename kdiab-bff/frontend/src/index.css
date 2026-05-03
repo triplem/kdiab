@@ -157,6 +157,29 @@ label {
   margin-bottom: 1.5rem;
 }
 
+.service-links {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.service-links a {
+  color: var(--accent-primary);
+  text-decoration: none;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.service-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 .tab-nav {
   display: flex;
   gap: 0.5rem;

@@ -57,6 +57,10 @@ function App() {
 
   const viewingUserId = activePatientId ?? ownUserId;
 
+  const measuresUrl = import.meta.env.VITE_MEASURES_URL as string | undefined ?? 'http://localhost:3000';
+  const treatmentsUrl = import.meta.env.VITE_TREATMENTS_URL as string | undefined ?? 'http://localhost:3002';
+  const profilesUrl = import.meta.env.VITE_PROFILES_URL as string | undefined ?? 'http://localhost:3001';
+
   if (auth.isLoading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -127,6 +131,13 @@ function App() {
               {t('app.logout')}
             </button>
           </div>
+        </div>
+
+        <div className="service-links">
+          <span>{t('services.label')}:</span>
+          <a href={measuresUrl} target="_blank" rel="noopener noreferrer">{t('services.measures')} ↗</a>
+          <a href={treatmentsUrl} target="_blank" rel="noopener noreferrer">{t('services.treatments')} ↗</a>
+          <a href={profilesUrl} target="_blank" rel="noopener noreferrer">{t('services.profiles')} ↗</a>
         </div>
 
         {isDoctor && allowedPatients.length > 0 && (
