@@ -24,6 +24,8 @@
 # Shared Keycloak realm: kdiab
 # The BFF client token carries all four JWT audiences (analyze, measure, profile,
 # treatment) so it can forward the user's JWT to every upstream service.
+#
+# Prerequisites: copy .env.example to .env and set real values before first run.
 # =============================================================================
 
 services:
@@ -35,7 +37,7 @@ services:
     image: postgres:15
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"
@@ -50,6 +52,14 @@ services:
     networks:
       - shared
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '1.0'
 
   keycloak:
     container_name: kdiab-keycloak
@@ -57,7 +67,7 @@ services:
     command: start-dev --import-realm
     environment:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     volumes:
       - ./config/keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
       - ./kdiab-measures/config/keycloak-theme:/opt/keycloak/themes/kdiab:ro
@@ -66,6 +76,14 @@ services:
     networks:
       - shared
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
 
   pgadmin:
     container_name: kdiab-pgadmin
@@ -84,6 +102,14 @@ services:
     networks:
       - shared
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
 
   # ── Schema migrations ───────────────────────────────────────────────────────
 
@@ -96,7 +122,7 @@ services:
     command: >
       --url=jdbc:postgresql://postgres:5432/kdiab-measures
       --username=${POSTGRES_USER:-postgres}
-      --password=${POSTGRES_PASSWORD:-password}
+      --password=${POSTGRES_PASSWORD}
       --searchPath=/liquibase
       --changeLogFile=db/changelog/db.changelog-root.yaml
       update
@@ -105,6 +131,11 @@ services:
         condition: service_healthy
     networks:
       - shared
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
   liquibase-profiles:
     container_name: kdiab-profiles-liquibase
@@ -115,7 +146,7 @@ services:
     command: >
       --url=jdbc:postgresql://postgres:5432/kdiab-profiles
       --username=${POSTGRES_USER:-postgres}
-      --password=${POSTGRES_PASSWORD:-password}
+      --password=${POSTGRES_PASSWORD}
       --searchPath=/liquibase
       --changeLogFile=db/changelog/db.changelog-master.yaml
       update
@@ -124,6 +155,11 @@ services:
         condition: service_healthy
     networks:
       - shared
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
   liquibase-treatments:
     container_name: kdiab-treatments-liquibase
@@ -134,7 +170,7 @@ services:
     command: >
       --url=jdbc:postgresql://postgres:5432/kdiab-treatments
       --username=${POSTGRES_USER:-postgres}
-      --password=${POSTGRES_PASSWORD:-password}
+      --password=${POSTGRES_PASSWORD}
       --searchPath=/liquibase
       --changeLogFile=db/changelog/db.changelog-root.yaml
       update
@@ -143,13 +179,18 @@ services:
         condition: service_healthy
     networks:
       - shared
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
   # Runs after all three Liquibase migrations to insert seed data
   pg-seed:
     container_name: kdiab-pg-seed
     image: postgres:15
     environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD:-password}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - ./config/postgres/02-seed-data.sql:/seed.sql:ro
     command: >
@@ -163,6 +204,11 @@ services:
         condition: service_completed_successfully
     networks:
       - shared
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
 
   # ── kdiab-measures ──────────────────────────────────────────────────────────
 
@@ -175,7 +221,7 @@ services:
     environment:
       JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-measures
       DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_DOMAIN: http://localhost:8081/realms/kdiab
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: measure
@@ -200,6 +246,14 @@ services:
         aliases:
           - backend     # measures nginx.conf uses http://backend:8080
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
 
   measures-frontend:
     container_name: kdiab-measures-frontend
@@ -222,6 +276,14 @@ services:
     networks:
       - meas-net
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.25'
+        reservations:
+          memory: 32M
+          cpus: '0.1'
 
   # ── kdiab-profiles ──────────────────────────────────────────────────────────
 
@@ -234,7 +296,7 @@ services:
     environment:
       JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-profiles
       DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_DOMAIN: http://localhost:8081/realms/kdiab
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: profile
@@ -257,6 +319,14 @@ services:
       - shared
       - prof-net
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
 
   profiles-frontend:
     container_name: kdiab-profiles-frontend
@@ -282,6 +352,14 @@ services:
       - shared
       - prof-net
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.25'
+        reservations:
+          memory: 32M
+          cpus: '0.1'
 
   # ── kdiab-treatments ────────────────────────────────────────────────────────
 
@@ -294,7 +372,7 @@ services:
     environment:
       JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-treatments
       DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_DOMAIN: http://localhost:8081/realms/kdiab
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: treatment
@@ -319,6 +397,14 @@ services:
         aliases:
           - backend     # treatments nginx.conf uses http://backend:8080
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
 
   treatments-frontend:
     container_name: kdiab-treatments-frontend
@@ -341,6 +427,14 @@ services:
     networks:
       - treat-net
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.25'
+        reservations:
+          memory: 32M
+          cpus: '0.1'
 
   # ── kdiab-analyze ───────────────────────────────────────────────────────────────
 
@@ -380,6 +474,14 @@ services:
       - shared
       - analyze-net
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
 
   analyze-frontend:
     container_name: kdiab-analyze-frontend
@@ -401,6 +503,14 @@ services:
     networks:
       - analyze-net
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.25'
+        reservations:
+          memory: 32M
+          cpus: '0.1'
 
   # ── Gateway ─────────────────────────────────────────────────────────────────
   # Unified reverse proxy: localhost:3000/{measures,profiles,treatments,analyze}/
@@ -426,6 +536,14 @@ services:
       - treat-net
       - analyze-net
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.25'
+        reservations:
+          memory: 32M
+          cpus: '0.1'
 
 networks:
   shared:    # postgres, keycloak, all backends, liquibase, seed
