@@ -73,3 +73,17 @@ databaseChangeLog:
             columns:
               - column:
                   name: measured_at
+  - changeSet:
+      id: 003
+      author: javafreedom
+      dbms: postgresql
+      changes:
+        - createIndex:
+            indexName: idx_measures_user_time
+            tableName: measures
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: measured_at
+                  descending: true

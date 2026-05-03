@@ -68,3 +68,17 @@ databaseChangeLog:
             columns:
               - column:
                   name: treated_at
+  - changeSet:
+      id: 003
+      author: javafreedom
+      dbms: postgresql
+      changes:
+        - createIndex:
+            indexName: idx_treatments_user_time
+            tableName: treatments
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: treated_at
+                  descending: true
