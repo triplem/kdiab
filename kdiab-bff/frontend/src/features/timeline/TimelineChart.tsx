@@ -55,15 +55,16 @@ export function TimelineChart({ measures, treatments, glucoseUnit }: Props) {
     .filter(m => m.type === 'CGM')
     .map(m => ({
       ts: new Date(m.measuredAt).getTime(),
-      sgv: (() => {
-        const raw = m.data['sgv'];
+      value: (() => {
+        const raw = m.data['value'];
         const val = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN;
         if (isNaN(val)) return undefined;
-        const mgDl = toMgDl(val, glucoseUnit);
+        const storageUnit = typeof m.data['unit'] === 'string' ? m.data['unit'] as string : 'mg/dL';
+        const mgDl = toMgDl(val, storageUnit);
         return displayValue(mgDl, glucoseUnit);
       })(),
     }))
-    .filter(d => d.sgv !== undefined)
+    .filter(d => d.value !== undefined)
     .sort((a, b) => a.ts - b.ts);
 
   // BGM dots
@@ -71,15 +72,16 @@ export function TimelineChart({ measures, treatments, glucoseUnit }: Props) {
     .filter(m => m.type === 'BGM')
     .map(m => ({
       ts: new Date(m.measuredAt).getTime(),
-      bgm: (() => {
-        const raw = m.data['mbg'];
+      bgmValue: (() => {
+        const raw = m.data['value'];
         const val = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN;
         if (isNaN(val)) return undefined;
-        const mgDl = toMgDl(val, glucoseUnit);
+        const storageUnit = typeof m.data['unit'] === 'string' ? m.data['unit'] as string : 'mg/dL';
+        const mgDl = toMgDl(val, storageUnit);
         return displayValue(mgDl, glucoseUnit);
       })(),
     }))
-    .filter(d => d.bgm !== undefined);
+    .filter(d => d.bgmValue !== undefined);
 
   // Treatment scatter — place at tirHigh + 10 for visibility
   const treatmentData = treatments.map(tr => ({
@@ -123,7 +125,7 @@ export function TimelineChart({ measures, treatments, glucoseUnit }: Props) {
         {/* CGM line */}
         <Line
           data={cgmData}
-          dataKey="sgv"
+          dataKey="value"
           name={t('timeline.glucose') + ' (CGM)'}
           stroke="var(--chart-cgm)"
           dot={false}
@@ -135,7 +137,7 @@ export function TimelineChart({ measures, treatments, glucoseUnit }: Props) {
         {bgmData.length > 0 && (
           <Scatter
             data={bgmData}
-            dataKey="bgm"
+            dataKey="bgmValue"
             name={t('timeline.glucose') + ' (BGM)'}
             fill="var(--chart-bgm)"
           />
