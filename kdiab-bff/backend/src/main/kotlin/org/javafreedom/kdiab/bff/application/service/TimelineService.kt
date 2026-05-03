@@ -18,12 +18,13 @@ class TimelineService(
         from: String,
         to: String,
         authorization: String,
+        correlationId: String,
     ): Timeline = coroutineScope {
         val fromInstant = Instant.parse(from)
         val toInstant = Instant.parse(to)
 
-        val measuresDeferred = async { measuresClient.getMeasures(userId, authorization) }
-        val treatmentsDeferred = async { treatmentsClient.getTreatments(userId, authorization) }
+        val measuresDeferred = async { measuresClient.getMeasures(userId, authorization, correlationId) }
+        val treatmentsDeferred = async { treatmentsClient.getTreatments(userId, authorization, correlationId) }
 
         val allMeasures = measuresDeferred.await()
         val allTreatments = treatmentsDeferred.await()

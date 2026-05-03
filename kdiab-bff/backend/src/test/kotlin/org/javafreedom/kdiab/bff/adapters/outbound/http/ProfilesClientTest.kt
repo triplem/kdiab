@@ -16,6 +16,7 @@ class ProfilesClientTest {
 
     private val json = Json { ignoreUnknownKeys = true }
     private val auth = "Bearer test-token"
+    private val correlationId = "test-cid"
     private val userId = "user-123"
     private val baseUrl = "http://profiles"
 
@@ -33,7 +34,7 @@ class ProfilesClientTest {
             )
         }
         val client = buildClient(engine)
-        val result = client.getProfiles(userId, auth)
+        val result = client.getProfiles(userId, auth, correlationId)
         assertEquals(2, result.size)
         assertEquals("p-1", result[0].id)
         assertEquals("ACTIVE", result[0].status)
@@ -49,7 +50,7 @@ class ProfilesClientTest {
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )
         }
-        assertEquals(0, buildClient(engine).getProfiles(userId, auth).size)
+        assertEquals(0, buildClient(engine).getProfiles(userId, auth, correlationId).size)
     }
 
     @Test
@@ -57,7 +58,23 @@ class ProfilesClientTest {
         val engine = MockEngine { _ ->
             respond(content = "", status = HttpStatusCode.Forbidden)
         }
-        assertFailsWith<UpstreamException> { buildClient(engine).getProfiles(userId, auth) }
+        assertFailsWith<UpstreamException> { buildClient(engine).getProfiles(userId, auth, correlationId) }
+    }
+
+    @Test
+    fun `getProfiles sends X-Correlation-ID header`() = runTest {
+        var capturedCorrelationId: String? = null
+        val engine = MockEngine { request ->
+            capturedCorrelationId = request.headers["X-Correlation-ID"]
+            respond(
+                content = "[]",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val client = buildClient(engine)
+        client.getProfiles(userId, auth, correlationId)
+        assertEquals(correlationId, capturedCorrelationId)
     }
 
     private fun buildClient(engine: MockEngine): ProfilesClient {

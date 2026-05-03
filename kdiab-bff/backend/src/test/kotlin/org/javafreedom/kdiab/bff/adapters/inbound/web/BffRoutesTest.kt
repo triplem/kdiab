@@ -132,28 +132,28 @@ class BffRoutesTest {
 
     @Test
     fun `timeline - 200 patient reads own data`() = routeTest { svc, _, _ ->
-        coEvery { svc.getTimeline(SARAH_ID, FROM, TO, any()) } returns emptyTimeline
+        coEvery { svc.getTimeline(SARAH_ID, FROM, TO, any(), any()) } returns emptyTimeline
         val resp = client.get(timelineUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
     fun `hba1c - 200 patient reads own data`() = routeTest { _, svc, _ ->
-        coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any()) } returns emptyHba1c
+        coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
     fun `agp - 200 patient reads own data`() = routeTest { _, svc, _ ->
-        coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any()) } returns emptyAgp
+        coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
     fun `profiles active - 200 patient reads own data`() = routeTest { _, _, svc ->
-        coEvery { svc.getProfiles(SARAH_ID, FROM, TO, any()) } returns emptyProfiles
+        coEvery { svc.getProfiles(SARAH_ID, FROM, TO, any(), any()) } returns emptyProfiles
         val resp = client.get(profilesUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
@@ -188,28 +188,28 @@ class BffRoutesTest {
 
     @Test
     fun `timeline - 200 doctor reads allowed patient data`() = routeTest { svc, _, _ ->
-        coEvery { svc.getTimeline(SARAH_ID, FROM, TO, any()) } returns emptyTimeline
+        coEvery { svc.getTimeline(SARAH_ID, FROM, TO, any(), any()) } returns emptyTimeline
         val resp = client.get(timelineUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
     fun `hba1c - 200 doctor reads allowed patient data`() = routeTest { _, svc, _ ->
-        coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any()) } returns emptyHba1c
+        coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
     fun `agp - 200 doctor reads allowed patient data`() = routeTest { _, svc, _ ->
-        coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any()) } returns emptyAgp
+        coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
     fun `profiles active - 200 doctor reads allowed patient data`() = routeTest { _, _, svc ->
-        coEvery { svc.getProfiles(SARAH_ID, FROM, TO, any()) } returns emptyProfiles
+        coEvery { svc.getProfiles(SARAH_ID, FROM, TO, any(), any()) } returns emptyProfiles
         val resp = client.get(profilesUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
@@ -244,28 +244,28 @@ class BffRoutesTest {
 
     @Test
     fun `timeline - 200 admin reads any user data`() = routeTest { svc, _, _ ->
-        coEvery { svc.getTimeline(MIKE_ID, FROM, TO, any()) } returns emptyTimeline
+        coEvery { svc.getTimeline(MIKE_ID, FROM, TO, any(), any()) } returns emptyTimeline
         val resp = client.get(timelineUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
     fun `hba1c - 200 admin reads any user data`() = routeTest { _, svc, _ ->
-        coEvery { svc.getHba1c(MIKE_ID, FROM, TO, any(), any()) } returns emptyHba1c
+        coEvery { svc.getHba1c(MIKE_ID, FROM, TO, any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
     fun `agp - 200 admin reads any user data`() = routeTest { _, svc, _ ->
-        coEvery { svc.getAgp(MIKE_ID, FROM, TO, any(), any()) } returns emptyAgp
+        coEvery { svc.getAgp(MIKE_ID, FROM, TO, any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
     fun `profiles active - 200 admin reads any user data`() = routeTest { _, _, svc ->
-        coEvery { svc.getProfiles(MIKE_ID, FROM, TO, any()) } returns emptyProfiles
+        coEvery { svc.getProfiles(MIKE_ID, FROM, TO, any(), any()) } returns emptyProfiles
         val resp = client.get(profilesUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }

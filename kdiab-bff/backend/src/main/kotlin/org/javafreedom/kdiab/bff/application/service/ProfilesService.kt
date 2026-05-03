@@ -13,8 +13,9 @@ class ProfilesService(
         from: String,
         to: String,
         authorization: String,
+        correlationId: String,
     ): ProfilesResult {
-        val allProfiles = profilesClient.getProfiles(userId, authorization)
+        val allProfiles = profilesClient.getProfiles(userId, authorization, correlationId)
 
         // Return ACTIVE and ARCHIVED profiles (exclude DRAFTs and PROPOSED).
         // The upstream profiles API does not expose activation timestamps so

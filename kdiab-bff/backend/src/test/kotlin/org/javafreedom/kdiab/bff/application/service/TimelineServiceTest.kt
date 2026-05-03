@@ -36,54 +36,54 @@ class TimelineServiceTest {
 
     @Test
     fun `getTimeline returns empty lists when no data`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth) } returns emptyList()
-        coEvery { treatmentsClient.getTreatments(userId, auth) } returns emptyList()
-        val result = service.getTimeline(userId, from, to, auth)
+        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(userId, auth, any()) } returns emptyList()
+        val result = service.getTimeline(userId, from, to, auth, "")
         assertTrue(result.measures.isEmpty())
         assertTrue(result.treatments.isEmpty())
     }
 
     @Test
     fun `getTimeline filters measures outside timeframe`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(
             measure("inside", "2024-01-15T12:00:00Z"),
             measure("before", "2023-12-31T23:59:00Z"),
             measure("after", "2024-02-01T00:00:01Z"),
         )
-        coEvery { treatmentsClient.getTreatments(userId, auth) } returns emptyList()
-        val result = service.getTimeline(userId, from, to, auth)
+        coEvery { treatmentsClient.getTreatments(userId, auth, any()) } returns emptyList()
+        val result = service.getTimeline(userId, from, to, auth, "")
         assertEquals(1, result.measures.size)
         assertEquals("inside", result.measures.first().id)
     }
 
     @Test
     fun `getTimeline filters treatments outside timeframe`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth) } returns emptyList()
-        coEvery { treatmentsClient.getTreatments(userId, auth) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(userId, auth, any()) } returns listOf(
             treatment("inside", "2024-01-20T08:00:00Z"),
             treatment("before", "2023-12-01T00:00:00Z"),
         )
-        val result = service.getTimeline(userId, from, to, auth)
+        val result = service.getTimeline(userId, from, to, auth, "")
         assertEquals(1, result.treatments.size)
         assertEquals("inside", result.treatments.first().id)
     }
 
     @Test
     fun `getTimeline includes boundary instants`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(
             measure("at-from", from),
             measure("at-to", to),
         )
-        coEvery { treatmentsClient.getTreatments(userId, auth) } returns emptyList()
-        val result = service.getTimeline(userId, from, to, auth)
+        coEvery { treatmentsClient.getTreatments(userId, auth, any()) } returns emptyList()
+        val result = service.getTimeline(userId, from, to, auth, "")
         assertEquals(2, result.measures.size)
     }
 
     @Test
     fun `getTimeline maps measure fields correctly`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth) } returns listOf(measure("m-1"))
-        coEvery { treatmentsClient.getTreatments(userId, auth) } returns emptyList()
-        val result = service.getTimeline(userId, from, to, auth)
+        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(measure("m-1"))
+        coEvery { treatmentsClient.getTreatments(userId, auth, any()) } returns emptyList()
+        val result = service.getTimeline(userId, from, to, auth, "")
         val m = result.measures.first()
         assertEquals("m-1", m.id)
         assertEquals(userId, m.userId)
@@ -93,15 +93,15 @@ class TimelineServiceTest {
 
     @Test
     fun `getTimeline maps treatment fields correctly`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth) } returns emptyList()
-        coEvery { treatmentsClient.getTreatments(userId, auth) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(userId, auth, any()) } returns listOf(
             TreatmentDto(
                 id = "t-1", userId = userId, treatedAt = "2024-01-10T08:00:00Z",
                 type = "BOLUS", notes = "breakfast",
                 data = buildJsonObject { put("insulin", 6.0) },
             )
         )
-        val result = service.getTimeline(userId, from, to, auth)
+        val result = service.getTimeline(userId, from, to, auth, "")
         val t = result.treatments.first()
         assertEquals("t-1", t.id)
         assertEquals("BOLUS", t.type)

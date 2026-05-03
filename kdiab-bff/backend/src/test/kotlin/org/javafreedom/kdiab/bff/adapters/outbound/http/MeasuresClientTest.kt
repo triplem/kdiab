@@ -20,6 +20,7 @@ class MeasuresClientTest {
 
     private val json = Json { ignoreUnknownKeys = true }
     private val auth = "Bearer test-token"
+    private val correlationId = "test-cid"
     private val userId = "user-123"
     private val baseUrl = "http://measures"
 
@@ -52,7 +53,7 @@ class MeasuresClientTest {
             )
         }
         val client = buildClient(engine)
-        val result = client.getMeasures(userId, auth)
+        val result = client.getMeasures(userId, auth, correlationId)
         assertEquals(2, result.size)
         assertEquals("m-1", result[0].id)
         assertEquals("m-2", result[1].id)
@@ -84,7 +85,7 @@ class MeasuresClientTest {
         }
 
         val client = buildClient(engine)
-        val result = client.getMeasures(userId, auth)
+        val result = client.getMeasures(userId, auth, correlationId)
 
         assertEquals(5, result.size)
         assertEquals(2, callCount)
@@ -104,7 +105,7 @@ class MeasuresClientTest {
             )
         }
         val client = buildClient(engine)
-        val result = client.getMeasures(userId, auth)
+        val result = client.getMeasures(userId, auth, correlationId)
         assertEquals(0, result.size)
     }
 
@@ -117,7 +118,7 @@ class MeasuresClientTest {
         }
         val client = buildClient(engine)
         assertFailsWith<UpstreamException> {
-            client.getMeasures(userId, auth)
+            client.getMeasures(userId, auth, correlationId)
         }
     }
 
@@ -128,7 +129,7 @@ class MeasuresClientTest {
         }
         val client = buildClient(engine)
         assertFailsWith<UpstreamException> {
-            client.getMeasures(userId, auth)
+            client.getMeasures(userId, auth, correlationId)
         }
     }
 
@@ -146,11 +147,29 @@ class MeasuresClientTest {
             )
         }
         val client = buildClient(engine)
-        client.getMeasures(userId, auth)
+        client.getMeasures(userId, auth, correlationId)
 
         assertEquals(1, capturedParams.size)
         assertEquals("0", capturedParams[0].first)
         assertEquals("200", capturedParams[0].second)
+    }
+
+    // ── header forwarding ─────────────────────────────────────────────────────
+
+    @Test
+    fun `getMeasures sends X-Correlation-ID header`() = runTest {
+        var capturedCorrelationId: String? = null
+        val engine = MockEngine { request ->
+            capturedCorrelationId = request.headers["X-Correlation-ID"]
+            respond(
+                content = pagedJson(emptyList(), page = 0, size = 200, total = 0),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val client = buildClient(engine)
+        client.getMeasures(userId, auth, correlationId)
+        assertEquals(correlationId, capturedCorrelationId)
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

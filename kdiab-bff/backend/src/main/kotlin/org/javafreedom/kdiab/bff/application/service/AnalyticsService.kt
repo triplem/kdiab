@@ -28,14 +28,16 @@ private const val PERCENT_FACTOR = 100.0
 class AnalyticsService(
     private val measuresClient: MeasuresClient,
 ) {
+    @Suppress("LongParameterList")
     suspend fun getHba1c(
         userId: String,
         from: String,
         to: String,
         authorization: String,
         glucoseUnit: String,
+        correlationId: String,
     ): Hba1cResult {
-        val readings = fetchCgmReadings(userId, from, to, authorization, glucoseUnit)
+        val readings = fetchCgmReadings(userId, from, to, authorization, glucoseUnit, correlationId)
         if (readings.isEmpty()) {
             return Hba1cResult(hba1c = null, meanGlucose = 0.0, readingCount = 0, tir = TirBreakdown())
         }
@@ -47,17 +49,19 @@ class AnalyticsService(
         return Hba1cResult(hba1c = hba1c, meanGlucose = mean, readingCount = readings.size, tir = tir)
     }
 
+    @Suppress("LongParameterList")
     suspend fun getAgp(
         userId: String,
         from: String,
         to: String,
         authorization: String,
         glucoseUnit: String,
+        correlationId: String,
     ): AgpResult {
         val fromInstant = Instant.parse(from)
         val toInstant = Instant.parse(to)
 
-        val allMeasures = measuresClient.getMeasures(userId, authorization)
+        val allMeasures = measuresClient.getMeasures(userId, authorization, correlationId)
 
         val byHour = Array(HOURS_IN_DAY) { mutableListOf<Double>() }
 
@@ -91,17 +95,19 @@ class AnalyticsService(
         return AgpResult(hourlyData = hourlyData)
     }
 
+    @Suppress("LongParameterList")
     private suspend fun fetchCgmReadings(
         userId: String,
         from: String,
         to: String,
         authorization: String,
         glucoseUnit: String,
+        correlationId: String,
     ): List<Double> {
         val fromInstant = Instant.parse(from)
         val toInstant = Instant.parse(to)
 
-        return measuresClient.getMeasures(userId, authorization)
+        return measuresClient.getMeasures(userId, authorization, correlationId)
             .filter { dto ->
                 if (dto.type != "CGM") return@filter false
                 val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@filter false

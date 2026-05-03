@@ -18,6 +18,7 @@ class TreatmentsClientTest {
 
     private val json = Json { ignoreUnknownKeys = true }
     private val auth = "Bearer test-token"
+    private val correlationId = "test-cid"
     private val userId = "user-123"
     private val baseUrl = "http://treatments"
 
@@ -35,7 +36,7 @@ class TreatmentsClientTest {
             )
         }
         val client = buildClient(engine)
-        val result = client.getTreatments(userId, auth)
+        val result = client.getTreatments(userId, auth, correlationId)
         assertEquals(2, result.size)
         assertEquals("t-1", result[0].id)
         assertEquals("BOLUS", result[0].type)
@@ -51,7 +52,7 @@ class TreatmentsClientTest {
             )
         }
         val client = buildClient(engine)
-        assertEquals(0, client.getTreatments(userId, auth).size)
+        assertEquals(0, client.getTreatments(userId, auth, correlationId).size)
     }
 
     @Test
@@ -59,7 +60,23 @@ class TreatmentsClientTest {
         val engine = MockEngine { _ ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
-        assertFailsWith<UpstreamException> { buildClient(engine).getTreatments(userId, auth) }
+        assertFailsWith<UpstreamException> { buildClient(engine).getTreatments(userId, auth, correlationId) }
+    }
+
+    @Test
+    fun `getTreatments sends X-Correlation-ID header`() = runTest {
+        var capturedCorrelationId: String? = null
+        val engine = MockEngine { request ->
+            capturedCorrelationId = request.headers["X-Correlation-ID"]
+            respond(
+                content = "[]",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val client = buildClient(engine)
+        client.getTreatments(userId, auth, correlationId)
+        assertEquals(correlationId, capturedCorrelationId)
     }
 
     private fun buildClient(engine: MockEngine): TreatmentsClient {
