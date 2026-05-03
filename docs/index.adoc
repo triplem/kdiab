@@ -27,6 +27,9 @@
 
 * link:how-to-run.html[How to Build and Run]
 * link:architecture.html[Platform Architecture]
+* link:keycloak-setup.html[Keycloak Setup]
+* link:deployment.html[Deployment Guide]
+* link:glossary.html[T1D Glossary]
 
 == Architecture Decision Records
 

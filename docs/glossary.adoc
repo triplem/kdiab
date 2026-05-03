@@ -1,0 +1,115 @@
+= T1D Clinical Glossary
+:toc: left
+:icons: font
+
+Definitions of clinical and platform-specific terms used throughout the kdiab codebase.
+
+== Glucose Monitoring
+
+=== CGM — Continuous Glucose Monitor
+A sensor worn on the body that measures interstitial glucose every 1–5 minutes and transmits readings wirelessly. In kdiab, CGM readings are stored as measures of type `CGM` with a `value` (mg/dL) and an optional `trend` arrow.
+
+=== BGM — Blood Glucose Monitor
+A traditional fingerstick meter that produces a single glucose reading per test. More accurate than CGM but less frequent. Stored in kdiab as measures of type `BGM`.
+
+=== SGV — Sensor Glucose Value
+Nightscout/CGM-specific term for the glucose value reported by a CGM sensor. In kdiab the canonical field name is `value`, not `sgv`.
+
+=== Trend
+Direction and rate of glucose change reported by a CGM (e.g. rising, falling, flat). Encoded as a string arrow or descriptor (`DoubleUp`, `SingleUp`, `Flat`, `SingleDown`, `DoubleDown`).
+
+=== mg/dL — Milligrams per Decilitre
+US/conventional glucose unit. Normal fasting range: 70–100 mg/dL. T1D target in-range: 70–180 mg/dL.
+
+=== mmol/L — Millimoles per Litre
+European/international glucose unit. Conversion: `mmol/L = mg/dL ÷ 18`.
+
+== Analytics
+
+=== TIR — Time In Range
+The percentage of CGM readings within the target glucose range (70–180 mg/dL). Clinical guidelines target ≥70% TIR for most T1D patients. kdiab computes four zones:
+
+[cols="1,1,1"]
+|===
+| Zone | Range | Field
+
+| Below
+| < 70 mg/dL
+| `belowCount`
+
+| Target (in range)
+| 70–180 mg/dL
+| `inRangeCount`
+
+| Above
+| 180–250 mg/dL
+| `aboveCount`
+
+| High
+| > 250 mg/dL
+| `highCount`
+|===
+
+=== HbA1c — Glycated Haemoglobin
+A blood test reflecting average glucose over the preceding ~3 months. Expressed as a percentage (NGSP/DCCT) or mmol/mol (IFCC). kdiab estimates HbA1c from CGM data using the DCCT formula:
+
+[source]
+----
+HbA1c (%) = (mean_glucose_mg_dL + 46.7) / 28.7
+----
+
+=== DCCT — Diabetes Control and Complications Trial
+A landmark US clinical trial (1983–1993) that established the link between glucose control and diabetic complications. The DCCT formula for estimated HbA1c is widely used in CGM analytics.
+
+=== AGP — Ambulatory Glucose Profile
+A standardised glucose report that shows CGM data as percentile bands over a 24-hour period. kdiab computes five percentile bands per hour bucket (p10, p25, median, p75, p90) and renders them as overlapping area charts.
+
+=== Percentile bands (AGP)
+
+[cols="1,3"]
+|===
+| Band | Meaning
+
+| p10–p90 (outer)
+| The outer 80% of readings — the range excluding the highest and lowest 10%
+
+| p25–p75 (inner)
+| The interquartile range — the middle 50% of readings
+
+| Median (p50)
+| The middle value; half of readings are above, half below
+|===
+
+== Insulin Therapy
+
+=== Bolus
+An insulin dose given to cover a meal or to correct a high glucose. In kdiab, stored as a treatment of type `BOLUS` with `insulinUnits`.
+
+=== Basal Rate
+A continuous low-dose insulin delivery programmed into an insulin pump to cover background glucose production when not eating. Expressed in units/hour.
+
+=== Basal Profile
+A time-segmented schedule of basal rates covering 24 hours. A patient may have multiple profiles (e.g. weekday vs. weekend). In kdiab, profiles have a state machine: `DRAFT → ACTIVE → ARCHIVED`.
+
+=== Carb Ratio (CR) / ICR — Insulin-to-Carb Ratio
+The amount of carbohydrate (in grams) covered by one unit of insulin. Used to calculate meal bolus doses.
+
+=== ISF — Insulin Sensitivity Factor (Correction Factor)
+How much one unit of insulin lowers blood glucose (e.g. 1 unit drops glucose by 50 mg/dL). Used to calculate correction bolus doses.
+
+=== Correction Bolus
+An insulin dose given to bring an elevated glucose back into range, calculated using the ISF and the current glucose value.
+
+== Platform Terms
+
+=== BFF — Backend for Frontend
+An aggregation service that sits between the frontend and multiple upstream APIs. kdiab-analyze is the BFF: it fetches data from measures, profiles, and treatments on behalf of the analytics frontend.
+
+=== JWT — JSON Web Token
+A signed token issued by Keycloak after login. Carries claims including `sub` (user ID), `roles`, `allowed_patients`, `glucose_unit`, and `weight_unit`. Forwarded unchanged from the frontend through the BFF to all upstream services.
+
+=== PKCE — Proof Key for Code Exchange
+An OAuth 2.0 extension (RFC 7636) that prevents authorisation code interception attacks. Required for public clients (SPAs). kdiab uses PKCE S256 for all four frontend Keycloak clients.
+
+=== Seed Data
+30 days of synthetic CGM readings, treatments, and profiles generated for `sarah` and `mike` by `config/postgres/02-seed-data.sql`. Uses a sine-wave glucose curve to produce realistic-looking AGP output.

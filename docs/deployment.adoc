@@ -1,0 +1,248 @@
+= Deployment Guide
+:toc: left
+:icons: font
+
+This document covers production deployment of the kdiab platform. The platform is designed for container-based deployment using Docker Compose or a container orchestrator.
+
+== Environment Variables
+
+=== Required secrets
+
+These variables have no defaults and must be set before starting the stack:
+
+[cols="1,2"]
+|===
+| Variable | Description
+
+| `POSTGRES_PASSWORD`
+| PostgreSQL superuser password. Used by all backends, Liquibase migrations, and the seed container.
+
+| `KEYCLOAK_ADMIN_PASSWORD`
+| Keycloak admin console password.
+|===
+
+Set them in a `.env` file at the repository root (gitignored):
+
+[source]
+----
+POSTGRES_PASSWORD=<strong-random-secret>
+KEYCLOAK_ADMIN_PASSWORD=<strong-random-secret>
+----
+
+Never commit secrets to version control.
+
+=== Frontend container variables
+
+Each frontend container accepts the following at startup via `envsubst`:
+
+[cols="1,2,1"]
+|===
+| Variable | Description | Example
+
+| `KEYCLOAK_URL`
+| Browser-facing Keycloak origin. Added to the `Content-Security-Policy connect-src` directive. Must be the URL the end-user's browser reaches — not an internal Docker service name.
+| `https://auth.example.com`
+
+| `BACKEND_URL`
+| Internal address nginx uses to proxy `/api/*` to the backend. Never exposed to the browser.
+| `http://measures-backend:8080`
+|===
+
+=== Optional overrides
+
+[cols="1,2,1"]
+|===
+| Variable | Description | Default
+
+| `POSTGRES_USER`
+| PostgreSQL superuser name
+| `postgres`
+
+| `KEYCLOAK_ADMIN`
+| Keycloak admin username
+| `admin`
+|===
+
+== Container Images
+
+All kdiab images are built locally from source. There are no published images in a public registry.
+
+To build all images:
+
+[source,bash]
+----
+docker compose build
+----
+
+Or selectively:
+
+[source,bash]
+----
+docker compose build measures-backend measures-frontend
+----
+
+For a private registry:
+
+[source,bash]
+----
+docker compose build
+docker tag localhost/kdiab-measures-backend:latest registry.example.com/kdiab/measures-backend:1.0.0
+docker push registry.example.com/kdiab/measures-backend:1.0.0
+----
+
+== Database
+
+=== Initialisation
+
+On first startup, the Postgres container runs `config/postgres/01-init-databases.sh` which creates three databases:
+
+- `kdiab-measures`
+- `kdiab-profiles`
+- `kdiab-treatments`
+
+Each service's Liquibase container then runs schema migrations automatically before the backend starts (`depends_on` with health checks).
+
+=== Seed data
+
+The `pg-seed` container runs `config/postgres/02-seed-data.sql` after all migrations complete. It inserts synthetic CGM, treatment, and profile data for test users `sarah` and `mike`. **Remove or skip this container in production.**
+
+=== Backups
+
+Use `pg_dump` for logical backups:
+
+[source,bash]
+----
+docker exec kdiab-postgres pg_dump \
+  -U postgres kdiab-measures > measures-$(date +%Y%m%d).sql
+
+docker exec kdiab-postgres pg_dump \
+  -U postgres kdiab-profiles > profiles-$(date +%Y%m%d).sql
+
+docker exec kdiab-postgres pg_dump \
+  -U postgres kdiab-treatments > treatments-$(date +%Y%m%d).sql
+----
+
+For continuous backups, attach a streaming replica or use `pg_basebackup`.
+
+=== PostgreSQL partial index
+
+`kdiab-profiles` enforces a partial unique index that prevents more than one active profile per user:
+
+[source,sql]
+----
+CREATE UNIQUE INDEX IDX_PROFILES_USER_ACTIVE
+  ON profiles(user_id)
+  WHERE status = 'ACTIVE';
+----
+
+This index uses PostgreSQL-specific syntax and is **not** created on H2 (used in integration tests). PostgreSQL is required for production. The index is created automatically by the Liquibase migration on first startup.
+
+== Keycloak
+
+=== Realm import
+
+The realm is imported from `config/keycloak-realm.json` on first Keycloak startup (`--import-realm`). The import is idempotent: re-running with an existing volume skips the import.
+
+=== Production hardening
+
+. **Remove test users** (`sarah`, `mike`, `dr_house`, `dr_cameron`, `admin`) or reset their passwords.
+. **Set SSL required to `all`** in the realm settings (requires HTTPS for all connections, not just external).
+. **Use a production database** for Keycloak — replace the embedded H2 with PostgreSQL by setting `KC_DB=postgres` and the associated connection variables.
+. **Restrict Web Origins** — replace the `localhost:*` list in each client with your production domain.
+. **Configure brute-force protection** in the realm security settings.
+. **Store admin credentials** in a secret manager (Vault, AWS Secrets Manager, etc.), not a `.env` file.
+
+=== Updating the realm
+
+See link:keycloak-setup.html[Keycloak Setup Guide] for instructions on exporting and updating the realm JSON.
+
+== TLS / HTTPS
+
+The platform does not terminate TLS internally. Place a reverse proxy (nginx, Traefik, Caddy) in front of the gateway container:
+
+[source,nginx]
+----
+server {
+    listen 443 ssl;
+    server_name kdiab.example.com;
+
+    ssl_certificate     /etc/ssl/certs/kdiab.crt;
+    ssl_certificate_key /etc/ssl/private/kdiab.key;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+}
+----
+
+Update `KEYCLOAK_URL` in all frontend containers to the HTTPS Keycloak URL after adding TLS.
+
+== Resource Limits
+
+The root `docker-compose.yml` defines resource limits for all containers:
+
+[cols="1,1,1"]
+|===
+| Container type | Memory limit | CPU limit
+
+| Postgres
+| 1 GB
+| 2.0 cores
+
+| Keycloak
+| 512 MB
+| 1.0 core
+
+| Backend (each)
+| 512 MB
+| 1.0 core
+
+| Frontend / gateway (each)
+| 64 MB
+| 0.25 cores
+
+| Liquibase / seed
+| 256 MB
+| 0.5 cores
+|===
+
+Tune these for your host's capacity. JVM backends benefit from an explicit heap size: set `JAVA_OPTS=-Xmx384m` for each backend container to keep total JVM memory within the 512 MB container limit.
+
+== Health Checks
+
+Each backend exposes two health endpoints:
+
+[cols="1,2"]
+|===
+| Endpoint | Meaning
+
+| `GET /healthz`
+| Liveness — process is running
+
+| `GET /readyz`
+| Readiness — process + database connection are healthy (returns 503 if DB is unreachable)
+|===
+
+Docker Compose health checks and `depends_on` are wired up so the gateway only receives traffic after all backends report ready.
+
+== Logging
+
+Backends log structured JSON to stdout. Each log line includes:
+
+- `Correlation-ID` — the `X-Correlation-ID` header value, propagated through every request from frontend → BFF → upstream services
+- Log level, timestamp, logger name, thread
+
+Collect logs with any log aggregator (Loki, Elasticsearch, Splunk) by reading container stdout via the Docker logging driver.
+
+== Upgrading
+
+. Pull the new source.
+. Build images: `docker compose build`
+. Apply any pending Liquibase migrations: they run automatically on next backend startup.
+. Roll services one at a time or restart all: `docker compose up -d`
+
+Liquibase is append-only (no destructive changesets in normal flow). Rolling back requires applying a reverse changeset manually or restoring from a database backup.
