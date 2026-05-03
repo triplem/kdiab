@@ -26,7 +26,7 @@ class TimelineServiceTest {
 
     private fun measure(id: String, at: String = "2024-01-15T12:00:00Z") = MeasureDto(
         id = id, userId = userId, measuredAt = at, type = "CGM",
-        data = buildJsonObject { put("sgv", 120.0) }, status = "ACTIVE",
+        data = buildJsonObject { put("value", 120.0); put("unit", "mg/dL") }, status = "ACTIVE",
     )
 
     private fun treatment(id: String, at: String = "2024-01-15T13:00:00Z") = TreatmentDto(

@@ -65,7 +65,7 @@ class AnalyticsService(
             if (dto.type != "CGM") return@forEach
             val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach
             if (t < fromInstant || t > toInstant) return@forEach
-            val sgv = dto.data["sgv"]?.toString()?.toDoubleOrNull() ?: return@forEach
+            val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach
             val mgDl = if (glucoseUnit == "mmol/L") sgv * MMOL_TO_MGDL else sgv
             val hour = t.atZone(ZoneOffset.UTC).hour
             byHour[hour].add(mgDl)
@@ -108,7 +108,7 @@ class AnalyticsService(
                 t >= fromInstant && t <= toInstant
             }
             .mapNotNull { dto ->
-                val sgv = dto.data["sgv"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
+                val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
                 if (glucoseUnit == "mmol/L") sgv * MMOL_TO_MGDL else sgv
             }
     }

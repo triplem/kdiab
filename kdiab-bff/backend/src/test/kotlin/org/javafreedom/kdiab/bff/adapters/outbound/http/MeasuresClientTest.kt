@@ -28,7 +28,7 @@ class MeasuresClientTest {
         userId = userId,
         measuredAt = "2024-01-15T12:00:00Z",
         type = "CGM",
-        data = buildJsonObject { put("sgv", sgv) },
+        data = buildJsonObject { put("value", sgv); put("unit", "mg/dL") },
         status = "ACTIVE",
     )
 

@@ -27,7 +27,7 @@ class AnalyticsServiceTest {
         userId = userId,
         measuredAt = measuredAt,
         type = "CGM",
-        data = buildJsonObject { put("sgv", sgv) },
+        data = buildJsonObject { put("value", sgv); put("unit", "mg/dL") },
         status = "ACTIVE",
     )
 
