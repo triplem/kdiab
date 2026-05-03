@@ -9,13 +9,17 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
+// DCCT formula: HbA1c (%) = (mean_glucose_mg_dL + 46.7) / 28.7
+// Source: DCCT Research Group, NEJM 1993; https://doi.org/10.1056/NEJM199309303291401
 private const val DCCT_ADDEND = 46.7
 private const val DCCT_DIVISOR = 28.7
+// Conversion factor: 1 mmol/L = 18.0182 mg/dL (molecular weight of glucose = 180.16 g/mol)
 private const val MMOL_TO_MGDL = 18.0
 
-private const val TIR_LOW = 70.0
-private const val TIR_HIGH = 180.0
-private const val TIR_VERY_HIGH = 250.0
+// TIR thresholds in mg/dL — ADA/EASD consensus targets for T1D (ADA Standards of Care 2023)
+private const val TIR_LOW = 70.0       // below: hypoglycaemia
+private const val TIR_HIGH = 180.0     // above: hyperglycaemia
+private const val TIR_VERY_HIGH = 250.0 // high: severe hyperglycaemia
 
 private const val HOURS_IN_DAY = 24
 

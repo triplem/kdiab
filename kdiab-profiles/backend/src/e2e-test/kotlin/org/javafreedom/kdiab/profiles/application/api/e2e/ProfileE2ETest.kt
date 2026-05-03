@@ -30,7 +30,7 @@ class ProfileE2ETest :
 
                 fun generateToken(
                         userId: Uuid,
-                        roles: List<String> = listOf("USER"),
+                        roles: List<String> = listOf("PATIENT"),
                         allowedPatients: List<String> = emptyList()
                 ): String {
                         return JWT.create()

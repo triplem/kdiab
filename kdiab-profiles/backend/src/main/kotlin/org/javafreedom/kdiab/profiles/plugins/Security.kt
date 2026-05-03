@@ -75,6 +75,7 @@ fun Application.configureSecurity() {
                             credential.payload.getClaim("roles").asList(String::class.java)
                                     ?: emptyList()
                     val roles = rawRoles.mapNotNull { Role.fromString(it) }.toSet()
+                    if (roles.isEmpty()) return@validate null
 
                     val rawPatients = credential
                             .payload

@@ -5,6 +5,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
+import kotlinx.serialization.SerializationException
 import org.javafreedom.kdiab.treatments.domain.exception.AuthenticationException
 import org.javafreedom.kdiab.treatments.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
@@ -55,6 +56,13 @@ fun Application.configureStatusPages() {
             call.respond(
                 HttpStatusCode.BadRequest,
                 ErrorResponse(HttpStatusCode.BadRequest.value, cause.message ?: "Invalid Argument")
+            )
+        }
+        exception<SerializationException> { call, cause ->
+            logger.warn(cause) { "Request deserialization failure" }
+            call.respond(
+                HttpStatusCode.BadRequest,
+                ErrorResponse(HttpStatusCode.BadRequest.value, "Invalid request body")
             )
         }
         exception<Throwable> { call, cause ->

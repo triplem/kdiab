@@ -69,6 +69,7 @@ fun Application.configureSecurity() {
                         ?: return@validate null
                     val rawRoles = credential.payload.getClaim("roles").asList(String::class.java) ?: emptyList()
                     val roles = rawRoles.mapNotNull { Role.fromString(it) }.toSet()
+                    if (roles.isEmpty()) return@validate null
                     val allowedPatients = credential.payload
                         .getClaim("allowed_patients").asList(String::class.java)
                         ?.mapNotNull { raw -> runCatching { Uuid.parse(raw) }.getOrNull() }
