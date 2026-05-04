@@ -6,7 +6,7 @@ import org.javafreedom.kdiab.analyze.domain.model.Timeline
 import org.javafreedom.kdiab.analyze.domain.model.TimelineMeasure
 import org.javafreedom.kdiab.analyze.domain.model.TimelineTreatment
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.supervisorScope
 import java.time.Instant
 
 class TimelineService(
@@ -19,15 +19,23 @@ class TimelineService(
         to: String,
         authorization: String,
         correlationId: String,
-    ): Timeline = coroutineScope {
+    ): Timeline = supervisorScope {
         val fromInstant = Instant.parse(from)
         val toInstant = Instant.parse(to)
 
-        val measuresDeferred = async { measuresClient.getMeasures(userId, authorization, correlationId) }
-        val treatmentsDeferred = async { treatmentsClient.getTreatments(userId, authorization, correlationId) }
+        val measuresDeferred = async {
+            runCatching { measuresClient.getMeasures(userId, authorization, correlationId) }
+        }
+        val treatmentsDeferred = async {
+            runCatching { treatmentsClient.getTreatments(userId, authorization, correlationId) }
+        }
 
-        val allMeasures = measuresDeferred.await()
-        val allTreatments = treatmentsDeferred.await()
+        val measuresResult = measuresDeferred.await()
+        val treatmentsResult = treatmentsDeferred.await()
+
+        val errors = mutableListOf<String>()
+        val allMeasures = measuresResult.getOrElse { e -> errors.add("measures: ${e.message}"); emptyList() }
+        val allTreatments = treatmentsResult.getOrElse { e -> errors.add("treatments: ${e.message}"); emptyList() }
 
         val filteredMeasures = allMeasures
             .filter { dto ->
@@ -62,6 +70,6 @@ class TimelineService(
                 )
             }
 
-        Timeline(measures = filteredMeasures, treatments = filteredTreatments)
+        Timeline(measures = filteredMeasures, treatments = filteredTreatments, errors = errors)
     }
 }
