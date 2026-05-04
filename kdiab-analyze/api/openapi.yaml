@@ -150,6 +150,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TimelineTreatment'
+        errors:
+          type: array
+          items:
+            type: string
+          description: >
+            Non-empty when one or more upstream services were unavailable.
+            The timeline is returned with whatever data was successfully fetched.
 
     TimelineMeasureData:
       type: object

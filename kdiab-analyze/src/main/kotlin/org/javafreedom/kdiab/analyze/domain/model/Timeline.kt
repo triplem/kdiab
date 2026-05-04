@@ -24,4 +24,5 @@ data class TimelineTreatment(
 data class Timeline(
     val measures: List<TimelineMeasure>,
     val treatments: List<TimelineTreatment>,
+    val errors: List<String> = emptyList(),
 )

@@ -11,6 +11,7 @@ import org.javafreedom.kdiab.analyze.domain.model.Timeline
 data class TimelineResponse(
     val measures: List<TimelineMeasureDto>,
     val treatments: List<TimelineTreatmentDto>,
+    val errors: List<String> = emptyList(),
 )
 
 @Serializable
@@ -86,6 +87,7 @@ fun Timeline.toResponse() = TimelineResponse(
     treatments = treatments.map {
         TimelineTreatmentDto(it.id, it.userId, it.treatedAt, it.type, it.notes, it.data)
     },
+    errors = errors,
 )
 
 fun Hba1cResult.toResponse() = Hba1cResponseDto(

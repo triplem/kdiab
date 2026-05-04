@@ -9,6 +9,7 @@ import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasureDto
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentDto
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
+import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -106,5 +107,45 @@ class TimelineServiceTest {
         assertEquals("t-1", t.id)
         assertEquals("BOLUS", t.type)
         assertEquals("breakfast", t.notes)
+    }
+
+    @Test
+    fun `getTimeline returns partial data with errors when both upstreams fail`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any()) } throws UpstreamException("measures", 500, "down")
+        coEvery { treatmentsClient.getTreatments(any(), any(), any()) } throws UpstreamException("treatments", 500, "down")
+
+        val result = service.getTimeline(userId, from, to, auth, "")
+
+        assertTrue(result.measures.isEmpty())
+        assertTrue(result.treatments.isEmpty())
+        assertEquals(2, result.errors.size)
+        assertTrue(result.errors.any { it.startsWith("measures:") })
+        assertTrue(result.errors.any { it.startsWith("treatments:") })
+    }
+
+    @Test
+    fun `getTimeline returns treatments with error when only measures fails`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any()) } throws UpstreamException("measures", 500, "down")
+        coEvery { treatmentsClient.getTreatments(userId, auth, any()) } returns listOf(treatment("t-1"))
+
+        val result = service.getTimeline(userId, from, to, auth, "")
+
+        assertTrue(result.measures.isEmpty())
+        assertEquals(1, result.treatments.size)
+        assertEquals(1, result.errors.size)
+        assertTrue(result.errors.first().startsWith("measures:"))
+    }
+
+    @Test
+    fun `getTimeline returns measures with error when only treatments fails`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(measure("m-1"))
+        coEvery { treatmentsClient.getTreatments(any(), any(), any()) } throws UpstreamException("treatments", 500, "down")
+
+        val result = service.getTimeline(userId, from, to, auth, "")
+
+        assertEquals(1, result.measures.size)
+        assertTrue(result.treatments.isEmpty())
+        assertEquals(1, result.errors.size)
+        assertTrue(result.errors.first().startsWith("treatments:"))
     }
 }
