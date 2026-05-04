@@ -29,8 +29,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-// TODO(kdiab-4c7): add partial failure tests once supervisorScope + Timeline.errors is merged
-
 class BffTimelineIntegrationTest {
 
     private companion object {
@@ -75,6 +73,42 @@ class BffTimelineIntegrationTest {
         val emptyTreatmentsJson = "[]"
 
         private val lenientJson = Json { ignoreUnknownKeys = true }
+
+        fun buildServicesWithUpstreamFailure(
+            failMeasures: Boolean = false,
+            failTreatments: Boolean = false,
+        ): Triple<TimelineService, AnalyticsService, ProfilesService> {
+            val mockEngine = MockEngine { req ->
+                val path = req.url.encodedPath
+                when {
+                    path.contains("measures") -> if (failMeasures) {
+                        respond("Internal Server Error", HttpStatusCode.InternalServerError,
+                            headersOf(HttpHeaders.ContentType, ContentType.Text.Plain.toString()))
+                    } else {
+                        respond(measuresInRangeJson, HttpStatusCode.OK,
+                            headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()))
+                    }
+                    path.contains("treatments") -> if (failTreatments) {
+                        respond("Internal Server Error", HttpStatusCode.InternalServerError,
+                            headersOf(HttpHeaders.ContentType, ContentType.Text.Plain.toString()))
+                    } else {
+                        respond(treatmentInRangeJson, HttpStatusCode.OK,
+                            headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()))
+                    }
+                    else -> respond(emptyPagedJson, HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()))
+                }
+            }
+            val httpClient = HttpClient(mockEngine) { install(ContentNegotiation) { json() } }
+            val measuresClient   = MeasuresClient(httpClient, "http://mock-measures")
+            val treatmentsClient = TreatmentsClient(httpClient, "http://mock-treatments")
+            val profilesClient   = ProfilesClient(httpClient, "http://mock-profiles")
+            return Triple(
+                TimelineService(measuresClient, treatmentsClient),
+                AnalyticsService(measuresClient),
+                ProfilesService(profilesClient),
+            )
+        }
 
         fun buildServices(measuresJson: String, treatmentsJson: String): Triple<TimelineService, AnalyticsService, ProfilesService> {
             val mockEngine = MockEngine { req ->
@@ -175,6 +209,40 @@ class BffTimelineIntegrationTest {
             val timeline = lenientJson.decodeFromString<TimelineResponse>(body)
             assertTrue(timeline.measures.isEmpty())
             assertTrue(timeline.treatments.isEmpty())
+        }
+    }
+
+    @Test
+    fun `timeline - measures upstream failure returns 200 with treatments and error entry`() {
+        val (timelineService, analyticsService, profilesService) = buildServicesWithUpstreamFailure(failMeasures = true)
+        testApplication {
+            setupApp(timelineService, analyticsService, profilesService)
+            val resp = client.get("/api/v1/users/$SARAH_ID/timeline?from=$FROM&to=$TO") {
+                bearerAuth(sarahToken)
+            }
+            assertEquals(HttpStatusCode.OK, resp.status)
+            val timeline = lenientJson.decodeFromString<TimelineResponse>(resp.bodyAsText())
+            assertTrue(timeline.measures.isEmpty())
+            assertEquals(1, timeline.treatments.size)
+            assertEquals(1, timeline.errors.size)
+            assertTrue(timeline.errors[0].startsWith("measures:"))
+        }
+    }
+
+    @Test
+    fun `timeline - treatments upstream failure returns 200 with measures and error entry`() {
+        val (timelineService, analyticsService, profilesService) = buildServicesWithUpstreamFailure(failTreatments = true)
+        testApplication {
+            setupApp(timelineService, analyticsService, profilesService)
+            val resp = client.get("/api/v1/users/$SARAH_ID/timeline?from=$FROM&to=$TO") {
+                bearerAuth(sarahToken)
+            }
+            assertEquals(HttpStatusCode.OK, resp.status)
+            val timeline = lenientJson.decodeFromString<TimelineResponse>(resp.bodyAsText())
+            assertEquals(1, timeline.measures.size)
+            assertTrue(timeline.treatments.isEmpty())
+            assertEquals(1, timeline.errors.size)
+            assertTrue(timeline.errors[0].startsWith("treatments:"))
         }
     }
 }
