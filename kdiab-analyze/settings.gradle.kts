@@ -6,4 +6,3 @@ pluginManagement {
 }
 
 rootProject.name = "kdiab-analyze"
-include("backend")

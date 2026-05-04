@@ -2,11 +2,11 @@
 # build.sh — build all kdiab services
 #
 # Usage:
-#   ./build.sh                 # build everything (backends + frontends), skip tests
+#   ./build.sh                 # build everything (backends + kdiab-ui), skip tests
 #   ./build.sh --check         # build + run all tests, detekt, kover
 #   ./build.sh --backend-only  # backends only
-#   ./build.sh --frontend-only # frontends only
-#   ./build.sh --docker        # build all Docker images (service + liquibase images)
+#   ./build.sh --frontend-only # kdiab-ui only
+#   ./build.sh --docker        # build all Docker images
 #   ./build.sh --clean         # stop containers, remove all local images and volumes (DB reset)
 #   ./build.sh --no-parallel   # sequential (useful when disk/RAM is tight)
 #
@@ -22,14 +22,14 @@ BUILD_BACKEND=true
 BUILD_FRONTEND=true
 BUILD_DOCKER=false
 BUILD_CLEAN=false
-GRADLE_TASK=":backend:build"
+GRADLE_TASK=":build"
 PARALLEL=true
 
 for arg in "$@"; do
   case "$arg" in
     --backend-only)  BUILD_FRONTEND=false ;;
     --frontend-only) BUILD_BACKEND=false  ;;
-    --check)         GRADLE_TASK=":backend:check" ;;
+    --check)         GRADLE_TASK=":check" ;;
     --docker)        BUILD_DOCKER=true ;;
     --clean)         BUILD_CLEAN=true ;;
     --no-parallel)   PARALLEL=false ;;
@@ -75,31 +75,24 @@ run_step() {
 # ── Build backends ─────────────────────────────────────────────────────────────
 build_backend() {
   local svc="$1"
-  run_step "$svc/backend" \
+  run_step "$svc" \
     bash -c "cd '$ROOT/$svc' && ./gradlew $GRADLE_TASK --no-daemon --console=plain"
 }
 
-# ── Build frontends ────────────────────────────────────────────────────────────
+# ── Build frontend (kdiab-ui) ──────────────────────────────────────────────────
 build_frontend() {
-  local svc="$1"
-  run_step "$svc/frontend" \
-    bash -c "cd '$ROOT/$svc/frontend' && npm ci --silent && npm run build"
+  run_step "kdiab-ui" \
+    bash -c "cd '$ROOT/kdiab-ui' && npm ci --silent && npm run build"
 }
 
-# ── Parallel runner ────────────────────────────────────────────────────────────
-# Launches all jobs in background, collects exit codes, returns 1 if any failed.
-run_parallel() {
+# ── Parallel backend runner ────────────────────────────────────────────────────
+run_parallel_backends() {
   local -a pids=() labels=()
-  local job_type="$1"; shift   # "backend" or "frontend"
 
   for svc in "${SERVICES[@]}"; do
-    if [[ "$job_type" == "backend" ]]; then
-      build_backend "$svc" &
-    else
-      build_frontend "$svc" &
-    fi
+    build_backend "$svc" &
     pids+=($!)
-    labels+=("$svc/$job_type")
+    labels+=("$svc")
   done
 
   local rc=0
@@ -146,10 +139,8 @@ clean() {
 # postgres, keycloak, pgadmin, pg-seed).
 DOCKER_SERVICES=(
   liquibase-measures liquibase-profiles liquibase-treatments
-  measures-backend   measures-frontend
-  profiles-backend   profiles-frontend
-  treatments-backend treatments-frontend
-  analyze-backend        analyze-frontend
+  measures-backend profiles-backend treatments-backend analyze-backend
+  kdiab-ui
 )
 
 build_docker() {
@@ -192,7 +183,7 @@ if $BUILD_BACKEND; then
   echo ""
   echo -e "${YELLOW}═══ Backends ($GRADLE_TASK) ═══${NC}"
   if $PARALLEL; then
-    run_parallel backend || FAILED=1
+    run_parallel_backends || FAILED=1
   else
     for svc in "${SERVICES[@]}"; do
       build_backend "$svc" || FAILED=1
@@ -202,14 +193,8 @@ fi
 
 if $BUILD_FRONTEND; then
   echo ""
-  echo -e "${YELLOW}═══ Frontends ═══${NC}"
-  if $PARALLEL; then
-    run_parallel frontend || FAILED=1
-  else
-    for svc in "${SERVICES[@]}"; do
-      build_frontend "$svc" || FAILED=1
-    done
-  fi
+  echo -e "${YELLOW}═══ Frontend (kdiab-ui) ═══${NC}"
+  build_frontend || FAILED=1
 fi
 
 if $BUILD_DOCKER; then

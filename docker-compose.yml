@@ -8,11 +8,11 @@
 # Service URLs (after startup):
 #   Keycloak Admin:       http://localhost:8081  (admin / admin)
 #   pgAdmin:              http://localhost:5050   (admin@kdiab.dev / admin)
-#   Gateway (all UIs):    http://localhost:3000   → /measures/ /profiles/ /treatments/ /analyze/
-#   Measures   API/UI:    http://localhost:8080 / http://localhost:3004  (also via gateway)
-#   Profiles   API/UI:    http://localhost:8082 / http://localhost:3001  (also via gateway)
-#   Treatments API/UI:    http://localhost:8083 / http://localhost:3002  (also via gateway)
-#   Analyze    API/UI:    http://localhost:8084 / http://localhost:3003  (also via gateway)
+#   kdiab-ui (unified):    http://localhost:3005
+#   Measures   API:    http://localhost:8080
+#   Profiles   API:    http://localhost:8082
+#   Treatments API:    http://localhost:8083
+#   Analyze    API:    http://localhost:8084
 #
 # Test accounts (password: password):
 #   sarah      PATIENT (mg/dL)
@@ -118,7 +118,7 @@ services:
     image: localhost/kdiab-measures-liquibase:latest
     build:
       context: ./kdiab-measures
-      dockerfile: backend/Dockerfile.liquibase
+      dockerfile: Dockerfile.liquibase
     command: >
       --url=jdbc:postgresql://postgres:5432/kdiab-measures
       --username=${POSTGRES_USER:-postgres}
@@ -142,7 +142,7 @@ services:
     image: localhost/kdiab-profiles-liquibase:latest
     build:
       context: ./kdiab-profiles
-      dockerfile: backend/Dockerfile.liquibase
+      dockerfile: Dockerfile.liquibase
     command: >
       --url=jdbc:postgresql://postgres:5432/kdiab-profiles
       --username=${POSTGRES_USER:-postgres}
@@ -166,7 +166,7 @@ services:
     image: localhost/kdiab-treatments-liquibase:latest
     build:
       context: ./kdiab-treatments
-      dockerfile: backend/Dockerfile.liquibase
+      dockerfile: Dockerfile.liquibase
     command: >
       --url=jdbc:postgresql://postgres:5432/kdiab-treatments
       --username=${POSTGRES_USER:-postgres}
@@ -217,7 +217,7 @@ services:
     image: localhost/kdiab-measures-backend:latest
     build:
       context: ./kdiab-measures
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
     environment:
       JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-measures
       DB_USER: ${POSTGRES_USER:-postgres}
@@ -226,7 +226,7 @@ services:
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: measure
       JWT_REALM: kdiab
-      CORS_ALLOWED_ORIGINS: http://localhost:3000
+      CORS_ALLOWED_ORIGINS: http://localhost:3005
     ports:
       - "8080:8080"
     healthcheck:
@@ -242,9 +242,6 @@ services:
         condition: service_started
     networks:
       shared:
-      meas-net:
-        aliases:
-          - backend     # measures nginx.conf uses http://backend:8080
       kdiab-ui-net:
         aliases:
           - measures-backend
@@ -258,44 +255,12 @@ services:
           memory: 256M
           cpus: '0.5'
 
-  measures-frontend:
-    container_name: kdiab-measures-frontend
-    image: localhost/kdiab-measures-frontend:latest
-    build:
-      context: ./kdiab-measures
-      dockerfile: frontend/Dockerfile
-      args:
-        VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
-        VITE_OIDC_CLIENT_ID: kdiab-measures-frontend
-        VITE_BASE_PATH: /measures/
-        VITE_API_PREFIX: /measures
-    ports:
-      - "3004:8080"
-    depends_on:
-      measures-backend:
-        condition: service_healthy
-    # nginx.conf hardcodes proxy target as http://backend:8080;
-    # the meas-net alias on measures-backend makes that resolve correctly.
-    networks:
-      - meas-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.25'
-        reservations:
-          memory: 32M
-          cpus: '0.1'
-
-  # ── kdiab-profiles ──────────────────────────────────────────────────────────
-
   profiles-backend:
     container_name: kdiab-profiles-backend
     image: localhost/kdiab-profiles-backend:latest
     build:
       context: ./kdiab-profiles
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
     environment:
       JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-profiles
       DB_USER: ${POSTGRES_USER:-postgres}
@@ -304,7 +269,7 @@ services:
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: profile
       JWT_REALM: kdiab
-      CORS_ALLOWED_ORIGINS: http://localhost:3001
+      CORS_ALLOWED_ORIGINS: http://localhost:3005
     ports:
       - "8082:8080"
     healthcheck:
@@ -320,7 +285,6 @@ services:
         condition: service_started
     networks:
       - shared
-      - prof-net
       - kdiab-ui-net
     restart: unless-stopped
     deploy:
@@ -332,47 +296,12 @@ services:
           memory: 256M
           cpus: '0.5'
 
-  profiles-frontend:
-    container_name: kdiab-profiles-frontend
-    image: localhost/kdiab-profiles-frontend:latest
-    build:
-      context: ./kdiab-profiles
-      dockerfile: frontend/Dockerfile
-      args:
-        VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
-        VITE_OIDC_CLIENT_ID: kdiab-profiles-frontend
-        VITE_BASE_PATH: /profiles/
-        VITE_API_PREFIX: /profiles
-    environment:
-      # profiles nginx.conf.template uses these at container startup via envsubst
-      KEYCLOAK_URL: http://localhost:8081
-      BACKEND_URL: http://profiles-backend:8080
-    ports:
-      - "3001:8080"
-    depends_on:
-      profiles-backend:
-        condition: service_healthy
-    networks:
-      - shared
-      - prof-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.25'
-        reservations:
-          memory: 32M
-          cpus: '0.1'
-
-  # ── kdiab-treatments ────────────────────────────────────────────────────────
-
   treatments-backend:
     container_name: kdiab-treatments-backend
     image: localhost/kdiab-treatments-backend:latest
     build:
       context: ./kdiab-treatments
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
     environment:
       JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-treatments
       DB_USER: ${POSTGRES_USER:-postgres}
@@ -381,7 +310,7 @@ services:
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: treatment
       JWT_REALM: kdiab
-      CORS_ALLOWED_ORIGINS: http://localhost:3002
+      CORS_ALLOWED_ORIGINS: http://localhost:3005
     ports:
       - "8083:8080"
     healthcheck:
@@ -397,9 +326,6 @@ services:
         condition: service_started
     networks:
       shared:
-      treat-net:
-        aliases:
-          - backend     # treatments nginx.conf uses http://backend:8080
       kdiab-ui-net:
         aliases:
           - treatments-backend
@@ -413,44 +339,12 @@ services:
           memory: 256M
           cpus: '0.5'
 
-  treatments-frontend:
-    container_name: kdiab-treatments-frontend
-    image: localhost/kdiab-treatments-frontend:latest
-    build:
-      context: ./kdiab-treatments
-      dockerfile: frontend/Dockerfile
-      args:
-        VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
-        VITE_OIDC_CLIENT_ID: kdiab-treatments-frontend
-        VITE_BASE_PATH: /treatments/
-        VITE_API_PREFIX: /treatments
-    ports:
-      - "3002:8080"
-    depends_on:
-      treatments-backend:
-        condition: service_healthy
-    # nginx.conf hardcodes proxy target as http://backend:8080;
-    # the treat-net alias on treatments-backend makes that resolve correctly.
-    networks:
-      - treat-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.25'
-        reservations:
-          memory: 32M
-          cpus: '0.1'
-
-  # ── kdiab-analyze ───────────────────────────────────────────────────────────────
-
   analyze-backend:
     container_name: kdiab-analyze-backend
     image: localhost/kdiab-analyze-backend:latest
     build:
       context: ./kdiab-analyze
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
     environment:
       MEASURES_URL: http://measures-backend:8080
       PROFILES_URL: http://profiles-backend:8080
@@ -459,7 +353,7 @@ services:
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: analyze
       JWT_REALM: kdiab
-      CORS_ALLOWED_ORIGINS: http://localhost:3003
+      CORS_ALLOWED_ORIGINS: http://localhost:3005
     ports:
       - "8084:8080"
     healthcheck:
@@ -479,7 +373,6 @@ services:
         condition: service_started
     networks:
       - shared
-      - analyze-net
       - kdiab-ui-net
     restart: unless-stopped
     deploy:
@@ -491,37 +384,6 @@ services:
           memory: 256M
           cpus: '0.25'
 
-  analyze-frontend:
-    container_name: kdiab-analyze-frontend
-    image: localhost/kdiab-analyze-frontend:latest
-    build:
-      context: ./kdiab-analyze
-      dockerfile: frontend/Dockerfile
-      args:
-        VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
-        VITE_OIDC_CLIENT_ID: kdiab-analyze-frontend
-        VITE_BASE_PATH: /analyze/
-        VITE_API_PREFIX: /analyze
-    ports:
-      - "3003:8080"
-    depends_on:
-      analyze-backend:
-        condition: service_healthy
-    # analyze nginx.conf proxies /api/ → analyze-backend:8080 (matches service name on analyze-net)
-    networks:
-      - analyze-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.25'
-        reservations:
-          memory: 32M
-          cpus: '0.1'
-
-  # ── kdiab-ui ─────────────────────────────────────────────────────────────────
-  # Consolidated single-page frontend that accesses all four backends directly.
   kdiab-ui:
     container_name: kdiab-ui
     image: localhost/kdiab-ui:latest
@@ -560,39 +422,8 @@ services:
   # Each frontend is built with VITE_BASE_PATH matching its location block so
   # asset references and API calls are prefixed correctly.
 
-  gateway:
-    container_name: kdiab-gateway
-    image: nginx:alpine
-    volumes:
-      - ./config/gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    ports:
-      - "3000:8080"
-    depends_on:
-      - measures-frontend
-      - profiles-frontend
-      - treatments-frontend
-      - analyze-frontend
-    networks:
-      - meas-net
-      - prof-net
-      - treat-net
-      - analyze-net
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: '0.25'
-        reservations:
-          memory: 32M
-          cpus: '0.1'
-
 networks:
   shared:    # postgres, keycloak, all backends, liquibase, seed
-  meas-net:  # measures-backend (alias: backend) ↔ measures-frontend ↔ gateway
-  prof-net:  # profiles-backend ↔ profiles-frontend ↔ gateway
-  treat-net: # treatments-backend (alias: backend) ↔ treatments-frontend ↔ gateway
-  analyze-net:   # analyze-backend ↔ analyze-frontend ↔ gateway
   kdiab-ui-net:  # kdiab-ui ↔ all four backends
 
 volumes:

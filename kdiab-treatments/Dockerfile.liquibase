@@ -1,0 +1,6 @@
+FROM liquibase/liquibase:4.20
+
+# Copy the db folder so relative paths like 'db/changelog/...' in the master YAML are valid
+COPY src/main/resources/db /liquibase/db
+
+CMD ["update"]

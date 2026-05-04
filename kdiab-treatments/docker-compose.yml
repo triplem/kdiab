@@ -32,7 +32,7 @@ services:
   liquibase:
     build:
       context: .
-      dockerfile: backend/Dockerfile.liquibase
+      dockerfile: Dockerfile.liquibase
     command: >
       --url=jdbc:postgresql://postgres:5432/${POSTGRES_DB:-kdiab-treatments}
       --username=${POSTGRES_USER:-postgres}
@@ -47,7 +47,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
     environment:
       JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-kdiab-treatments}
       DB_USER: ${POSTGRES_USER:-postgres}
@@ -72,22 +72,6 @@ services:
         condition: service_started
       liquibase:
         condition: service_completed_successfully
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
-    environment:
-      # Browser-facing Keycloak origin — must be reachable from the end-user's browser.
-      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://localhost:8081}
-      # Internal address nginx uses to proxy /api/* — never exposed to the browser.
-      BACKEND_URL: ${BACKEND_URL:-http://backend:8080}
-    ports:
-      - "3002:8080"
-    depends_on:
-      backend:
-        condition: service_healthy
     restart: unless-stopped
 
 volumes:
