@@ -20,6 +20,20 @@ export function TimelineView({ userId, glucoseUnit }: Props) {
     enabled: !!userId,
   })
 
+  const { data: profiles } = useQuery({
+    queryKey: ['profiles', userId, timeframe.from, timeframe.to],
+    queryFn: () => analyzeApi.getActiveProfiles(userId, timeframe.from, timeframe.to).then(r => r.data),
+    enabled: !!userId,
+  })
+
+  const fromMs = new Date(timeframe.from).getTime()
+  const toMs = new Date(timeframe.to).getTime()
+
+  const profileChangeDates: number[] = (profiles?.profiles ?? [])
+    .filter(p => p.validFrom != null)
+    .map(p => new Date(p.validFrom!).getTime())
+    .filter(ms => ms >= fromMs && ms <= toMs)
+
   return (
     <div>
       <TimeframePicker value={timeframe} onChange={setTimeframe} />
@@ -35,6 +49,7 @@ export function TimelineView({ userId, glucoseUnit }: Props) {
             measures={data.measures}
             treatments={data.treatments}
             glucoseUnit={glucoseUnit}
+            profileChangeDates={profileChangeDates}
           />
         )}
       </div>

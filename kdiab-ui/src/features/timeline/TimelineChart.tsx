@@ -32,6 +32,7 @@ interface Props {
   measures: Measure[]
   treatments: Treatment[]
   glucoseUnit: string
+  profileChangeDates?: number[]
 }
 
 const MGDL_TO_MMOL = 1 / 18.0
@@ -44,7 +45,7 @@ function displayValue(mgDl: number, unit: string): number {
   return unit === 'mmol/L' ? Math.round(mgDl * MGDL_TO_MMOL * 10) / 10 : Math.round(mgDl)
 }
 
-export function TimelineChart({ measures, treatments, glucoseUnit }: Props) {
+export function TimelineChart({ measures, treatments, glucoseUnit, profileChangeDates }: Props) {
   const { t } = useTranslation()
 
   const tirLow = displayValue(70, glucoseUnit)
@@ -117,6 +118,16 @@ export function TimelineChart({ measures, treatments, glucoseUnit }: Props) {
         <ReferenceArea y1={tirLow} y2={tirHigh} fill="rgba(16, 185, 129, 0.07)" />
         <ReferenceLine y={tirLow} stroke="var(--accent-danger)" strokeDasharray="4 4" label={{ value: String(tirLow), fill: 'var(--accent-danger)', fontSize: 11 }} />
         <ReferenceLine y={tirHigh} stroke="var(--accent-warning)" strokeDasharray="4 4" label={{ value: String(tirHigh), fill: 'var(--accent-warning)', fontSize: 11 }} />
+
+        {(profileChangeDates ?? []).map(ms => (
+          <ReferenceLine
+            key={ms}
+            x={ms}
+            stroke="var(--color-text-muted)"
+            strokeDasharray="4 2"
+            label={{ value: t('timeline.profileChanged'), position: 'top', fontSize: 10 }}
+          />
+        ))}
 
         <Line
           data={cgmData}

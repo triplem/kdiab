@@ -224,7 +224,8 @@
     "trendFlat": "Stabil",
     "trendFortyFiveDown": "Fällt langsam",
     "trendSingleDown": "Fällt",
-    "trendDoubleDown": "Fällt schnell"
+    "trendDoubleDown": "Fällt schnell",
+    "profileChanged": "Profil geändert"
   },
   "analytics": {
     "title": "Analyse",
