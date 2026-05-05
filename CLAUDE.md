@@ -26,13 +26,15 @@ Each service follows the same stack and architecture conventions. All commands b
 
 ### Full Monorepo Build
 ```bash
-./build.sh                  # Build all backends (Gradle) + frontends (npm), parallel
-./build.sh --check          # Build + run all tests, Detekt, Kover
-./build.sh --backend-only   # Gradle builds only
-./build.sh --frontend-only  # npm builds only
-./build.sh --no-parallel    # Sequential (saves RAM when building on a small machine)
+./gradlew build              # Build all backends (Gradle) + kdiab-ui frontend (npm)
+./gradlew check              # Build + run all tests, Detekt, Kover
+./gradlew buildBackends      # Gradle builds only (no frontend)
+./gradlew buildFrontend      # npm build only (kdiab-ui)
+./gradlew build --no-parallel  # Sequential (saves RAM on small machines)
+./gradlew dockerBuild        # Build all Docker images via docker compose
+./gradlew dockerClean        # Stop containers, remove all local images and volumes
 ```
-Logs per service land in `.build-logs/`. Exit code is non-zero if any build fails.
+Gradle output is in each service's `build/` directory. Use `--info` or `--parallel` flags as needed.
 
 ### Full Stack (Docker/Podman) — Root Compose
 The root `docker-compose.yml` starts the entire platform (all 4 services + Keycloak + PostgreSQL):
