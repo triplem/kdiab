@@ -48,11 +48,11 @@ All four service backends and the `kdiab-ui` gateway frontend are orchestrated f
 ### Docker images
 
 ```bash
-./gradlew dockerBuild        # Build all kdiab Docker images via docker compose
+./gradlew dockerBuild        # Build all JARs then build all kdiab Docker images
 ./gradlew dockerClean        # Stop containers, remove local images and volumes (DB reset)
 ```
 
-`dockerBuild` requires `docker compose` (v2). For Podman, run `podman compose build` directly.
+`dockerBuild` automatically runs `buildBackends` first so JARs are ready. Images are single-stage (JRE-only, no build toolchain). For Podman, `./gradlew dockerBuild` works the same way via `podman compose`.
 
 ### Per-service backend (Kotlin/Ktor)
 

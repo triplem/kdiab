@@ -51,25 +51,26 @@ tasks.register("clean") {
 
 // ── Docker ────────────────────────────────────────────────────────────────────
 tasks.register<Exec>("dockerBuild") {
-    group = "docker"
-    description = "Builds all kdiab Docker images via docker compose."
+    group = "podman"
+    description = "Builds all kdiab Docker images via docker compose. JARs are pre-built by buildBackends."
+    dependsOn(buildBackends)
     workingDir(layout.projectDirectory)
     commandLine(
         "bash", "-c",
-        "docker compose build --parallel liquibase-measures liquibase-profiles " +
+        "podman compose build liquibase-measures liquibase-profiles " +
         "liquibase-treatments measures-backend profiles-backend treatments-backend " +
         "analyze-backend kdiab-ui"
     )
 }
 
 tasks.register<Exec>("dockerClean") {
-    group = "docker"
+    group = "podman"
     description = "Stops containers, removes kdiab images and volumes (DB reset)."
     workingDir(layout.projectDirectory)
     commandLine(
         "bash", "-c",
-        "docker compose down -v --remove-orphans; " +
-        "docker images --filter 'reference=localhost/kdiab-*' -q | xargs -r docker rmi; " +
-        "docker builder prune -f"
+        "podman compose down -v --remove-orphans; " +
+        "podman images --filter 'reference=localhost/kdiab-*' -q | xargs -r docker rmi; " +
+        "podman builder prune -f"
     )
 }
