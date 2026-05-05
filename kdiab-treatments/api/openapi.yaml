@@ -215,6 +215,7 @@ components:
         - SENSOR_INSERT: `{"sensor": "Dexcom G7"}`
         - INSULIN_CHANGE: `{"insulinType": "NovoRapid"}`
         - ACTIVITY: `{"name": "running", "duration": 45, "intensity": "moderate"}`
+        - HYPO_TREATMENT: `{"carbs": 15, "reason": "glucose below 70"}`
       additionalProperties: true
 
     TreatmentType:
@@ -235,6 +236,7 @@ components:
         - SENSOR_INSERT: CGM sensor insertion ("Sensor Insert")
         - INSULIN_CHANGE: Insulin cartridge/pen replacement ("Insulin Change")
         - ACTIVITY: Physical activity log with name, duration (minutes), and intensity level (low/moderate/high)
+        - HYPO_TREATMENT: Emergency fast-acting carbohydrate intake to correct hypoglycaemia (juice, dextrose)
       enum:
         - BOLUS
         - BASAL
@@ -249,6 +251,7 @@ components:
         - SENSOR_INSERT
         - INSULIN_CHANGE
         - ACTIVITY
+        - HYPO_TREATMENT
 
     ErrorResponse:
       type: object

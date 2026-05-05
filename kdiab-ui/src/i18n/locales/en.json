@@ -114,6 +114,7 @@
     "tempBasalRate": "Basal rate (U/h):",
     "tempBasalAbsolute": "Absolute rate (uncheck for percentage)",
     "pumpSuspendReason": "Reason (optional):",
+    "hypoReason": "Reason (optional):",
     "intensityLight": "Light",
     "intensityModerate": "Moderate",
     "intensityIntense": "Intense",
@@ -136,7 +137,8 @@
       "TEMP_BASAL": "Temporary basal rate",
       "PUMP_SUSPEND": "Suspend pump",
       "ACTIVITY": "Physical activity",
-      "MEAL": "Quick Meal (bolus + carbs)"
+      "MEAL": "Quick Meal (bolus + carbs)",
+      "HYPO_TREATMENT": "Hypo Treatment"
     }
   },
   "admin": {
