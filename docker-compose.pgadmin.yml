@@ -1,0 +1,29 @@
+services:
+  pgadmin:
+    container_name: kdiab-pgadmin
+    image: dpage/pgadmin4:9.9.0
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@kdiab.dev
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shared
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+volumes:
+  pgadmin_data:

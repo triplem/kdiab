@@ -7,7 +7,7 @@
 #
 # Service URLs (after startup):
 #   Keycloak Admin:       http://localhost:8081  (admin / admin)
-#   pgAdmin:              http://localhost:5050   (admin@kdiab.dev / admin)
+#   pgAdmin:              http://localhost:5050   (opt-in: add -f docker-compose.pgadmin.yml)
 #   kdiab-ui (unified):    http://localhost:3005
 #   Measures   API:    http://localhost:8080
 #   Profiles   API:    http://localhost:8082
@@ -84,32 +84,6 @@ services:
         reservations:
           memory: 256M
           cpus: '0.5'
-
-  pgadmin:
-    container_name: kdiab-pgadmin
-    image: dpage/pgadmin4:9.9.0
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@kdiab.dev
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-    ports:
-      - "5050:80"
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - shared
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-          cpus: '0.25'
-        reservations:
-          memory: 64M
-          cpus: '0.1'
 
   # ── Schema migrations ───────────────────────────────────────────────────────
 
@@ -428,4 +402,3 @@ networks:
 
 volumes:
   postgres_data:
-  pgadmin_data:

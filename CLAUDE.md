@@ -35,11 +35,13 @@ Each service follows the same stack and architecture conventions. All commands b
 Logs per service land in `.build-logs/`. Exit code is non-zero if any build fails.
 
 ### Full Stack (Docker/Podman) — Root Compose
-The root `docker-compose.yml` starts the entire platform (all 4 services + Keycloak + PostgreSQL + pgAdmin):
+The root `docker-compose.yml` starts the entire platform (all 4 services + Keycloak + PostgreSQL):
 ```bash
 docker compose up --build        # Start everything
-docker compose down -v           # Tear down and wipe all volumes (DB, pgAdmin)
+docker compose down -v           # Tear down and wipe all volumes
 podman compose up --build        # Podman alternative
+# Include pgAdmin (opt-in):
+docker compose -f docker-compose.yml -f docker-compose.pgadmin.yml up --build
 ```
 
 The database is automatically initialised by:
@@ -91,7 +93,7 @@ npx playwright test              # E2E tests (requires running app)
 | Service | URL |
 |---|---|
 | Keycloak Admin | http://localhost:8081 (admin / admin) |
-| pgAdmin | http://localhost:5050 (admin@kdiab.dev / admin) |
+| pgAdmin | http://localhost:5050 (opt-in via docker-compose.pgadmin.yml) |
 | Gateway (all UIs) | http://localhost:3000 → /measures/ /profiles/ /treatments/ /analyze/ |
 | kdiab-measures frontend | http://localhost:3004 (also via gateway /measures/) |
 | kdiab-measures backend / Swagger | http://localhost:8080 / http://localhost:8080/swagger |
@@ -107,7 +109,6 @@ npx playwright test              # E2E tests (requires running app)
 - Backend API: http://localhost:8080/api/v1
 - Swagger UI: http://localhost:8080/swagger
 - Keycloak Admin: http://localhost:8081
-- pgAdmin: http://localhost:5050
 
 ## Architecture
 
