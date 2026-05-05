@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-profile-activated-archived-timestamps
+      author: javafreedom
+      changes:
+        - addColumn:
+            tableName: profile_statuses
+            columns:
+              - column:
+                  name: activated_at
+                  type: timestamp
+                  constraints:
+                    nullable: true
+              - column:
+                  name: archived_at
+                  type: timestamp
+                  constraints:
+                    nullable: true

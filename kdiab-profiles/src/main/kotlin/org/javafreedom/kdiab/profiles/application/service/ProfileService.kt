@@ -44,15 +44,17 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                 if (profile.status == ProfileStatus.ACTIVE) return profile
 
                 // If activating an ARCHIVED profile, clone it to preserve the historical record
+                val now = Clock.System.now()
                 val profileToActivate = if (profile.status == ProfileStatus.ARCHIVED) {
                         profile.copy(
                                 id = Uuid.random(),
                                 status = ProfileStatus.ACTIVE,
-                                createdAt = Clock.System.now(),
-                                previousProfileId = profile.id
+                                createdAt = now,
+                                previousProfileId = profile.id,
+                                activatedAt = now
                         )
                 } else {
-                        profile.copy(status = ProfileStatus.ACTIVE)
+                        profile.copy(status = ProfileStatus.ACTIVE, activatedAt = now)
                 }
 
                 // Atomic activation (archives old if exists, activates new).
@@ -60,7 +62,7 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                 // If two concurrent requests race here, the second will hit the constraint and we
                 // surface that as a 409 Conflict rather than a raw 500.
                 val currentActive = profileRepository.findActiveByUserId(userId)
-                val oldActive = currentActive?.copy(status = ProfileStatus.ARCHIVED)
+                val oldActive = currentActive?.copy(status = ProfileStatus.ARCHIVED, archivedAt = now)
 
                 return try {
                         profileRepository.activateProfile(oldActive, profileToActivate)
@@ -83,9 +85,10 @@ class ProfileService(private val profileRepository: ProfileRepository) {
 
                 profile.validate()
 
+                val now = Clock.System.now()
                 val currentActive = profileRepository.findActiveByUserId(userId)
-                val oldActive = currentActive?.copy(status = ProfileStatus.ARCHIVED)
-                val newActive = profile.copy(status = ProfileStatus.ACTIVE)
+                val oldActive = currentActive?.copy(status = ProfileStatus.ARCHIVED, archivedAt = now)
+                val newActive = profile.copy(status = ProfileStatus.ACTIVE, activatedAt = now)
 
                 return try {
                         profileRepository.activateProfile(oldActive, newActive)
@@ -106,7 +109,8 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                                 .BusinessValidationException("Only PROPOSED profiles can be rejected")
                 }
 
-                return profileRepository.update(profile.copy(status = ProfileStatus.ARCHIVED))
+                val rejected = profile.copy(status = ProfileStatus.ARCHIVED, archivedAt = Clock.System.now())
+                return profileRepository.update(rejected)
         }
 
         suspend fun updateProfile(profile: Profile): Profile {
@@ -128,13 +132,15 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                         // Copy-on-Write: Archive existing, save new active version.
                         // Exclude the current profile from the name check — it is about to be archived.
                         assertUniqueNameForUser(profile.userId, profile.name, excludeProfileId = existing.id)
-                        val archived = existing.copy(status = ProfileStatus.ARCHIVED)
+                        val now = Clock.System.now()
+                        val archived = existing.copy(status = ProfileStatus.ARCHIVED, archivedAt = now)
                         val newVersion =
                                 profile.copy(
                                         id = Uuid.random(),
                                         status = ProfileStatus.ACTIVE,
-                                        createdAt = Clock.System.now(),
-                                        previousProfileId = existing.id
+                                        createdAt = now,
+                                        previousProfileId = existing.id,
+                                        activatedAt = now
                                 )
                         logger.debug {
                                 "Copy-on-write UPDATE: Archived ${existing.id}, " +
@@ -246,12 +252,14 @@ class ProfileService(private val profileRepository: ProfileRepository) {
 
                 if (profile.status == ProfileStatus.ACTIVE) {
                         // Copy-on-Write: Archive existing, save new active version
-                        val archived = profile.copy(status = ProfileStatus.ARCHIVED)
+                        val now = Clock.System.now()
+                        val archived = profile.copy(status = ProfileStatus.ARCHIVED, archivedAt = now)
                         val newVersion = updatedProfile.copy(
                                 id = Uuid.random(),
                                 status = ProfileStatus.ACTIVE,
-                                createdAt = Clock.System.now(),
-                                previousProfileId = profile.id
+                                createdAt = now,
+                                previousProfileId = profile.id,
+                                activatedAt = now
                         )
                         return profileRepository.updateActiveProfile(archived, newVersion)
                 }

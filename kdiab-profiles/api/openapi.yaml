@@ -506,6 +506,16 @@ components:
           format: date-time
           nullable: true
           description: ISO-8601 timestamp of when the profile entered its current status.
+        activatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO-8601 timestamp of when the profile was activated (entered ACTIVE status).
+        archivedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO-8601 timestamp of when the profile was archived (entered ARCHIVED status).
         basal:
           type: array
           items:

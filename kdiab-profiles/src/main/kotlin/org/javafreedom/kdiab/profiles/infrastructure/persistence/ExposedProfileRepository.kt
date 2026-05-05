@@ -72,6 +72,8 @@ object ProfileStatuses : Table("profile_statuses") {
     val userId = uuid("user_id")
     val status = enumerationByName("status", 50, ProfileStatus::class)
     val validFrom = timestamp("valid_from")
+    val activatedAt = timestamp("activated_at").nullable()
+    val archivedAt = timestamp("archived_at").nullable()
 
     override val primaryKey = PrimaryKey(profileId)
 }
@@ -213,7 +215,7 @@ class ExposedProfileRepository(
     override suspend fun updateActiveProfile(oldProfile: Profile, newProfile: Profile): Profile =
         withContext(ioDispatcher) {
             suspendTransaction {
-                updateStatusInTx(oldProfile.id, ProfileStatus.ARCHIVED)
+                updateStatusInTx(oldProfile.id, ProfileStatus.ARCHIVED, archivedAt = oldProfile.archivedAt)
                 insertProfileInTx(newProfile)
                 insertStatusInTx(newProfile)
                 newProfile
@@ -233,14 +235,14 @@ class ExposedProfileRepository(
     override suspend fun activateProfile(oldActive: Profile?, newActive: Profile): Profile =
         withContext(ioDispatcher) {
             suspendTransaction {
-                oldActive?.let { updateStatusInTx(it.id, ProfileStatus.ARCHIVED) }
+                oldActive?.let { updateStatusInTx(it.id, ProfileStatus.ARCHIVED, archivedAt = it.archivedAt) }
 
                 val exists = Profiles.selectAll()
                     .where { Profiles.id eq newActive.id }
                     .count() > 0
 
                 if (exists) {
-                    updateStatusInTx(newActive.id, ProfileStatus.ACTIVE)
+                    updateStatusInTx(newActive.id, ProfileStatus.ACTIVE, activatedAt = newActive.activatedAt)
                 } else {
                     insertProfileInTx(newActive)
                     insertStatusInTx(newActive)
@@ -278,6 +280,12 @@ class ExposedProfileRepository(
             it[userId] = profile.userId
             it[status] = profile.status
             it[validFrom] = java.time.Instant.now()
+            it[activatedAt] = profile.activatedAt?.let { a ->
+                java.time.Instant.ofEpochMilli(a.toEpochMilliseconds())
+            }
+            it[archivedAt] = profile.archivedAt?.let { a ->
+                java.time.Instant.ofEpochMilli(a.toEpochMilliseconds())
+            }
         }
     }
 
@@ -296,14 +304,25 @@ class ExposedProfileRepository(
                 targets = profile.targets
             )
         }
-        updateStatusInTx(profile.id, profile.status)
+        updateStatusInTx(profile.id, profile.status, profile.activatedAt, profile.archivedAt)
         return profile
     }
 
-    private fun updateStatusInTx(profileId: Uuid, newStatus: ProfileStatus) {
+    private fun updateStatusInTx(
+        profileId: Uuid,
+        newStatus: ProfileStatus,
+        activatedAt: kotlin.time.Instant? = null,
+        archivedAt: kotlin.time.Instant? = null
+    ) {
         ProfileStatuses.update({ ProfileStatuses.profileId eq profileId }) {
             it[status] = newStatus
             it[validFrom] = java.time.Instant.now()
+            activatedAt?.let { a ->
+                it[ProfileStatuses.activatedAt] = java.time.Instant.ofEpochMilli(a.toEpochMilliseconds())
+            }
+            archivedAt?.let { a ->
+                it[ProfileStatuses.archivedAt] = java.time.Instant.ofEpochMilli(a.toEpochMilliseconds())
+            }
         }
     }
 
@@ -329,6 +348,12 @@ class ExposedProfileRepository(
             status = row[ProfileStatuses.status],
             createdAt = Instant.fromEpochMilliseconds(row[Profiles.createdAt].toEpochMilli()),
             validFrom = Instant.fromEpochMilliseconds(row[ProfileStatuses.validFrom].toEpochMilli()),
+            activatedAt = row[ProfileStatuses.activatedAt]?.let {
+                Instant.fromEpochMilliseconds(it.toEpochMilli())
+            },
+            archivedAt = row[ProfileStatuses.archivedAt]?.let {
+                Instant.fromEpochMilliseconds(it.toEpochMilli())
+            },
             basal = pSectors.basal,
             icr = pSectors.icr,
             isf = pSectors.isf,

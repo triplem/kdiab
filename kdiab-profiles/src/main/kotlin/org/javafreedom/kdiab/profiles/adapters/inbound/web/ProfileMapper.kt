@@ -103,6 +103,8 @@ fun DomainProfile.toApi(): Profile {
         status = Profile.Status.valueOf(this.status.name),
         createdAt = this.createdAt.toString(),
         validFrom = this.validFrom?.toString(),
+        activatedAt = this.activatedAt?.toString(),
+        archivedAt = this.archivedAt?.toString(),
         basal = this.basal.map { BasalSegment(it.startTime.toString(), it.value) },
         icr = this.icr.map { IcrSegment(it.startTime.toString(), it.value) },
         isf = this.isf.map { IsfSegment(it.startTime.toString(), it.value) },
