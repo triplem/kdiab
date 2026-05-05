@@ -33,6 +33,16 @@
 
 == Architecture Decision Records
 
+All ADRs (platform-wide and service-specific) are consolidated in the link:adr/index.html[ADR Index].
+
+=== Platform ADRs
+
 * link:adr/ADR-001-monorepo-consolidation.html[ADR-001 Monorepo Consolidation]
 * link:adr/ADR-002-docker-image-naming.html[ADR-002 Docker Image Naming Convention]
 * link:adr/ADR-003-root-gradle-composite-build.html[ADR-003 Root Gradle Composite Build]
+
+=== Service ADRs
+
+* link:adr/index.html#kdiab-measures-adrs[kdiab-measures ADRs] — located in `docs/adr/measures/`
+* link:adr/index.html#kdiab-profiles-adrs[kdiab-profiles ADRs] — located in `docs/adr/profiles/`
+* link:adr/index.html#kdiab-treatments-adrs[kdiab-treatments ADRs] — located in `docs/adr/treatments/`

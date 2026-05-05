@@ -1,0 +1,68 @@
+= kdiab Platform — Architecture Decision Records
+:toc: left
+:icons: font
+
+All ADRs for the kdiab platform are consolidated here.
+Platform-wide ADRs are numbered 001–009; service ADRs use a three-digit prefix
+(1xx = tooling, 2xx = domain, 3xx = infrastructure) scoped to their service.
+
+== Platform ADRs
+
+* link:ADR-001-monorepo-consolidation.html[ADR-001 Monorepo Consolidation]
+* link:ADR-002-docker-image-naming.html[ADR-002 Docker Image Naming Convention]
+* link:ADR-003-root-gradle-composite-build.html[ADR-003 Root Gradle Composite Build]
+
+== kdiab-measures ADRs
+
+* link:measures/101-development-tooling.html[101 Development Tooling]
+* link:measures/102-code-quality-standards.html[102 Code Quality Standards]
+* link:measures/106-global-exception-handling.html[106 Global Exception Handling]
+* link:measures/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
+* link:measures/108-main-ktor-server.html[108 Main Ktor Server]
+* link:measures/110-correlation-id-logging.html[110 Correlation ID Logging]
+* link:measures/111-semantic-release-conventional-commits.html[111 Semantic Release / Conventional Commits]
+* link:measures/201-flexible-measures-model.html[201 Flexible Measures Model]
+* link:measures/301-postgresql.html[301 PostgreSQL]
+* link:measures/302-implicit-user-management.html[302 Implicit User Management]
+* link:measures/303-jwt-authentication.html[303 JWT Authentication]
+* link:measures/305-liquibase-init-container.html[305 Liquibase Init Container]
+
+== kdiab-profiles ADRs
+
+* link:profiles/015-profile-history-and-archiving.html[015 Profile History and Archiving]
+* link:profiles/016-doctor-patient-collaboration.html[016 Doctor-Patient Collaboration]
+* link:profiles/101-development-tooling.html[101 Development Tooling]
+* link:profiles/102-code-quality-standards.html[102 Code Quality Standards]
+* link:profiles/103-package-structure.html[103 Package Structure]
+* link:profiles/104-kotlinx-serialization.html[104 Kotlinx Serialization]
+* link:profiles/105-kotlin-native-types.html[105 Kotlin-Native Types in Domain Layer]
+* link:profiles/106-global-exception-handling.html[106 Global Exception Handling]
+* link:profiles/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
+* link:profiles/108-main-ktor-server.html[108 Main Ktor Server]
+* link:profiles/109-strict-24h-time-format.html[109 Strict 24h Time Format]
+* link:profiles/110-correlation-id-logging.html[110 Correlation ID Logging]
+* link:profiles/111-semantic-release-conventional-commits.html[111 Semantic Release / Conventional Commits]
+* link:profiles/112-ci-cd-performance-optimizations.html[112 CI/CD Performance Optimizations]
+* link:profiles/113-liquibase-single-schema-authority.html[113 Liquibase Single Schema Authority]
+* link:profiles/201-independent-schedules.html[201 Independent Schedules]
+* link:profiles/202-jsonb-storage.html[202 JSONB Storage]
+* link:profiles/203-profile-status-separation.html[203 Profile Status Separation]
+* link:profiles/301-postgresql.html[301 PostgreSQL]
+* link:profiles/302-implicit-user-management.html[302 Implicit User Management]
+* link:profiles/303-jwt-authentication.html[303 JWT Authentication]
+* link:profiles/304-data-retention.html[304 Data Retention]
+* link:profiles/305-liquibase-init-container.html[305 Liquibase Init Container]
+* link:profiles/306-content-security-policy.html[306 Content Security Policy]
+
+== kdiab-treatments ADRs
+
+* link:treatments/101-development-tooling.html[101 Development Tooling]
+* link:treatments/102-code-quality-standards.html[102 Code Quality Standards]
+* link:treatments/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
+* link:treatments/108-main-ktor-server.html[108 Main Ktor Server]
+* link:treatments/201-flexible-treatments-model.html[201 Flexible Treatments Model]
+* link:treatments/202-nightscout-treatment-types.html[202 Nightscout Treatment Types]
+* link:treatments/301-postgresql.html[301 PostgreSQL]
+* link:treatments/302-implicit-user-management.html[302 Implicit User Management]
+* link:treatments/303-jwt-authentication.html[303 JWT Authentication]
+* link:treatments/305-liquibase-init-container.html[305 Liquibase Init Container]
