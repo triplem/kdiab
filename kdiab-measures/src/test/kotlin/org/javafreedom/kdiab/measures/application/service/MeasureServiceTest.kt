@@ -52,8 +52,8 @@ class MeasureServiceTest {
     @Test
     fun `getMeasures returns paged result from repository`() = runTest {
         val measures = listOf(testMeasure())
-        coEvery { repo.findByUserId(userId, 0, 50) } returns measures
-        coEvery { repo.countByUserId(userId) } returns 1L
+        coEvery { repo.findByUserId(userId, 0, 50, null, null) } returns measures
+        coEvery { repo.countByUserId(userId, null, null) } returns 1L
         val result = service.getMeasures(userId, 0, 50)
         assertEquals(measures, result.items)
         assertEquals(1L, result.totalCount)
@@ -61,11 +61,23 @@ class MeasureServiceTest {
 
     @Test
     fun `getMeasures returns empty paged result when no measures found`() = runTest {
-        coEvery { repo.findByUserId(userId, 0, 50) } returns emptyList()
-        coEvery { repo.countByUserId(userId) } returns 0L
+        coEvery { repo.findByUserId(userId, 0, 50, null, null) } returns emptyList()
+        coEvery { repo.countByUserId(userId, null, null) } returns 0L
         val result = service.getMeasures(userId, 0, 50)
         assertEquals(emptyList(), result.items)
         assertEquals(0L, result.totalCount)
+    }
+
+    @Test
+    fun `getMeasures passes from and to to repository`() = runTest {
+        val from = Instant.parse("2024-01-01T00:00:00Z")
+        val to = Instant.parse("2024-01-31T23:59:59Z")
+        val measures = listOf(testMeasure())
+        coEvery { repo.findByUserId(userId, 0, 50, from, to) } returns measures
+        coEvery { repo.countByUserId(userId, from, to) } returns 1L
+        val result = service.getMeasures(userId, 0, 50, from, to)
+        assertEquals(measures, result.items)
+        assertEquals(1L, result.totalCount)
     }
 
     @Test

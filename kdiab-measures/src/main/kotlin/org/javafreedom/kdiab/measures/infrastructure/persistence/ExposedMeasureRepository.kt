@@ -54,13 +54,22 @@ class ExposedMeasureRepository(
         }
     }
 
-    override suspend fun findByUserId(userId: Uuid, page: Int, size: Int): List<Measure> =
+    override suspend fun findByUserId(userId: Uuid, page: Int, size: Int, from: Instant?, to: Instant?): List<Measure> =
         withContext(ioDispatcher) {
             suspendTransaction {
                 MeasuresTable.selectAll()
                     .where {
-                        (MeasuresTable.userId eq userId) and
-                        (MeasuresTable.status eq MeasureStatus.ACTIVE.name)
+                        var condition = (MeasuresTable.userId eq userId) and
+                            (MeasuresTable.status eq MeasureStatus.ACTIVE.name)
+                        if (from != null) {
+                            condition = condition and (MeasuresTable.measuredAt greaterEq
+                                java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
+                        }
+                        if (to != null) {
+                            condition = condition and (MeasuresTable.measuredAt lessEq
+                                java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                        }
+                        condition
                     }
                     .orderBy(MeasuresTable.measuredAt, SortOrder.DESC)
                     .limit(size)
@@ -69,12 +78,21 @@ class ExposedMeasureRepository(
             }
         }
 
-    override suspend fun countByUserId(userId: Uuid): Long = withContext(ioDispatcher) {
+    override suspend fun countByUserId(userId: Uuid, from: Instant?, to: Instant?): Long = withContext(ioDispatcher) {
         suspendTransaction {
             MeasuresTable.selectAll()
                 .where {
-                    (MeasuresTable.userId eq userId) and
-                    (MeasuresTable.status eq MeasureStatus.ACTIVE.name)
+                    var condition = (MeasuresTable.userId eq userId) and
+                        (MeasuresTable.status eq MeasureStatus.ACTIVE.name)
+                    if (from != null) {
+                        condition = condition and (MeasuresTable.measuredAt greaterEq
+                            java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
+                    }
+                    if (to != null) {
+                        condition = condition and (MeasuresTable.measuredAt lessEq
+                            java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                    }
+                    condition
                 }
                 .count()
         }

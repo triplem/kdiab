@@ -48,14 +48,23 @@ class TreatmentServiceTest {
     @Test
     fun `getTreatments returns list from repository`() = runTest {
         val treatments = listOf(testTreatment())
-        coEvery { repo.findByUserId(userId) } returns treatments
+        coEvery { repo.findByUserId(userId, null, null) } returns treatments
         assertEquals(treatments, service.getTreatments(userId))
     }
 
     @Test
     fun `getTreatments returns empty list when no treatments found`() = runTest {
-        coEvery { repo.findByUserId(userId) } returns emptyList()
+        coEvery { repo.findByUserId(userId, null, null) } returns emptyList()
         assertEquals(emptyList(), service.getTreatments(userId))
+    }
+
+    @Test
+    fun `getTreatments passes from and to to repository`() = runTest {
+        val from = Instant.parse("2024-01-01T00:00:00Z")
+        val to = Instant.parse("2024-01-31T23:59:59Z")
+        val treatments = listOf(testTreatment())
+        coEvery { repo.findByUserId(userId, from, to) } returns treatments
+        assertEquals(treatments, service.getTreatments(userId, from, to))
     }
 
     @Test

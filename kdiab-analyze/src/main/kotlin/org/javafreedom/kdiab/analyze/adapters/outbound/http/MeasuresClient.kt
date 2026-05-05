@@ -37,7 +37,13 @@ class MeasuresClient(
     private val httpClient: HttpClient,
     private val baseUrl: String,
 ) {
-    suspend fun getMeasures(userId: String, authorization: String, correlationId: String): List<MeasureDto> {
+    suspend fun getMeasures(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        from: String? = null,
+        to: String? = null,
+    ): List<MeasureDto> {
         logger.debug { "Fetching measures for user $userId from $baseUrl" }
         val result = mutableListOf<MeasureDto>()
         var page = 0
@@ -53,6 +59,8 @@ class MeasuresClient(
                 header("X-Correlation-ID", correlationId)
                 parameter("page", page)
                 parameter("size", pageSize)
+                if (from != null) parameter("from", from)
+                if (to != null) parameter("to", to)
             }
             if (!response.status.isSuccess()) {
                 throw UpstreamException("measures", response.status.value, response.status.description)
