@@ -25,6 +25,7 @@ import org.javafreedom.kdiab.measures.domain.model.Measure
 import org.javafreedom.kdiab.measures.domain.model.MeasureSource
 import org.javafreedom.kdiab.measures.domain.model.MeasureStatus
 import org.javafreedom.kdiab.measures.domain.model.MeasureType
+import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.measures.domain.repository.MeasureRepository
 import org.javafreedom.kdiab.measures.module
 
@@ -96,7 +97,13 @@ class MeasureRoutesTest {
                     "jwt.secret"   to JWT_SECRET,
                 )
             }
-            application { module(measureService = MeasureService(mockRepo), initDatabase = false) }
+            application {
+                module(
+                    measureService = MeasureService(mockRepo),
+                    auditLogRepository = mockk<AuditLogRepository>(relaxed = true),
+                    initDatabase = false,
+                )
+            }
             block(mockRepo)
         }
     }

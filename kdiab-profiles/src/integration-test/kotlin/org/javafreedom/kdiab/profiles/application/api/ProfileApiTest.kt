@@ -21,6 +21,7 @@ import org.javafreedom.kdiab.profiles.domain.model.Profile
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.domain.model.Role
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
+import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.profiles.module
 
 class ProfileApiTest {
@@ -560,6 +561,12 @@ class ProfileApiTest {
                                         "jwt.test" to "true"
                                 )
                 }
-                application { module(service, initDatabase = false) }
+                application {
+                    module(
+                        profileService = service,
+                        auditLogRepository = mockk<AuditLogRepository>(relaxed = true),
+                        initDatabase = false,
+                    )
+                }
         }
 }

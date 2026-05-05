@@ -12,11 +12,14 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlinx.serialization.json.Json
+import org.javafreedom.kdiab.profiles.adapters.inbound.web.auditRoutes
 import org.javafreedom.kdiab.profiles.adapters.inbound.web.profileRoutes
 import org.javafreedom.kdiab.profiles.adapters.inbound.web.insulinRoutes
 import org.javafreedom.kdiab.profiles.application.service.InsulinService
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
+import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.DatabaseFactory
+import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedProfileRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedInsulinRepository
 import org.javafreedom.kdiab.profiles.plugins.configureLogging
@@ -31,6 +34,7 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 fun Application.module(
         profileService: ProfileService = ProfileService(ExposedProfileRepository()),
         insulinService: InsulinService = InsulinService(ExposedInsulinRepository()),
+        auditLogRepository: AuditLogRepository = ExposedAuditLogRepository(),
         initDatabase: Boolean = true
 ) {
     configureLogging()
@@ -87,7 +91,8 @@ fun Application.module(
         }
 
         route("/api/v1") {
-            profileRoutes(profileService)
+            profileRoutes(profileService, auditLogRepository)
+            auditRoutes(auditLogRepository)
         }
         insulinRoutes(insulinService)
 

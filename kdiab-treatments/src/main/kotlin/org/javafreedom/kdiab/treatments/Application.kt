@@ -14,9 +14,12 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlinx.serialization.json.Json
+import org.javafreedom.kdiab.treatments.adapters.inbound.web.auditRoutes
 import org.javafreedom.kdiab.treatments.adapters.inbound.web.treatmentRoutes
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
+import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.DatabaseFactory
+import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedTreatmentRepository
 import org.javafreedom.kdiab.treatments.plugins.configureLogging
 import org.javafreedom.kdiab.treatments.plugins.configureMetrics
@@ -27,6 +30,7 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 fun Application.module(
     treatmentService: TreatmentService = TreatmentService(ExposedTreatmentRepository()),
+    auditLogRepository: AuditLogRepository = ExposedAuditLogRepository(),
     initDatabase: Boolean = true
 ) {
     configureLogging()
@@ -82,7 +86,8 @@ fun Application.module(
         }
 
         route("/api/v1") {
-            treatmentRoutes(treatmentService)
+            treatmentRoutes(treatmentService, auditLogRepository)
+            auditRoutes(auditLogRepository)
         }
 
         if (swaggerEnabled) {

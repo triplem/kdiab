@@ -28,6 +28,7 @@ fun Route.bffRoutes(
             get("/timeline") {
                 val ctx = extractContext(call)
                 val (from, to) = requireDateRange(call)
+                auditDoctorAccess(ctx, "analyze.timeline")
 
                 val timeline = timelineService.getTimeline(
                     userId = ctx.targetUserId.toString(),
@@ -42,6 +43,7 @@ fun Route.bffRoutes(
             get("/analytics/hba1c") {
                 val ctx = extractContext(call)
                 val (from, to) = requireDateRange(call)
+                auditDoctorAccess(ctx, "analyze.hba1c")
 
                 val result = analyticsService.getHba1c(
                     userId = ctx.targetUserId.toString(),
@@ -57,6 +59,7 @@ fun Route.bffRoutes(
             get("/analytics/agp") {
                 val ctx = extractContext(call)
                 val (from, to) = requireDateRange(call)
+                auditDoctorAccess(ctx, "analyze.agp")
 
                 val result = analyticsService.getAgp(
                     userId = ctx.targetUserId.toString(),
@@ -72,6 +75,7 @@ fun Route.bffRoutes(
             get("/profiles/active") {
                 val ctx = extractContext(call)
                 val (from, to) = requireDateRange(call)
+                auditDoctorAccess(ctx, "analyze.profiles")
 
                 val result = profilesService.getProfiles(
                     userId = ctx.targetUserId.toString(),
@@ -83,6 +87,13 @@ fun Route.bffRoutes(
                 call.respond(result.toResponse())
             }
         }
+    }
+}
+
+private fun auditDoctorAccess(ctx: RequestContext, action: String) {
+    if (!ctx.principal.isDoctor()) return
+    logger.info {
+        "AUDIT doctorId=${ctx.principal.userId} patientId=${ctx.targetUserId} action=$action"
     }
 }
 

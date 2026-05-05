@@ -19,6 +19,7 @@ import org.javafreedom.kdiab.measures.api.models.MeasureResponse
 import org.javafreedom.kdiab.measures.application.service.MeasureService
 import org.javafreedom.kdiab.measures.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.measures.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.measures.plugins.UserPrincipal
 
 private const val DEFAULT_PAGE_SIZE = 50
@@ -39,20 +40,21 @@ private fun parseUuid(value: String): Uuid =
         throw BusinessValidationException("Invalid UUID format: $value")
     }
 
-fun Route.measureRoutes(measureService: MeasureService) {
+fun Route.measureRoutes(measureService: MeasureService, auditLogRepository: AuditLogRepository) {
     authenticate("auth-jwt") {
-        listMeasures(measureService)
-        createMeasure(measureService)
-        archiveMeasures(measureService)
-        deleteMeasures(measureService)
+        listMeasures(measureService, auditLogRepository)
+        createMeasure(measureService, auditLogRepository)
+        archiveMeasures(measureService, auditLogRepository)
+        deleteMeasures(measureService, auditLogRepository)
     }
 }
 
-private fun Route.listMeasures(measureService: MeasureService) {
+private fun Route.listMeasures(measureService: MeasureService, auditLogRepository: AuditLogRepository) {
     get<Paths.listMeasures> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
         checkReadAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "measures.list", auditLogRepository)
 
         val page = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(0) ?: 0
         val size = call.request.queryParameters["size"]?.toIntOrNull()
@@ -70,11 +72,12 @@ private fun Route.listMeasures(measureService: MeasureService) {
     }
 }
 
-private fun Route.createMeasure(measureService: MeasureService) {
+private fun Route.createMeasure(measureService: MeasureService, auditLogRepository: AuditLogRepository) {
     post<Paths.createMeasure> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
         checkReadAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "measures.create", auditLogRepository)
 
         val glucoseUnit = principal?.glucoseUnit ?: "mg/dL"
         val weightUnit = principal?.weightUnit ?: "kg"
@@ -86,11 +89,12 @@ private fun Route.createMeasure(measureService: MeasureService) {
     }
 }
 
-private fun Route.archiveMeasures(measureService: MeasureService) {
+private fun Route.archiveMeasures(measureService: MeasureService, auditLogRepository: AuditLogRepository) {
     post<Paths.archiveMeasures> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
         checkReadAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "measures.archive", auditLogRepository)
 
         val request = call.receive<BulkMeasureRequest>()
         val ids = request.measureIds.map { parseUuid(it) }
@@ -100,7 +104,7 @@ private fun Route.archiveMeasures(measureService: MeasureService) {
     }
 }
 
-private fun Route.deleteMeasures(measureService: MeasureService) {
+private fun Route.deleteMeasures(measureService: MeasureService, auditLogRepository: AuditLogRepository) {
     post<Paths.deleteMeasures> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
@@ -110,6 +114,7 @@ private fun Route.deleteMeasures(measureService: MeasureService) {
             throw AuthorizationException("Only doctors and admins can permanently delete measures")
         }
         checkReadAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "measures.delete", auditLogRepository)
 
         val request = call.receive<BulkMeasureRequest>()
         val ids = request.measureIds.map { parseUuid(it) }

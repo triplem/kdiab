@@ -23,6 +23,7 @@ import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.treatments.domain.model.Treatment
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
+import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.treatments.domain.repository.TreatmentRepository
 import org.javafreedom.kdiab.treatments.module
 
@@ -92,7 +93,13 @@ class TreatmentRoutesTest {
                     "jwt.secret"   to JWT_SECRET,
                 )
             }
-            application { module(treatmentService = TreatmentService(mockRepo), initDatabase = false) }
+            application {
+                module(
+                    treatmentService = TreatmentService(mockRepo),
+                    auditLogRepository = mockk<AuditLogRepository>(relaxed = true),
+                    initDatabase = false,
+                )
+            }
             block(mockRepo)
         }
     }

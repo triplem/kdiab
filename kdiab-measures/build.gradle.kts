@@ -219,7 +219,9 @@ kover {
                     "org.javafreedom.kdiab.measures.infrastructure.persistence.DatabaseFactory*",
                     // DB-layer classes require a live database; covered by integration tests
                     "org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository*",
-                    "org.javafreedom.kdiab.measures.infrastructure.persistence.MeasuresTable*"
+                    "org.javafreedom.kdiab.measures.infrastructure.persistence.MeasuresTable*",
+                    "org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedAuditLogRepository*",
+                    "org.javafreedom.kdiab.measures.infrastructure.persistence.AuditLogsTable*"
                 )
                 packages(
                     "org.javafreedom.kdiab.measures.api"

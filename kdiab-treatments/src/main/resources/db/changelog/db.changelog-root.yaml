@@ -82,3 +82,54 @@ databaseChangeLog:
               - column:
                   name: treated_at
                   descending: true
+  - changeSet:
+      id: 004
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: doctor_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: patient_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ip_address
+                  type: varchar(100)
+              - column:
+                  name: user_agent
+                  type: text
+        - createIndex:
+            indexName: idx_audit_logs_patient_id
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: patient_id
+        - createIndex:
+            indexName: idx_audit_logs_occurred_at
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: occurred_at

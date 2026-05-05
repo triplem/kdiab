@@ -14,9 +14,12 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import kotlinx.serialization.json.Json
+import org.javafreedom.kdiab.measures.adapters.inbound.web.auditRoutes
 import org.javafreedom.kdiab.measures.adapters.inbound.web.measureRoutes
 import org.javafreedom.kdiab.measures.application.service.MeasureService
+import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.measures.infrastructure.persistence.DatabaseFactory
+import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository
 import org.javafreedom.kdiab.measures.plugins.configureLogging
 import org.javafreedom.kdiab.measures.plugins.configureMetrics
@@ -27,6 +30,7 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 fun Application.module(
     measureService: MeasureService = MeasureService(ExposedMeasureRepository()),
+    auditLogRepository: AuditLogRepository = ExposedAuditLogRepository(),
     initDatabase: Boolean = true
 ) {
     configureLogging()
@@ -82,7 +86,8 @@ fun Application.module(
         }
 
         route("/api/v1") {
-            measureRoutes(measureService)
+            measureRoutes(measureService, auditLogRepository)
+            auditRoutes(auditLogRepository)
         }
 
         if (swaggerEnabled) {

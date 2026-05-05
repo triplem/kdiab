@@ -17,6 +17,7 @@ import org.javafreedom.kdiab.treatments.api.models.BulkTreatmentRequest
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.treatments.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.treatments.plugins.UserPrincipal
 
 private val logger = KotlinLogging.logger {}
@@ -26,19 +27,20 @@ private fun parseUuid(value: String): Uuid =
         throw BusinessValidationException("Invalid UUID format: $value")
     }
 
-fun Route.treatmentRoutes(treatmentService: TreatmentService) {
+fun Route.treatmentRoutes(treatmentService: TreatmentService, auditLogRepository: AuditLogRepository) {
     authenticate("auth-jwt") {
-        listTreatments(treatmentService)
-        createTreatment(treatmentService)
-        deleteTreatments(treatmentService)
+        listTreatments(treatmentService, auditLogRepository)
+        createTreatment(treatmentService, auditLogRepository)
+        deleteTreatments(treatmentService, auditLogRepository)
     }
 }
 
-private fun Route.listTreatments(treatmentService: TreatmentService) {
+private fun Route.listTreatments(treatmentService: TreatmentService, auditLogRepository: AuditLogRepository) {
     get<Paths.listTreatments> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
         checkAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "treatments.list", auditLogRepository)
 
         val treatments = if (params.type != null) {
             val treatmentType = org.javafreedom.kdiab.treatments.domain.model.TreatmentType.valueOf(params.type.name)
@@ -50,11 +52,12 @@ private fun Route.listTreatments(treatmentService: TreatmentService) {
     }
 }
 
-private fun Route.createTreatment(treatmentService: TreatmentService) {
+private fun Route.createTreatment(treatmentService: TreatmentService, auditLogRepository: AuditLogRepository) {
     post<Paths.createTreatment> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
         checkAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "treatments.create", auditLogRepository)
 
         val request = call.receive<CreateTreatmentRequest>()
         val treatment = request.toDomain(targetUserId)
@@ -64,12 +67,13 @@ private fun Route.createTreatment(treatmentService: TreatmentService) {
     }
 }
 
-private fun Route.deleteTreatments(treatmentService: TreatmentService) {
+private fun Route.deleteTreatments(treatmentService: TreatmentService, auditLogRepository: AuditLogRepository) {
     post<Paths.deleteTreatments> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
         // Patients may delete their own; doctors for assigned patients; admins for all
         checkAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "treatments.delete", auditLogRepository)
 
         val request = call.receive<BulkTreatmentRequest>()
         val ids = request.treatmentIds.map { parseUuid(it) }

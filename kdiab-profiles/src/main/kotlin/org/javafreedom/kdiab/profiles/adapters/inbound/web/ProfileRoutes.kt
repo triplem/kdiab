@@ -14,6 +14,7 @@ import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.profiles.api.models.CreateProfileRequest
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -23,41 +24,43 @@ private fun parseUuid(value: String): Uuid =
         throw BusinessValidationException("Invalid UUID format: $value")
     }
 
-fun Route.profileRoutes(profileService: ProfileService) {
+fun Route.profileRoutes(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
 
     authenticate {
-        listProfiles(profileService)
-        getProfileHistory(profileService)
-        getProfile(profileService)
-        createProfile(profileService)
-        updateProfile(profileService)
-        activateProfile(profileService)
-        acceptProposedProfile(profileService)
-        rejectProposedProfile(profileService)
-        deleteSegment(profileService)
-        deleteProfile(profileService)
-        deleteAllProfiles(profileService)
+        listProfiles(profileService, auditLogRepository)
+        getProfileHistory(profileService, auditLogRepository)
+        getProfile(profileService, auditLogRepository)
+        createProfile(profileService, auditLogRepository)
+        updateProfile(profileService, auditLogRepository)
+        activateProfile(profileService, auditLogRepository)
+        acceptProposedProfile(profileService, auditLogRepository)
+        rejectProposedProfile(profileService, auditLogRepository)
+        deleteSegment(profileService, auditLogRepository)
+        deleteProfile(profileService, auditLogRepository)
+        deleteAllProfiles(profileService, auditLogRepository)
     }
 }
 
-private fun Route.listProfiles(profileService: ProfileService) {
+private fun Route.listProfiles(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     get<org.javafreedom.kdiab.profiles.api.Paths.listProfiles> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkReadAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "profiles.list", auditLogRepository)
 
         val profiles = profileService.getProfiles(targetUserId)
         call.respond(profiles.map { it.toApi() })
     }
 }
 
-private fun Route.getProfileHistory(profileService: ProfileService) {
+private fun Route.getProfileHistory(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     get<org.javafreedom.kdiab.profiles.api.Paths.getProfileHistory> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkReadAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "profiles.history", auditLogRepository)
 
         val from = kotlin.time.Instant.parse(params.from)
         val to = kotlin.time.Instant.parse(params.to)
@@ -67,12 +70,13 @@ private fun Route.getProfileHistory(profileService: ProfileService) {
     }
 }
 
-private fun Route.getProfile(profileService: ProfileService) {
+private fun Route.getProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     get<org.javafreedom.kdiab.profiles.api.Paths.getProfile> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkReadAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "profiles.get", auditLogRepository)
 
         val profileId = parseUuid(params.profileId)
         val profile = profileService.getProfile(profileId)
@@ -92,7 +96,7 @@ private fun Route.getProfile(profileService: ProfileService) {
     }
 }
 
-private fun Route.createProfile(profileService: ProfileService) {
+private fun Route.createProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     post<org.javafreedom.kdiab.profiles.api.Paths.createProfile> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
@@ -124,6 +128,8 @@ private fun Route.createProfile(profileService: ProfileService) {
             }
         }
 
+        auditIfDoctor(call, principal, targetUserId, "profiles.create", auditLogRepository)
+
         val request = call.receive<CreateProfileRequest>()
         val domainProfile = request.toDomain(targetUserId, status)
         val created = profileService.createProfile(domainProfile)
@@ -132,12 +138,13 @@ private fun Route.createProfile(profileService: ProfileService) {
     }
 }
 
-private fun Route.updateProfile(profileService: ProfileService) {
+private fun Route.updateProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     put<org.javafreedom.kdiab.profiles.api.Paths.updateProfile> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "profiles.update", auditLogRepository)
 
         val profileId = parseUuid(params.profileId)
         val request = call.receive<org.javafreedom.kdiab.profiles.api.models.Profile>()
@@ -161,12 +168,13 @@ private fun Route.updateProfile(profileService: ProfileService) {
     }
 }
 
-private fun Route.activateProfile(profileService: ProfileService) {
+private fun Route.activateProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     post<org.javafreedom.kdiab.profiles.api.Paths.activateProfile> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "profiles.activate", auditLogRepository)
 
         val profileId = parseUuid(params.profileId)
         val activated = profileService.activateProfile(targetUserId, profileId)
@@ -175,12 +183,13 @@ private fun Route.activateProfile(profileService: ProfileService) {
     }
 }
 
-private fun Route.acceptProposedProfile(profileService: ProfileService) {
+private fun Route.acceptProposedProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     post<org.javafreedom.kdiab.profiles.api.Paths.acceptProposedProfile> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "profiles.accept", auditLogRepository)
 
         val profileId = parseUuid(params.profileId)
         val activated = profileService.acceptProposedProfile(targetUserId, profileId)
@@ -188,12 +197,13 @@ private fun Route.acceptProposedProfile(profileService: ProfileService) {
     }
 }
 
-private fun Route.rejectProposedProfile(profileService: ProfileService) {
+private fun Route.rejectProposedProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     post<org.javafreedom.kdiab.profiles.api.Paths.rejectProposedProfile> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "profiles.reject", auditLogRepository)
 
         val profileId = parseUuid(params.profileId)
         val rejected = profileService.rejectProposedProfile(targetUserId, profileId)
@@ -201,12 +211,13 @@ private fun Route.rejectProposedProfile(profileService: ProfileService) {
     }
 }
 
-private fun Route.deleteSegment(profileService: ProfileService) {
+private fun Route.deleteSegment(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     delete<org.javafreedom.kdiab.profiles.api.Paths.deleteSegment> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "profiles.delete-segment", auditLogRepository)
 
         val profileId = parseUuid(params.profileId)
         val segmentType = params.segmentType
@@ -217,12 +228,13 @@ private fun Route.deleteSegment(profileService: ProfileService) {
     }
 }
 
-private fun Route.deleteProfile(profileService: ProfileService) {
+private fun Route.deleteProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     delete<org.javafreedom.kdiab.profiles.api.Paths.deleteProfile> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "profiles.delete", auditLogRepository)
 
         val profileId = parseUuid(params.profileId)
         val deleted = profileService.deleteProfile(targetUserId, profileId)
@@ -236,12 +248,13 @@ private fun Route.deleteProfile(profileService: ProfileService) {
     }
 }
 
-private fun Route.deleteAllProfiles(profileService: ProfileService) {
+private fun Route.deleteAllProfiles(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     delete<org.javafreedom.kdiab.profiles.api.Paths.deleteProfiles> { params ->
         val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "profiles.delete-all", auditLogRepository)
 
         // Idempotent: deleting when no drafts exist is still a success
         profileService.deleteAllProfiles(targetUserId)

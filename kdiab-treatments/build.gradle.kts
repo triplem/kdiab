@@ -216,7 +216,9 @@ kover {
                     "org.javafreedom.kdiab.treatments.infrastructure.persistence.DatabaseFactory*",
                     // DB-layer classes require a live database; covered by integration tests
                     "org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedTreatmentRepository*",
-                    "org.javafreedom.kdiab.treatments.infrastructure.persistence.TreatmentsTable*"
+                    "org.javafreedom.kdiab.treatments.infrastructure.persistence.TreatmentsTable*",
+                    "org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedAuditLogRepository*",
+                    "org.javafreedom.kdiab.treatments.infrastructure.persistence.AuditLogsTable*"
                 )
                 packages(
                     "org.javafreedom.kdiab.treatments.api"
