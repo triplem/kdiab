@@ -47,6 +47,14 @@
   --chart-p25-p75: rgba(56, 189, 248, 0.3);
   --chart-median: #38bdf8;
 
+  /* Treatment category colors */
+  --color-bolus: #e57373;
+  --color-carbs: #81c784;
+  --color-activity: #64b5f6;
+  --color-basal: #ffb74d;
+  --color-device: #90a4ae;
+  --color-other: #b39ddb;
+
   /* Glucose zone colours */
   --glucose-low: #ef4444;
   --glucose-target: #10b981;
