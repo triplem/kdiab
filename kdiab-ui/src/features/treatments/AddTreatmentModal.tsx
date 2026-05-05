@@ -17,6 +17,7 @@ type PatientTreatmentType =
   | 'INSULIN_CHANGE'
   | 'ACTIVITY'
   | 'MEAL'
+  | 'HYPO_TREATMENT'
 
 export interface TreatmentInput {
   type: string
@@ -46,6 +47,7 @@ const TREATMENT_TYPES: PatientTreatmentType[] = [
   'CORRECTION_BOLUS',
   'COMBO_BOLUS',
   'CARBS',
+  'HYPO_TREATMENT',
   'BASAL',
   'TEMP_BASAL',
   'PUMP_SUSPEND',
@@ -131,6 +133,9 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
   const [activityDuration, setActivityDuration] = useState('')
   const [activityIntensity, setActivityIntensity] = useState<'low' | 'moderate' | 'high'>('moderate')
 
+  const [hypoCarbs, setHypoCarbs] = useState('')
+  const [hypoReason, setHypoReason] = useState('')
+
   useEffect(() => {
     if (!isOpen) return
     firstInputRef.current?.focus()
@@ -213,6 +218,11 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
         const dur = parseInt(activityDuration, 10)
         if (!activityName.trim() || isNaN(dur) || dur <= 0) return null
         return { name: activityName.trim(), duration: dur, intensity: activityIntensity }
+      }
+      case 'HYPO_TREATMENT': {
+        const v = parseFloat(hypoCarbs)
+        if (isNaN(v) || v < 1) return null
+        return hypoReason.trim() ? { carbs: v, reason: hypoReason.trim() } : { carbs: v }
       }
     }
   }
@@ -641,6 +651,36 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 <option value="moderate">{t('treatmentModal.intensityModerate')}</option>
                 <option value="high">{t('treatmentModal.intensityIntense')}</option>
               </select>
+            </label>
+          </>
+        )
+      case 'HYPO_TREATMENT':
+        return (
+          <>
+            <label style={labelStyle}>
+              <span>{t('treatmentModal.carbs')}</span>
+              <input
+                type="number"
+                min="1"
+                max="500"
+                step="1"
+                placeholder="e.g. 15"
+                value={hypoCarbs}
+                onChange={(e) => setHypoCarbs(e.target.value)}
+                style={inputStyle}
+                required
+                autoFocus
+              />
+            </label>
+            <label style={labelStyle}>
+              <span>{t('treatmentModal.hypoReason')}</span>
+              <input
+                type="text"
+                placeholder="e.g. glucose below 70 mg/dL"
+                value={hypoReason}
+                onChange={(e) => setHypoReason(e.target.value)}
+                style={inputStyle}
+              />
             </label>
           </>
         )

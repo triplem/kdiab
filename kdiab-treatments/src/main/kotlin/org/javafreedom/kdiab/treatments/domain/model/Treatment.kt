@@ -19,6 +19,7 @@ enum class TreatmentType {
     SENSOR_INSERT,
     INSULIN_CHANGE,
     ACTIVITY,
+    HYPO_TREATMENT,
 }
 
 data class Treatment(

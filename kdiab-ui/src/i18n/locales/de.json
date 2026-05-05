@@ -114,6 +114,7 @@
     "tempBasalRate": "Basalrate (E/h):",
     "tempBasalAbsolute": "Absolute Rate (deaktivieren für Prozentsatz)",
     "pumpSuspendReason": "Grund (optional):",
+    "hypoReason": "Grund (optional):",
     "intensityLight": "Leicht",
     "intensityModerate": "Moderat",
     "intensityIntense": "Intensiv",
@@ -136,7 +137,8 @@
       "TEMP_BASAL": "Temporäre Basalrate",
       "PUMP_SUSPEND": "Pumpe pausieren",
       "ACTIVITY": "Körperliche Aktivität",
-      "MEAL": "Schnelle Mahlzeit (Bolus + KH)"
+      "MEAL": "Schnelle Mahlzeit (Bolus + KH)",
+      "HYPO_TREATMENT": "Hypo-Behandlung"
     }
   },
   "admin": {
