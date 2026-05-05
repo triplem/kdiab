@@ -1,0 +1,136 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/db.changelog-root.yaml
+  - changeSet:
+      id: 001
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: treatments
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: treated_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: data
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notes
+                  type: text
+                  constraints:
+                    nullable: true
+
+  - changeSet:
+      id: 002
+      author: javafreedom
+      changes:
+        - createIndex:
+            indexName: idx_treatments_user_id
+            tableName: treatments
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            indexName: idx_treatments_user_type
+            tableName: treatments
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: type
+        - createIndex:
+            indexName: idx_treatments_treated_at
+            tableName: treatments
+            columns:
+              - column:
+                  name: treated_at
+  - changeSet:
+      id: 003
+      author: javafreedom
+      dbms: postgresql
+      changes:
+        - createIndex:
+            indexName: idx_treatments_user_time
+            tableName: treatments
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: treated_at
+                  descending: true
+  - changeSet:
+      id: 004
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: doctor_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: patient_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ip_address
+                  type: varchar(100)
+              - column:
+                  name: user_agent
+                  type: text
+        - createIndex:
+            indexName: idx_audit_logs_patient_id
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: patient_id
+        - createIndex:
+            indexName: idx_audit_logs_occurred_at
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: occurred_at
