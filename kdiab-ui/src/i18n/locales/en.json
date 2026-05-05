@@ -250,7 +250,15 @@
     "hba1cImprove": "Room for improvement",
     "hba1cHighRisk": "High risk",
     "profiles": "Active Profiles",
-    "noData": "No data for this period."
+    "noData": "No data for this period.",
+    "tirGoalMet": "Goal met (≥70% in range)",
+    "tirGoalNotMet": "Below goal (<70% in range)",
+    "tirClinicalTarget": "Clinical target",
+    "tirClinicalTargetValue": ">70% in range",
+    "tirInRange": "In range",
+    "tirLow": "Low",
+    "tirHigh2": "High",
+    "tirVeryLow": "Very low"
   },
   "profile": {
     "id": "Profile ID",

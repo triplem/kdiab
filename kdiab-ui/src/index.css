@@ -418,6 +418,46 @@ label {
 .hba1c-improve { color: var(--accent-warning); }
 .hba1c-high-risk { color: var(--accent-danger); }
 
+/* TIR goal indicator */
+.tir-goal-indicator {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  margin-bottom: 0.75rem;
+}
+.tir-goal-indicator.meets-goal {
+  color: var(--accent-success);
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.tir-goal-indicator.below-goal {
+  color: var(--accent-warning);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* TIR clinical explanation */
+.tir-explanation {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.85rem;
+}
+.tir-explanation dt {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.tir-explanation dd {
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: 0;
+}
+
 /* Navigation */
 #root {
   max-width: 1400px;
