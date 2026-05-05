@@ -10,6 +10,7 @@ import io.ktor.server.resources.*
 import io.ktor.server.resources.post
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.treatments.api.Paths
 import org.javafreedom.kdiab.treatments.api.models.CreateTreatmentRequest
@@ -42,11 +43,21 @@ private fun Route.listTreatments(treatmentService: TreatmentService, auditLogRep
         checkAccess(principal, targetUserId)
         auditIfDoctor(call, principal, targetUserId, "treatments.list", auditLogRepository)
 
+        val from = call.request.queryParameters["from"]?.let {
+            runCatching { Instant.parse(it) }.getOrElse {
+                throw BusinessValidationException("Invalid 'from' timestamp: $it")
+            }
+        }
+        val to = call.request.queryParameters["to"]?.let {
+            runCatching { Instant.parse(it) }.getOrElse {
+                throw BusinessValidationException("Invalid 'to' timestamp: $it")
+            }
+        }
         val treatments = if (params.type != null) {
             val treatmentType = org.javafreedom.kdiab.treatments.domain.model.TreatmentType.valueOf(params.type.name)
             treatmentService.getTreatmentsByType(targetUserId, treatmentType)
         } else {
-            treatmentService.getTreatments(targetUserId)
+            treatmentService.getTreatments(targetUserId, from, to)
         }
         call.respond(treatments.map { it.toApi() })
     }

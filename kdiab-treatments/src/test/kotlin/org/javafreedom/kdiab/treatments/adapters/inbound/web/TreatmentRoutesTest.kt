@@ -114,7 +114,7 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 patient reads own treatments`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID)) } returns listOf(testTreatment())
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns listOf(testTreatment())
         val resp = client.get("/api/v1/users/$SARAH_ID/treatments") {
             bearerAuth(sarahToken)
         }
@@ -131,7 +131,7 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 doctor reads allowed patient treatments`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID)) } returns listOf(testTreatment())
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns listOf(testTreatment())
         val resp = client.get("/api/v1/users/$SARAH_ID/treatments") {
             bearerAuth(doctorToken)
         }
@@ -148,11 +148,38 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 admin reads any user treatments`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(MIKE_ID)) } returns emptyList()
+        coEvery { repo.findByUserId(Uuid.parse(MIKE_ID), any(), any()) } returns emptyList()
         val resp = client.get("/api/v1/users/$MIKE_ID/treatments") {
             bearerAuth(adminToken)
         }
         assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `list treatments - 200 with from and to query params`() = routeTest { repo ->
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns listOf(testTreatment())
+        val resp = client.get(
+            "/api/v1/users/$SARAH_ID/treatments?from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z"
+        ) {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `list treatments - 400 with invalid from timestamp`() = routeTest { _ ->
+        val resp = client.get("/api/v1/users/$SARAH_ID/treatments?from=not-a-timestamp") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `list treatments - 400 with invalid to timestamp`() = routeTest { _ ->
+        val resp = client.get("/api/v1/users/$SARAH_ID/treatments?to=not-a-timestamp") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
     }
 
     // ── POST /api/v1/users/{userId}/treatments ────────────────────────────────

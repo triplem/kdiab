@@ -21,6 +21,7 @@ import kotlin.uuid.Uuid
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.measures.application.service.MeasureService
+import org.javafreedom.kdiab.measures.domain.model.AuditLog
 import org.javafreedom.kdiab.measures.domain.model.Measure
 import org.javafreedom.kdiab.measures.domain.model.MeasureSource
 import org.javafreedom.kdiab.measures.domain.model.MeasureStatus
@@ -118,8 +119,8 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 patient reads own measures`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns listOf(testMeasure())
-        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID)) } returns 1L
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any()) } returns listOf(testMeasure())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns 1L
         val resp = client.get("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(sarahToken)
         }
@@ -136,8 +137,8 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 doctor reads allowed patient measures`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns listOf(testMeasure())
-        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID)) } returns 1L
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any()) } returns listOf(testMeasure())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns 1L
         val resp = client.get("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(doctorToken)
         }
@@ -154,12 +155,38 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 admin reads any user measures`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(MIKE_ID), any(), any()) } returns emptyList()
-        coEvery { repo.countByUserId(Uuid.parse(MIKE_ID)) } returns 0L
+        coEvery { repo.findByUserId(Uuid.parse(MIKE_ID), any(), any(), any(), any()) } returns emptyList()
+        coEvery { repo.countByUserId(Uuid.parse(MIKE_ID), any(), any()) } returns 0L
         val resp = client.get("/api/v1/users/$MIKE_ID/measures") {
             bearerAuth(adminToken)
         }
         assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `list measures - 200 with from and to query params`() = routeTest { repo ->
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any()) } returns listOf(testMeasure())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns 1L
+        val resp = client.get("/api/v1/users/$SARAH_ID/measures?from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `list measures - 400 with invalid from timestamp`() = routeTest { _ ->
+        val resp = client.get("/api/v1/users/$SARAH_ID/measures?from=not-a-timestamp") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `list measures - 400 with invalid to timestamp`() = routeTest { _ ->
+        val resp = client.get("/api/v1/users/$SARAH_ID/measures?to=not-a-timestamp") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
     }
 
     // ── POST /api/v1/users/{userId}/measures ──────────────────────────────────
@@ -382,5 +409,115 @@ class MeasureRoutesTest {
             setBody(createBody)
         }
         assertEquals(HttpStatusCode.InternalServerError, resp.status)
+    }
+
+    // ── GET /audit ────────────────────────────────────────────────────────────
+
+    private fun auditRouteTest(
+        block: suspend ApplicationTestBuilder.(AuditLogRepository) -> Unit
+    ) {
+        val auditRepo = mockk<AuditLogRepository>(relaxed = true)
+        testApplication {
+            environment {
+                config = MapApplicationConfig(
+                    "jwt.domain"   to ISSUER,
+                    "jwt.audience" to AUDIENCE,
+                    "jwt.realm"    to "kdiab-measures",
+                    "jwt.test"     to "true",
+                    "jwt.secret"   to JWT_SECRET,
+                )
+            }
+            application {
+                module(
+                    measureService = MeasureService(mockk<MeasureRepository>(relaxed = true)),
+                    auditLogRepository = auditRepo,
+                    initDatabase = false,
+                )
+            }
+            block(auditRepo)
+        }
+    }
+
+    @Test
+    fun `audit - 403 for non-admin user`() = auditRouteTest { _ ->
+        val resp = client.get("/api/v1/audit?patientId=$SARAH_ID&from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.Forbidden, resp.status)
+    }
+
+    @Test
+    fun `audit - 200 admin gets audit log`() = auditRouteTest { auditRepo ->
+        coEvery { auditRepo.findByPatientId(any(), any(), any()) } returns emptyList()
+        val resp = client.get("/api/v1/audit?patientId=$SARAH_ID&from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z") {
+            bearerAuth(adminToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `audit - 400 missing patientId`() = auditRouteTest { _ ->
+        val resp = client.get("/api/v1/audit?from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z") {
+            bearerAuth(adminToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `audit - 400 missing from`() = auditRouteTest { _ ->
+        val resp = client.get("/api/v1/audit?patientId=$SARAH_ID&to=2024-01-31T23:59:59Z") {
+            bearerAuth(adminToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `audit - 400 missing to`() = auditRouteTest { _ ->
+        val resp = client.get("/api/v1/audit?patientId=$SARAH_ID&from=2024-01-01T00:00:00Z") {
+            bearerAuth(adminToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `audit - 400 invalid patientId`() = auditRouteTest { _ ->
+        val resp = client.get("/api/v1/audit?patientId=not-a-uuid&from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z") {
+            bearerAuth(adminToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `audit - 400 invalid from date`() = auditRouteTest { _ ->
+        val resp = client.get("/api/v1/audit?patientId=$SARAH_ID&from=not-a-date&to=2024-01-31T23:59:59Z") {
+            bearerAuth(adminToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `audit - 400 invalid to date`() = auditRouteTest { _ ->
+        val resp = client.get("/api/v1/audit?patientId=$SARAH_ID&from=2024-01-01T00:00:00Z&to=not-a-date") {
+            bearerAuth(adminToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `audit - 200 returns audit log entries`() = auditRouteTest { auditRepo ->
+        val entry = AuditLog(
+            id = Uuid.parse(MEASURE_ID),
+            doctorId = Uuid.parse(DOCTOR_ID),
+            patientId = Uuid.parse(SARAH_ID),
+            action = "measures.list",
+            occurredAt = Instant.parse("2024-01-15T10:00:00Z"),
+            ipAddress = "127.0.0.1",
+            userAgent = "test-agent",
+        )
+        coEvery { auditRepo.findByPatientId(any(), any(), any()) } returns listOf(entry)
+        val resp = client.get("/api/v1/audit?patientId=$SARAH_ID&from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z") {
+            bearerAuth(adminToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
     }
 }

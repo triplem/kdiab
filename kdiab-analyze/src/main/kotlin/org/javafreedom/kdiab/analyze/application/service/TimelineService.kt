@@ -24,10 +24,10 @@ class TimelineService(
         val toInstant = Instant.parse(to)
 
         val measuresDeferred = async {
-            runCatching { measuresClient.getMeasures(userId, authorization, correlationId) }
+            runCatching { measuresClient.getMeasures(userId, authorization, correlationId, from, to) }
         }
         val treatmentsDeferred = async {
-            runCatching { treatmentsClient.getTreatments(userId, authorization, correlationId) }
+            runCatching { treatmentsClient.getTreatments(userId, authorization, correlationId, from, to) }
         }
 
         val measuresResult = measuresDeferred.await()

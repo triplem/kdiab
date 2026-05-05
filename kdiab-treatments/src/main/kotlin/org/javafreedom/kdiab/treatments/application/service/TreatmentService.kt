@@ -3,6 +3,7 @@ package org.javafreedom.kdiab.treatments.application.service
 
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.treatments.domain.exception.ResourceNotFoundException
@@ -24,8 +25,8 @@ class TreatmentService(
         return treatmentRepository.save(treatment)
     }
 
-    suspend fun getTreatments(userId: Uuid): List<Treatment> =
-        treatmentRepository.findByUserId(userId)
+    suspend fun getTreatments(userId: Uuid, from: Instant? = null, to: Instant? = null): List<Treatment> =
+        treatmentRepository.findByUserId(userId, from, to)
 
     suspend fun getTreatmentsByType(userId: Uuid, type: TreatmentType): List<Treatment> =
         treatmentRepository.findByUserIdAndType(userId, type)

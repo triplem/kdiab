@@ -79,6 +79,44 @@ class TreatmentsClientTest {
         assertEquals(correlationId, capturedCorrelationId)
     }
 
+    @Test
+    fun `getTreatments sends from and to query parameters when provided`() = runTest {
+        val capturedParams = mutableListOf<Pair<String?, String?>>()
+        val engine = MockEngine { request ->
+            capturedParams += request.url.parameters["from"] to request.url.parameters["to"]
+            respond(
+                content = "[]",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val client = buildClient(engine)
+        client.getTreatments(userId, auth, correlationId, from = "2024-01-01T00:00:00Z", to = "2024-01-31T23:59:59Z")
+
+        assertEquals(1, capturedParams.size)
+        assertEquals("2024-01-01T00:00:00Z", capturedParams[0].first)
+        assertEquals("2024-01-31T23:59:59Z", capturedParams[0].second)
+    }
+
+    @Test
+    fun `getTreatments does not send from and to when null`() = runTest {
+        val capturedParams = mutableListOf<Pair<String?, String?>>()
+        val engine = MockEngine { request ->
+            capturedParams += request.url.parameters["from"] to request.url.parameters["to"]
+            respond(
+                content = "[]",
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val client = buildClient(engine)
+        client.getTreatments(userId, auth, correlationId)
+
+        assertEquals(1, capturedParams.size)
+        assertEquals(null, capturedParams[0].first)
+        assertEquals(null, capturedParams[0].second)
+    }
+
     private fun buildClient(engine: MockEngine): TreatmentsClient {
         val httpClient = HttpClient(engine) {
             install(ContentNegotiation) { json(json) }

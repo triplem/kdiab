@@ -31,6 +31,20 @@ paths:
           description: Filter by treatment type
           schema:
             $ref: '#/components/schemas/TreatmentType'
+        - name: from
+          in: query
+          required: false
+          description: Filter treatments on or after this timestamp (ISO-8601)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          description: Filter treatments on or before this timestamp (ISO-8601)
+          schema:
+            type: string
+            format: date-time
       responses:
         '200':
           description: List of active treatments

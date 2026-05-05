@@ -10,6 +10,7 @@ import io.ktor.server.resources.*
 import io.ktor.server.resources.post
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
 import org.javafreedom.kdiab.measures.api.Paths
@@ -59,10 +60,20 @@ private fun Route.listMeasures(measureService: MeasureService, auditLogRepositor
         val page = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(0) ?: 0
         val size = call.request.queryParameters["size"]?.toIntOrNull()
             ?.coerceIn(1, MAX_PAGE_SIZE) ?: DEFAULT_PAGE_SIZE
+        val from = call.request.queryParameters["from"]?.let {
+            runCatching { Instant.parse(it) }.getOrElse {
+                throw BusinessValidationException("Invalid 'from' timestamp: $it")
+            }
+        }
+        val to = call.request.queryParameters["to"]?.let {
+            runCatching { Instant.parse(it) }.getOrElse {
+                throw BusinessValidationException("Invalid 'to' timestamp: $it")
+            }
+        }
 
         val glucoseUnit = principal?.glucoseUnit ?: "mg/dL"
         val weightUnit = principal?.weightUnit ?: "kg"
-        val paged = measureService.getMeasures(targetUserId, page, size)
+        val paged = measureService.getMeasures(targetUserId, page, size, from, to)
         call.respond(PagedMeasureResponse(
             items = paged.items.map { it.toApi(glucoseUnit, weightUnit) },
             page = paged.page,
