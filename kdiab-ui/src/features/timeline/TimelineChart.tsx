@@ -10,6 +10,7 @@ import {
   ReferenceArea,
   ResponsiveContainer,
   Legend,
+  Cell,
 } from 'recharts'
 import { useTranslation } from 'react-i18next'
 
@@ -34,6 +35,26 @@ interface Props {
   glucoseUnit: string
   profileChangeDates?: number[]
 }
+
+const TREATMENT_COLORS: Record<string, string> = {
+  BOLUS: 'var(--color-bolus)',
+  CORRECTION_BOLUS: 'var(--color-bolus)',
+  COMBO_BOLUS: 'var(--color-bolus)',
+  CARBS: 'var(--color-carbs)',
+  HYPO_TREATMENT: 'var(--color-carbs)',
+  EXERCISE: 'var(--color-activity)',
+  BASAL: 'var(--color-basal)',
+  TEMP_BASAL: 'var(--color-basal)',
+  SITE_CHANGE: 'var(--color-device)',
+  SENSOR_INSERT: 'var(--color-device)',
+  INSULIN_CHANGE: 'var(--color-device)',
+  PUMP_SUSPEND: 'var(--color-device)',
+  NOTE: 'var(--color-other)',
+  BG_CHECK: 'var(--color-other)',
+}
+
+const treatmentColor = (type: string): string =>
+  TREATMENT_COLORS[type] ?? 'var(--color-other)'
 
 const MGDL_TO_MMOL = 1 / 18.0
 
@@ -153,9 +174,14 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
             data={treatmentData}
             dataKey="y"
             name={t('timeline.treatment')}
-            fill="var(--chart-bolus)"
+            fill="var(--color-other)"
             shape="triangle"
-          />
+            isAnimationActive={false}
+          >
+            {treatmentData.map((entry, index) => (
+              <Cell key={index} fill={treatmentColor(entry.type)} />
+            ))}
+          </Scatter>
         )}
       </ComposedChart>
     </ResponsiveContainer>
