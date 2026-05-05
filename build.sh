@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# build.sh — build all kdiab services
+# build.sh — Build all services in the kdiab monorepo.
 #
-# Usage:
-#   ./build.sh                 # build everything (backends + kdiab-ui), skip tests
-#   ./build.sh --check         # build + run all tests, detekt, kover
-#   ./build.sh --backend-only  # backends only
-#   ./build.sh --frontend-only # kdiab-ui only
-#   ./build.sh --docker        # build all Docker images
-#   ./build.sh --clean         # stop containers, remove all local images and volumes (DB reset)
-#   ./build.sh --no-parallel   # sequential (useful when disk/RAM is tight)
+# Usage: ./build.sh [options]
+#   (no flags)       Build all backends (Gradle) + frontends (npm), in parallel
+#   --check          Build + run all tests, Detekt, Kover
+#   --backend-only   Gradle builds only
+#   --frontend-only  npm builds only
+#   --no-parallel    Sequential build (saves RAM on small machines)
+#   --docker         Build all Docker images via docker/podman compose
+#   --clean          Stop containers, remove all local images and volumes (DB reset)
+#   --help, -h       Show this help message
 #
 # Flags can be combined, e.g.: ./build.sh --check --docker
-# Exit code is non-zero if any service fails to build.
+# Logs per service land in .build-logs/. Exit code is non-zero if any build fails.
 
 set -euo pipefail
 
