@@ -21,34 +21,49 @@ A Type 1 Diabetes (T1D) management platform consisting of four services in a sin
 # Copy the example env file and fill in secrets
 cp .env.example .env
 
-# Start the full platform (all 4 services + Keycloak + PostgreSQL + pgAdmin)
+# Start the full platform (all 4 services + Keycloak + PostgreSQL)
 docker compose up --build
+
+# Optionally include pgAdmin (database browser at http://localhost:5050)
+docker compose -f docker-compose.yml -f docker-compose.pgadmin.yml up --build
 ```
 
 Navigate to http://localhost:3000 for the gateway (all UIs accessible under `/measures/`, `/profiles/`, `/treatments/`, `/analyze/`).
 
 ## Build Commands
 
-### Monorepo build script
+### Monorepo Gradle build (root)
+
+The monorepo is a [Gradle composite build](https://docs.gradle.org/current/userguide/composite_builds.html).
+All four service backends and the `kdiab-ui` gateway frontend are orchestrated from the root:
 
 ```bash
-./build.sh                   # Build all backends + frontends
-./build.sh --check           # Build + run all tests, Detekt, Kover
-./build.sh --backend-only    # Gradle builds only
-./build.sh --frontend-only   # npm builds only
-./build.sh --no-parallel     # Sequential (saves RAM on small machines)
-./build.sh --clean           # Stop containers, remove local images and volumes
+./gradlew build              # Build all backends (Gradle) + kdiab-ui frontend (npm)
+./gradlew check              # Build + run all tests, Detekt, Kover across all services
+./gradlew buildBackends      # Gradle builds only (skip npm frontend)
+./gradlew buildFrontend      # kdiab-ui npm build only (skip Gradle backends)
+./gradlew build --no-parallel  # Sequential build (saves RAM on small machines)
 ```
 
-Build logs land in `.build-logs/` per service.
+### Docker images
+
+```bash
+./gradlew dockerBuild        # Build all kdiab Docker images via docker compose
+./gradlew dockerClean        # Stop containers, remove local images and volumes (DB reset)
+```
+
+`dockerBuild` requires `docker compose` (v2). For Podman, run `podman compose build` directly.
 
 ### Per-service backend (Kotlin/Ktor)
 
 ```bash
 cd kdiab-<service>
-./gradlew :backend:build         # Compile + package
-./gradlew :backend:check         # Tests + Detekt + Kover
-./gradlew :backend:run           # Run locally (needs Postgres + Keycloak)
+./gradlew build              # Compile + package
+./gradlew check              # All tests (unit + integration + e2e) + Detekt + Kover
+./gradlew run                # Run locally (needs Postgres + Keycloak)
+./gradlew test               # Unit tests only
+./gradlew integrationTest    # Integration tests only (H2 in-memory)
+./gradlew e2eTest            # E2E tests only
 ```
 
 ### Per-service frontend (React/TypeScript)
@@ -88,7 +103,7 @@ docker compose down -v           # Tear down and wipe volumes
 | kdiab-analyze frontend | http://localhost:3003 (also `/analyze/`) |
 | kdiab-analyze backend / Swagger | http://localhost:8084 / http://localhost:8084/swagger |
 | Keycloak Admin | http://localhost:8081 (admin / from `.env`) |
-| pgAdmin | http://localhost:5050 (admin@kdiab.dev / admin) |
+| pgAdmin | http://localhost:5050 — opt-in via `docker-compose.pgadmin.yml` |
 
 ### Per-service standalone compose
 
