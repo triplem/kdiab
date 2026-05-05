@@ -5,7 +5,7 @@ import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
 import { ConfirmModal } from '../../components/ConfirmModal'
 
-const PAGE_SIZE = 50
+const PAGE_SIZES = [5, 20, 50, 100] as const
 
 interface MeasureResponse {
   id: string
@@ -134,14 +134,15 @@ export const MeasureList: React.FC<MeasureListProps> = ({
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
+  const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(50)
   const [measures, setMeasures] = useState<MeasureResponse[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
 
   const { isLoading, isError } = useQuery({
-    queryKey: ['measures', userId, page],
+    queryKey: ['measures', userId, page, pageSize],
     queryFn: async () => {
-      const res = await measuresApi.listMeasures(userId, page, PAGE_SIZE)
+      const res = await measuresApi.listMeasures(userId, page, pageSize)
       const paged = res.data as PagedMeasures
       if (page === 0) {
         setMeasures(paged.items ?? [])
@@ -170,6 +171,13 @@ export const MeasureList: React.FC<MeasureListProps> = ({
     setMeasures([])
     setPage(0)
     void queryClient.invalidateQueries({ queryKey: ['measures', userId] })
+  }
+
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const next = Number(e.target.value) as (typeof PAGE_SIZES)[number]
+    setPageSize(next)
+    setMeasures([])
+    setPage(0)
   }
 
   const archiveMutation = useMutation({
@@ -267,7 +275,20 @@ export const MeasureList: React.FC<MeasureListProps> = ({
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>{t('list.title')}</h2>
-        <div className="bulk-actions" style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+            {t('list.pageSize')}
+            <select
+              value={pageSize}
+              onChange={handlePageSizeChange}
+              style={{ fontSize: '0.875rem', padding: '0.2rem 0.4rem', borderRadius: '4px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--color-text)' }}
+            >
+              {PAGE_SIZES.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </label>
+          <div className="bulk-actions" style={{ display: 'flex', gap: '10px' }}>
           {canArchive && (
             <button
               disabled={selectedIds.size === 0 || archiveMutation.isPending}
@@ -288,6 +309,7 @@ export const MeasureList: React.FC<MeasureListProps> = ({
               {t('list.deleteSelected', { count: selectedIds.size })}
             </button>
           )}
+          </div>
         </div>
       </div>
 

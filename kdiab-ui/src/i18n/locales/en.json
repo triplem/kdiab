@@ -44,6 +44,7 @@
     "mutationError": "Operation failed. Please try again.",
     "empty": "No items recorded yet.",
     "loadMore": "Load more ({{loaded}} of {{total}})",
+    "pageSize": "Items per page:",
     "details": "Details",
     "systemId": "System ID",
     "userId": "User ID",

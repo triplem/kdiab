@@ -44,6 +44,7 @@
     "mutationError": "Vorgang fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "empty": "Noch keine Einträge erfasst.",
     "loadMore": "Weitere laden ({{loaded}} von {{total}})",
+    "pageSize": "Einträge pro Seite:",
     "details": "Details",
     "systemId": "System-ID",
     "userId": "Benutzer-ID",
