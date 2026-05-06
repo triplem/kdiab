@@ -133,6 +133,61 @@ class MeasuresClientTest {
         }
     }
 
+    @Test
+    fun `getMeasures throws UpstreamException with statusCode when first page returns 500`() = runTest {
+        val engine = MockEngine { _ ->
+            respond(content = "", status = HttpStatusCode.InternalServerError)
+        }
+        val client = buildClient(engine)
+        val ex = assertFailsWith<UpstreamException> {
+            client.getMeasures(userId, auth, correlationId)
+        }
+        assertEquals(500, ex.statusCode)
+    }
+
+    @Test
+    fun `getMeasures throws UpstreamException when second page returns 502 and partial data is discarded`() = runTest {
+        val page0 = (1..3).map { measure("m-$it") }
+        var callCount = 0
+
+        val engine = MockEngine { request ->
+            val page = request.url.parameters["page"]?.toInt() ?: 0
+            callCount++
+            when (page) {
+                0 -> respond(
+                    content = pagedJson(page0, page = 0, size = 3, total = 6),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+                else -> respond(content = "", status = HttpStatusCode.BadGateway)
+            }
+        }
+
+        val client = buildClient(engine)
+        val ex = assertFailsWith<UpstreamException> {
+            client.getMeasures(userId, auth, correlationId)
+        }
+        assertEquals(502, ex.statusCode)
+        assertEquals(2, callCount)
+    }
+
+    @Test
+    fun `getMeasures makes exactly one request when first page is empty`() = runTest {
+        var callCount = 0
+        val engine = MockEngine { _ ->
+            callCount++
+            respond(
+                content = pagedJson(emptyList(), page = 0, size = 200, total = 0),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val client = buildClient(engine)
+        val result = client.getMeasures(userId, auth, correlationId)
+        assertEquals(0, result.size)
+        assertEquals(1, callCount)
+    }
+
     // ── pagination parameters ─────────────────────────────────────────────────
 
     @Test
