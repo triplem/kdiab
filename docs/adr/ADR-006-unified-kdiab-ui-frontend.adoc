@@ -1,0 +1,80 @@
+= ADR-006: Unified kdiab-ui Frontend SPA
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-06
+* *Deciders*: triplem
+
+== Context
+
+The kdiab platform originally evolved with one React frontend per service. Each per-service frontend:
+
+* Duplicated OIDC authentication setup (`react-oidc-context` configuration, token handling).
+* Duplicated shared layout components (navigation bar, error boundaries, loading states).
+* Maintained independent CSS files with hardcoded colour values — the same design tokens repeated
+  four times with no single source of truth.
+* Required the user to authenticate separately in each service's browser origin or rely on
+  Keycloak SSO redirects between four different ports.
+* Resulted in four separate npm projects, four separate Vite configs, and four separate build
+  artefacts to deploy and serve.
+
+== Decision
+
+All four per-service React frontends are consolidated into a single React 19 SPA called `kdiab-ui`,
+located at the monorepo root. It:
+
+1. *Organises features by service directory* — `src/features/measures/`, `src/features/treatments/`,
+   `src/features/profiles/`, `src/features/analyze/` — each containing the components, hooks, and
+   API calls for that service.
+2. *Shares authentication* via a single `react-oidc-context` provider configured with the
+   `kdiab-analyze-frontend` Keycloak client, which has audience mappers for all four backends.
+3. *Proxies API requests* via Vite's `server.proxy` configuration, routing `/api/measures`,
+   `/api/treatments`, `/api/profiles`, and `/api/analyze` to the respective backend ports.
+4. *Shares CSS custom properties* — all colours, spacing, and typography are defined as CSS
+   variables in a single `variables.css`, replacing the hardcoded values that were duplicated
+   across four codebases.
+5. *Produces a single build artefact* served by the root `docker-compose.yml` on port 3005.
+
+== Consequences
+
+=== Positive
+
+* Single deployment artefact — one container serves all four feature areas.
+* Single authentication session — the user logs in once; the token is shared across all features.
+* Reduced CSS duplication — design tokens defined once; changes propagate everywhere.
+* One npm project, one Vite config, one set of shared dependencies to maintain.
+* Adding a new service requires only a new `src/features/<service>/` directory and a Vite proxy rule.
+
+=== Negative
+
+* The consolidated bundle is larger than any single per-service bundle; code-splitting via React
+  lazy loading mitigates this.
+* A bug in shared infrastructure (auth provider, layout) affects all features simultaneously.
+* Per-service independent deployment is no longer possible without splitting the SPA again.
+
+=== Neutral
+
+* Each feature directory is self-contained — components, hooks, and API calls for one service do
+  not import from another service's feature directory.
+* The standalone per-service `docker-compose.yml` files still spin up a per-service frontend on
+  port 3000 for isolated development.
+
+== Alternatives Considered
+
+=== Keep Four Independent SPAs
+
+Maintain one React app per service. *Rejected*: ongoing duplication of auth, layout, and CSS;
+four separate deployment artefacts to build and serve; no shared design system.
+
+=== Module Federation (Webpack / Vite)
+
+Use Webpack Module Federation or Vite Federation to compose independent micro-frontends at runtime.
+*Rejected*: significant tooling complexity for a small team; module federation introduces runtime
+dependency resolution that is harder to debug than a standard bundled SPA.
+
+=== Server-Side Rendering (Next.js)
+
+Replace Vite+React with a Next.js SSR application. *Rejected*: SSR adds operational complexity
+(Node.js server, hydration concerns) that is not justified for an authenticated, data-heavy
+dashboard application where SEO is not a requirement.

@@ -1,0 +1,78 @@
+= ADR-004: BFF Stateless Aggregator
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-06
+* *Deciders*: triplem
+
+== Context
+
+The kdiab platform has four independent backend services (`kdiab-measures`, `kdiab-profiles`,
+`kdiab-treatments`, and a fourth analysis service). An analytics dashboard needs to present a unified
+view combining data from all three domain services — timeline, HbA1c, AGP, and profile views.
+
+Several approaches were considered for this aggregation:
+
+* Each domain service could expose aggregated endpoints, duplicating aggregation logic across services.
+* The frontend could directly call all three backends and assemble the view client-side, adding
+  complexity and exposing multiple JWT audiences to the browser.
+* A dedicated service could act as an intermediary, aggregating data server-side before returning
+  it to the frontend.
+
+== Decision
+
+`kdiab-analyze` is a dedicated stateless Backend-for-Frontend (BFF) service with no database and no
+persistent state. It:
+
+1. *Accepts the user JWT* from the browser unchanged and forwards it to all upstream services.
+2. *Calls `kdiab-measures`, `kdiab-profiles`, and `kdiab-treatments`* in parallel via HTTP clients.
+3. *Aggregates and transforms* the responses into analytics-ready shapes (timeline events, HbA1c
+   calculation, AGP percentile bands) before returning them to the frontend.
+4. *Owns no schema migrations* and requires no database connection.
+
+Because a single JWT must be accepted by all four services, the Keycloak `kdiab-analyze-frontend`
+client is configured with four audience mappers (`analyze`, `measure`, `profile`, `treatment`),
+so one token works everywhere without token exchange.
+
+== Consequences
+
+=== Positive
+
+* `kdiab-analyze` can scale horizontally independently of the domain services.
+* Analytics logic is centralised in one service; domain services remain focused on CRUD.
+* The browser only needs to call one backend URL for the entire analytics view.
+* Adding a new analytics view requires changes only to `kdiab-analyze` and the frontend — domain
+  services are unaffected.
+
+=== Negative
+
+* No caching layer at the BFF means upstream latency is directly visible to users; slow upstream
+  responses propagate to the analytics dashboard.
+* An additional service to deploy, monitor, and maintain.
+* The Keycloak audience-mapper configuration must be kept in sync as new services are added.
+
+=== Neutral
+
+* `kdiab-analyze` follows the same Ktor/Kotlin stack and hexagonal package structure as the other
+  services, except it has no `infrastructure/persistence/` layer and uses
+  `adapters/outbound/http/` Ktor HTTP clients instead.
+
+== Alternatives Considered
+
+=== Client-side Aggregation
+
+The React SPA calls all three backends directly and assembles the analytics view in the browser.
+*Rejected*: increased client complexity, slower perceived performance (waterfall requests), and
+exposure of multiple service URLs to the browser.
+
+=== Aggregation Inside Domain Services
+
+Each domain service exposes aggregated analytics endpoints. *Rejected*: duplicates logic, creates
+cross-service coupling inside domain service code, and violates single-responsibility.
+
+=== GraphQL Gateway
+
+A GraphQL federation layer aggregates all three services. *Rejected*: adds significant tooling
+overhead (schema stitching, resolver configuration) for a small number of services with stable,
+well-defined contracts.

@@ -1,0 +1,80 @@
+= ADR-005: API-First Design with OpenAPI Code Generation
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-06
+* *Deciders*: triplem
+
+== Context
+
+Each kdiab service has a Kotlin/Ktor backend and a React/TypeScript frontend. The HTTP contract
+between them — request/response shapes, paths, query parameters, error responses — must stay
+consistent. Before introducing a formal contract, this sync was maintained manually:
+
+* Backend handlers and frontend fetch calls were written independently, relying on developer
+  discipline to stay aligned.
+* Type mismatches were caught only at runtime (missing fields, wrong types, renamed properties).
+* Adding a new endpoint required changes in at least four places: backend handler, backend model,
+  frontend API call, frontend TypeScript types — with no compile-time guarantee they matched.
+
+== Decision
+
+`api/openapi.yaml` in each service directory is the single source of truth for the API contract.
+Both sides generate code from it automatically:
+
+1. *Backend*: the `openApiGenerate` Gradle task (OpenAPI Generator, `ktor-server` generator) produces
+   Ktor route stubs and model data classes into `backend/build/generated/api/`. This task is wired
+   as a dependency of `compileKotlin` and runs automatically on every build.
+2. *Frontend*: `npm run api:generate` (OpenAPI Generator, `typescript-axios` generator) produces a
+   typed TypeScript/Axios client into `frontend/src/api/generated/`. This task runs automatically
+   as part of `npm run build`.
+
+When changing the API, the spec is updated first; both sides then regenerate and the compiler
+enforces consistency.
+
+== Consequences
+
+=== Positive
+
+* Type-safe API contracts enforced at build time — type mismatches between frontend and backend
+  are compile errors, not runtime surprises.
+* A single file (`api/openapi.yaml`) is the canonical source for API documentation, Swagger UI,
+  and generated code.
+* Adding a new endpoint requires only a spec change; generated stubs provide the scaffolding on
+  both sides.
+* Swagger UI is served automatically at `/swagger` from the generated spec.
+
+=== Negative
+
+* Codegen must run before compile, adding a build step that slows cold builds slightly.
+* API changes require updating the spec first — direct edits to generated files are overwritten on
+  the next build.
+* Generated code can be verbose; developers must understand what is generated vs. what is
+  hand-written.
+
+=== Neutral
+
+* The generated backend stubs are implemented by hand-written route handlers in
+  `adapters/inbound/web/`. Generators produce interfaces and models; business logic is never generated.
+* `kdiab-analyze` uses manual routing because its aggregation responses do not map cleanly to a
+  single generated `Paths` object.
+
+== Alternatives Considered
+
+=== Manual Type Sync
+
+Keep frontend TypeScript types and backend Kotlin models in sync manually. *Rejected*: error-prone,
+discovered breakage only at runtime, and adds ongoing maintenance burden as the API evolves.
+
+=== GraphQL
+
+Replace REST with a GraphQL schema as the contract. *Rejected*: the REST API is simple and
+well-defined; GraphQL adds tooling overhead (schema definition language, resolvers, client query
+management) without proportional benefit for this project's scope.
+
+=== gRPC / Protobuf
+
+Use Protobuf schemas for cross-language code generation. *Rejected*: gRPC requires HTTP/2 and adds
+infrastructure complexity; REST+JSON is simpler to consume from a browser and easier to inspect
+with standard tools.

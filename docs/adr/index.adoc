@@ -11,6 +11,10 @@ Platform-wide ADRs are numbered 001–009; service ADRs use a three-digit prefix
 * link:ADR-001-monorepo-consolidation.html[ADR-001 Monorepo Consolidation]
 * link:ADR-002-docker-image-naming.html[ADR-002 Docker Image Naming Convention]
 * link:ADR-003-root-gradle-composite-build.html[ADR-003 Root Gradle Composite Build]
+* link:ADR-004-bff-stateless-aggregator.html[ADR-004 BFF Stateless Aggregator]
+* link:ADR-005-api-first-openapi-codegen.html[ADR-005 API-First Design with OpenAPI Code Generation]
+* link:ADR-006-unified-kdiab-ui-frontend.html[ADR-006 Unified kdiab-ui Frontend SPA]
+* link:ADR-007-single-stage-dockerfile.html[ADR-007 Single-Stage Dockerfile with Pre-Built JAR]
 
 == kdiab-measures ADRs
 

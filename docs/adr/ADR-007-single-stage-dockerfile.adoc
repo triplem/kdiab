@@ -1,0 +1,86 @@
+= ADR-007: Single-Stage Dockerfile with Pre-Built JAR
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-06
+* *Deciders*: triplem
+
+== Context
+
+Each kdiab backend service is a Kotlin/Ktor application built with Gradle. Docker images must be
+produced for deployment. Two common approaches exist for building JVM application images:
+
+1. *Multi-stage build*: a first `builder` stage runs Gradle inside Docker to compile the source
+   and produce the JAR; a second `runtime` stage copies the JAR into a slim JRE image.
+2. *Single-stage build*: the JAR is compiled externally (by CI or a local Gradle invocation);
+   the Dockerfile only copies the pre-built JAR into a slim JRE image.
+
+The multi-stage approach was considered as the starting point because it encapsulates the full
+build inside Docker and removes the need for Gradle on the host or CI runner. However, it
+introduced several problems in this monorepo context.
+
+== Decision
+
+Each service uses a single-stage Dockerfile that:
+
+1. Starts `FROM` a lightweight JRE runtime base image (Eclipse Temurin).
+2. `COPY`s the pre-built JAR from `build/libs/<service>-all.jar` into the image.
+3. Defines `ENTRYPOINT ["java", "-jar", "/app/<service>.jar"]`.
+
+The JAR is built by the Gradle `shadowJar` (fat-JAR) task in the CI pipeline or via
+`./gradlew build` locally before running `docker compose up --build`.
+
+The root `docker-compose.yml` and per-service `docker-compose.yml` files reference the
+pre-built JAR path, and the root `./gradlew dockerBuild` task builds the JAR first, then
+invokes `docker compose build`.
+
+== Consequences
+
+=== Positive
+
+* Docker image builds are fast — no Gradle compilation inside Docker, no dependency download
+  inside the Docker build context.
+* The Docker build context is small: only the JAR file is sent to the Docker daemon, not the
+  entire source tree, Gradle cache, and `node_modules`.
+* CI pipelines have a clear separation: the `build` job produces the JAR artefact; the
+  `docker-build` job consumes it. Each step can be cached independently.
+* Developers can run `./gradlew build && docker compose up --build` without any special tooling
+  inside Docker.
+
+=== Negative
+
+* The JAR artefact must be present at `build/libs/` before running `docker build`; running
+  `docker build` alone (without first running Gradle) produces an empty or missing-JAR error.
+* CI pipelines must explicitly depend on and restore the Gradle build output before the Docker
+  build step.
+
+=== Neutral
+
+* The base JRE image version is pinned in each Dockerfile. Updates to the JRE version require
+  updating the `FROM` line and re-building the image.
+* The fat-JAR (shadow JAR) bundles all runtime dependencies, so no classpath configuration is
+  needed in the Dockerfile.
+
+== Alternatives Considered
+
+=== Multi-Stage Docker Build
+
+Run Gradle inside a `builder` Docker stage to compile the JAR, then copy it into a slim runtime
+stage. *Rejected*: Gradle compilation inside Docker is significantly slower than a cached local or
+CI Gradle build; the Gradle dependency cache cannot be shared with the host cache without complex
+volume mounts; and the entire source tree must be included in the Docker build context.
+
+=== Jib (Google)
+
+Use the Jib Gradle plugin to build Docker images directly from Gradle without a Dockerfile.
+*Rejected*: Jib removes Dockerfile flexibility (custom entrypoints, environment variable defaults,
+labels); it requires a Docker daemon or registry credentials at build time; and the team preferred
+an explicit, inspectable Dockerfile over an opaque plugin abstraction.
+
+=== Buildpacks (Cloud Native Buildpacks)
+
+Use `pack` or a Paketo buildpack to detect the JVM project and produce an OCI image automatically.
+*Rejected*: buildpacks add an external tool dependency and are harder to reason about than an
+explicit Dockerfile; the resulting image layers differ from what the team expects from a standard
+JRE base image.
