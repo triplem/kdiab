@@ -63,17 +63,13 @@ class AnalyticsService(
         glucoseUnit: String,
         correlationId: String,
     ): AgpResult {
-        val fromInstant = Instant.parse(from)
-        val toInstant = Instant.parse(to)
-
-        val allMeasures = measuresClient.getMeasures(userId, authorization, correlationId)
+        val allMeasures = measuresClient.getMeasures(userId, authorization, correlationId, from, to)
 
         val byHour = Array(HOURS_IN_DAY) { mutableListOf<Double>() }
 
         allMeasures.forEach { dto ->
             if (dto.type != "CGM") return@forEach
             val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach
-            if (t < fromInstant || t > toInstant) return@forEach
             val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach
             val mgDl = if (glucoseUnit == "mmol/L") sgv * MMOL_TO_MGDL else sgv
             val hour = t.toLocalDateTime(TimeZone.UTC).hour
@@ -109,15 +105,8 @@ class AnalyticsService(
         glucoseUnit: String,
         correlationId: String,
     ): List<Double> {
-        val fromInstant = Instant.parse(from)
-        val toInstant = Instant.parse(to)
-
-        return measuresClient.getMeasures(userId, authorization, correlationId)
-            .filter { dto ->
-                if (dto.type != "CGM") return@filter false
-                val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@filter false
-                t >= fromInstant && t <= toInstant
-            }
+        return measuresClient.getMeasures(userId, authorization, correlationId, from, to)
+            .filter { dto -> dto.type == "CGM" }
             .mapNotNull { dto ->
                 val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
                 if (glucoseUnit == "mmol/L") sgv * MMOL_TO_MGDL else sgv
