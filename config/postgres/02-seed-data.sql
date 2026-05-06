@@ -184,6 +184,132 @@ BEGIN
       VALUES (gen_random_uuid(), sarah_id, t, 'CORRECTION_BOLUS',
               jsonb_build_object('insulin', 1.5, 'insulinType', 'Humalog'), 'High correction');
     END IF;
+
+    -- Exercise entries for sarah every day (alternating morning/evening)
+    IF day % 2 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '7 hours';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), sarah_id, t, 'EXERCISE',
+              jsonb_build_object('duration', 30, 'intensity', 'moderate'), 'Morning walk');
+    ELSE
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '17 hours' + INTERVAL '30 minutes';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), sarah_id, t, 'EXERCISE',
+              jsonb_build_object('duration', 45, 'intensity', 'low'), 'Evening yoga');
+    END IF;
+
+    -- Exercise entries for mike every day
+    IF day % 2 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '6 hours' + INTERVAL '30 minutes';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), mike_id, t, 'EXERCISE',
+              jsonb_build_object('duration', 40, 'intensity', 'moderate'), 'Morning run');
+    ELSE
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '18 hours';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), mike_id, t, 'EXERCISE',
+              jsonb_build_object('duration', 60, 'intensity', 'high'), 'Cycling');
+    END IF;
+
+    -- Temp basal during exercise for sarah (every 2 days, reduce basal 50% for 1h)
+    IF day % 2 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '6 hours' + INTERVAL '45 minutes';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), sarah_id, t, 'TEMP_BASAL',
+              jsonb_build_object('rate', 0.45, 'duration', 60), 'Reduced for exercise');
+    END IF;
+
+    -- Hypo treatment for sarah (every 4 days)
+    IF day % 4 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '3 hours' + INTERVAL '30 minutes';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), sarah_id, t, 'HYPO_TREATMENT',
+              jsonb_build_object('carbs', 15, 'reason', 'night hypo'), 'Treated low');
+    END IF;
+
+    -- Hypo treatment for mike (every 6 days)
+    IF day % 6 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '14 hours';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), mike_id, t, 'HYPO_TREATMENT',
+              jsonb_build_object('carbs', 12, 'reason', 'post-exercise low'), NULL);
+    END IF;
+
+    -- Notes for sarah (every 5 days)
+    IF day % 5 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '20 hours';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), sarah_id, t, 'NOTE',
+              jsonb_build_object('text', CASE day % 10
+                WHEN 0 THEN 'Felt tired today, skipped afternoon walk'
+                ELSE 'Good control, stress at work'
+              END), NULL);
+    END IF;
+
+    -- Notes for mike (every 7 days)
+    IF day % 7 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '21 hours';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), mike_id, t, 'NOTE',
+              jsonb_build_object('text', 'Travel day — meals irregular'), NULL);
+    END IF;
+
+    -- Site change every 3 days for sarah
+    IF day % 3 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '9 hours';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), sarah_id, t, 'SITE_CHANGE',
+              jsonb_build_object('location', CASE (day / 3) % 4
+                WHEN 0 THEN 'abdomen left'
+                WHEN 1 THEN 'abdomen right'
+                WHEN 2 THEN 'upper arm left'
+                ELSE 'upper arm right'
+              END), 'Infusion set change');
+    END IF;
+
+    -- Site change every 3 days for mike
+    IF day % 3 = 1 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '8 hours' + INTERVAL '30 minutes';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), mike_id, t, 'SITE_CHANGE',
+              jsonb_build_object('location', CASE (day / 3) % 2
+                WHEN 0 THEN 'abdomen'
+                ELSE 'upper arm'
+              END), NULL);
+    END IF;
+
+    -- Sensor insert every 7 days for sarah
+    IF day % 7 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '9 hours' + INTERVAL '15 minutes';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), sarah_id, t, 'SENSOR_INSERT',
+              jsonb_build_object('sensor', 'Dexcom G7'), 'New sensor');
+    END IF;
+
+    -- Sensor insert every 10 days for mike
+    IF day % 10 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '8 hours';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), mike_id, t, 'SENSOR_INSERT',
+              jsonb_build_object('sensor', 'Libre 3'), NULL);
+    END IF;
+
+    -- Insulin change every 14 days for sarah
+    IF day % 14 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '9 hours' + INTERVAL '30 minutes';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), sarah_id, t, 'INSULIN_CHANGE',
+              jsonb_build_object('insulinType', 'Humalog'), 'New cartridge');
+    END IF;
+
+    -- Insulin change every 14 days for mike
+    IF day % 14 = 1 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '8 hours' + INTERVAL '45 minutes';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), mike_id, t, 'INSULIN_CHANGE',
+              jsonb_build_object('insulinType', 'Novolog'), NULL);
+    END IF;
+
   END LOOP;
 
   -- Weekly activity entries for sarah (running, moderate)
