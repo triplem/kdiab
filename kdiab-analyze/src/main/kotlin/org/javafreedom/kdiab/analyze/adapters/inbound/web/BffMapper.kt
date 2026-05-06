@@ -78,6 +78,8 @@ data class ProfileSummaryDto(
     val createdAt: String? = null,
     val validFrom: String? = null,
     val previousProfileId: String? = null,
+    val activatedAt: String? = null,
+    val archivedAt: String? = null,
 )
 
 fun Timeline.toResponse() = TimelineResponse(
@@ -105,6 +107,16 @@ fun AgpResult.toResponse() = AgpResponseDto(
 
 fun ProfilesResult.toResponse() = ProfilesResponseDto(
     profiles = profiles.map {
-        ProfileSummaryDto(it.id, it.userId, it.status, it.name, it.createdAt, it.validFrom, it.previousProfileId)
+        ProfileSummaryDto(
+            it.id,
+            it.userId,
+            it.status,
+            it.name,
+            it.createdAt,
+            it.validFrom,
+            it.previousProfileId,
+            it.activatedAt,
+            it.archivedAt,
+        )
     },
 )

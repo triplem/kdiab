@@ -24,6 +24,8 @@ data class ProfileDto(
     val createdAt: String? = null,
     val validFrom: String? = null,
     val previousProfileId: String? = null,
+    val activatedAt: String? = null,
+    val archivedAt: String? = null,
 )
 
 class ProfilesClient(

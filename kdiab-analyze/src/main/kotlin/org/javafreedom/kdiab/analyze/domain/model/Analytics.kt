@@ -37,6 +37,8 @@ data class ProfileSummary(
     val createdAt: String?,
     val validFrom: String?,
     val previousProfileId: String?,
+    val activatedAt: String? = null,
+    val archivedAt: String? = null,
 )
 
 data class ProfilesResult(

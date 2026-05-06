@@ -171,4 +171,4 @@ src/
 - **No generated Paths**: `api/openapi.yaml` is used only for TypeScript client generation and Swagger UI. The backend uses manual Ktor routing (not the OpenAPI server stubs) because the aggregation logic doesn't map cleanly to generated controller stubs.
 - **Parallel upstream calls**: `TimelineService` fetches measures and treatments concurrently via `coroutineScope { async {} }` to minimise latency.
 - **mmol/L handling**: conversion happens in `AnalyticsService` before computing HbA1c; the AGP and TIR thresholds are always in mg/dL regardless of the user's preferred unit.
-- **ProfileSummary has no activation timestamps**: the kdiab-profiles API does not expose `activatedAt`/`archivedAt` — only `createdAt` and `status`. `ProfilesService` filters by status (ACTIVE/ARCHIVED) rather than timeframe overlap.
+- **ProfileSummary includes activation timestamps**: `activatedAt` and `archivedAt` are forwarded from the kdiab-profiles API (nullable). `ProfilesService` filters by status (ACTIVE/ARCHIVED) rather than timeframe overlap.

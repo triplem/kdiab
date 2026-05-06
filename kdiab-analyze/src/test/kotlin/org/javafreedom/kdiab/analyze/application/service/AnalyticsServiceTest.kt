@@ -1,7 +1,6 @@
 package org.javafreedom.kdiab.analyze.application.service
 
 import io.mockk.coEvery
-import io.mockk.eq
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
