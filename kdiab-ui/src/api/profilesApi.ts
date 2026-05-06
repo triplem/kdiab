@@ -30,6 +30,8 @@ export interface Profile {
   archivedAt?: string
   previousProfileId?: string
   proposalReason?: string | null
+  createdBy?: string | null
+  rejectionReason?: string | null
 }
 
 export interface Insulin {
@@ -48,8 +50,11 @@ export const profilesApi = {
     axiosInstance.post(`${BASE}/users/${userId}/profiles/${profileId}/activate`),
   acceptProposedProfile: (userId: string, profileId: string) =>
     axiosInstance.post(`${BASE}/users/${userId}/profiles/${profileId}/accept`),
-  rejectProposedProfile: (userId: string, profileId: string) =>
-    axiosInstance.post(`${BASE}/users/${userId}/profiles/${profileId}/reject`),
+  rejectProposedProfile: (userId: string, profileId: string, reason?: string) =>
+    axiosInstance.post(
+      `${BASE}/users/${userId}/profiles/${profileId}/reject`,
+      reason != null ? { reason } : undefined,
+    ),
   getProfileHistory: (userId: string, from: string, to: string) =>
     axiosInstance.get<Profile[]>(`${BASE}/users/${userId}/profiles/history`, {
       params: { from, to },

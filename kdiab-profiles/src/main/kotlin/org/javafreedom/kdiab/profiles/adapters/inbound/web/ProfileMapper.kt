@@ -13,7 +13,11 @@ import org.javafreedom.kdiab.profiles.api.models.TargetSegment
 import org.javafreedom.kdiab.profiles.domain.model.Profile as DomainProfile
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 
-fun CreateProfileRequest.toDomain(userId: Uuid, status: ProfileStatus = ProfileStatus.DRAFT): DomainProfile {
+fun CreateProfileRequest.toDomain(
+    userId: Uuid,
+    status: ProfileStatus = ProfileStatus.DRAFT,
+    createdBy: Uuid? = null
+): DomainProfile {
     return DomainProfile(
         id = Uuid.random(),
         userId = userId,
@@ -23,6 +27,7 @@ fun CreateProfileRequest.toDomain(userId: Uuid, status: ProfileStatus = ProfileS
         status = status,
         createdAt = Clock.System.now(),
         proposalReason = this.proposalReason,
+        createdBy = createdBy,
         basal = this.basal?.map {
             org.javafreedom.kdiab.profiles.domain.model.BasalSegment(
                 kotlinx.datetime.LocalTime.parse(it.startTime),
@@ -107,6 +112,8 @@ fun DomainProfile.toApi(): Profile {
         activatedAt = this.activatedAt?.toString(),
         archivedAt = this.archivedAt?.toString(),
         proposalReason = this.proposalReason,
+        createdBy = this.createdBy?.toString(),
+        rejectionReason = this.rejectionReason,
         basal = this.basal.map { BasalSegment(it.startTime.toString(), it.value) },
         icr = this.icr.map { IcrSegment(it.startTime.toString(), it.value) },
         isf = this.isf.map { IsfSegment(it.startTime.toString(), it.value) },

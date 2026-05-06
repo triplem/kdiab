@@ -31,4 +31,6 @@ export const measuresApi = {
     axiosInstance.delete(`${BASE}/users/${userId}/measures`, { data: body }),
   createMeasure: (userId: string, body: Record<string, unknown>) =>
     axiosInstance.post<MeasureResponse>(`${BASE}/users/${userId}/measures`, body),
+  updateMeasure: (userId: string, measureId: string, body: Record<string, unknown>) =>
+    axiosInstance.put<MeasureResponse>(`${BASE}/users/${userId}/measures/${measureId}`, body),
 }

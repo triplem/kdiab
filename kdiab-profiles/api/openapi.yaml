@@ -400,7 +400,7 @@ paths:
   /users/{userId}/profiles/{profileId}/reject:
     post:
       summary: Reject a proposed profile
-      description: Sets a PROPOSED profile to ARCHIVED.
+      description: Sets a PROPOSED profile to ARCHIVED. An optional reason may be provided.
       operationId: rejectProposedProfile
       parameters:
         - name: userId
@@ -415,6 +415,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectProfileRequest'
       responses:
         '200':
           description: Profile rejected
@@ -520,6 +526,15 @@ components:
           type: string
           nullable: true
           description: Optional clinical rationale for the proposed profile change (doctor-only).
+        createdBy:
+          type: string
+          format: uuid
+          nullable: true
+          description: UUID of the doctor who created this profile proposal (populated server-side for PROPOSED profiles).
+        rejectionReason:
+          type: string
+          nullable: true
+          description: Optional reason provided by the patient when rejecting a proposed profile.
         basal:
           type: array
           items:
@@ -633,6 +648,14 @@ components:
         - startTime
         - low
         - high
+
+    RejectProfileRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          nullable: true
+          description: Optional reason for rejecting the proposed profile.
 
     Insulin:
       type: object

@@ -12,6 +12,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.profiles.api.models.CreateProfileRequest
+import org.javafreedom.kdiab.profiles.api.models.RejectProfileRequest
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
@@ -131,7 +132,10 @@ private fun Route.createProfile(profileService: ProfileService, auditLogReposito
         auditIfDoctor(call, principal, targetUserId, "profiles.create", auditLogRepository)
 
         val request = call.receive<CreateProfileRequest>()
-        val domainProfile = request.toDomain(targetUserId, status)
+        val createdBy = if (status == org.javafreedom.kdiab.profiles.domain.model.ProfileStatus.PROPOSED) {
+            principal?.userId
+        } else null
+        val domainProfile = request.toDomain(targetUserId, status, createdBy)
         val created = profileService.createProfile(domainProfile)
         logger.info { "Created profile ${created.id} for user $targetUserId with status $status" }
         call.respond(HttpStatusCode.Created, created.toApi())
@@ -206,7 +210,8 @@ private fun Route.rejectProposedProfile(profileService: ProfileService, auditLog
         auditIfDoctor(call, principal, targetUserId, "profiles.reject", auditLogRepository)
 
         val profileId = parseUuid(params.profileId)
-        val rejected = profileService.rejectProposedProfile(targetUserId, profileId)
+        val rejectRequest = runCatching { call.receive<RejectProfileRequest>() }.getOrNull()
+        val rejected = profileService.rejectProposedProfile(targetUserId, profileId, rejectRequest?.reason)
         call.respond(rejected.toApi())
     }
 }
