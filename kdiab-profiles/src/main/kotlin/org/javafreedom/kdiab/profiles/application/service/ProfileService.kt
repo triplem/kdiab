@@ -59,19 +59,12 @@ class ProfileService(private val profileRepository: ProfileRepository) {
 
                 // Atomic activation (archives old if exists, activates new).
                 // The DB enforces IDX_PROFILES_USER_ACTIVE (unique partial index on ACTIVE per user).
-                // If two concurrent requests race here, the second will hit the constraint and we
-                // surface that as a 409 Conflict rather than a raw 500.
+                // If two concurrent requests race here, the second will hit the constraint —
+                // ExposedProfileRepository translates that to a ConflictException (409).
                 val currentActive = profileRepository.findActiveByUserId(userId)
                 val oldActive = currentActive?.copy(status = ProfileStatus.ARCHIVED, archivedAt = now)
 
-                return try {
-                        profileRepository.activateProfile(oldActive, profileToActivate)
-                } catch (e: org.jetbrains.exposed.v1.exceptions.ExposedSQLException) {
-                        logger.warn(e) { "Concurrent activation conflict for user $userId" }
-                        throw ConflictException(
-                                "Another profile was activated concurrently. Please refresh and try again."
-                        )
-                }
+                return profileRepository.activateProfile(oldActive, profileToActivate)
         }
 
         suspend fun acceptProposedProfile(userId: Uuid, profileId: Uuid): Profile {
@@ -90,14 +83,7 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                 val oldActive = currentActive?.copy(status = ProfileStatus.ARCHIVED, archivedAt = now)
                 val newActive = profile.copy(status = ProfileStatus.ACTIVE, activatedAt = now)
 
-                return try {
-                        profileRepository.activateProfile(oldActive, newActive)
-                } catch (e: org.jetbrains.exposed.v1.exceptions.ExposedSQLException) {
-                        logger.warn(e) { "Concurrent activation conflict accepting proposal for user $userId" }
-                        throw ConflictException(
-                                "Another profile was activated concurrently. Please refresh and try again."
-                        )
-                }
+                return profileRepository.activateProfile(oldActive, newActive)
         }
 
         suspend fun rejectProposedProfile(userId: Uuid, profileId: Uuid): Profile {
