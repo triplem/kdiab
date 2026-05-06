@@ -8,4 +8,6 @@ class UpstreamException(
     val statusCode: Int,
     message: String,
     cause: Throwable? = null,
-) : RuntimeException("[$service] HTTP $statusCode: $message", cause)
+    val responseBody: String? = null,
+    val url: String? = null,
+) : RuntimeException("[$service] HTTP $statusCode${url?.let { " at $it" } ?: ""}: $message", cause)
