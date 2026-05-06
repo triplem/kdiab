@@ -52,6 +52,8 @@ object Profiles : Table("profiles") {
     val timeZone = varchar("time_zone", 50)
     val createdAt = timestamp("created_at")
     val proposalReason = text("proposal_reason").nullable()
+    val createdBy = uuid("created_by").nullable()
+    val rejectionReason = text("rejection_reason").nullable()
     val segments = jsonb<ProfileSegments>("segments", Json.Default)
 
     override val primaryKey = PrimaryKey(id)
@@ -279,6 +281,8 @@ class ExposedProfileRepository(
             it[timeZone] = profile.timeZone.id
             it[createdAt] = java.time.Instant.ofEpochMilli(profile.createdAt.toEpochMilliseconds())
             it[proposalReason] = profile.proposalReason
+            it[createdBy] = profile.createdBy
+            it[rejectionReason] = profile.rejectionReason
             it[segments] = ProfileSegments(
                 basal = profile.basal,
                 icr = profile.icr,
@@ -311,6 +315,7 @@ class ExposedProfileRepository(
             it[units] = profile.units
             it[durationOfAction] = profile.durationOfAction
             it[timeZone] = profile.timeZone.id
+            it[rejectionReason] = profile.rejectionReason
             it[segments] = ProfileSegments(
                 basal = profile.basal,
                 icr = profile.icr,
@@ -369,6 +374,8 @@ class ExposedProfileRepository(
                 Instant.fromEpochMilliseconds(it.toEpochMilli())
             },
             proposalReason = row[Profiles.proposalReason],
+            createdBy = row[Profiles.createdBy],
+            rejectionReason = row[Profiles.rejectionReason],
             basal = pSectors.basal,
             icr = pSectors.icr,
             isf = pSectors.isf,

@@ -210,7 +210,10 @@
     "confirmReject": "Rejecting this proposal will permanently archive it. Continue?",
     "confirmActivate": "Activating this profile will archive your current active configuration. Continue?",
     "proposalReason": "Clinical rationale",
-    "proposalReasonPlaceholder": "e.g. Reducing overnight basal due to 3am lows"
+    "proposalReasonPlaceholder": "e.g. Reducing overnight basal due to 3am lows",
+    "proposedByDoctor": "Proposed by doctor",
+    "rejectReasonLabel": "Reason for rejection (optional)",
+    "rejectReasonPlaceholder": "e.g. I prefer to keep my current settings"
   },
   "tabs": {
     "timeline": "Timeline",

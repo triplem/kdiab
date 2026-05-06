@@ -25,6 +25,8 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
   const [expandedProfileId, setExpandedProfileId] = useState<string | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
+  const [pendingRejectProfileId, setPendingRejectProfileId] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState<string>('')
   const { formatDate, formatTime } = useTimeFormat()
   const { t } = useTranslation()
 
@@ -52,9 +54,11 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
   })
 
   const rejectMutation = useMutation({
-    mutationFn: (profileId: string) => profilesApi.rejectProposedProfile(userId, profileId),
+    mutationFn: ({ profileId, reason }: { profileId: string; reason?: string }) =>
+      profilesApi.rejectProposedProfile(userId, profileId, reason),
     onSuccess: () => {
       setMutationError(null)
+      setRejectReason('')
       void queryClient.invalidateQueries({ queryKey: ['profiles', userId] })
     },
     onError: onMutationError,
@@ -80,12 +84,8 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
 
   const handleReject = (e: React.MouseEvent, profileId: string) => {
     e.stopPropagation()
-    setConfirmAction({
-      title: t('confirm.deleteTitle'),
-      message: t('profileList.confirmReject'),
-      danger: true,
-      action: () => rejectMutation.mutate(profileId),
-    })
+    setRejectReason('')
+    setPendingRejectProfileId(profileId)
   }
 
   const handleActivate = (e: React.MouseEvent, profileId: string) => {
@@ -224,6 +224,11 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
                 {t('profileList.proposedOn', { date: formatDate(profile.createdAt) })}
               </p>
             )}
+            {profile.createdBy && (
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)', width: '100%' }}>
+                {t('profileList.proposedByDoctor')}
+              </p>
+            )}
             {profile.proposalReason && (
               <p className="proposal-reason">{profile.proposalReason}</p>
             )}
@@ -243,7 +248,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
               disabled={rejectMutation.isPending}
               aria-label={`Reject proposed profile ${profile.name}`}
             >
-              {rejectMutation.isPending && rejectMutation.variables === profile.id
+              {rejectMutation.isPending && rejectMutation.variables?.profileId === profile.id
                 ? t('profileList.rejecting')
                 : t('profileList.reject')}
             </button>
@@ -255,6 +260,71 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
 
   return (
     <div className="profile-list">
+      {pendingRejectProfileId != null && (
+        <div
+          className="modal-overlay"
+          aria-hidden="true"
+          onClick={() => { setPendingRejectProfileId(null); setRejectReason('') }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reject-modal-title"
+            className="modal-box"
+            style={{ maxWidth: '400px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 id="reject-modal-title" className="modal-title">{t('confirm.deleteTitle')}</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>{t('profileList.confirmReject')}</p>
+            <div style={{ marginBottom: '1rem' }}>
+              <label
+                htmlFor="reject-reason"
+                style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}
+              >
+                {t('profileList.rejectReasonLabel')}
+              </label>
+              <textarea
+                id="reject-reason"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder={t('profileList.rejectReasonPlaceholder')}
+                rows={3}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '0.5rem',
+                  borderRadius: '4px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-input)',
+                  color: 'var(--text-primary)',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+            <div className="modal-footer">
+              <button
+                type="button"
+                onClick={() => { setPendingRejectProfileId(null); setRejectReason('') }}
+                className="btn outline"
+              >
+                {t('confirm.cancelLabel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  rejectMutation.mutate({ profileId: pendingRejectProfileId, reason: rejectReason || undefined })
+                  setPendingRejectProfileId(null)
+                  setRejectReason('')
+                }}
+                className="btn danger"
+                disabled={rejectMutation.isPending}
+              >
+                {t('confirm.confirmLabel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {confirmAction && (
         <ConfirmModal
           isOpen={true}

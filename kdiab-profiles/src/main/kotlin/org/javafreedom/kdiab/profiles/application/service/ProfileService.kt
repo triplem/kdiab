@@ -86,7 +86,7 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                 return profileRepository.activateProfile(oldActive, newActive)
         }
 
-        suspend fun rejectProposedProfile(userId: Uuid, profileId: Uuid): Profile {
+        suspend fun rejectProposedProfile(userId: Uuid, profileId: Uuid, reason: String? = null): Profile {
                 val profile = getProfileOrThrow(profileId)
                 checkOwnership(profile, userId)
 
@@ -95,7 +95,11 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                                 .BusinessValidationException("Only PROPOSED profiles can be rejected")
                 }
 
-                val rejected = profile.copy(status = ProfileStatus.ARCHIVED, archivedAt = Clock.System.now())
+                val rejected = profile.copy(
+                        status = ProfileStatus.ARCHIVED,
+                        archivedAt = Clock.System.now(),
+                        rejectionReason = reason
+                )
                 return profileRepository.update(rejected)
         }
 
