@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { treatmentsApi } from '../../api/treatmentsApi'
 import type { TreatmentResponse } from '../../api/treatmentsApi'
+import { AddTreatmentModal } from './AddTreatmentModal'
+import type { TreatmentEditMode } from './AddTreatmentModal'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
 import { ConfirmModal } from '../../components/ConfirmModal'
@@ -10,6 +12,39 @@ interface TreatmentListProps {
   userId: string
   canDelete: boolean
   canArchive: boolean
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  insulin: 'Insulin (U)',
+  insulinType: 'Insulin Type',
+  carbs: 'Carbohydrates (g)',
+  absorptionTime: 'Absorption Time (h)',
+  rate: 'Rate (U/h)',
+  duration: 'Duration (min)',
+  intensity: 'Intensity',
+  name: 'Activity',
+  text: 'Note',
+  location: 'Location',
+  sensor: 'Sensor',
+  reason: 'Reason',
+  immediatePercent: 'Immediate (%)',
+}
+
+function renderPayload(data: Record<string, unknown>): React.ReactNode {
+  const entries = Object.entries(data)
+  if (entries.length === 0) return <span style={{ color: 'var(--text-secondary)' }}>—</span>
+  return (
+    <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '2px 12px' }}>
+      {entries.map(([key, val]) => (
+        <React.Fragment key={key}>
+          <dt style={{ color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.85rem' }}>
+            {FIELD_LABELS[key] ?? key}:
+          </dt>
+          <dd style={{ margin: 0, fontSize: '0.85rem' }}>{String(val)}</dd>
+        </React.Fragment>
+      ))}
+    </dl>
+  )
 }
 
 function formatDuration(minutes: number): string {
@@ -67,39 +102,6 @@ const renderDataSummary = (tr: TreatmentResponse): string => {
   }
 }
 
-const FIELD_LABELS: Record<string, string> = {
-  insulin: 'Insulin (U)',
-  insulinType: 'Insulin Type',
-  carbs: 'Carbohydrates (g)',
-  absorptionTime: 'Absorption Time (h)',
-  rate: 'Rate (U/h)',
-  duration: 'Duration (min)',
-  intensity: 'Intensity',
-  name: 'Activity',
-  text: 'Note',
-  location: 'Location',
-  sensor: 'Sensor',
-  reason: 'Reason',
-  immediatePercent: 'Immediate (%)',
-}
-
-function renderPayload(data: Record<string, unknown>): React.ReactNode {
-  const entries = Object.entries(data)
-  if (entries.length === 0) return <span style={{ color: 'var(--text-secondary)' }}>—</span>
-  return (
-    <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '2px 12px' }}>
-      {entries.map(([key, val]) => (
-        <React.Fragment key={key}>
-          <dt style={{ color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.85rem' }}>
-            {FIELD_LABELS[key] ?? key}:
-          </dt>
-          <dd style={{ margin: 0, fontSize: '0.85rem' }}>{String(val)}</dd>
-        </React.Fragment>
-      ))}
-    </dl>
-  )
-}
-
 interface ConfirmAction {
   title: string
   message: string
@@ -114,6 +116,9 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
+  const [editTarget, setEditTarget] = useState<TreatmentEditMode | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
 
   const { data: treatments = [], isLoading, isError } = useQuery<TreatmentResponse[]>({
     queryKey: ['treatments', userId],
@@ -149,6 +154,26 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
       setMutationError(apiErr?.response?.data?.message ?? apiErr?.message ?? t('list.mutationError'))
     },
   })
+
+  const handleEditSave = async (treatment: { type: string; treatedAt: string; data: Record<string, unknown>; notes?: string }) => {
+    if (!editTarget) return
+    setIsSavingEdit(true)
+    setEditError(null)
+    try {
+      await treatmentsApi.updateTreatment(userId, editTarget.id, {
+        treatedAt: treatment.treatedAt,
+        data: treatment.data,
+        notes: treatment.notes,
+      })
+      setEditTarget(null)
+      void queryClient.invalidateQueries({ queryKey: ['treatments', userId] })
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
+      setEditError(apiErr?.response?.data?.message ?? apiErr?.message ?? t('list.mutationError'))
+    } finally {
+      setIsSavingEdit(false)
+    }
+  }
 
   const toggleSelect = (id: string) => {
     const next = new Set(selectedIds)
@@ -187,29 +212,33 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
   }
 
   const handleBulkArchive = () => {
-    setConfirmAction({
-      title: t('confirm.archiveTitle'),
-      message: t('list.confirmBulkArchive'),
-      action: () => archiveMutation.mutate(Array.from(selectedIds)),
-    })
+    archiveMutation.mutate(Array.from(selectedIds))
   }
 
   const handleSingleArchive = (id: string) => {
-    setConfirmAction({
-      title: t('confirm.archiveTitle'),
-      message: t('list.confirmArchive'),
-      action: () => archiveMutation.mutate([id]),
-    })
+    archiveMutation.mutate([id])
   }
 
-  const showCheckboxColumn = canArchive || canDelete
-  const colSpan = showCheckboxColumn ? 4 : 3
+  const showCheckbox = canArchive || canDelete
+  const colSpan = showCheckbox ? 4 : 3
 
   if (isLoading) return <div style={{ padding: '2rem' }}>{t('list.loading')}</div>
   if (isError) return <div style={{ padding: '2rem', color: 'var(--accent-danger)' }}>{t('list.error')}</div>
 
   return (
     <div className="measure-list-container">
+      {editTarget && (
+        <AddTreatmentModal
+          isOpen={true}
+          onClose={() => { setEditTarget(null); setEditError(null) }}
+          onSave={(tr) => { void handleEditSave(tr) }}
+          onSaveMeal={() => { /* no-op in edit mode */ }}
+          isSaving={isSavingEdit}
+          error={editError}
+          editMode={editTarget}
+        />
+      )}
+
       {confirmAction && (
         <ConfirmModal
           isOpen={true}
@@ -263,7 +292,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
       >
         <thead>
           <tr style={{ borderBottom: '2px solid var(--table-border-header)' }}>
-            {showCheckboxColumn && (
+            {showCheckbox && (
               <th style={{ padding: '12px 8px' }}>
                 <input
                   type="checkbox"
@@ -290,7 +319,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                   }}
                   onClick={() => toggleExpand(tr.id)}
                 >
-                  {showCheckboxColumn && (
+                  {showCheckbox && (
                     <td style={{ padding: '12px 8px' }} onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
@@ -327,30 +356,45 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                         color: 'var(--text-primary)',
                       }}
                     >
-                      {t('treatmentModal.types.' + tr.type, { defaultValue: tr.type })}
+                      {t(`treatmentModal.types.${tr.type}`, { defaultValue: tr.type })}
                     </span>
                   </td>
-                  <td style={{ padding: '12px 8px', display: 'flex', gap: '0.4rem' }} onClick={(e) => e.stopPropagation()}>
-                    {canArchive && (
+                  <td style={{ padding: '12px 8px' }} onClick={(e) => e.stopPropagation()}>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
                       <button
                         className="btn outline"
                         style={{ padding: '2px 8px', fontSize: '0.8rem' }}
-                        disabled={archiveMutation.isPending}
-                        onClick={() => handleSingleArchive(tr.id)}
+                        onClick={() => setEditTarget({
+                          id: tr.id,
+                          type: tr.type,
+                          treatedAt: tr.treatedAt,
+                          data: tr.data as Record<string, unknown>,
+                          notes: tr.notes,
+                        })}
                       >
-                        {t('list.archive')}
+                        {t('list.edit', { defaultValue: 'Edit' })}
                       </button>
-                    )}
-                    {canDelete && (
-                      <button
-                        className="btn danger"
-                        style={{ padding: '2px 8px', fontSize: '0.8rem' }}
-                        disabled={deleteMutation.isPending}
-                        onClick={() => handleSingleDelete(tr.id)}
-                      >
-                        {t('list.delete')}
-                      </button>
-                    )}
+                      {canArchive && (
+                        <button
+                          className="btn outline"
+                          style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+                          disabled={archiveMutation.isPending}
+                          onClick={() => handleSingleArchive(tr.id)}
+                        >
+                          {t('list.archive')}
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          className="btn danger"
+                          style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+                          disabled={deleteMutation.isPending}
+                          onClick={() => handleSingleDelete(tr.id)}
+                        >
+                          {t('list.delete')}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
                 {isExpanded && (
@@ -387,9 +431,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                           )}
                         </div>
                         <div>
-                          <p>
-                            <strong>{t('list.dataPayload')}:</strong>
-                          </p>
+                          <p><strong>{t('list.dataPayload')}:</strong></p>
                           {renderPayload(tr.data as Record<string, unknown>)}
                         </div>
                       </div>

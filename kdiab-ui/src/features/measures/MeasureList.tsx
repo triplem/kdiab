@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { measuresApi } from '../../api/measuresApi'
+import { AddMeasureModal } from './AddMeasureModal'
+import type { MeasureEditMode } from './AddMeasureModal'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
@@ -29,6 +31,7 @@ interface PagedMeasures {
 interface MeasureListProps {
   userId: string
   glucoseUnit?: string
+  weightUnit?: string
   canArchive: boolean
   canDelete: boolean
 }
@@ -135,6 +138,7 @@ interface ConfirmAction {
 export const MeasureList: React.FC<MeasureListProps> = ({
   userId,
   glucoseUnit = 'mg/dL',
+  weightUnit = 'kg',
   canArchive,
   canDelete,
 }) => {
@@ -149,6 +153,9 @@ export const MeasureList: React.FC<MeasureListProps> = ({
   const [measures, setMeasures] = useState<MeasureResponse[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
+  const [editTarget, setEditTarget] = useState<MeasureEditMode | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
 
   const { isLoading, isError } = useQuery({
     queryKey: ['measures', userId, page, pageSize],
@@ -203,6 +210,25 @@ export const MeasureList: React.FC<MeasureListProps> = ({
     onError: onMutationError,
   })
 
+  const handleEditSave = async (measure: { type: string; measuredAt: string; source: string; data: Record<string, unknown> }) => {
+    if (!editTarget) return
+    setIsSavingEdit(true)
+    setEditError(null)
+    try {
+      await measuresApi.updateMeasure(userId, editTarget.id, {
+        measuredAt: measure.measuredAt,
+        data: measure.data,
+      })
+      setEditTarget(null)
+      resetAndRefetch()
+    } catch (err: unknown) {
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
+      setEditError(apiErr?.response?.data?.message ?? apiErr?.message ?? t('list.mutationError'))
+    } finally {
+      setIsSavingEdit(false)
+    }
+  }
+
   const toggleSelect = (id: string) => {
     const next = new Set(selectedIds)
     if (next.has(id)) next.delete(id)
@@ -256,6 +282,19 @@ export const MeasureList: React.FC<MeasureListProps> = ({
 
   return (
     <div className="measure-list-container">
+      {editTarget && (
+        <AddMeasureModal
+          isOpen={true}
+          onClose={() => { setEditTarget(null); setEditError(null) }}
+          onSave={(m) => { void handleEditSave(m) }}
+          glucoseUnit={glucoseUnit}
+          weightUnit={weightUnit}
+          isSaving={isSavingEdit}
+          error={editError}
+          editMode={editTarget}
+        />
+      )}
+
       {confirmAction && (
         <ConfirmModal
           isOpen={true}
@@ -402,6 +441,13 @@ export const MeasureList: React.FC<MeasureListProps> = ({
                     </span>
                   </td>
                   <td style={{ padding: '12px 8px' }} onClick={(e) => e.stopPropagation()}>
+                    <button
+                      className="btn outline"
+                      style={{ marginRight: '5px', padding: '2px 8px', fontSize: '0.8rem' }}
+                      onClick={() => setEditTarget({ id: m.id, type: m.type, measuredAt: m.measuredAt, data: m.data })}
+                    >
+                      {t('list.edit', { defaultValue: 'Edit' })}
+                    </button>
                     {canArchive && (
                       <button
                         className="btn outline"

@@ -22,4 +22,13 @@ export const treatmentsApi = {
     axiosInstance.delete(`${BASE}/users/${userId}/treatments`, { data: body }),
   archiveTreatments: (userId: string, body: { treatmentIds: string[] }) =>
     axiosInstance.post(`${BASE}/users/${userId}/treatments/archive`, body),
+  updateTreatment: (
+    userId: string,
+    treatmentId: string,
+    body: { treatedAt: string; data: Record<string, unknown>; notes?: string },
+  ) =>
+    axiosInstance.put<TreatmentResponse>(
+      `${BASE}/users/${userId}/treatments/${treatmentId}`,
+      body,
+    ),
 }

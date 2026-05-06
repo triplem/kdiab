@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { ProfileList } from '../features/profiles/ProfileList'
 import { TimeFormatProvider } from '../context/TimeFormatContext'
 import '../i18n'

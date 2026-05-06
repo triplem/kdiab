@@ -32,6 +32,14 @@ export interface MealInput {
   carbs: number
 }
 
+export interface TreatmentEditMode {
+  id: string
+  type: string
+  treatedAt: string
+  data: Record<string, unknown>
+  notes?: string
+}
+
 interface AddTreatmentModalProps {
   isOpen: boolean
   onClose: () => void
@@ -39,6 +47,7 @@ interface AddTreatmentModalProps {
   onSaveMeal: (meal: MealInput) => void
   isSaving?: boolean
   error?: string | null
+  editMode?: TreatmentEditMode
 }
 
 const TREATMENT_TYPES: PatientTreatmentType[] = [
@@ -87,6 +96,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
   onSaveMeal,
   isSaving = false,
   error,
+  editMode,
 }) => {
   const { locale } = useTimeFormat()
   const { t } = useTranslation()
@@ -136,6 +146,75 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
   const [hypoCarbs, setHypoCarbs] = useState('')
   const [hypoReason, setHypoReason] = useState('')
 
+  // Pre-fill form when entering edit mode
+  useEffect(() => {
+    if (!editMode) return
+    setType(editMode.type as PatientTreatmentType)
+    const dt = new Date(editMode.treatedAt)
+    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16)
+    setTreatedAt(local)
+    setNotes(editMode.notes ?? '')
+    const d = editMode.data
+    switch (editMode.type) {
+      case 'BOLUS':
+      case 'CORRECTION_BOLUS':
+        setInsulinUnits(String(d.insulin ?? ''))
+        setInsulinType(String(d.insulinType ?? ''))
+        break
+      case 'BASAL':
+        setBasalInsulin(String(d.insulin ?? ''))
+        setBasalInsulinType(String(d.insulinType ?? ''))
+        setBasalDurationHours(d.duration != null ? String(Number(d.duration) / 60) : '')
+        break
+      case 'COMBO_BOLUS':
+        setComboInsulin(String(d.insulin ?? ''))
+        setComboSplitNow(String(d.splitNow ?? '50'))
+        setComboDurationMin(String(d.duration ?? ''))
+        break
+      case 'TEMP_BASAL':
+        setTempBasalRate(String(d.rate ?? ''))
+        setTempBasalDurationMin(String(d.duration ?? ''))
+        setTempBasalAbsolute(d.absolute !== false)
+        break
+      case 'PUMP_SUSPEND':
+        setPumpSuspendDurationMin(String(d.duration ?? ''))
+        setPumpSuspendReason(String(d.reason ?? ''))
+        break
+      case 'CARBS':
+        setCarbs(String(d.carbs ?? ''))
+        setAbsorptionTime(String(d.absorptionTime ?? ''))
+        break
+      case 'EXERCISE':
+        setExerciseDuration(String(d.duration ?? ''))
+        setExerciseIntensity((d.intensity as 'light' | 'moderate' | 'intense') ?? 'moderate')
+        break
+      case 'NOTE':
+        setNoteText(String(d.text ?? ''))
+        break
+      case 'SITE_CHANGE':
+        setSiteLocation(String(d.location ?? ''))
+        break
+      case 'SENSOR_INSERT':
+        setSensorModel(String(d.sensor ?? ''))
+        break
+      case 'INSULIN_CHANGE':
+        setNewInsulinType(String(d.insulinType ?? ''))
+        break
+      case 'ACTIVITY':
+        setActivityName(String(d.name ?? ''))
+        setActivityDuration(String(d.duration ?? ''))
+        setActivityIntensity((d.intensity as 'low' | 'moderate' | 'high') ?? 'moderate')
+        break
+      case 'HYPO_TREATMENT':
+        setHypoCarbs(String(d.carbs ?? ''))
+        setHypoReason(String(d.reason ?? ''))
+        break
+      default: break
+    }
+  }, [editMode])
+
   useEffect(() => {
     if (!isOpen) return
     firstInputRef.current?.focus()
@@ -148,6 +227,8 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
   }, [isOpen, onClose])
 
   if (!isOpen) return null
+
+  const isEditMode = !!editMode
 
   const buildData = (): Record<string, unknown> | null => {
     switch (type) {
@@ -231,7 +312,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
     e.preventDefault()
     setValidationError(null)
 
-    if (type === 'MEAL') {
+    if (type === 'MEAL' && !isEditMode) {
       const insulin = parseFloat(mealInsulin)
       const carbsVal = parseFloat(mealCarbs)
       if (isNaN(insulin) || insulin <= 0 || isNaN(carbsVal) || carbsVal <= 0) {
@@ -711,7 +792,9 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="treatment-modal-title" className="modal-title">
-          {t('treatmentModal.title')}
+          {isEditMode
+            ? t('treatmentModal.editTitle', { defaultValue: 'Edit Treatment' })
+            : t('treatmentModal.title')}
         </h2>
         {validationError && (
           <div role="alert" className="error" id="validation-error" style={{ marginBottom: '1rem' }}>
@@ -727,6 +810,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
               onChange={(e) => setType(e.target.value as PatientTreatmentType)}
               style={inputStyle}
               required
+              disabled={isEditMode}
             >
               {TREATMENT_TYPES.map((val) => (
                 <option key={val} value={val}>

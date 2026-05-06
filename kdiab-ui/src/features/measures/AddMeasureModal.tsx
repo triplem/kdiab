@@ -11,6 +11,13 @@ export interface MeasureInput {
   data: Record<string, unknown>
 }
 
+export interface MeasureEditMode {
+  id: string
+  type: string
+  measuredAt: string
+  data: Record<string, unknown>
+}
+
 interface AddMeasureModalProps {
   isOpen: boolean
   onClose: () => void
@@ -19,6 +26,7 @@ interface AddMeasureModalProps {
   weightUnit?: string
   isSaving?: boolean
   error?: string | null
+  editMode?: MeasureEditMode
 }
 
 const MEASURE_TYPES: MeasureType[] = [
@@ -60,6 +68,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
   weightUnit = 'kg',
   isSaving = false,
   error,
+  editMode,
 }) => {
   const { locale } = useTimeFormat()
   const { t } = useTranslation()
@@ -78,6 +87,34 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
   const [weightValue, setWeightValue] = useState('')
   const [pulseBpm, setPulseBpm] = useState('')
 
+  // Pre-fill form when entering edit mode
+  useEffect(() => {
+    if (!editMode) return
+    setType(editMode.type as MeasureType)
+    const dt = new Date(editMode.measuredAt)
+    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16)
+    setMeasuredAt(local)
+    const d = editMode.data
+    switch (editMode.type) {
+      case 'BGM': setBgmValue(String(d.value ?? '')); break
+      case 'CGM': setCgmValue(String(d.value ?? '')); break
+      case 'BG_CHECK': setBgCheckValue(String(d.value ?? '')); break
+      case 'BLOOD_PRESSURE':
+        setBpSystolic(String(d.systolic ?? ''))
+        setBpDiastolic(String(d.diastolic ?? ''))
+        break
+      case 'WEIGHT': setWeightValue(String(d.value ?? '')); break
+      case 'PULSE': setPulseBpm(String(d.value ?? '')); break
+      case 'KETONE_CHECK':
+        setKetones(String(d.value ?? ''))
+        setKetoneMethod((d.method as 'blood' | 'urine') ?? 'blood')
+        break
+      default: break
+    }
+  }, [editMode])
+
   useEffect(() => {
     if (!isOpen) return
     firstInputRef.current?.focus()
@@ -90,6 +127,8 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
   }, [isOpen, onClose])
 
   if (!isOpen) return null
+
+  const isEditMode = !!editMode
 
   const buildData = (): Record<string, unknown> | null => {
     switch (type) {
@@ -338,7 +377,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="modal-title" className="modal-title">
-          {t('modal.title')}
+          {isEditMode ? t('modal.editTitle', { defaultValue: 'Edit Measure' }) : t('modal.title')}
         </h2>
         {validationError && (
           <div role="alert" className="error" id="validation-error" style={{ marginBottom: '1rem' }}>
@@ -354,6 +393,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
               onChange={(e) => setType(e.target.value as MeasureType)}
               style={inputStyle}
               required
+              disabled={isEditMode}
             >
               {MEASURE_TYPES.map((val) => (
                 <option key={val} value={val}>
