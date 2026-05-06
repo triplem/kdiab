@@ -47,7 +47,7 @@ class BffRoutesTest {
             allowedPatients: List<String> = emptyList(),
         ): String = JWT.create()
             .withSubject(userId)
-            .withAudience(AUDIENCE)
+            .withAudience(AUDIENCE, "measure", "profile", "treatment")
             .withIssuer(ISSUER)
             .withClaim("roles", roles)
             .apply { if (allowedPatients.isNotEmpty()) withClaim("allowed_patients", allowedPatients) }
@@ -282,5 +282,19 @@ class BffRoutesTest {
     fun `hba1c - 400 when to param is missing`() = routeTest { _, _, _ ->
         val resp = client.get("/api/v1/users/$SARAH_ID/analytics/hba1c?from=$FROM") { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    // ── Missing upstream audiences (403) ─────────────────────────────────────
+
+    @Test
+    fun `timeline - 403 when JWT lacks upstream audiences`() = routeTest { _, _, _ ->
+        val tokenWithoutUpstreamAudiences = JWT.create()
+            .withSubject(SARAH_ID)
+            .withAudience(AUDIENCE)
+            .withIssuer(ISSUER)
+            .withClaim("roles", listOf("PATIENT"))
+            .sign(Algorithm.HMAC256(JWT_SECRET))
+        val resp = client.get(timelineUrl(SARAH_ID)) { bearerAuth(tokenWithoutUpstreamAudiences) }
+        assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 }

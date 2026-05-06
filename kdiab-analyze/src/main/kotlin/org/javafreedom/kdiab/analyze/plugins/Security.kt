@@ -77,7 +77,10 @@ fun Application.configureSecurity() {
                     val glucoseUnit = credential.payload.getClaim("glucose_unit").asString() ?: "mg/dL"
                     val weightUnit = credential.payload.getClaim("weight_unit").asString() ?: "kg"
 
-                    UserPrincipal(userId, roles, allowedPatients, glucoseUnit, weightUnit)
+                    UserPrincipal(
+                        userId, roles, allowedPatients, glucoseUnit, weightUnit,
+                        audiences = credential.payload.audience ?: emptyList(),
+                    )
                 } else {
                     null
                 }
@@ -92,6 +95,7 @@ data class UserPrincipal(
     val allowedPatients: Set<Uuid>,
     val glucoseUnit: String = "mg/dL",
     val weightUnit: String = "kg",
+    val audiences: List<String> = emptyList(),
 ) {
     fun isAdmin() = roles.contains(Role.ADMIN)
     fun isDoctor() = roles.contains(Role.DOCTOR)

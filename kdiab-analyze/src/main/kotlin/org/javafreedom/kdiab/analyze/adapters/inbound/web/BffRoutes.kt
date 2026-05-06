@@ -118,6 +118,14 @@ private fun extractContext(call: ApplicationCall): RequestContext {
         }
         throw AuthorizationException("Access Not Authorized")
     }
+    val required = listOf("measure", "profile", "treatment")
+    val missing = required.filter { it !in principal!!.audiences }
+    if (missing.isNotEmpty()) {
+        throw AuthorizationException(
+            "JWT is missing required upstream audiences: ${missing.joinToString(", ")}. " +
+            "Configure your Keycloak client with audience mappers for all four services.",
+        )
+    }
     val authorization = call.request.headers[HttpHeaders.Authorization]
         ?: throw AuthorizationException("Missing Authorization header")
     val correlationId = call.callId ?: ""

@@ -52,7 +52,7 @@ class BffE2ETest : BehaviorSpec({
         allowedPatients: List<String> = emptyList(),
     ): String = JWT.create()
         .withSubject(userId)
-        .withAudience(audience)
+        .withAudience(audience, "measure", "profile", "treatment")
         .withIssuer(issuer)
         .withClaim("roles", roles)
         .withClaim("glucose_unit", "mg/dL")
