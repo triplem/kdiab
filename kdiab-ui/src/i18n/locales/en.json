@@ -285,7 +285,9 @@
     "tooltipBasal": "Units of insulin per hour. Typical range: 0.2–1.5 U/h",
     "tooltipIcr": "Grams of carbs covered by 1 unit of insulin. Typical: 1:8 to 1:20",
     "tooltipIsf": "How much 1 unit of insulin lowers your glucose. Typical: 30–80 mg/dL per unit",
-    "tooltipTarget": "Your goal glucose range. ADA recommends 80–130 mg/dL pre-meal for most adults"
+    "tooltipTarget": "Your goal glucose range. ADA recommends 80–130 mg/dL pre-meal for most adults",
+    "timeZone": "Timezone",
+    "timeZonePlaceholder": "IANA timezone (e.g. UTC, Europe/Berlin)"
   },
   "services": {
     "label": "Services",

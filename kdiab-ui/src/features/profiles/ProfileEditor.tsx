@@ -58,6 +58,7 @@ interface ProfileFormValues {
   name: string
   insulinType: string
   durationOfAction: number
+  timeZone?: string
   proposalReason?: string
   basal: { startTime: string; value: number }[]
   icr: { startTime: string; value: number }[]
@@ -135,6 +136,7 @@ export function ProfileEditor({
           name: z.string().trim().min(1, 'Name is required'),
           insulinType: z.string().min(1, 'Insulin type is required'),
           durationOfAction: z.number().int().min(1, 'Duration must be positive (minutes)'),
+          timeZone: z.string().optional(),
           proposalReason: z.string().optional(),
           basal: z
             .array(timeSegmentSchema)
@@ -196,6 +198,7 @@ export function ProfileEditor({
           name: generateNextName(initialProfile.name),
           insulinType: initialProfile.insulinType || 'Humalog',
           durationOfAction: initialProfile.durationOfAction || 300,
+          timeZone: initialProfile.timeZone || '',
           proposalReason: '',
           basal: initialProfile.basal?.length ? initialProfile.basal : [{ startTime: '00:00', value: 0.5 }],
           icr: initialProfile.icr || [],
@@ -206,6 +209,7 @@ export function ProfileEditor({
           name: '',
           insulinType: 'Humalog',
           durationOfAction: 300,
+          timeZone: '',
           proposalReason: '',
           basal: [{ startTime: '00:00', value: 0.5 }],
           icr: [],
@@ -253,6 +257,7 @@ export function ProfileEditor({
         name: data.name,
         insulinType: data.insulinType,
         durationOfAction: data.durationOfAction,
+        timeZone: data.timeZone || undefined,
         proposalReason: data.proposalReason || undefined,
         basal: data.basal,
         icr: data.icr,
@@ -434,6 +439,16 @@ export function ProfileEditor({
               {errors.durationOfAction.message}
             </span>
           )}
+        </div>
+
+        <div>
+          <label htmlFor="timeZone">{t('profile.timeZone')}</label>
+          <input
+            id="timeZone"
+            type="text"
+            placeholder={t('profile.timeZonePlaceholder')}
+            {...register('timeZone')}
+          />
         </div>
 
         {isDoctor && (

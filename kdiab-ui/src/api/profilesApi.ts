@@ -20,6 +20,7 @@ export interface Profile {
   status: string
   insulinType?: string
   durationOfAction?: number
+  timeZone?: string
   basal?: ProfileSegment[]
   icr?: ProfileSegment[]
   isf?: ProfileSegment[]
