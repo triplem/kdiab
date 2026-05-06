@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+
 package org.javafreedom.kdiab.analyze.application.service
 
 import io.mockk.coEvery
@@ -13,6 +15,7 @@ import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 class TimelineServiceTest {
 
@@ -20,10 +23,16 @@ class TimelineServiceTest {
     private val treatmentsClient = mockk<TreatmentsClient>()
     private val service = TimelineService(measuresClient, treatmentsClient)
 
-    private val userId = "user-1"
+    private val userId = "11111111-1111-1111-1111-111111111111"
     private val auth = "Bearer token"
     private val from = "2024-01-01T00:00:00Z"
     private val to = "2024-01-31T23:59:59Z"
+
+    private val insideId = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    private val beforeId = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+    private val afterId  = "cccccccc-cccc-cccc-cccc-cccccccccccc"
+    private val measureId1 = "11111111-2222-3333-4444-555555555555"
+    private val treatmentId1 = "66666666-7777-8888-9999-000000000000"
 
     private fun measure(id: String, at: String = "2024-01-15T12:00:00Z") = MeasureDto(
         id = id, userId = userId, measuredAt = at, type = "CGM",
@@ -47,33 +56,33 @@ class TimelineServiceTest {
     @Test
     fun `getTimeline filters measures outside timeframe`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
-            measure("inside", "2024-01-15T12:00:00Z"),
-            measure("before", "2023-12-31T23:59:00Z"),
-            measure("after", "2024-02-01T00:00:01Z"),
+            measure(insideId, "2024-01-15T12:00:00Z"),
+            measure(beforeId, "2023-12-31T23:59:00Z"),
+            measure(afterId, "2024-02-01T00:00:01Z"),
         )
         coEvery { treatmentsClient.getTreatments(userId, auth, any(), any(), any()) } returns emptyList()
         val result = service.getTimeline(userId, from, to, auth, "")
         assertEquals(1, result.measures.size)
-        assertEquals("inside", result.measures.first().id)
+        assertEquals(Uuid.parse(insideId), result.measures.first().id)
     }
 
     @Test
     fun `getTimeline filters treatments outside timeframe`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns emptyList()
         coEvery { treatmentsClient.getTreatments(userId, auth, any(), any(), any()) } returns listOf(
-            treatment("inside", "2024-01-20T08:00:00Z"),
-            treatment("before", "2023-12-01T00:00:00Z"),
+            treatment(insideId, "2024-01-20T08:00:00Z"),
+            treatment(beforeId, "2023-12-01T00:00:00Z"),
         )
         val result = service.getTimeline(userId, from, to, auth, "")
         assertEquals(1, result.treatments.size)
-        assertEquals("inside", result.treatments.first().id)
+        assertEquals(Uuid.parse(insideId), result.treatments.first().id)
     }
 
     @Test
     fun `getTimeline includes boundary instants`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
-            measure("at-from", from),
-            measure("at-to", to),
+            measure(insideId, from),
+            measure(beforeId, to),
         )
         coEvery { treatmentsClient.getTreatments(userId, auth, any(), any(), any()) } returns emptyList()
         val result = service.getTimeline(userId, from, to, auth, "")
@@ -82,12 +91,12 @@ class TimelineServiceTest {
 
     @Test
     fun `getTimeline maps measure fields correctly`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(measure("m-1"))
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(measure(measureId1))
         coEvery { treatmentsClient.getTreatments(userId, auth, any(), any(), any()) } returns emptyList()
         val result = service.getTimeline(userId, from, to, auth, "")
         val m = result.measures.first()
-        assertEquals("m-1", m.id)
-        assertEquals(userId, m.userId)
+        assertEquals(Uuid.parse(measureId1), m.id)
+        assertEquals(Uuid.parse(userId), m.userId)
         assertEquals("CGM", m.type)
         assertEquals("ACTIVE", m.status)
     }
@@ -97,14 +106,14 @@ class TimelineServiceTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns emptyList()
         coEvery { treatmentsClient.getTreatments(userId, auth, any(), any(), any()) } returns listOf(
             TreatmentDto(
-                id = "t-1", userId = userId, treatedAt = "2024-01-10T08:00:00Z",
+                id = treatmentId1, userId = userId, treatedAt = "2024-01-10T08:00:00Z",
                 type = "BOLUS", notes = "breakfast",
                 data = buildJsonObject { put("insulin", 6.0) },
             )
         )
         val result = service.getTimeline(userId, from, to, auth, "")
         val t = result.treatments.first()
-        assertEquals("t-1", t.id)
+        assertEquals(Uuid.parse(treatmentId1), t.id)
         assertEquals("BOLUS", t.type)
         assertEquals("breakfast", t.notes)
     }
@@ -132,7 +141,7 @@ class TimelineServiceTest {
         coEvery {
             measuresClient.getMeasures(any(), any(), any(), any(), any())
         } throws UpstreamException("measures", 500, "down")
-        coEvery { treatmentsClient.getTreatments(userId, auth, any(), any(), any()) } returns listOf(treatment("t-1"))
+        coEvery { treatmentsClient.getTreatments(userId, auth, any(), any(), any()) } returns listOf(treatment(treatmentId1))
 
         val result = service.getTimeline(userId, from, to, auth, "")
 
@@ -144,7 +153,7 @@ class TimelineServiceTest {
 
     @Test
     fun `getTimeline returns measures with error when only treatments fails`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(measure("m-1"))
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(measure(measureId1))
         coEvery {
             treatmentsClient.getTreatments(any(), any(), any(), any(), any())
         } throws UpstreamException("treatments", 500, "down")
@@ -155,5 +164,17 @@ class TimelineServiceTest {
         assertTrue(result.treatments.isEmpty())
         assertEquals(1, result.errors.size)
         assertTrue(result.errors.first().startsWith("treatments:"))
+    }
+
+    @Test
+    fun `getTimeline silently drops measures with invalid UUID fields`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            measure("not-a-uuid", "2024-01-15T12:00:00Z"),
+            measure(measureId1, "2024-01-15T12:00:00Z"),
+        )
+        coEvery { treatmentsClient.getTreatments(userId, auth, any(), any(), any()) } returns emptyList()
+        val result = service.getTimeline(userId, from, to, auth, "")
+        assertEquals(1, result.measures.size)
+        assertEquals(Uuid.parse(measureId1), result.measures.first().id)
     }
 }
