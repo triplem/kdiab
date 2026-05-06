@@ -175,7 +175,11 @@
     "unitUhr": "U/h",
     "unitGperU": "g/U",
     "unitMgdl": "mg/dL",
-    "unitMin": "m"
+    "unitMin": "m",
+    "listView": "List",
+    "timelineView": "Timeline",
+    "activatedOn": "Activated {{date}}",
+    "archivedOn": "Archived {{date}}"
   },
   "profileList": {
     "title": "Profiles",

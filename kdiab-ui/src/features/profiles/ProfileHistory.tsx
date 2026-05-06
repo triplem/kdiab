@@ -4,6 +4,7 @@ import type { Profile } from '../../api/profilesApi'
 import { startOfDay, endOfDay, subDays, formatISO, parseISO } from 'date-fns'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
+import { ProfileTimeline } from './ProfileTimeline'
 
 interface ProfileHistoryProps {
   userId: string
@@ -85,6 +86,7 @@ export function ProfileHistory({ userId, onSelectProfile }: ProfileHistoryProps)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeProfileWarning, setActiveProfileWarning] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list')
   const { formatTime, is24Hour, locale } = useTimeFormat()
   const { t } = useTranslation()
 
@@ -133,7 +135,7 @@ export function ProfileHistory({ userId, onSelectProfile }: ProfileHistoryProps)
     <div className="profile-history">
       <h3>{t('history.title')}</h3>
 
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
         <div>
           <label htmlFor="start-date" style={{ marginRight: '0.5rem' }}>{t('history.from')}</label>
           <input type="date" id="start-date" lang={locale} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
@@ -141,6 +143,25 @@ export function ProfileHistory({ userId, onSelectProfile }: ProfileHistoryProps)
         <div>
           <label htmlFor="end-date" style={{ marginRight: '0.5rem' }}>{t('history.to')}</label>
           <input type="date" id="end-date" lang={locale} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem' }}>
+          {(['list', 'timeline'] as const).map(mode => (
+            <button
+              key={mode}
+              type="button"
+              style={{
+                fontWeight: viewMode === mode ? 'bold' : 'normal',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                textDecoration: viewMode === mode ? 'underline' : 'none',
+                color: 'var(--text-primary)',
+              }}
+              onClick={() => setViewMode(mode)}
+            >
+              {mode === 'list' ? t('history.listView') : t('history.timelineView')}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -150,6 +171,8 @@ export function ProfileHistory({ userId, onSelectProfile }: ProfileHistoryProps)
 
       {!loading && !error && history.length === 0 ? (
         <p>{t('history.empty')}</p>
+      ) : viewMode === 'timeline' ? (
+        <ProfileTimeline profiles={history} />
       ) : (
         <ul className="history-list" style={{ listStyle: 'none', padding: 0 }}>
           {history.map(profile => (

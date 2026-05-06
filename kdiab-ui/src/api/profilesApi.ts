@@ -25,6 +25,8 @@ export interface Profile {
   isf?: ProfileSegment[]
   targets?: TargetSegment[]
   createdAt?: string
+  activatedAt?: string
+  archivedAt?: string
   previousProfileId?: string
 }
 

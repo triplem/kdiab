@@ -511,3 +511,10 @@ main {
   background: rgba(56, 189, 248, 0.1);
   border-color: var(--accent-primary);
 }
+
+/* Profile timeline */
+.profile-timeline { display: flex; align-items: flex-start; gap: 0.5rem; flex-wrap: wrap; padding: 1rem 0; }
+.timeline-node { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.timeline-node-name { font-size: 0.78rem; color: var(--text-primary); font-weight: 500; max-width: 8rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timeline-node-date { font-size: 0.72rem; color: var(--text-secondary); }
+.timeline-arrow { color: var(--text-secondary); font-size: 1.2rem; padding-top: 0.2rem; }
