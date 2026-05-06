@@ -3,16 +3,17 @@ import { useTranslation } from 'react-i18next'
 
 interface PatientBannerProps {
   patientId: string
+  patientName?: string
   onReturnToOwn: () => void
 }
 
-export const PatientBanner: React.FC<PatientBannerProps> = ({ patientId, onReturnToOwn }) => {
+export const PatientBanner: React.FC<PatientBannerProps> = ({ patientId, patientName, onReturnToOwn }) => {
   const { t } = useTranslation()
 
   return (
     <div className="patient-banner" role="status" aria-live="polite">
       <span>
-        {t('app.viewingPatient')} <strong>{patientId.slice(0, 8)}…</strong> &mdash;{' '}
+        {t('app.viewingPatient')} <strong>{patientName ?? patientId}</strong> &mdash;{' '}
         {t('patientBanner.viewingMessage')}
       </span>
       <button

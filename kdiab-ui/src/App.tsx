@@ -5,6 +5,7 @@ import {
   setAccessToken,
   parseRolesFromToken,
   parseAllowedPatientsFromToken,
+  parseAllowedPatientNamesFromToken,
   parseGlucoseUnitFromToken,
   parseWeightUnitFromToken,
 } from './api/tokenProvider'
@@ -36,6 +37,7 @@ export default function App() {
   // Auth-derived state
   const [roles, setRoles] = useState<string[]>([])
   const [allowedPatients, setAllowedPatients] = useState<string[]>([])
+  const [patientNames, setPatientNames] = useState<Map<string, string>>(new Map())
   const [glucoseUnit, setGlucoseUnit] = useState('mg/dL')
   const [weightUnit, setWeightUnit] = useState('kg')
 
@@ -60,7 +62,10 @@ export default function App() {
       const token = auth.user.access_token
       setAccessToken(token)
       setRoles(parseRolesFromToken(token))
-      setAllowedPatients(parseAllowedPatientsFromToken(token))
+      const patients = parseAllowedPatientsFromToken(token)
+      setAllowedPatients(patients)
+      const names = parseAllowedPatientNamesFromToken(token)
+      setPatientNames(new Map(patients.map((id, i) => [id, names[i] ?? id])))
       setGlucoseUnit(parseGlucoseUnitFromToken(token))
       setWeightUnit(parseWeightUnitFromToken(token))
 
@@ -306,6 +311,7 @@ export default function App() {
       {isDoctorViewingPatient && (
         <PatientBanner
           patientId={activePatientId!}
+          patientName={patientNames.get(activePatientId!)}
           onReturnToOwn={() => setActivePatientId(null)}
         />
       )}
@@ -329,7 +335,7 @@ export default function App() {
                   <option value="">{t('app.myOwnData')}</option>
                   {allowedPatients.map((pid) => (
                     <option key={pid} value={pid}>
-                      {pid.slice(0, 8)}…
+                      {patientNames.get(pid) ?? pid}
                     </option>
                   ))}
                 </select>

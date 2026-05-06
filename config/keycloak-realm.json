@@ -54,7 +54,8 @@
       "credentials": [{ "type": "password", "value": "password", "temporary": false }],
       "realmRoles": ["DOCTOR"],
       "attributes": {
-        "allowed_patients": ["11111111-1111-1111-1111-111111111111"]
+        "allowed_patients": ["11111111-1111-1111-1111-111111111111"],
+        "allowed_patient_usernames": ["sarah"]
       }
     },
     {
@@ -67,7 +68,8 @@
       "credentials": [{ "type": "password", "value": "password", "temporary": false }],
       "realmRoles": ["DOCTOR"],
       "attributes": {
-        "allowed_patients": ["22222222-2222-2222-2222-222222222222"]
+        "allowed_patients": ["22222222-2222-2222-2222-222222222222"],
+        "allowed_patient_usernames": ["mike"]
       }
     },
     {
@@ -110,6 +112,20 @@
           "config": {
             "user.attribute": "allowed_patients",
             "claim.name": "allowed_patients",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "allowed_patient_usernames",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "allowed_patient_usernames",
+            "claim.name": "allowed_patient_usernames",
             "jsonType.label": "String",
             "multivalued": "true",
             "access.token.claim": "true",
@@ -193,6 +209,20 @@
           }
         },
         {
+          "name": "allowed_patient_usernames",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "allowed_patient_usernames",
+            "claim.name": "allowed_patient_usernames",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
           "name": "audience-profile",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-audience-mapper",
@@ -268,6 +298,20 @@
           }
         },
         {
+          "name": "allowed_patient_usernames",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "allowed_patient_usernames",
+            "claim.name": "allowed_patient_usernames",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
           "name": "audience-treatment",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-audience-mapper",
@@ -335,6 +379,20 @@
           "config": {
             "user.attribute": "allowed_patients",
             "claim.name": "allowed_patients",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "allowed_patient_usernames",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "allowed_patient_usernames",
+            "claim.name": "allowed_patient_usernames",
             "jsonType.label": "String",
             "multivalued": "true",
             "access.token.claim": "true",
@@ -440,6 +498,20 @@
           "config": {
             "user.attribute": "allowed_patients",
             "claim.name": "allowed_patients",
+            "jsonType.label": "String",
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "allowed_patient_usernames",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "user.attribute": "allowed_patient_usernames",
+            "claim.name": "allowed_patient_usernames",
             "jsonType.label": "String",
             "multivalued": "true",
             "access.token.claim": "true",

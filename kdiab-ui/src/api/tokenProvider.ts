@@ -44,6 +44,12 @@ export function parseAllowedPatientsFromToken(token: string): string[] {
   return Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string') : []
 }
 
+export function parseAllowedPatientNamesFromToken(token: string): string[] {
+  const payload = decodeJwtPayload(token)
+  const val = payload['allowed_patient_usernames']
+  return Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string') : []
+}
+
 export function parseGlucoseUnitFromToken(token: string): string {
   const payload = decodeJwtPayload(token)
   const val = payload['glucose_unit']
