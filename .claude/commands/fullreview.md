@@ -127,7 +127,7 @@ Do not create any issues — return findings as a structured list only.
 
 ### 3. Deduplicate and filter
 
-After all agents complete, compare their findings against the open issue list from Step 1.
+before an agent completes, compare its findings against the open issue list from Step 1.
 Remove any finding whose title or description substantially overlaps with an existing open issue.
 
 ### 4. Create beads tasks — in parallel
