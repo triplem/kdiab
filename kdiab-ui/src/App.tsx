@@ -261,6 +261,7 @@ export default function App() {
                   onProfileSaved={() => { setShowProfileEditor(false); setEditingProfile(null) }}
                   readOnly={isDoctorViewingPatient}
                   isDoctor={isDoctor}
+                  glucoseUnit={glucoseUnit}
                 />
               </>
             ) : (
