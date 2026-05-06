@@ -29,6 +29,7 @@ data class AuditLogResponse(
     val userAgent: String?,
 )
 
+@Suppress("UnreachableCode")
 fun Route.auditRoutes(auditLogRepository: AuditLogRepository) {
     authenticate("auth-jwt") {
         get("/audit") {

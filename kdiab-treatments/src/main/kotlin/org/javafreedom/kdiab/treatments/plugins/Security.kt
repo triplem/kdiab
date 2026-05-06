@@ -57,8 +57,9 @@ fun Application.configureSecurity() {
             realm = jwtRealm
 
             if (isTest) {
+                val secret = checkNotNull(jwtSecret) { "jwt.secret must be set when jwt.test=true" }
                 verifier(
-                    JWT.require(Algorithm.HMAC256(jwtSecret!!))
+                    JWT.require(Algorithm.HMAC256(secret))
                         .withAudience(jwtAudience)
                         .withIssuer(jwtDomain)
                         .build()
@@ -69,6 +70,7 @@ fun Application.configureSecurity() {
                     acceptLeeway(JWT_ACCEPT_LEEWAY)
                 }
             }
+            @Suppress("UnreachableCode")
             validate { credential ->
                 if (credential.payload.audience?.contains(jwtAudience) == true) {
                     val userId = runCatching { Uuid.parse(credential.payload.subject) }.getOrNull()
