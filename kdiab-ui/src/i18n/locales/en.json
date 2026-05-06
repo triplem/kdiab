@@ -291,7 +291,8 @@
     "tooltipIsf": "How much 1 unit of insulin lowers your glucose. Typical: 30–80 mg/dL per unit",
     "tooltipTarget": "Your goal glucose range. ADA recommends 80–130 mg/dL pre-meal for most adults",
     "timeZone": "Timezone",
-    "timeZonePlaceholder": "IANA timezone (e.g. UTC, Europe/Berlin)"
+    "timeZonePlaceholder": "IANA timezone (e.g. UTC, Europe/Berlin)",
+    "zeroBasalWarning": "Warning: one or more basal segments have a rate of 0 U/h. This will stop basal insulin delivery for those hours — verify this is intentional."
   },
   "services": {
     "label": "Services",

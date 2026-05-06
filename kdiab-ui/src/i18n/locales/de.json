@@ -291,7 +291,8 @@
     "tooltipIsf": "Wie stark 1 Insulineinheit Ihren Blutzucker senkt. Typisch: 30–80 mg/dL pro Einheit",
     "tooltipTarget": "Ihr Blutzuckerzielbereich. Die ADA empfiehlt für die meisten Erwachsenen 80–130 mg/dL vor dem Essen",
     "timeZone": "Zeitzone",
-    "timeZonePlaceholder": "IANA-Zeitzone (z.B. UTC, Europe/Berlin)"
+    "timeZonePlaceholder": "IANA-Zeitzone (z.B. UTC, Europe/Berlin)",
+    "zeroBasalWarning": "Warnung: Ein oder mehrere Basalsegmente haben eine Rate von 0 E/h. Dies stoppt die Basalinsulinabgabe — bitte prüfen Sie, ob dies beabsichtigt ist."
   },
   "services": {
     "label": "Dienste",

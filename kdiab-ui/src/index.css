@@ -527,6 +527,9 @@ main {
 /* API error banner */
 .error-banner { background: var(--color-error-bg, rgba(239,68,68,0.12)); border: 1px solid var(--color-error, #ef4444); border-radius: 6px; padding: 0.5rem 1rem; margin-bottom: 1rem; color: var(--text-primary); font-size: 0.875rem; }
 
+/* Safety warning banner */
+.warning-banner { background: rgba(245,158,11,0.12); border: 1px solid var(--accent-warning, #f59e0b); border-radius: 6px; padding: 0.5rem 1rem; margin-bottom: 1rem; color: var(--text-primary); font-size: 0.875rem; }
+
 /* Profile timeline */
 .profile-timeline { display: flex; align-items: flex-start; gap: 0.5rem; flex-wrap: wrap; padding: 1rem 0; }
 .timeline-node { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
