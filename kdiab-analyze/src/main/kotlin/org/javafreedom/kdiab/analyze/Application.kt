@@ -28,6 +28,9 @@ import org.javafreedom.kdiab.analyze.plugins.configureStatusPages
 private const val HTTP_CONNECT_TIMEOUT_MS = 5_000L
 private const val HTTP_REQUEST_TIMEOUT_MS = 10_000L
 private const val HTTP_SOCKET_TIMEOUT_MS = 5_000L
+private const val HTTP_RETRY_MAX_RETRIES = 3
+private const val HTTP_RETRY_MAX_DELAY_MS = 8_000L
+private const val HTTP_SERVER_ERROR_STATUS = 500
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -85,6 +88,15 @@ fun Application.module(
                 connectTimeoutMillis = HTTP_CONNECT_TIMEOUT_MS
                 requestTimeoutMillis = HTTP_REQUEST_TIMEOUT_MS
                 socketTimeoutMillis = HTTP_SOCKET_TIMEOUT_MS
+            }
+            install(io.ktor.client.plugins.HttpRequestRetry) {
+                maxRetries = HTTP_RETRY_MAX_RETRIES
+                retryIf { _, response -> response.status.value >= HTTP_SERVER_ERROR_STATUS }
+                retryOnExceptionIf { _, cause ->
+                    cause is java.net.SocketTimeoutException ||
+                        cause is io.ktor.client.plugins.HttpRequestTimeoutException
+                }
+                exponentialDelay(base = 2.0, maxDelayMs = HTTP_RETRY_MAX_DELAY_MS)
             }
         }
         monitor.subscribe(ApplicationStopping) { httpClient.close() }
