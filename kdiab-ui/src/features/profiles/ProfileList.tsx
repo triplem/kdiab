@@ -97,7 +97,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false }: Profi
   }
 
   if (isLoading) return <div className="loading">{t('profileList.loading')}</div>
-  if (isError) return <div className="error">{t('profileList.error')} {(error as Error).message}</div>
+  if (isError) return <div className="error">{t('profileList.error')} {error instanceof Error ? error.message : t('common.unknownError')}</div>
 
   const proposedProfiles = profiles.filter((p) => p.status === 'PROPOSED')
   const otherProfiles = profiles.filter((p) => p.status === 'ACTIVE' || p.status === 'DRAFT')

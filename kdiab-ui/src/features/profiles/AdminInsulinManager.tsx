@@ -48,7 +48,7 @@ export function AdminInsulinManager() {
   })
 
   if (isLoading) return <div>{t('admin.loading')}</div>
-  if (error) return <div>{t('admin.error')} {(error as Error).message}</div>
+  if (error) return <div>{t('admin.error')} {error instanceof Error ? error.message : t('common.unknownError')}</div>
 
   return (
     <div className="card" style={{ maxWidth: '600px' }}>

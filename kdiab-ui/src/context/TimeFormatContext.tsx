@@ -23,7 +23,7 @@ export function TimeFormatProvider({ children }: { children: ReactNode }) {
   const getInitialLocale = () => navigator.language || document.documentElement.lang || 'en'
   const getObservedLocale = () => document.documentElement.lang || navigator.language || 'en'
 
-  const [locale, setLocale] = useState<string>(getInitialLocale)
+  const [locale, setLocale] = useState<string>(getInitialLocale())
   const [is24Hour, setIs24Hour] = useState<boolean>(() => detectIs24Hour(getInitialLocale()))
 
   useEffect(() => {

@@ -31,12 +31,19 @@ export function AgpChart({ hourlyData, glucoseUnit }: Props) {
   const tirHigh = convert(180, glucoseUnit)
 
   const chartData = hourlyData
-    .filter(d => d.median !== null)
+    .filter(
+      (d): d is typeof d & { p10: number; p25: number; median: number; p75: number; p90: number } =>
+        d.median !== null &&
+        d.p10 !== null &&
+        d.p25 !== null &&
+        d.p75 !== null &&
+        d.p90 !== null,
+    )
     .map(d => ({
       hour: d.hour,
-      p10_p90: [convert(d.p10!, glucoseUnit), convert(d.p90!, glucoseUnit)] as [number, number],
-      p25_p75: [convert(d.p25!, glucoseUnit), convert(d.p75!, glucoseUnit)] as [number, number],
-      median: convert(d.median!, glucoseUnit),
+      p10_p90: [convert(d.p10, glucoseUnit), convert(d.p90, glucoseUnit)] as [number, number],
+      p25_p75: [convert(d.p25, glucoseUnit), convert(d.p75, glucoseUnit)] as [number, number],
+      median: convert(d.median, glucoseUnit),
       count: d.count,
     }))
 

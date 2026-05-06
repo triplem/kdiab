@@ -1,4 +1,7 @@
 {
+  "common": {
+    "unknownError": "An unknown error occurred"
+  },
   "app": {
     "title": "kdiab",
     "loading": "Loading authentication...",
