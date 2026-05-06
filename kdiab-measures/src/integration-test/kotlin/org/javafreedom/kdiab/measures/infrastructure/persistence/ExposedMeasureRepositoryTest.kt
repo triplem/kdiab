@@ -143,6 +143,24 @@ class ExposedMeasureRepositoryTest {
     }
 
     @Test
+    fun `findByUserId - page beyond total returns empty list`() = runBlocking {
+        val userId = Uuid.random()
+
+        repeat(3) {
+            repository.save(
+                createMeasure(
+                    userId = userId,
+                    measuredAt = Instant.parse("2024-01-${10 + it}T10:00:00Z"),
+                )
+            )
+        }
+
+        val result = repository.findByUserId(userId, page = 1, size = 3, from = null, to = null)
+
+        assertEquals(emptyList(), result)
+    }
+
+    @Test
     fun `deleteAll - removes records from repository`() = runBlocking {
         val userId = Uuid.random()
         val measure1 = repository.save(createMeasure(userId = userId))

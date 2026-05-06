@@ -81,6 +81,27 @@ class MeasureServiceTest {
     }
 
     @Test
+    fun `getMeasures with page beyond total returns empty list`() = runTest {
+        coEvery { repo.findByUserId(userId, 1, 50, null, null) } returns emptyList()
+        coEvery { repo.countByUserId(userId, null, null) } returns 5L
+
+        val result = service.getMeasures(userId, 1, 50)
+
+        assertEquals(emptyList(), result.items)
+        assertEquals(5L, result.totalCount)
+    }
+
+    @Test
+    fun `getMeasures with very large page number returns empty items`() = runTest {
+        coEvery { repo.findByUserId(userId, 999, 50, null, null) } returns emptyList()
+        coEvery { repo.countByUserId(userId, null, null) } returns 5L
+
+        val result = service.getMeasures(userId, 999, 50)
+
+        assertEquals(emptyList(), result.items)
+    }
+
+    @Test
     fun `archiveMeasures delegates to repository`() = runTest {
         coEvery { repo.archive(listOf(measureId), userId) } just runs
         service.archiveMeasures(listOf(measureId), userId)

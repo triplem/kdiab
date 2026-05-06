@@ -98,6 +98,26 @@ class TreatmentServiceTest {
     }
 
     @Test
+    fun `getTreatments with page beyond total returns empty list`() = runTest {
+        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ACTIVE, 1, 50) } returns emptyList()
+        coEvery { repo.countByUserId(userId, null, null, TreatmentStatus.ACTIVE) } returns 5L
+
+        val result = service.getTreatments(userId, page = 1, size = 50)
+
+        assertEquals(PagedTreatments(emptyList(), 1, 50, 5L), result)
+    }
+
+    @Test
+    fun `getTreatments with very large page number returns empty items`() = runTest {
+        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ACTIVE, 999, 50) } returns emptyList()
+        coEvery { repo.countByUserId(userId, null, null, TreatmentStatus.ACTIVE) } returns 5L
+
+        val result = service.getTreatments(userId, page = 999, size = 50)
+
+        assertEquals(emptyList(), result.items)
+    }
+
+    @Test
     fun `getTreatmentsByType returns filtered list from repository`() = runTest {
         val treatments = listOf(testTreatment())
         coEvery { repo.findByUserIdAndType(userId, TreatmentType.BOLUS, null, null, TreatmentStatus.ACTIVE) } returns treatments

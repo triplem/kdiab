@@ -130,6 +130,19 @@ class ExposedTreatmentRepositoryTest {
     }
 
     @Test
+    fun `findByUserId - page beyond total returns empty list`() = runBlocking {
+        val userId = Uuid.parse("33333333-3333-3333-3333-333333333333")
+
+        (1..3).forEach { i ->
+            repository.save(testTreatment(userId, treatedAt = Instant.parse("2024-01-${10 + i}T10:00:00Z")))
+        }
+
+        val result = repository.findByUserId(userId, page = 1, size = 3)
+
+        assertEquals(emptyList(), result)
+    }
+
+    @Test
     fun `deleteAll - deletes matching treatment for correct user`() = runBlocking {
         val userId = Uuid.parse("11111111-1111-1111-1111-111111111111")
         val t1 = repository.save(testTreatment(userId))
