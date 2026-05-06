@@ -140,10 +140,10 @@
             "enabled": true,
             "publicClient": true,
             "redirectUris": [
-                "http://localhost:*"
+                "http://localhost:3003/*"
             ],
             "webOrigins": [
-                "*"
+                "http://localhost:3003"
             ],
             "protocolMappers": [
                 {
