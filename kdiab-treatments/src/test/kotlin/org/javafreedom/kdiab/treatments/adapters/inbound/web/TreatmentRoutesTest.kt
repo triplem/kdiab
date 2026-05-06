@@ -114,7 +114,8 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 patient reads own treatments`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns listOf(testTreatment())
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns listOf(testTreatment())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 1L
         val resp = client.get("/api/v1/users/$SARAH_ID/treatments") {
             bearerAuth(sarahToken)
         }
@@ -131,7 +132,8 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 doctor reads allowed patient treatments`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns listOf(testTreatment())
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns listOf(testTreatment())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 1L
         val resp = client.get("/api/v1/users/$SARAH_ID/treatments") {
             bearerAuth(doctorToken)
         }
@@ -148,7 +150,8 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 admin reads any user treatments`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(MIKE_ID), any(), any(), any()) } returns emptyList()
+        coEvery { repo.findByUserId(Uuid.parse(MIKE_ID), any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { repo.countByUserId(Uuid.parse(MIKE_ID), any(), any(), any()) } returns 0L
         val resp = client.get("/api/v1/users/$MIKE_ID/treatments") {
             bearerAuth(adminToken)
         }
@@ -157,7 +160,8 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 with from and to query params`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns listOf(testTreatment())
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns listOf(testTreatment())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 1L
         val resp = client.get(
             "/api/v1/users/$SARAH_ID/treatments?from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z"
         ) {

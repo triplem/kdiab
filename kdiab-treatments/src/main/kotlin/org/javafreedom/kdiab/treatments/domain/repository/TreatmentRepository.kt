@@ -1,4 +1,5 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+@file:Suppress("LongParameterList")
 package org.javafreedom.kdiab.treatments.domain.repository
 
 import kotlin.time.Instant
@@ -14,7 +15,15 @@ interface TreatmentRepository {
         from: Instant? = null,
         to: Instant? = null,
         status: TreatmentStatus = TreatmentStatus.ACTIVE,
+        page: Int = 0,
+        size: Int = 50,
     ): List<Treatment>
+    suspend fun countByUserId(
+        userId: Uuid,
+        from: Instant? = null,
+        to: Instant? = null,
+        status: TreatmentStatus = TreatmentStatus.ACTIVE,
+    ): Long
     suspend fun findByUserIdAndType(
         userId: Uuid,
         type: TreatmentType,

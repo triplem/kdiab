@@ -64,11 +64,41 @@ class ExposedTreatmentRepositoryTest {
         val t2 = testTreatment(userA, treatedAt = Instant.parse("2024-01-16T10:00:00Z"))
         val t3 = testTreatment(userB)
         repository.save(t1); repository.save(t2); repository.save(t3)
-        val results = repository.findByUserId(userA)
+        val results = repository.findByUserId(userA, page = 0, size = 50)
         assertEquals(2, results.size)
         // ordered DESC: t2 first
         assertEquals(t2.id, results[0].id)
         assertEquals(t1.id, results[1].id)
+    }
+
+    @Test
+    fun `findByUserId - applies pagination correctly`() = runBlocking {
+        val userId = Uuid.parse("11111111-1111-1111-1111-111111111111")
+        val treatments = (1..10).map { i ->
+            testTreatment(userId, treatedAt = Instant.parse("2024-01-${10 + i}T10:00:00Z"))
+        }
+        treatments.forEach { repository.save(it) }
+
+        val page0 = repository.findByUserId(userId, page = 0, size = 5)
+        val page1 = repository.findByUserId(userId, page = 1, size = 5)
+        assertEquals(5, page0.size)
+        assertEquals(5, page1.size)
+        // pages should be disjoint
+        val page0Ids = page0.map { it.id }.toSet()
+        val page1Ids = page1.map { it.id }.toSet()
+        assertEquals(0, (page0Ids intersect page1Ids).size)
+    }
+
+    @Test
+    fun `countByUserId - returns correct total count`() = runBlocking {
+        val userA = Uuid.parse("11111111-1111-1111-1111-111111111111")
+        val userB = Uuid.parse("22222222-2222-2222-2222-222222222222")
+        repository.save(testTreatment(userA))
+        repository.save(testTreatment(userA))
+        repository.save(testTreatment(userB))
+
+        assertEquals(2L, repository.countByUserId(userA))
+        assertEquals(1L, repository.countByUserId(userB))
     }
 
     @Test
@@ -105,7 +135,7 @@ class ExposedTreatmentRepositoryTest {
         val t1 = repository.save(testTreatment(userId))
         val t2 = repository.save(testTreatment(userId))
         repository.deleteAll(listOf(t1.id), userId)
-        val remaining = repository.findByUserId(userId)
+        val remaining = repository.findByUserId(userId, page = 0, size = 50)
         assertEquals(1, remaining.size)
         assertEquals(t2.id, remaining[0].id)
     }
@@ -116,7 +146,7 @@ class ExposedTreatmentRepositoryTest {
         val userB = Uuid.parse("22222222-2222-2222-2222-222222222222")
         val t = repository.save(testTreatment(userA))
         repository.deleteAll(listOf(t.id), userB) // wrong userId
-        val remaining = repository.findByUserId(userA)
+        val remaining = repository.findByUserId(userA, page = 0, size = 50)
         assertEquals(1, remaining.size)
     }
 }

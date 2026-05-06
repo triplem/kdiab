@@ -37,3 +37,10 @@ data class Treatment(
     val notes: String? = null,
     val status: TreatmentStatus = TreatmentStatus.ACTIVE,
 )
+
+data class PagedTreatments(
+    val items: List<Treatment>,
+    val page: Int,
+    val size: Int,
+    val totalCount: Long,
+)

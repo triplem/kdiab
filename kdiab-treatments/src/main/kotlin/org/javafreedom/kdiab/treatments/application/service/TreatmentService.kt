@@ -1,4 +1,5 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+@file:Suppress("LongParameterList")
 package org.javafreedom.kdiab.treatments.application.service
 
 import kotlin.time.Clock
@@ -7,6 +8,7 @@ import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.treatments.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.treatments.domain.model.PagedTreatments
 import org.javafreedom.kdiab.treatments.domain.model.Treatment
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
@@ -31,7 +33,13 @@ class TreatmentService(
         from: Instant? = null,
         to: Instant? = null,
         status: TreatmentStatus = TreatmentStatus.ACTIVE,
-    ): List<Treatment> = treatmentRepository.findByUserId(userId, from, to, status)
+        page: Int = 0,
+        size: Int = 50,
+    ): PagedTreatments {
+        val items = treatmentRepository.findByUserId(userId, from, to, status, page, size)
+        val totalCount = treatmentRepository.countByUserId(userId, from, to, status)
+        return PagedTreatments(items = items, page = page, size = size, totalCount = totalCount)
+    }
 
     suspend fun getTreatmentsByType(
         userId: Uuid,

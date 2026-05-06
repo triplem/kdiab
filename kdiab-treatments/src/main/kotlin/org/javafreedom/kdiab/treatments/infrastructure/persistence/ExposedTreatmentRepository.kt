@@ -58,6 +58,8 @@ class ExposedTreatmentRepository(
         from: Instant?,
         to: Instant?,
         status: TreatmentStatus,
+        page: Int,
+        size: Int,
     ): List<Treatment> =
         withContext(ioDispatcher) {
             suspendTransaction {
@@ -76,9 +78,36 @@ class ExposedTreatmentRepository(
                         condition
                     }
                     .orderBy(TreatmentsTable.treatedAt, SortOrder.DESC)
+                    .limit(size)
+                    .offset(page.toLong() * size)
                     .map { it.toTreatment() }
             }
         }
+
+    override suspend fun countByUserId(
+        userId: Uuid,
+        from: Instant?,
+        to: Instant?,
+        status: TreatmentStatus,
+    ): Long = withContext(ioDispatcher) {
+        suspendTransaction {
+            TreatmentsTable.selectAll()
+                .where {
+                    var condition = (TreatmentsTable.userId eq userId) and
+                        (TreatmentsTable.status eq status.name)
+                    if (from != null) {
+                        condition = condition and (TreatmentsTable.treatedAt greaterEq
+                            java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
+                    }
+                    if (to != null) {
+                        condition = condition and (TreatmentsTable.treatedAt lessEq
+                            java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                    }
+                    condition
+                }
+                .count()
+        }
+    }
 
     override suspend fun findByUserIdAndType(
         userId: Uuid,

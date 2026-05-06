@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.treatments.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.treatments.domain.model.PagedTreatments
 import org.javafreedom.kdiab.treatments.domain.model.Treatment
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
@@ -47,16 +48,20 @@ class TreatmentServiceTest {
     }
 
     @Test
-    fun `getTreatments returns list from repository`() = runTest {
+    fun `getTreatments returns paged result from repository`() = runTest {
         val treatments = listOf(testTreatment())
-        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ACTIVE) } returns treatments
-        assertEquals(treatments, service.getTreatments(userId))
+        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ACTIVE, 0, 50) } returns treatments
+        coEvery { repo.countByUserId(userId, null, null, TreatmentStatus.ACTIVE) } returns 1L
+        val result = service.getTreatments(userId)
+        assertEquals(PagedTreatments(treatments, 0, 50, 1L), result)
     }
 
     @Test
-    fun `getTreatments returns empty list when no treatments found`() = runTest {
-        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ACTIVE) } returns emptyList()
-        assertEquals(emptyList(), service.getTreatments(userId))
+    fun `getTreatments returns empty paged result when no treatments found`() = runTest {
+        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ACTIVE, 0, 50) } returns emptyList()
+        coEvery { repo.countByUserId(userId, null, null, TreatmentStatus.ACTIVE) } returns 0L
+        val result = service.getTreatments(userId)
+        assertEquals(PagedTreatments(emptyList(), 0, 50, 0L), result)
     }
 
     @Test
@@ -64,15 +69,32 @@ class TreatmentServiceTest {
         val from = Instant.parse("2024-01-01T00:00:00Z")
         val to = Instant.parse("2024-01-31T23:59:59Z")
         val treatments = listOf(testTreatment())
-        coEvery { repo.findByUserId(userId, from, to, TreatmentStatus.ACTIVE) } returns treatments
-        assertEquals(treatments, service.getTreatments(userId, from, to))
+        coEvery { repo.findByUserId(userId, from, to, TreatmentStatus.ACTIVE, 0, 50) } returns treatments
+        coEvery { repo.countByUserId(userId, from, to, TreatmentStatus.ACTIVE) } returns 1L
+        val result = service.getTreatments(userId, from, to)
+        assertEquals(PagedTreatments(treatments, 0, 50, 1L), result)
     }
 
     @Test
     fun `getTreatments passes status to repository`() = runTest {
         val treatments = listOf(testTreatment())
-        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ARCHIVED) } returns treatments
-        assertEquals(treatments, service.getTreatments(userId, status = TreatmentStatus.ARCHIVED))
+        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ARCHIVED, 0, 50) } returns treatments
+        coEvery { repo.countByUserId(userId, null, null, TreatmentStatus.ARCHIVED) } returns 1L
+        val result = service.getTreatments(userId, status = TreatmentStatus.ARCHIVED)
+        assertEquals(PagedTreatments(treatments, 0, 50, 1L), result)
+    }
+
+    @Test
+    fun `getTreatments with pagination - returns correct page and size`() = runTest {
+        val allTreatments = (1..10).map { testTreatment() }
+        val firstPage = allTreatments.take(5)
+        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ACTIVE, 0, 5) } returns firstPage
+        coEvery { repo.countByUserId(userId, null, null, TreatmentStatus.ACTIVE) } returns 10L
+        val result = service.getTreatments(userId, page = 0, size = 5)
+        assertEquals(5, result.items.size)
+        assertEquals(10L, result.totalCount)
+        assertEquals(0, result.page)
+        assertEquals(5, result.size)
     }
 
     @Test

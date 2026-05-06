@@ -12,15 +12,28 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
+import kotlinx.serialization.Serializable
 import org.javafreedom.kdiab.treatments.api.Paths
 import org.javafreedom.kdiab.treatments.api.models.CreateTreatmentRequest
 import org.javafreedom.kdiab.treatments.api.models.BulkTreatmentRequest
+import org.javafreedom.kdiab.treatments.api.models.TreatmentResponse
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.treatments.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
 import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.treatments.plugins.UserPrincipal
+
+private const val DEFAULT_PAGE_SIZE = 50
+private const val MAX_PAGE_SIZE = 200
+
+@Serializable
+private data class PagedTreatmentResponse(
+    val items: List<TreatmentResponse>,
+    val page: Int,
+    val size: Int,
+    val totalCount: Long,
+)
 
 private val logger = KotlinLogging.logger {}
 
@@ -45,6 +58,9 @@ private fun Route.listTreatments(treatmentService: TreatmentService, auditLogRep
         checkAccess(principal, targetUserId)
         auditIfDoctor(call, principal, targetUserId, "treatments.list", auditLogRepository)
 
+        val page = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+        val size = call.request.queryParameters["size"]?.toIntOrNull()
+            ?.coerceIn(1, MAX_PAGE_SIZE) ?: DEFAULT_PAGE_SIZE
         val from = call.request.queryParameters["from"]?.let {
             runCatching { Instant.parse(it) }.getOrElse {
                 throw BusinessValidationException("Invalid 'from' timestamp: $it")
@@ -60,13 +76,19 @@ private fun Route.listTreatments(treatmentService: TreatmentService, auditLogRep
                 throw BusinessValidationException("Invalid status value: $it. Must be ACTIVE or ARCHIVED")
             }
         } ?: TreatmentStatus.ACTIVE
-        val treatments = if (params.type != null) {
+        if (params.type != null) {
             val treatmentType = org.javafreedom.kdiab.treatments.domain.model.TreatmentType.valueOf(params.type.name)
-            treatmentService.getTreatmentsByType(targetUserId, treatmentType, from, to, status)
+            val treatments = treatmentService.getTreatmentsByType(targetUserId, treatmentType, from, to, status)
+            call.respond(treatments.map { it.toApi() })
         } else {
-            treatmentService.getTreatments(targetUserId, from, to, status)
+            val paged = treatmentService.getTreatments(targetUserId, from, to, status, page, size)
+            call.respond(PagedTreatmentResponse(
+                items = paged.items.map { it.toApi() },
+                page = paged.page,
+                size = paged.size,
+                totalCount = paged.totalCount,
+            ))
         }
-        call.respond(treatments.map { it.toApi() })
     }
 }
 

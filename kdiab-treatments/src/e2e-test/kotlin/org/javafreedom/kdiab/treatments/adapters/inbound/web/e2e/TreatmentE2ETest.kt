@@ -14,6 +14,9 @@ import io.ktor.server.config.MapApplicationConfig
 import io.ktor.server.testing.*
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.javafreedom.kdiab.treatments.module
 
 class TreatmentE2ETest : BehaviorSpec({
@@ -57,13 +60,14 @@ class TreatmentE2ETest : BehaviorSpec({
 
                     val sarahToken = token(SARAH_ID, listOf("PATIENT"))
 
-                    // 1. List — empty initially
+                    // 1. List — empty initially (returns PagedTreatmentResponse)
                     val list0 = client.get("/api/v1/users/$SARAH_ID/treatments") {
                         bearerAuth(sarahToken)
                     }
                     list0.status shouldBe HttpStatusCode.OK
-                    val empty = Json.decodeFromString<List<JsonObject>>(list0.bodyAsText())
-                    empty.size shouldBe 0
+                    val emptyPaged = Json.decodeFromString<JsonObject>(list0.bodyAsText())
+                    emptyPaged["items"]!!.jsonArray.size shouldBe 0
+                    emptyPaged["totalCount"]!!.jsonPrimitive.content.toLong() shouldBe 0L
 
                     // 2. Create BOLUS → 201
                     val create = client.post("/api/v1/users/$SARAH_ID/treatments") {
@@ -80,10 +84,11 @@ class TreatmentE2ETest : BehaviorSpec({
                         bearerAuth(sarahToken)
                     }
                     list1.status shouldBe HttpStatusCode.OK
-                    val oneItem = Json.decodeFromString<List<JsonObject>>(list1.bodyAsText())
-                    oneItem.size shouldBe 1
+                    val onePaged = Json.decodeFromString<JsonObject>(list1.bodyAsText())
+                    onePaged["items"]!!.jsonArray.size shouldBe 1
+                    onePaged["totalCount"]!!.jsonPrimitive.content.toLong() shouldBe 1L
 
-                    // 4. Type filter CARBS → empty
+                    // 4. Type filter CARBS → empty (type filter returns plain array)
                     val listCarbs = client.get("/api/v1/users/$SARAH_ID/treatments?type=CARBS") {
                         bearerAuth(sarahToken)
                     }
@@ -103,7 +108,8 @@ class TreatmentE2ETest : BehaviorSpec({
                         bearerAuth(sarahToken)
                     }
                     list2.status shouldBe HttpStatusCode.OK
-                    Json.decodeFromString<List<JsonObject>>(list2.bodyAsText()).size shouldBe 0
+                    val emptyPaged2 = Json.decodeFromString<JsonObject>(list2.bodyAsText())
+                    emptyPaged2["items"]!!.jsonArray.size shouldBe 0
                 }
             }
         }
