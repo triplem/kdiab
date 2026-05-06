@@ -22,6 +22,9 @@
   --overlay-bg: rgba(0, 0, 0, 0.55);
   --modal-bg: rgba(15, 23, 42, 0.97);
   --modal-border: rgba(255, 255, 255, 0.12);
+  --tooltip-bg: rgba(15, 23, 42, 0.97);
+  --tooltip-text: #f8fafc;
+  --tooltip-border: rgba(255, 255, 255, 0.15);
 
   /* Tables */
   --table-border: rgba(255, 255, 255, 0.08);
