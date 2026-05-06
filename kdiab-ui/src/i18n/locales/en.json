@@ -54,7 +54,11 @@
     "recordedAt": "Recorded At",
     "dataPayload": "Data Payload",
     "notes": "Notes",
-    "glucoseAlertBanner": "⚠ Some readings are outside safe range (below {{low}} or above {{high}} {{unit}})"
+    "glucoseAlertBanner": "⚠ Some readings are outside safe range (below {{low}} or above {{high}} {{unit}})",
+    "zoneLow": "Low",
+    "zoneTarget": "In Range",
+    "zoneHigh": "High",
+    "zoneVeryHigh": "Very High"
   },
   "modal": {
     "title": "Add Measurement",

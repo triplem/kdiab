@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { measuresApi } from '../../api/measuresApi'
 import { useTimeFormat } from '../../context/TimeFormatContext'
-import { useTranslation } from 'react-i18next'
+import { useTranslation, type TFunction } from 'react-i18next'
 import { ConfirmModal } from '../../components/ConfirmModal'
 
 const PAGE_SIZES = [5, 20, 50, 100] as const
@@ -39,6 +39,15 @@ function getGlucoseZone(valueMgDl: number): GlucoseZone {
   if (valueMgDl <= 180) return 'glucose-target'
   if (valueMgDl <= 250) return 'glucose-high'
   return 'glucose-very-high'
+}
+
+function getZoneLabel(zone: GlucoseZone, t: TFunction): string {
+  switch (zone) {
+    case 'glucose-low': return t('list.zoneLow')
+    case 'glucose-high': return t('list.zoneHigh')
+    case 'glucose-very-high': return t('list.zoneVeryHigh')
+    default: return t('list.zoneTarget')
+  }
 }
 
 function toMgDl(value: number, unit: string): number {
@@ -365,6 +374,14 @@ export const MeasureList: React.FC<MeasureListProps> = ({
                       style={{ marginLeft: '12px' }}
                     >
                       {renderDataSummary(m)}
+                      {glucoseZone !== '' && (
+                        <>
+                          <span className="sr-only">{getZoneLabel(glucoseZone, t)}</span>
+                          {glucoseZone !== 'glucose-target' && (
+                            <span className="glucose-zone-label">({getZoneLabel(glucoseZone, t)})</span>
+                          )}
+                        </>
+                      )}
                     </span>
                   </td>
                   <td style={{ padding: '12px 8px' }}>
