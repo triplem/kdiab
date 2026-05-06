@@ -54,7 +54,11 @@
     "recordedAt": "Erfasst am",
     "dataPayload": "Datenpayload",
     "notes": "Notizen",
-    "glucoseAlertBanner": "⚠ Einige Messwerte liegen außerhalb des sicheren Bereichs (unter {{low}} oder über {{high}} {{unit}})"
+    "glucoseAlertBanner": "⚠ Einige Messwerte liegen außerhalb des sicheren Bereichs (unter {{low}} oder über {{high}} {{unit}})",
+    "zoneLow": "Niedrig",
+    "zoneTarget": "Im Zielbereich",
+    "zoneHigh": "Hoch",
+    "zoneVeryHigh": "Sehr hoch"
   },
   "modal": {
     "title": "Messung hinzufügen",
