@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -32,6 +33,7 @@ private data class PagedMeasureDto(
 
 private const val PAGE_SIZE = 200    // upstream maximum (see api/openapi.yaml size.maximum)
 private const val MAX_MEASURES = 50_000 // ~120 days of CGM at 5-min intervals
+private const val LOG_BODY_MAX_CHARS = 200
 
 class MeasuresClient(
     private val httpClient: HttpClient,
@@ -65,8 +67,19 @@ class MeasuresClient(
             }
             val pageMs = System.currentTimeMillis() - pageStart
             if (!response.status.isSuccess()) {
-                logger.warn { "Upstream measures page $page returned ${response.status.value} in ${pageMs}ms" }
-                throw UpstreamException("measures", response.status.value, response.status.description)
+                val body = runCatching { response.bodyAsText() }.getOrNull()
+                val requestUrl = response.request.url.toString()
+                logger.warn {
+                    "Upstream measures page $page returned ${response.status.value} in ${pageMs}ms" +
+                        " url=$requestUrl body=${body?.take(LOG_BODY_MAX_CHARS)}"
+                }
+                throw UpstreamException(
+                    "measures",
+                    response.status.value,
+                    response.status.description,
+                    responseBody = body,
+                    url = requestUrl,
+                )
             }
             logger.info { "Fetched measures page $page in ${pageMs}ms [status=${response.status.value}]" }
             val paged = response.body<PagedMeasureDto>()

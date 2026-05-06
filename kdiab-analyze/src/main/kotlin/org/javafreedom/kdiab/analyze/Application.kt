@@ -25,12 +25,12 @@ import org.javafreedom.kdiab.analyze.plugins.configureMetrics
 import org.javafreedom.kdiab.analyze.plugins.configureSecurity
 import org.javafreedom.kdiab.analyze.plugins.configureStatusPages
 
-private const val HTTP_CONNECT_TIMEOUT_MS = 5_000L
-private const val HTTP_REQUEST_TIMEOUT_MS = 10_000L
-private const val HTTP_SOCKET_TIMEOUT_MS = 5_000L
-private const val HTTP_RETRY_MAX_RETRIES = 3
-private const val HTTP_RETRY_MAX_DELAY_MS = 8_000L
 private const val HTTP_SERVER_ERROR_STATUS = 500
+private const val HTTP_CONNECT_TIMEOUT_MS_DEFAULT = 5_000L
+private const val HTTP_REQUEST_TIMEOUT_MS_DEFAULT = 10_000L
+private const val HTTP_SOCKET_TIMEOUT_MS_DEFAULT = 5_000L
+private const val HTTP_RETRY_MAX_RETRIES_DEFAULT = 3
+private const val HTTP_RETRY_MAX_DELAY_MS_DEFAULT = 8_000L
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -82,21 +82,32 @@ fun Application.module(
         resolvedAnalyticsService = analyticsService
         resolvedProfilesService = profilesService
     } else {
+        val connectTimeoutMs = environment.config.propertyOrNull("http.connectTimeoutMs")
+            ?.getString()?.toLong() ?: HTTP_CONNECT_TIMEOUT_MS_DEFAULT
+        val requestTimeoutMs = environment.config.propertyOrNull("http.requestTimeoutMs")
+            ?.getString()?.toLong() ?: HTTP_REQUEST_TIMEOUT_MS_DEFAULT
+        val socketTimeoutMs = environment.config.propertyOrNull("http.socketTimeoutMs")
+            ?.getString()?.toLong() ?: HTTP_SOCKET_TIMEOUT_MS_DEFAULT
+        val retryMaxRetries = environment.config.propertyOrNull("http.retryMaxRetries")
+            ?.getString()?.toInt() ?: HTTP_RETRY_MAX_RETRIES_DEFAULT
+        val retryMaxDelayMs = environment.config.propertyOrNull("http.retryMaxDelayMs")
+            ?.getString()?.toLong() ?: HTTP_RETRY_MAX_DELAY_MS_DEFAULT
+
         val httpClient = HttpClient(CIO) {
             install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) { json(json) }
             install(io.ktor.client.plugins.HttpTimeout) {
-                connectTimeoutMillis = HTTP_CONNECT_TIMEOUT_MS
-                requestTimeoutMillis = HTTP_REQUEST_TIMEOUT_MS
-                socketTimeoutMillis = HTTP_SOCKET_TIMEOUT_MS
+                connectTimeoutMillis = connectTimeoutMs
+                requestTimeoutMillis = requestTimeoutMs
+                socketTimeoutMillis = socketTimeoutMs
             }
             install(io.ktor.client.plugins.HttpRequestRetry) {
-                maxRetries = HTTP_RETRY_MAX_RETRIES
+                maxRetries = retryMaxRetries
                 retryIf { _, response -> response.status.value >= HTTP_SERVER_ERROR_STATUS }
                 retryOnExceptionIf { _, cause ->
                     cause is java.net.SocketTimeoutException ||
                         cause is io.ktor.client.plugins.HttpRequestTimeoutException
                 }
-                exponentialDelay(base = 2.0, maxDelayMs = HTTP_RETRY_MAX_DELAY_MS)
+                exponentialDelay(base = 2.0, maxDelayMs = retryMaxDelayMs)
             }
         }
         monitor.subscribe(ApplicationStopping) { httpClient.close() }
