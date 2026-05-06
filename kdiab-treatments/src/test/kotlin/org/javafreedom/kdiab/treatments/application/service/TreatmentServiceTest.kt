@@ -16,6 +16,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.treatments.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.treatments.domain.model.Treatment
+import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
 import org.javafreedom.kdiab.treatments.domain.repository.TreatmentRepository
 
@@ -48,13 +49,13 @@ class TreatmentServiceTest {
     @Test
     fun `getTreatments returns list from repository`() = runTest {
         val treatments = listOf(testTreatment())
-        coEvery { repo.findByUserId(userId, null, null) } returns treatments
+        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ACTIVE) } returns treatments
         assertEquals(treatments, service.getTreatments(userId))
     }
 
     @Test
     fun `getTreatments returns empty list when no treatments found`() = runTest {
-        coEvery { repo.findByUserId(userId, null, null) } returns emptyList()
+        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ACTIVE) } returns emptyList()
         assertEquals(emptyList(), service.getTreatments(userId))
     }
 
@@ -63,14 +64,21 @@ class TreatmentServiceTest {
         val from = Instant.parse("2024-01-01T00:00:00Z")
         val to = Instant.parse("2024-01-31T23:59:59Z")
         val treatments = listOf(testTreatment())
-        coEvery { repo.findByUserId(userId, from, to) } returns treatments
+        coEvery { repo.findByUserId(userId, from, to, TreatmentStatus.ACTIVE) } returns treatments
         assertEquals(treatments, service.getTreatments(userId, from, to))
+    }
+
+    @Test
+    fun `getTreatments passes status to repository`() = runTest {
+        val treatments = listOf(testTreatment())
+        coEvery { repo.findByUserId(userId, null, null, TreatmentStatus.ARCHIVED) } returns treatments
+        assertEquals(treatments, service.getTreatments(userId, status = TreatmentStatus.ARCHIVED))
     }
 
     @Test
     fun `getTreatmentsByType returns filtered list from repository`() = runTest {
         val treatments = listOf(testTreatment())
-        coEvery { repo.findByUserIdAndType(userId, TreatmentType.BOLUS, null, null) } returns treatments
+        coEvery { repo.findByUserIdAndType(userId, TreatmentType.BOLUS, null, null, TreatmentStatus.ACTIVE) } returns treatments
         assertEquals(treatments, service.getTreatmentsByType(userId, TreatmentType.BOLUS))
     }
 
@@ -79,8 +87,23 @@ class TreatmentServiceTest {
         val from = Instant.parse("2024-01-01T00:00:00Z")
         val to = Instant.parse("2024-01-31T23:59:59Z")
         val treatments = listOf(testTreatment())
-        coEvery { repo.findByUserIdAndType(userId, TreatmentType.BOLUS, from, to) } returns treatments
+        coEvery { repo.findByUserIdAndType(userId, TreatmentType.BOLUS, from, to, TreatmentStatus.ACTIVE) } returns treatments
         assertEquals(treatments, service.getTreatmentsByType(userId, TreatmentType.BOLUS, from, to))
+    }
+
+    @Test
+    fun `archiveTreatments delegates to repository`() = runTest {
+        coEvery { repo.archiveAll(listOf(treatmentId), userId) } just runs
+        service.archiveTreatments(listOf(treatmentId), userId)
+        coVerify(exactly = 1) { repo.archiveAll(listOf(treatmentId), userId) }
+    }
+
+    @Test
+    fun `archiveTreatments throws ResourceNotFoundException when ids are empty`() = runTest {
+        assertFailsWith<ResourceNotFoundException> {
+            service.archiveTreatments(emptyList(), userId)
+        }
+        coVerify(exactly = 0) { repo.archiveAll(any(), any()) }
     }
 
     @Test

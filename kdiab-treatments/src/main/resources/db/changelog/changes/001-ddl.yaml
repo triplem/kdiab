@@ -134,3 +134,22 @@ databaseChangeLog:
             columns:
               - column:
                   name: occurred_at
+  - changeSet:
+      id: 005
+      author: javafreedom
+      changes:
+        - addColumn:
+            tableName: treatments
+            columns:
+              - column:
+                  name: status
+                  type: varchar(50)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_treatments_status
+            tableName: treatments
+            columns:
+              - column:
+                  name: status

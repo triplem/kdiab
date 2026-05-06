@@ -128,4 +128,5 @@ fun DomainTreatment.toApi(): TreatmentResponse = TreatmentResponse(
     type      = ApiTreatmentType.valueOf(this.type.name),
     `data`    = this.data,
     notes     = this.notes,
+    status    = TreatmentResponse.Status.valueOf(this.status.name),
 )

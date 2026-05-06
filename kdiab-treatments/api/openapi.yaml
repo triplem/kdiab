@@ -45,9 +45,19 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: status
+          in: query
+          required: false
+          description: Filter by treatment status (default ACTIVE)
+          schema:
+            type: string
+            enum:
+              - ACTIVE
+              - ARCHIVED
+            default: ACTIVE
       responses:
         '200':
-          description: List of active treatments
+          description: List of treatments
           content:
             application/json:
               schema:
@@ -83,6 +93,32 @@ paths:
                 $ref: '#/components/schemas/TreatmentResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}/treatments/archive:
+    post:
+      summary: Archive treatments (soft-delete)
+      description: Mark treatments as ARCHIVED. Available to all authorized users (patients for their own, doctors for assigned patients, admins for all).
+      operationId: archiveTreatments
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkTreatmentRequest'
+      responses:
+        '200':
+          description: Treatments archived successfully
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -157,6 +193,7 @@ components:
         - createdAt
         - type
         - data
+        - status
       properties:
         id:
           type: string
@@ -179,6 +216,12 @@ components:
         notes:
           type: string
           description: Optional free-text notes
+        status:
+          type: string
+          description: Treatment status (ACTIVE or ARCHIVED)
+          enum:
+            - ACTIVE
+            - ARCHIVED
 
     CreateTreatmentRequest:
       type: object

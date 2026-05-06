@@ -22,6 +22,11 @@ enum class TreatmentType {
     HYPO_TREATMENT,
 }
 
+enum class TreatmentStatus {
+    ACTIVE,
+    ARCHIVED
+}
+
 data class Treatment(
     val id: Uuid,
     val userId: Uuid,
@@ -30,4 +35,5 @@ data class Treatment(
     val type: TreatmentType,
     val data: JsonObject,
     val notes: String? = null,
+    val status: TreatmentStatus = TreatmentStatus.ACTIVE,
 )
