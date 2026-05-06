@@ -39,11 +39,14 @@ class AnalyticsServiceTest {
         val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
         assertEquals(0, result.readingCount)
         assertEquals(0, result.tir.totalCount)
+        assertTrue(result.warnings.isNotEmpty(), "Expected warning for empty readings")
+        assertTrue(result.warnings.any { it.contains("No CGM readings") })
     }
 
     @Test
     fun `getHba1c computes DCCT formula correctly for mg_dL`() = runTest {
         // Mean glucose = 154 → HbA1c = (154 + 46.7) / 28.7 ≈ 6.99
+        // 2 readings is < 288 (MIN_READINGS_RELIABLE), so a warning is expected
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(140.0),
             cgmDto(168.0),
@@ -53,6 +56,7 @@ class AnalyticsServiceTest {
         assertEquals(154.0, result.meanGlucose, absoluteTolerance = 0.01)
         val expectedHba1c = (154.0 + 46.7) / 28.7
         assertEquals(expectedHba1c, result.hba1c!!, absoluteTolerance = 0.01)
+        assertTrue(result.warnings.isNotEmpty(), "Expected unreliable data warning for < 288 readings")
     }
 
     @Test
@@ -165,6 +169,59 @@ class AnalyticsServiceTest {
         val result = service.getAgp(userId, from, to, auth, "mmol/L", "")
         val bucket8 = result.hourlyData.first { it.hour == 8 }
         assertEquals(108.0, bucket8.median, absoluteTolerance = 0.01)
+    }
+
+    // ── Warnings ──────────────────────────────────────────────────────────────
+
+    @Test
+    fun `getHba1c warns when fewer than 288 readings (less than 1 day)`() = runTest {
+        // 287 readings → unreliable
+        val readings = List(287) { cgmDto(120.0) }
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns readings
+        val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
+        assertTrue(result.warnings.isNotEmpty())
+        assertTrue(result.warnings.any { it.contains("Fewer than 1 day") })
+    }
+
+    @Test
+    fun `getHba1c warns when fewer than 4032 readings (less than 14 days)`() = runTest {
+        // 288 readings → meaningful threshold reached but not 14-day threshold
+        val readings = List(288) { cgmDto(120.0) }
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns readings
+        val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
+        assertTrue(result.warnings.isNotEmpty())
+        assertTrue(result.warnings.any { it.contains("Fewer than 14 days") })
+    }
+
+    @Test
+    fun `getHba1c has no warnings when 4032 or more readings`() = runTest {
+        // 4032 readings → no warning
+        val readings = List(4032) { cgmDto(120.0) }
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns readings
+        val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
+        assertTrue(result.warnings.isEmpty())
+    }
+
+    @Test
+    fun `getAgp warns when fewer than 12 hours have CGM data`() = runTest {
+        // Only hour 8 has data → 1 covered hour < 12
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            cgmDto(120.0, "2024-01-15T08:00:00Z"),
+        )
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        assertTrue(result.warnings.isNotEmpty())
+        assertTrue(result.warnings.any { it.contains("of 24 hours") })
+    }
+
+    @Test
+    fun `getAgp has no warnings when 12 or more hours have CGM data`() = runTest {
+        // Spread readings across 12 distinct UTC hours
+        val readings = (0 until 12).map { h ->
+            cgmDto(120.0, "2024-01-15T${String.format("%02d", h)}:00:00Z")
+        }
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns readings
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        assertTrue(result.warnings.isEmpty())
     }
 }
 

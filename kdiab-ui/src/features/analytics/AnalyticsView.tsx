@@ -52,13 +52,14 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
             meanGlucose={hba1cQuery.data.meanGlucose}
             tir={hba1cQuery.data.tir}
             glucoseUnit={glucoseUnit}
+            warnings={hba1cQuery.data.warnings}
           />
           <TimeInRangeBar tir={hba1cQuery.data.tir} glucoseUnit={glucoseUnit} />
         </>
       )}
 
       {agpQuery.data && (
-        <AgpChart hourlyData={agpQuery.data.hourlyData} glucoseUnit={glucoseUnit} />
+        <AgpChart hourlyData={agpQuery.data.hourlyData} glucoseUnit={glucoseUnit} warnings={agpQuery.data.warnings} />
       )}
     </div>
   )

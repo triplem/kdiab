@@ -23,6 +23,14 @@ private const val TIR_VERY_HIGH = 250.0 // high: severe hyperglycaemia
 
 private const val HOURS_IN_DAY = 24
 
+// Clinical thresholds for data quality warnings
+// < 1 day of 5-min CGM readings (288 = 24h * 12 readings/h)
+private const val MIN_READINGS_RELIABLE = 288
+// < 14 days of 5-min CGM readings (4032 = 14 * 288)
+private const val MIN_READINGS_MEANINGFUL = 4032
+// At least half of all 24 UTC hours must have at least one reading
+private const val MIN_COVERED_HOURS = 12
+
 private const val P10 = 10
 private const val P25 = 25
 private const val P50 = 50
@@ -43,15 +51,30 @@ class AnalyticsService(
         correlationId: String,
     ): Hba1cResult {
         val readings = fetchCgmReadings(userId, from, to, authorization, glucoseUnit, correlationId)
+
+        val warnings = buildList {
+            if (readings.isEmpty()) {
+                add("No CGM readings found in the selected timeframe.")
+            } else if (readings.size < MIN_READINGS_RELIABLE) {
+                add("Fewer than 1 day of CGM readings — HbA1c estimate is unreliable.")
+            } else if (readings.size < MIN_READINGS_MEANINGFUL) {
+                add("Fewer than 14 days of CGM data — estimate may not reflect long-term glucose control.")
+            }
+        }
+
         if (readings.isEmpty()) {
-            return Hba1cResult(hba1c = null, meanGlucose = 0.0, readingCount = 0, tir = TirBreakdown())
+            return Hba1cResult(
+                hba1c = null, meanGlucose = 0.0, readingCount = 0, tir = TirBreakdown(), warnings = warnings
+            )
         }
 
         val mean = readings.average()
         val hba1c = (mean + DCCT_ADDEND) / DCCT_DIVISOR
         val tir = computeTir(readings)
 
-        return Hba1cResult(hba1c = hba1c, meanGlucose = mean, readingCount = readings.size, tir = tir)
+        return Hba1cResult(
+            hba1c = hba1c, meanGlucose = mean, readingCount = readings.size, tir = tir, warnings = warnings
+        )
     }
 
     @Suppress("LongParameterList")
@@ -93,7 +116,14 @@ class AnalyticsService(
             }
         }
 
-        return AgpResult(hourlyData = hourlyData)
+        val coveredHours = hourlyData.count { it.count > 0 }
+        val agpWarnings = buildList {
+            if (coveredHours < MIN_COVERED_HOURS) {
+                add("Only $coveredHours of 24 hours have CGM data — AGP pattern may not be representative.")
+            }
+        }
+
+        return AgpResult(hourlyData = hourlyData, warnings = agpWarnings)
     }
 
     @Suppress("LongParameterList")

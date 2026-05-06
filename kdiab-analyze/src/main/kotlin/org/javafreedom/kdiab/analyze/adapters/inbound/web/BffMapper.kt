@@ -41,6 +41,7 @@ data class Hba1cResponseDto(
     val meanGlucose: Double,
     val readingCount: Int,
     val tir: TirBreakdownDto,
+    val warnings: List<String> = emptyList(),
 )
 
 @Serializable
@@ -53,7 +54,10 @@ data class TirBreakdownDto(
 )
 
 @Serializable
-data class AgpResponseDto(val hourlyData: List<AgpHourlyDataDto>)
+data class AgpResponseDto(
+    val hourlyData: List<AgpHourlyDataDto>,
+    val warnings: List<String> = emptyList(),
+)
 
 @Serializable
 data class AgpHourlyDataDto(
@@ -112,12 +116,14 @@ fun Hba1cResult.toResponse() = Hba1cResponseDto(
     meanGlucose = meanGlucose,
     readingCount = readingCount,
     tir = TirBreakdownDto(tir.belowCount, tir.inRangeCount, tir.aboveCount, tir.highCount, tir.totalCount),
+    warnings = warnings,
 )
 
 fun AgpResult.toResponse() = AgpResponseDto(
     hourlyData = hourlyData.map {
         AgpHourlyDataDto(it.hour, it.p10, it.p25, it.median, it.p75, it.p90, it.count)
     },
+    warnings = warnings,
 )
 
 fun ProfilesResult.toResponse() = ProfilesResponseDto(

@@ -6,9 +6,10 @@ interface Props {
   meanGlucose: number
   tir: TirBreakdown
   glucoseUnit: string
+  warnings?: string[]
 }
 
-export function HbA1cCard({ hba1c, meanGlucose, tir, glucoseUnit }: Props) {
+export function HbA1cCard({ hba1c, meanGlucose, tir, glucoseUnit, warnings }: Props) {
   const { t } = useTranslation()
   const displayMean = glucoseUnit === 'mmol/L'
     ? (meanGlucose / 18.0).toFixed(1) + ' mmol/L'
@@ -36,6 +37,11 @@ export function HbA1cCard({ hba1c, meanGlucose, tir, glucoseUnit }: Props) {
       {tir.totalCount > 0 && (
         <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
           Based on {tir.totalCount} CGM readings
+        </div>
+      )}
+      {warnings && warnings.length > 0 && (
+        <div className="warning-banner" role="alert">
+          {warnings.map((w, i) => <p key={i}>{w}</p>)}
         </div>
       )}
     </div>
