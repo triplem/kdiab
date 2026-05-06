@@ -1,3 +1,5 @@
+@file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+
 package org.javafreedom.kdiab.analyze.application.service
 
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
@@ -8,6 +10,7 @@ import org.javafreedom.kdiab.analyze.domain.model.TimelineTreatment
 import kotlinx.coroutines.async
 import kotlinx.coroutines.supervisorScope
 import kotlinx.datetime.Instant
+import kotlin.uuid.Uuid
 
 class TimelineService(
     private val measuresClient: MeasuresClient,
@@ -38,37 +41,37 @@ class TimelineService(
         val allTreatments = treatmentsResult.getOrElse { e -> errors.add("treatments: ${e.message}"); emptyList() }
 
         val filteredMeasures = allMeasures
-            .filter { dto ->
-                val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@filter false
-                t >= fromInstant && t <= toInstant
-            }
-            .map { dto ->
+            .mapNotNull { dto ->
+                val id = runCatching { Uuid.parse(dto.id) }.getOrNull() ?: return@mapNotNull null
+                val uId = runCatching { Uuid.parse(dto.userId) }.getOrNull() ?: return@mapNotNull null
+                val measuredAt = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@mapNotNull null
                 TimelineMeasure(
-                    id = dto.id,
-                    userId = dto.userId,
-                    measuredAt = dto.measuredAt,
+                    id = id,
+                    userId = uId,
+                    measuredAt = measuredAt,
                     type = dto.type,
                     source = dto.source,
                     data = dto.data,
                     status = dto.status,
                 )
             }
+            .filter { it.measuredAt >= fromInstant && it.measuredAt <= toInstant }
 
         val filteredTreatments = allTreatments
-            .filter { dto ->
-                val t = runCatching { Instant.parse(dto.treatedAt) }.getOrNull() ?: return@filter false
-                t >= fromInstant && t <= toInstant
-            }
-            .map { dto ->
+            .mapNotNull { dto ->
+                val id = runCatching { Uuid.parse(dto.id) }.getOrNull() ?: return@mapNotNull null
+                val uId = runCatching { Uuid.parse(dto.userId) }.getOrNull() ?: return@mapNotNull null
+                val treatedAt = runCatching { Instant.parse(dto.treatedAt) }.getOrNull() ?: return@mapNotNull null
                 TimelineTreatment(
-                    id = dto.id,
-                    userId = dto.userId,
-                    treatedAt = dto.treatedAt,
+                    id = id,
+                    userId = uId,
+                    treatedAt = treatedAt,
                     type = dto.type,
                     notes = dto.notes,
                     data = dto.data,
                 )
             }
+            .filter { it.treatedAt >= fromInstant && it.treatedAt <= toInstant }
 
         Timeline(measures = filteredMeasures, treatments = filteredTreatments, errors = errors)
     }

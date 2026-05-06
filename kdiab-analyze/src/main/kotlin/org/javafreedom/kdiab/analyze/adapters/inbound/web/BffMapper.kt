@@ -84,10 +84,25 @@ data class ProfileSummaryDto(
 
 fun Timeline.toResponse() = TimelineResponse(
     measures = measures.map {
-        TimelineMeasureDto(it.id, it.userId, it.measuredAt, it.type, it.source, it.data, it.status)
+        TimelineMeasureDto(
+            it.id.toString(),
+            it.userId.toString(),
+            it.measuredAt.toString(),
+            it.type,
+            it.source,
+            it.data,
+            it.status,
+        )
     },
     treatments = treatments.map {
-        TimelineTreatmentDto(it.id, it.userId, it.treatedAt, it.type, it.notes, it.data)
+        TimelineTreatmentDto(
+            it.id.toString(),
+            it.userId.toString(),
+            it.treatedAt.toString(),
+            it.type,
+            it.notes,
+            it.data,
+        )
     },
     errors = errors,
 )

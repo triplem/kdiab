@@ -1,11 +1,15 @@
+@file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+
 package org.javafreedom.kdiab.analyze.domain.model
 
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonObject
+import kotlin.uuid.Uuid
 
 data class TimelineMeasure(
-    val id: String,
-    val userId: String,
-    val measuredAt: String,
+    val id: Uuid,
+    val userId: Uuid,
+    val measuredAt: Instant,
     val type: String,
     val source: String?,
     val data: JsonObject,
@@ -13,9 +17,9 @@ data class TimelineMeasure(
 )
 
 data class TimelineTreatment(
-    val id: String,
-    val userId: String,
-    val treatedAt: String,
+    val id: Uuid,
+    val userId: Uuid,
+    val treatedAt: Instant,
     val type: String,
     val notes: String?,
     val data: JsonObject,
