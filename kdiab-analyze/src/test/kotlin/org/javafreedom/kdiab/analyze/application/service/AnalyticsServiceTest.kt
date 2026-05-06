@@ -35,7 +35,7 @@ class AnalyticsServiceTest {
 
     @Test
     fun `getHba1c returns null fields when no CGM readings in timeframe`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns emptyList()
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns emptyList()
         val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
         assertEquals(0, result.readingCount)
         assertEquals(0, result.tir.totalCount)
@@ -44,7 +44,7 @@ class AnalyticsServiceTest {
     @Test
     fun `getHba1c computes DCCT formula correctly for mg_dL`() = runTest {
         // Mean glucose = 154 → HbA1c = (154 + 46.7) / 28.7 ≈ 6.99
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(140.0),
             cgmDto(168.0),
         )
@@ -58,14 +58,14 @@ class AnalyticsServiceTest {
     @Test
     fun `getHba1c converts mmol per L to mg_dL before DCCT calc`() = runTest {
         // 8.0 mmol/L * 18 = 144 mg/dL
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(cgmDto(8.0))
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(cgmDto(8.0))
         val result = service.getHba1c(userId, from, to, auth, "mmol/L", "")
         assertEquals(144.0, result.meanGlucose, absoluteTolerance = 0.01)
     }
 
     @Test
     fun `getHba1c ignores non-CGM readings`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(200.0),
             MeasureDto(
                 id = "m-2", userId = userId, measuredAt = "2024-01-15T13:00:00Z",
@@ -78,20 +78,22 @@ class AnalyticsServiceTest {
     }
 
     @Test
-    fun `getHba1c ignores readings outside timeframe`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(
-            cgmDto(200.0, "2023-12-31T23:59:00Z"), // before 'from'
-            cgmDto(100.0, "2024-01-15T12:00:00Z"), // inside
+    fun `getHba1c passes from and to to upstream and counts all returned readings`() = runTest {
+        // Filtering is server-side — the service forwards from/to to the upstream API.
+        // All items returned by the client are counted (no client-side date filtering).
+        coEvery { measuresClient.getMeasures(userId, auth, any(), eq(from), eq(to)) } returns listOf(
+            cgmDto(200.0, "2023-12-31T23:59:00Z"),
+            cgmDto(100.0, "2024-01-15T12:00:00Z"),
         )
         val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
-        assertEquals(1, result.readingCount)
+        assertEquals(2, result.readingCount)
     }
 
     // ── TIR ──────────────────────────────────────────────────────────────────
 
     @Test
     fun `getHba1c classifies TIR zones correctly`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(50.0),   // below  (<70)
             cgmDto(100.0),  // target (70-180)
             cgmDto(200.0),  // above  (180-250)
@@ -107,7 +109,7 @@ class AnalyticsServiceTest {
 
     @Test
     fun `getHba1c treats boundary values correctly`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(70.0),   // exactly at lower TIR boundary → in-range
             cgmDto(180.0),  // exactly at upper TIR boundary → in-range
             cgmDto(250.0),  // exactly at high boundary → above (≤250)
@@ -123,7 +125,7 @@ class AnalyticsServiceTest {
 
     @Test
     fun `getAgp returns 24 hourly buckets`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns emptyList()
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns emptyList()
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
         assertEquals(24, result.hourlyData.size)
     }
@@ -131,7 +133,7 @@ class AnalyticsServiceTest {
     @Test
     fun `getAgp assigns readings to correct UTC hour`() = runTest {
         // 14:00 UTC
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(120.0, "2024-01-15T14:05:00Z"),
             cgmDto(130.0, "2024-01-15T14:30:00Z"),
         )
@@ -146,7 +148,7 @@ class AnalyticsServiceTest {
 
     @Test
     fun `getAgp empty buckets have null percentiles`() = runTest {
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(100.0, "2024-01-15T10:00:00Z"),
         )
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
@@ -157,7 +159,7 @@ class AnalyticsServiceTest {
     @Test
     fun `getAgp converts mmol per L before bucketing`() = runTest {
         // 6.0 mmol/L * 18 = 108 mg/dL
-        coEvery { measuresClient.getMeasures(userId, auth, any()) } returns listOf(
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(6.0, "2024-01-15T08:00:00Z"),
         )
         val result = service.getAgp(userId, from, to, auth, "mmol/L", "")
