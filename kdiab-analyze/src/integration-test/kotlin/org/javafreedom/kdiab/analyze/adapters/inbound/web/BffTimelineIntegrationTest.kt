@@ -41,7 +41,7 @@ class BffTimelineIntegrationTest {
 
         fun token(userId: String, roles: List<String>): String = JWT.create()
             .withSubject(userId)
-            .withAudience(AUDIENCE)
+            .withAudience(AUDIENCE, "measure", "profile", "treatment")
             .withIssuer(ISSUER)
             .withClaim("roles", roles)
             .withClaim("glucose_unit", "mg/dL")
