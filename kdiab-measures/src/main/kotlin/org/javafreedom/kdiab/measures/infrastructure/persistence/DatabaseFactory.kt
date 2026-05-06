@@ -32,7 +32,7 @@ object DatabaseFactory {
         Database.connect(dataSource)
 
         transaction {
-            SchemaUtils.create(MeasuresTable)
+            SchemaUtils.create(MeasuresTable, AuditLogsTable)
         }
     }
 }
