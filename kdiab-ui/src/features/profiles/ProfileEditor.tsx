@@ -60,7 +60,6 @@ interface ProfileFormValues {
   durationOfAction: number
   timeZone?: string
   proposalReason?: string
-  timeZone?: string
   basal: { startTime: string; value: number }[]
   icr: { startTime: string; value: number }[]
   isf: { startTime: string; value: number }[]
@@ -139,7 +138,6 @@ export function ProfileEditor({
           durationOfAction: z.number().int().min(1, 'Duration must be positive (minutes)'),
           timeZone: z.string().optional(),
           proposalReason: z.string().optional(),
-          timeZone: z.string().optional(),
           basal: z
             .array(timeSegmentSchema)
             .nonempty('At least one basal segment required')
@@ -203,7 +201,6 @@ export function ProfileEditor({
           durationOfAction: initialProfile.durationOfAction || 300,
           timeZone: initialProfile.timeZone || '',
           proposalReason: '',
-          timeZone: initialProfile.timeZone || '',
           basal: initialProfile.basal?.length ? initialProfile.basal : [{ startTime: '00:00', value: 0.5 }],
           icr: initialProfile.icr || [],
           isf: initialProfile.isf || [],
@@ -215,7 +212,6 @@ export function ProfileEditor({
           durationOfAction: 300,
           timeZone: '',
           proposalReason: '',
-          timeZone: '',
           basal: [{ startTime: '00:00', value: 0.5 }],
           icr: [],
           isf: [],
@@ -267,7 +263,6 @@ export function ProfileEditor({
         durationOfAction: data.durationOfAction,
         timeZone: data.timeZone || undefined,
         proposalReason: data.proposalReason || undefined,
-        timeZone: data.timeZone || undefined,
         basal: data.basal,
         icr: data.icr,
         isf: data.isf,
@@ -472,16 +467,6 @@ export function ProfileEditor({
             />
           </div>
         )}
-
-        <div className="form-group">
-          <label htmlFor="timeZone">{t('profile.timeZone')}</label>
-          <input
-            id="timeZone"
-            type="text"
-            placeholder={t('profile.timeZonePlaceholder')}
-            {...register('timeZone')}
-          />
-        </div>
 
         <div className="tabs">
           {(['basal', 'icr', 'isf', 'targets'] as const).map((tab) => (

@@ -30,7 +30,6 @@ export interface Profile {
   archivedAt?: string
   previousProfileId?: string
   proposalReason?: string | null
-  timeZone?: string
 }
 
 export interface Insulin {

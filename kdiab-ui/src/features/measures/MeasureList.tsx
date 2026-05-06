@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { measuresApi } from '../../api/measuresApi'
 import { useTimeFormat } from '../../context/TimeFormatContext'
-import { useTranslation, type TFunction } from 'react-i18next'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { ConfirmModal } from '../../components/ConfirmModal'
 
 const PAGE_SIZES = [5, 20, 50, 100] as const
