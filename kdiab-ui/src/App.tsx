@@ -235,6 +235,7 @@ export default function App() {
             </div>
             <TreatmentList
               userId={viewingUserId}
+              canArchive={true}
               canDelete={isAdmin || isDoctor}
             />
             <AddTreatmentModal

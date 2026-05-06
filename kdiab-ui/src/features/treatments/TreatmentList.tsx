@@ -9,6 +9,7 @@ import { ConfirmModal } from '../../components/ConfirmModal'
 interface TreatmentListProps {
   userId: string
   canDelete: boolean
+  canArchive: boolean
 }
 
 function formatDuration(minutes: number): string {
@@ -66,13 +67,46 @@ const renderDataSummary = (tr: TreatmentResponse): string => {
   }
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  insulin: 'Insulin (U)',
+  insulinType: 'Insulin Type',
+  carbs: 'Carbohydrates (g)',
+  absorptionTime: 'Absorption Time (h)',
+  rate: 'Rate (U/h)',
+  duration: 'Duration (min)',
+  intensity: 'Intensity',
+  name: 'Activity',
+  text: 'Note',
+  location: 'Location',
+  sensor: 'Sensor',
+  reason: 'Reason',
+  immediatePercent: 'Immediate (%)',
+}
+
+function renderPayload(data: Record<string, unknown>): React.ReactNode {
+  const entries = Object.entries(data)
+  if (entries.length === 0) return <span style={{ color: 'var(--text-secondary)' }}>—</span>
+  return (
+    <dl style={{ margin: 0, display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '2px 12px' }}>
+      {entries.map(([key, val]) => (
+        <React.Fragment key={key}>
+          <dt style={{ color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.85rem' }}>
+            {FIELD_LABELS[key] ?? key}:
+          </dt>
+          <dd style={{ margin: 0, fontSize: '0.85rem' }}>{String(val)}</dd>
+        </React.Fragment>
+      ))}
+    </dl>
+  )
+}
+
 interface ConfirmAction {
   title: string
   message: string
   action: () => void
 }
 
-export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete }) => {
+export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete, canArchive }) => {
   const queryClient = useQueryClient()
   const { formatDate } = useTimeFormat()
   const { t } = useTranslation()
@@ -92,6 +126,19 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
 
   const deleteMutation = useMutation({
     mutationFn: (ids: string[]) => treatmentsApi.deleteTreatments(userId, { treatmentIds: ids }),
+    onSuccess: () => {
+      setMutationError(null)
+      setSelectedIds(new Set())
+      void queryClient.invalidateQueries({ queryKey: ['treatments', userId] })
+    },
+    onError: (err: unknown) => {
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
+      setMutationError(apiErr?.response?.data?.message ?? apiErr?.message ?? t('list.mutationError'))
+    },
+  })
+
+  const archiveMutation = useMutation({
+    mutationFn: (ids: string[]) => treatmentsApi.archiveTreatments(userId, { treatmentIds: ids }),
     onSuccess: () => {
       setMutationError(null)
       setSelectedIds(new Set())
@@ -139,6 +186,25 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
     })
   }
 
+  const handleBulkArchive = () => {
+    setConfirmAction({
+      title: t('confirm.archiveTitle'),
+      message: t('list.confirmBulkArchive'),
+      action: () => archiveMutation.mutate(Array.from(selectedIds)),
+    })
+  }
+
+  const handleSingleArchive = (id: string) => {
+    setConfirmAction({
+      title: t('confirm.archiveTitle'),
+      message: t('list.confirmArchive'),
+      action: () => archiveMutation.mutate([id]),
+    })
+  }
+
+  const showCheckboxColumn = canArchive || canDelete
+  const colSpan = showCheckboxColumn ? 4 : 3
+
   if (isLoading) return <div style={{ padding: '2rem' }}>{t('list.loading')}</div>
   if (isError) return <div style={{ padding: '2rem', color: 'var(--accent-danger)' }}>{t('list.error')}</div>
 
@@ -167,8 +233,18 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>{t('list.title')}</h2>
-        {canDelete && (
-          <div className="bulk-actions">
+        <div className="bulk-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+          {canArchive && (
+            <button
+              disabled={selectedIds.size === 0 || archiveMutation.isPending}
+              onClick={handleBulkArchive}
+              className="btn outline"
+              style={{ padding: '0.4rem 0.8rem' }}
+            >
+              {t('list.archiveSelected', { count: selectedIds.size })}
+            </button>
+          )}
+          {canDelete && (
             <button
               disabled={selectedIds.size === 0 || deleteMutation.isPending}
               onClick={handleBulkDelete}
@@ -177,8 +253,8 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
             >
               {t('list.deleteSelected', { count: selectedIds.size })}
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <table
@@ -187,7 +263,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
       >
         <thead>
           <tr style={{ borderBottom: '2px solid var(--table-border-header)' }}>
-            {canDelete && (
+            {showCheckboxColumn && (
               <th style={{ padding: '12px 8px' }}>
                 <input
                   type="checkbox"
@@ -214,7 +290,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
                   }}
                   onClick={() => toggleExpand(tr.id)}
                 >
-                  {canDelete && (
+                  {showCheckboxColumn && (
                     <td style={{ padding: '12px 8px' }} onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
@@ -251,10 +327,20 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
                         color: 'var(--text-primary)',
                       }}
                     >
-                      {tr.type}
+                      {t('treatmentModal.types.' + tr.type, { defaultValue: tr.type })}
                     </span>
                   </td>
-                  <td style={{ padding: '12px 8px' }} onClick={(e) => e.stopPropagation()}>
+                  <td style={{ padding: '12px 8px', display: 'flex', gap: '0.4rem' }} onClick={(e) => e.stopPropagation()}>
+                    {canArchive && (
+                      <button
+                        className="btn outline"
+                        style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+                        disabled={archiveMutation.isPending}
+                        onClick={() => handleSingleArchive(tr.id)}
+                      >
+                        {t('list.archive')}
+                      </button>
+                    )}
                     {canDelete && (
                       <button
                         className="btn danger"
@@ -270,7 +356,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
                 {isExpanded && (
                   <tr style={{ background: 'var(--table-row-alt)' }}>
                     <td
-                      colSpan={canDelete ? 4 : 3}
+                      colSpan={colSpan}
                       style={{ padding: '16px', borderBottom: '1px solid var(--table-border)' }}
                     >
                       <h4>{t('list.details')}</h4>
@@ -304,17 +390,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
                           <p>
                             <strong>{t('list.dataPayload')}:</strong>
                           </p>
-                          <pre
-                            style={{
-                              background: 'var(--code-bg)',
-                              padding: '8px',
-                              borderRadius: '4px',
-                              fontSize: '0.9rem',
-                              overflowX: 'auto',
-                            }}
-                          >
-                            {JSON.stringify(tr.data, null, 2)}
-                          </pre>
+                          {renderPayload(tr.data as Record<string, unknown>)}
                         </div>
                       </div>
                     </td>
@@ -325,7 +401,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete 
           })}
           {treatments.length === 0 && (
             <tr>
-              <td colSpan={canDelete ? 4 : 3} style={{ textAlign: 'center', padding: '2rem' }}>
+              <td colSpan={colSpan} style={{ textAlign: 'center', padding: '2rem' }}>
                 {t('list.empty')}
               </td>
             </tr>
