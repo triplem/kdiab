@@ -31,6 +31,8 @@ class ProfilesService(
                     createdAt = dto.createdAt,
                     validFrom = dto.validFrom,
                     previousProfileId = dto.previousProfileId,
+                    activatedAt = dto.activatedAt,
+                    archivedAt = dto.archivedAt,
                 )
             }
 
