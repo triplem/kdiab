@@ -28,7 +28,7 @@ docker compose up --build
 docker compose -f docker-compose.yml -f docker-compose.pgadmin.yml up --build
 ```
 
-Navigate to http://localhost:3000 for the gateway (all UIs accessible under `/measures/`, `/profiles/`, `/treatments/`, `/analyze/`).
+Navigate to http://localhost:3005 for the kdiab-ui frontend (all UIs accessible under `/measures/`, `/profiles/`, `/treatments/`, `/analyze/`).
 
 ## Build Commands
 
@@ -93,14 +93,10 @@ docker compose down -v           # Tear down and wipe volumes
 
 | Component | URL |
 |---|---|
-| Gateway (all UIs) | http://localhost:3000 |
-| kdiab-measures frontend | http://localhost:3004 (also `/measures/`) |
+| kdiab-ui (all frontends) | http://localhost:3005 |
 | kdiab-measures backend / Swagger | http://localhost:8080 / http://localhost:8080/swagger |
-| kdiab-profiles frontend | http://localhost:3001 (also `/profiles/`) |
 | kdiab-profiles backend / Swagger | http://localhost:8082 / http://localhost:8082/swagger |
-| kdiab-treatments frontend | http://localhost:3002 (also `/treatments/`) |
 | kdiab-treatments backend / Swagger | http://localhost:8083 / http://localhost:8083/swagger |
-| kdiab-analyze frontend | http://localhost:3003 (also `/analyze/`) |
 | kdiab-analyze backend / Swagger | http://localhost:8084 / http://localhost:8084/swagger |
 | Keycloak Admin | http://localhost:8081 (admin / from `.env`) |
 | pgAdmin | http://localhost:5050 — opt-in via `docker-compose.pgadmin.yml` |

@@ -6,7 +6,7 @@ info:
     Backend-for-Frontend aggregating measures, treatments, and profiles
     from the three kdiab services into a unified analytics API.
 servers:
-  - url: http://localhost:8083/api/v1
+  - url: http://localhost:8084/api/v1
 security:
   - bearerAuth: []
 
