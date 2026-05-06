@@ -38,6 +38,13 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
 
       {loading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
 
+      {hba1cQuery.isError && (
+        <div className="error-banner" role="alert">{t('analytics.hba1cError')}</div>
+      )}
+      {agpQuery.isError && (
+        <div className="error-banner" role="alert">{t('analytics.agpError')}</div>
+      )}
+
       {hba1cQuery.data && (
         <>
           <HbA1cCard
