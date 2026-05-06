@@ -134,6 +134,28 @@ class ExposedTreatmentRepository(
             }
         }
 
+    override suspend fun update(
+        treatmentId: Uuid,
+        userId: Uuid,
+        treatedAt: Instant,
+        data: JsonObject,
+        notes: String?,
+    ): Treatment = withContext(ioDispatcher) {
+        suspendTransaction {
+            TreatmentsTable.update({
+                (TreatmentsTable.id eq treatmentId) and (TreatmentsTable.userId eq userId)
+            }) {
+                it[TreatmentsTable.treatedAt] = java.time.Instant.ofEpochMilli(treatedAt.toEpochMilliseconds())
+                it[TreatmentsTable.data] = data
+                it[TreatmentsTable.notes] = notes
+            }
+            TreatmentsTable.selectAll()
+                .where { (TreatmentsTable.id eq treatmentId) and (TreatmentsTable.userId eq userId) }
+                .single()
+                .toTreatment()
+        }
+    }
+
     override suspend fun archiveAll(ids: List<Uuid>, userId: Uuid): Unit = withContext(ioDispatcher) {
         suspendTransaction {
             TreatmentsTable.update({

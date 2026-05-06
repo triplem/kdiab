@@ -8,15 +8,19 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import io.ktor.server.resources.post
+import io.ktor.server.resources.put
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.javafreedom.kdiab.measures.api.Paths
 import org.javafreedom.kdiab.measures.api.models.CreateMeasureRequest
 import org.javafreedom.kdiab.measures.api.models.BulkMeasureRequest
 import org.javafreedom.kdiab.measures.api.models.MeasureResponse
+import org.javafreedom.kdiab.measures.api.models.UpdateMeasureRequest
 import org.javafreedom.kdiab.measures.application.service.MeasureService
 import org.javafreedom.kdiab.measures.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.measures.domain.exception.BusinessValidationException
@@ -45,6 +49,7 @@ fun Route.measureRoutes(measureService: MeasureService, auditLogRepository: Audi
     authenticate("auth-jwt") {
         listMeasures(measureService, auditLogRepository)
         createMeasure(measureService, auditLogRepository)
+        updateMeasure(measureService, auditLogRepository)
         archiveMeasures(measureService, auditLogRepository)
         deleteMeasures(measureService, auditLogRepository)
     }
@@ -97,6 +102,27 @@ private fun Route.createMeasure(measureService: MeasureService, auditLogReposito
         val saved = measureService.addMeasure(measure)
         logger.info { "Created measure ${saved.id} for user $targetUserId" }
         call.respond(HttpStatusCode.Created, saved.toApi(glucoseUnit, weightUnit))
+    }
+}
+
+private fun Route.updateMeasure(measureService: MeasureService, auditLogRepository: AuditLogRepository) {
+    put<Paths.updateMeasure> { params ->
+        val principal = call.principal<UserPrincipal>()
+        val targetUserId = parseUuid(params.userId)
+        val measureId = parseUuid(params.measureId)
+        checkReadAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "measures.update", auditLogRepository)
+
+        val glucoseUnit = principal?.glucoseUnit ?: "mg/dL"
+        val weightUnit = principal?.weightUnit ?: "kg"
+        val request = call.receive<UpdateMeasureRequest>()
+        val measuredAt = runCatching { Instant.parse(request.measuredAt) }.getOrElse {
+            throw BusinessValidationException("Invalid measuredAt timestamp: '${request.measuredAt}'")
+        }
+        val data = Json.parseToJsonElement(request.`data`.toString()).jsonObject
+        val updated = measureService.updateMeasure(measureId, targetUserId, measuredAt, data)
+        logger.info { "Updated measure $measureId for user $targetUserId" }
+        call.respond(HttpStatusCode.OK, updated.toApi(glucoseUnit, weightUnit))
     }
 }
 

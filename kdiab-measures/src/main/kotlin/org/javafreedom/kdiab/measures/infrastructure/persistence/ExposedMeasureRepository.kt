@@ -108,6 +108,22 @@ class ExposedMeasureRepository(
             }
         }
 
+    override suspend fun update(measureId: Uuid, userId: Uuid, measuredAt: Instant, data: JsonObject): Measure =
+        withContext(ioDispatcher) {
+            suspendTransaction {
+                MeasuresTable.update({
+                    (MeasuresTable.id eq measureId) and (MeasuresTable.userId eq userId)
+                }) {
+                    it[MeasuresTable.measuredAt] = java.time.Instant.ofEpochMilli(measuredAt.toEpochMilliseconds())
+                    it[MeasuresTable.data] = data
+                }
+                MeasuresTable.selectAll()
+                    .where { (MeasuresTable.id eq measureId) and (MeasuresTable.userId eq userId) }
+                    .single()
+                    .toMeasure()
+            }
+        }
+
     override suspend fun archive(ids: List<Uuid>, userId: Uuid): Unit = withContext(ioDispatcher) {
         suspendTransaction {
             MeasuresTable.update({

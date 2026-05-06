@@ -4,12 +4,14 @@ package org.javafreedom.kdiab.treatments.domain.repository
 
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
+import kotlinx.serialization.json.JsonObject
 import org.javafreedom.kdiab.treatments.domain.model.Treatment
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
 
 interface TreatmentRepository {
     suspend fun save(treatment: Treatment): Treatment
+    suspend fun update(treatmentId: Uuid, userId: Uuid, treatedAt: Instant, data: JsonObject, notes: String?): Treatment
     suspend fun findByUserId(
         userId: Uuid,
         from: Instant? = null,

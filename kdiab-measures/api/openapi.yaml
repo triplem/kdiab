@@ -92,6 +92,45 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /users/{userId}/measures/{measureId}:
+    put:
+      summary: Update a measure
+      operationId: updateMeasure
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: measureId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMeasureRequest'
+      responses:
+        '200':
+          description: Measure updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeasureResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /users/{userId}/measures/archive:
     post:
       summary: Archive multiple measures
@@ -246,6 +285,18 @@ components:
           $ref: '#/components/schemas/MeasureType'
         source:
           $ref: '#/components/schemas/MeasureSource'
+        data:
+          $ref: '#/components/schemas/MeasurePayload'
+
+    UpdateMeasureRequest:
+      type: object
+      required:
+        - measuredAt
+        - data
+      properties:
+        measuredAt:
+          type: string
+          format: date-time
         data:
           $ref: '#/components/schemas/MeasurePayload'
 

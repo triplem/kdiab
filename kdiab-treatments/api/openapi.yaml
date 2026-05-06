@@ -113,6 +113,45 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /users/{userId}/treatments/{treatmentId}:
+    put:
+      summary: Update a treatment
+      operationId: updateTreatment
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: treatmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTreatmentRequest'
+      responses:
+        '200':
+          description: Treatment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TreatmentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /users/{userId}/treatments/archive:
     post:
       summary: Archive treatments (soft-delete)
@@ -274,6 +313,22 @@ components:
           description: When the treatment actually occurred
         type:
           $ref: '#/components/schemas/TreatmentType'
+        data:
+          $ref: '#/components/schemas/TreatmentPayload'
+        notes:
+          type: string
+          description: Optional free-text notes
+
+    UpdateTreatmentRequest:
+      type: object
+      required:
+        - treatedAt
+        - data
+      properties:
+        treatedAt:
+          type: string
+          format: date-time
+          description: When the treatment actually occurred
         data:
           $ref: '#/components/schemas/TreatmentPayload'
         notes:

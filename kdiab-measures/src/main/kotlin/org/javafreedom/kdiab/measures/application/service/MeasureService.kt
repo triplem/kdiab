@@ -3,6 +3,7 @@ package org.javafreedom.kdiab.measures.application.service
 
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
+import kotlinx.serialization.json.JsonObject
 import org.javafreedom.kdiab.measures.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.measures.domain.model.Measure
 import org.javafreedom.kdiab.measures.domain.model.PagedMeasures
@@ -13,6 +14,9 @@ class MeasureService(
 ) {
     suspend fun addMeasure(measure: Measure): Measure =
         measureRepository.save(measure)
+
+    suspend fun updateMeasure(measureId: Uuid, userId: Uuid, measuredAt: Instant, data: JsonObject): Measure =
+        measureRepository.update(measureId, userId, measuredAt, data)
 
     suspend fun getMeasures(
         userId: Uuid, page: Int, size: Int,

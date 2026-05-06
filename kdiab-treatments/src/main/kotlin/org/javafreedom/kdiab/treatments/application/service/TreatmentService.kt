@@ -6,6 +6,7 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
+import kotlinx.serialization.json.JsonObject
 import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.treatments.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.treatments.domain.model.PagedTreatments
@@ -27,6 +28,14 @@ class TreatmentService(
         }
         return treatmentRepository.save(treatment)
     }
+
+    suspend fun updateTreatment(
+        treatmentId: Uuid,
+        userId: Uuid,
+        treatedAt: Instant,
+        data: JsonObject,
+        notes: String?,
+    ): Treatment = treatmentRepository.update(treatmentId, userId, treatedAt, data, notes)
 
     suspend fun getTreatments(
         userId: Uuid,

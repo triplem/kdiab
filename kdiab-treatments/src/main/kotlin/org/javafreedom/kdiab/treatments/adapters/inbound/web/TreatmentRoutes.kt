@@ -8,15 +8,19 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import io.ktor.server.resources.post
+import io.ktor.server.resources.put
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 import org.javafreedom.kdiab.treatments.api.Paths
 import org.javafreedom.kdiab.treatments.api.models.CreateTreatmentRequest
 import org.javafreedom.kdiab.treatments.api.models.BulkTreatmentRequest
 import org.javafreedom.kdiab.treatments.api.models.TreatmentResponse
+import org.javafreedom.kdiab.treatments.api.models.UpdateTreatmentRequest
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.treatments.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
@@ -46,6 +50,7 @@ fun Route.treatmentRoutes(treatmentService: TreatmentService, auditLogRepository
     authenticate("auth-jwt") {
         listTreatments(treatmentService, auditLogRepository)
         createTreatment(treatmentService, auditLogRepository)
+        updateTreatment(treatmentService, auditLogRepository)
         archiveTreatments(treatmentService, auditLogRepository)
         deleteTreatments(treatmentService, auditLogRepository)
     }
@@ -104,6 +109,25 @@ private fun Route.createTreatment(treatmentService: TreatmentService, auditLogRe
         val saved = treatmentService.addTreatment(treatment)
         logger.info { "Created treatment ${saved.id} for user $targetUserId" }
         call.respond(HttpStatusCode.Created, saved.toApi())
+    }
+}
+
+private fun Route.updateTreatment(treatmentService: TreatmentService, auditLogRepository: AuditLogRepository) {
+    put<Paths.updateTreatment> { params ->
+        val principal = call.principal<UserPrincipal>()
+        val targetUserId = parseUuid(params.userId)
+        val treatmentId = parseUuid(params.treatmentId)
+        checkAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "treatments.update", auditLogRepository)
+
+        val request = call.receive<UpdateTreatmentRequest>()
+        val treatedAt = runCatching { Instant.parse(request.treatedAt) }.getOrElse {
+            throw BusinessValidationException("Invalid treatedAt timestamp: '${request.treatedAt}'")
+        }
+        val data = Json.parseToJsonElement(request.`data`.toString()).jsonObject
+        val updated = treatmentService.updateTreatment(treatmentId, targetUserId, treatedAt, data, request.notes)
+        logger.info { "Updated treatment $treatmentId for user $targetUserId" }
+        call.respond(HttpStatusCode.OK, updated.toApi())
     }
 }
 
