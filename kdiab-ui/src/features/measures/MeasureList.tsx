@@ -124,6 +124,7 @@ interface ConfirmAction {
 
 export const MeasureList: React.FC<MeasureListProps> = ({
   userId,
+  glucoseUnit = 'mg/dL',
   canArchive,
   canDelete,
 }) => {
@@ -263,7 +264,11 @@ export const MeasureList: React.FC<MeasureListProps> = ({
 
       {showAlert && (
         <div className="glucose-alert-banner" role="alert">
-          ⚠ Some readings are outside safe range (below 70 or above 250 mg/dL)
+          {t('list.glucoseAlertBanner', {
+            low: glucoseUnit === 'mmol/L' ? '3.9' : '70',
+            high: glucoseUnit === 'mmol/L' ? '13.9' : '250',
+            unit: glucoseUnit,
+          })}
         </div>
       )}
 

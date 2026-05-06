@@ -50,7 +50,8 @@
     "userId": "User ID",
     "recordedAt": "Recorded At",
     "dataPayload": "Data Payload",
-    "notes": "Notes"
+    "notes": "Notes",
+    "glucoseAlertBanner": "⚠ Some readings are outside safe range (below {{low}} or above {{high}} {{unit}})"
   },
   "modal": {
     "title": "Add Measurement",

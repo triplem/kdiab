@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -46,11 +46,6 @@ const icrSegmentSchema = z.object({
   value: z.number().min(1.0, 'ICR must be >= 1.0 g/U').max(50.0, 'ICR must be <= 50.0 g/U'),
 })
 
-const isfSegmentSchema = z.object({
-  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time (HH:MM)'),
-  value: z.number().min(10.0, 'ISF must be >= 10.0 mg/dL/U').max(200.0, 'ISF must be <= 200.0 mg/dL/U'),
-})
-
 const targetSegmentSchema = z
   .object({
     startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time (HH:MM)'),
@@ -59,57 +54,16 @@ const targetSegmentSchema = z
   })
   .refine((data) => data.low <= data.high, { message: 'Low must be <= High', path: ['high'] })
 
-const profileSchema = z
-  .object({
-    name: z.string().trim().min(1, 'Name is required'),
-    insulinType: z.string().min(1, 'Insulin type is required'),
-    durationOfAction: z.number().int().min(1, 'Duration must be positive (minutes)'),
-    proposalReason: z.string().optional(),
-    basal: z
-      .array(timeSegmentSchema)
-      .nonempty('At least one basal segment required')
-      .refine((arr) => arr[0].startTime === '00:00', 'Basal must start at 00:00')
-      .refine(validateChronological, 'Basal segments must be chronological'),
-    icr: z
-      .array(icrSegmentSchema)
-      .refine((arr) => arr.length === 0 || arr[0].startTime === '00:00', 'ICR must start at 00:00')
-      .refine(validateChronological, 'ICR segments must be chronological'),
-    isf: z
-      .array(isfSegmentSchema)
-      .refine((arr) => arr.length === 0 || arr[0].startTime === '00:00', 'ISF must start at 00:00')
-      .refine(validateChronological, 'ISF segments must be chronological'),
-    targets: z
-      .array(targetSegmentSchema)
-      .refine(
-        (arr) => arr.length === 0 || arr[0].startTime === '00:00',
-        'Targets must start at 00:00',
-      )
-      .refine(validateChronological, 'Target segments must be chronological'),
-  })
-  .refine(
-    (data) => {
-      if (!data.basal || data.basal.length === 0) return true
-      let totalDailyBasal = 0
-      for (let i = 0; i < data.basal.length; i++) {
-        const current = data.basal[i]
-        let nextTimeStr = '24:00'
-        if (i + 1 < data.basal.length) nextTimeStr = data.basal[i + 1].startTime
-        const [currH, currM] = current.startTime.split(':').map(Number)
-        const [nextH, nextM] = nextTimeStr.split(':').map(Number)
-        const currMinutes = currH * 60 + currM
-        const nextMinutes = nextH === 24 ? 24 * 60 : nextH * 60 + nextM
-        const durationHours = (nextMinutes - currMinutes) / 60.0
-        totalDailyBasal += current.value * durationHours
-      }
-      return totalDailyBasal <= 150.0
-    },
-    {
-      message: 'Total Daily Basal exceeds safe clinical limit of 150.0 U/day',
-      path: ['basal'],
-    },
-  )
-
-type ProfileFormValues = z.infer<typeof profileSchema>
+interface ProfileFormValues {
+  name: string
+  insulinType: string
+  durationOfAction: number
+  proposalReason?: string
+  basal: { startTime: string; value: number }[]
+  icr: { startTime: string; value: number }[]
+  isf: { startTime: string; value: number }[]
+  targets: { startTime: string; low: number; high: number }[]
+}
 
 interface ProfileEditorProps {
   userId: string
@@ -117,6 +71,7 @@ interface ProfileEditorProps {
   onProfileSaved?: () => void
   readOnly?: boolean
   isDoctor?: boolean
+  glucoseUnit?: string
 }
 
 const generateNextName = (currentName: string) => {
@@ -157,8 +112,76 @@ export function ProfileEditor({
   onProfileSaved,
   readOnly = false,
   isDoctor = false,
+  glucoseUnit,
 }: ProfileEditorProps) {
   const { t } = useTranslation()
+
+  const isfSegmentSchema = useMemo(
+    () =>
+      z.object({
+        startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time (HH:MM)'),
+        value:
+          (glucoseUnit ?? 'mg/dL') === 'mmol/L'
+            ? z.number().min(0.5, 'ISF must be >= 0.5 mmol/L/U').max(11.1, 'ISF must be <= 11.1 mmol/L/U')
+            : z.number().min(10.0, 'ISF must be >= 10.0 mg/dL/U').max(200.0, 'ISF must be <= 200.0 mg/dL/U'),
+      }),
+    [glucoseUnit],
+  )
+
+  const profileSchema = useMemo(
+    () =>
+      z
+        .object({
+          name: z.string().trim().min(1, 'Name is required'),
+          insulinType: z.string().min(1, 'Insulin type is required'),
+          durationOfAction: z.number().int().min(1, 'Duration must be positive (minutes)'),
+          proposalReason: z.string().optional(),
+          basal: z
+            .array(timeSegmentSchema)
+            .nonempty('At least one basal segment required')
+            .refine((arr) => arr[0].startTime === '00:00', 'Basal must start at 00:00')
+            .refine(validateChronological, 'Basal segments must be chronological'),
+          icr: z
+            .array(icrSegmentSchema)
+            .refine((arr) => arr.length === 0 || arr[0].startTime === '00:00', 'ICR must start at 00:00')
+            .refine(validateChronological, 'ICR segments must be chronological'),
+          isf: z
+            .array(isfSegmentSchema)
+            .refine((arr) => arr.length === 0 || arr[0].startTime === '00:00', 'ISF must start at 00:00')
+            .refine(validateChronological, 'ISF segments must be chronological'),
+          targets: z
+            .array(targetSegmentSchema)
+            .refine(
+              (arr) => arr.length === 0 || arr[0].startTime === '00:00',
+              'Targets must start at 00:00',
+            )
+            .refine(validateChronological, 'Target segments must be chronological'),
+        })
+        .refine(
+          (data) => {
+            if (!data.basal || data.basal.length === 0) return true
+            let totalDailyBasal = 0
+            for (let i = 0; i < data.basal.length; i++) {
+              const current = data.basal[i]
+              let nextTimeStr = '24:00'
+              if (i + 1 < data.basal.length) nextTimeStr = data.basal[i + 1].startTime
+              const [currH, currM] = current.startTime.split(':').map(Number)
+              const [nextH, nextM] = nextTimeStr.split(':').map(Number)
+              const currMinutes = currH * 60 + currM
+              const nextMinutes = nextH === 24 ? 24 * 60 : nextH * 60 + nextM
+              const durationHours = (nextMinutes - currMinutes) / 60.0
+              totalDailyBasal += current.value * durationHours
+            }
+            return totalDailyBasal <= 150.0
+          },
+          {
+            message: 'Total Daily Basal exceeds safe clinical limit of 150.0 U/day',
+            path: ['basal'],
+          },
+        ),
+    [isfSegmentSchema],
+  )
+
   const {
     register,
     control,
