@@ -17,7 +17,7 @@ Per-service development (faster feedback loop):
 cd kdiab-<service>
 docker compose up --build     # service + its own Keycloak + Postgres
 ./gradlew :backend:run        # or run backend directly
-cd frontend && npm run dev    # frontend dev server with HMR
+cd kdiab-ui && npm run dev    # frontend dev server with HMR
 ```
 
 ## Issue Tracking
@@ -63,15 +63,15 @@ Common types: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `ci`.
 Run the full gate before opening a PR:
 
 ```bash
-./build.sh --check             # all backends: tests + Detekt + Kover (80% coverage)
-./build.sh --frontend-only     # all frontends: TypeScript + Vite build
+./gradlew check                # all backends: tests + Detekt + Kover (80% coverage)
+cd kdiab-ui && npm run build   # frontend: TypeScript + Vite build
 ```
 
 Per-service backend gate:
 
 ```bash
 cd kdiab-<service>
-./gradlew :backend:check       # test + integrationTest + e2eTest + detekt + kover
+./gradlew check       # test + integrationTest + e2eTest + detekt + kover
 ```
 
 The gate must be **green** before merging. Do not skip `--no-verify` or bypass coverage checks.
