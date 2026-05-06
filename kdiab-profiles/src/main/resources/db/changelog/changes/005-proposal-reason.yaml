@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: "005"
+      author: triplem
+      changes:
+        - addColumn:
+            tableName: profiles
+            columns:
+              - column:
+                  name: proposal_reason
+                  type: TEXT
+                  constraints:
+                    nullable: true

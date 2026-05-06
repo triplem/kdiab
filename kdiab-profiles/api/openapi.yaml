@@ -516,6 +516,10 @@ components:
           format: date-time
           nullable: true
           description: ISO-8601 timestamp of when the profile was archived (entered ARCHIVED status).
+        proposalReason:
+          type: string
+          nullable: true
+          description: Optional clinical rationale for the proposed profile change (doctor-only).
         basal:
           type: array
           items:
@@ -549,6 +553,10 @@ components:
           type: string
         durationOfAction:
           type: integer
+        proposalReason:
+          type: string
+          nullable: true
+          description: Optional clinical rationale for the proposed profile change (doctor-only).
         basal:
           type: array
           items:

@@ -31,6 +31,7 @@ data class Profile(
         val validFrom: Instant? = null,
         val activatedAt: Instant? = null,
         val archivedAt: Instant? = null,
+        val proposalReason: String? = null,
         val basal: List<BasalSegment>,
         val icr: List<IcrSegment>,
         val isf: List<IsfSegment>,

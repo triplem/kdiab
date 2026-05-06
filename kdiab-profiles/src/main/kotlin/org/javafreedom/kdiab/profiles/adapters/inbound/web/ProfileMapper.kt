@@ -22,6 +22,7 @@ fun CreateProfileRequest.toDomain(userId: Uuid, status: ProfileStatus = ProfileS
         durationOfAction = this.durationOfAction,
         status = status,
         createdAt = Clock.System.now(),
+        proposalReason = this.proposalReason,
         basal = this.basal?.map {
             org.javafreedom.kdiab.profiles.domain.model.BasalSegment(
                 kotlinx.datetime.LocalTime.parse(it.startTime),
@@ -105,6 +106,7 @@ fun DomainProfile.toApi(): Profile {
         validFrom = this.validFrom?.toString(),
         activatedAt = this.activatedAt?.toString(),
         archivedAt = this.archivedAt?.toString(),
+        proposalReason = this.proposalReason,
         basal = this.basal.map { BasalSegment(it.startTime.toString(), it.value) },
         icr = this.icr.map { IcrSegment(it.startTime.toString(), it.value) },
         isf = this.isf.map { IsfSegment(it.startTime.toString(), it.value) },

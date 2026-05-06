@@ -294,6 +294,8 @@ label {
   border-top: 1px dashed rgba(255,255,255,0.1);
 }
 
+.proposal-reason { font-size: 0.875rem; color: var(--text-secondary); font-style: italic; margin-top: 0.5rem; }
+
 /* Status Badges */
 .status-badge {
   padding: 0.25em 0.75em;

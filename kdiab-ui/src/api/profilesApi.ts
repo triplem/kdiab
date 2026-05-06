@@ -28,6 +28,7 @@ export interface Profile {
   activatedAt?: string
   archivedAt?: string
   previousProfileId?: string
+  proposalReason?: string | null
 }
 
 export interface Insulin {

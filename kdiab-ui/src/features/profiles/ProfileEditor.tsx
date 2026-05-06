@@ -64,6 +64,7 @@ const profileSchema = z
     name: z.string().trim().min(1, 'Name is required'),
     insulinType: z.string().min(1, 'Insulin type is required'),
     durationOfAction: z.number().int().min(1, 'Duration must be positive (minutes)'),
+    proposalReason: z.string().optional(),
     basal: z
       .array(timeSegmentSchema)
       .nonempty('At least one basal segment required')
@@ -115,6 +116,7 @@ interface ProfileEditorProps {
   initialProfile?: Profile
   onProfileSaved?: () => void
   readOnly?: boolean
+  isDoctor?: boolean
 }
 
 const generateNextName = (currentName: string) => {
@@ -154,6 +156,7 @@ export function ProfileEditor({
   initialProfile,
   onProfileSaved,
   readOnly = false,
+  isDoctor = false,
 }: ProfileEditorProps) {
   const { t } = useTranslation()
   const {
@@ -170,6 +173,7 @@ export function ProfileEditor({
           name: generateNextName(initialProfile.name),
           insulinType: initialProfile.insulinType || 'Humalog',
           durationOfAction: initialProfile.durationOfAction || 300,
+          proposalReason: '',
           basal: initialProfile.basal?.length ? initialProfile.basal : [{ startTime: '00:00', value: 0.5 }],
           icr: initialProfile.icr || [],
           isf: initialProfile.isf || [],
@@ -179,6 +183,7 @@ export function ProfileEditor({
           name: '',
           insulinType: 'Humalog',
           durationOfAction: 300,
+          proposalReason: '',
           basal: [{ startTime: '00:00', value: 0.5 }],
           icr: [],
           isf: [],
@@ -225,6 +230,7 @@ export function ProfileEditor({
         name: data.name,
         insulinType: data.insulinType,
         durationOfAction: data.durationOfAction,
+        proposalReason: data.proposalReason || undefined,
         basal: data.basal,
         icr: data.icr,
         isf: data.isf,
@@ -406,6 +412,19 @@ export function ProfileEditor({
             </span>
           )}
         </div>
+
+        {isDoctor && (
+          <div>
+            <label htmlFor="proposalReason">{t('profileList.proposalReason')}</label>
+            <textarea
+              id="proposalReason"
+              {...register('proposalReason')}
+              placeholder={t('profileList.proposalReasonPlaceholder')}
+              rows={3}
+              style={{ width: '100%', resize: 'vertical' }}
+            />
+          </div>
+        )}
 
         <div className="tabs">
           {(['basal', 'icr', 'isf', 'targets'] as const).map((tab) => (

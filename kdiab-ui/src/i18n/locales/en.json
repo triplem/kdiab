@@ -200,7 +200,9 @@
     "proposedOn": "Proposed on {{date}}",
     "confirmAccept": "Accepting this proposal will replace your current active configuration. Continue?",
     "confirmReject": "Rejecting this proposal will permanently archive it. Continue?",
-    "confirmActivate": "Activating this profile will archive your current active configuration. Continue?"
+    "confirmActivate": "Activating this profile will archive your current active configuration. Continue?",
+    "proposalReason": "Clinical rationale",
+    "proposalReasonPlaceholder": "e.g. Reducing overnight basal due to 3am lows"
   },
   "tabs": {
     "timeline": "Timeline",
