@@ -555,7 +555,7 @@ export function ProfileEditor({
                   type="number"
                   step="1"
                   {...register(`isf.${index}.value`, { valueAsNumber: true })}
-                  placeholder="Factor (mg/dL)"
+                  placeholder={`Factor (${glucoseUnit ?? 'mg/dL'})`}
                   aria-label={`ISF Value ${index}`}
                 />
                 <button type="button" onClick={() => removeIsf(index)}>
@@ -592,14 +592,14 @@ export function ProfileEditor({
                   type="number"
                   step="1"
                   {...register(`targets.${index}.low`, { valueAsNumber: true })}
-                  placeholder="Low (mg/dL)"
+                  placeholder={`Low (${glucoseUnit ?? 'mg/dL'})`}
                   aria-label={`Target Low ${index}`}
                 />
                 <input
                   type="number"
                   step="1"
                   {...register(`targets.${index}.high`, { valueAsNumber: true })}
-                  placeholder="High (mg/dL)"
+                  placeholder={`High (${glucoseUnit ?? 'mg/dL'})`}
                   aria-label={`Target High ${index}`}
                 />
                 <button type="button" onClick={() => removeTarget(index)}>

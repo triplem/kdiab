@@ -10,6 +10,7 @@ interface ProfileListProps {
   userId: string
   onSelectProfile?: (profile: Profile) => void
   readOnly?: boolean
+  glucoseUnit?: string
 }
 
 interface ConfirmAction {
@@ -19,7 +20,7 @@ interface ConfirmAction {
   action: () => void
 }
 
-export function ProfileList({ userId, onSelectProfile, readOnly = false }: ProfileListProps) {
+export function ProfileList({ userId, onSelectProfile, readOnly = false, glucoseUnit = 'mg/dL' }: ProfileListProps) {
   const queryClient = useQueryClient()
   const [expandedProfileId, setExpandedProfileId] = useState<string | null>(null)
   const [mutationError, setMutationError] = useState<string | null>(null)
@@ -194,7 +195,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false }: Profi
                   <ul>
                     {profile.isf.map((isf, i) => (
                       <li key={i}>
-                        {formatTime(isf?.startTime || '00:00')} - {isf?.value} mg/dL
+                        {formatTime(isf?.startTime || '00:00')} - {isf?.value} {glucoseUnit}
                       </li>
                     ))}
                   </ul>
@@ -206,7 +207,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false }: Profi
                   <ul>
                     {profile.targets.map((tgt, i) => (
                       <li key={i}>
-                        {formatTime(tgt?.startTime || '00:00')} - {tgt?.low}–{tgt?.high} mg/dL
+                        {formatTime(tgt?.startTime || '00:00')} - {tgt?.low}–{tgt?.high} {glucoseUnit}
                       </li>
                     ))}
                   </ul>
