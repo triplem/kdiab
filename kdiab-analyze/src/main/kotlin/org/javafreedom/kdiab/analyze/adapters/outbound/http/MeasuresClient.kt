@@ -44,16 +44,17 @@ class MeasuresClient(
         from: String? = null,
         to: String? = null,
     ): List<MeasureDto> {
-        logger.debug { "Fetching measures for user $userId from $baseUrl" }
         val result = mutableListOf<MeasureDto>()
         var page = 0
         val pageSize = PAGE_SIZE
         var totalCount = Long.MAX_VALUE
+        val totalStart = System.currentTimeMillis()
 
         while (result.size < totalCount) {
             check(result.size < MAX_MEASURES) {
                 "Too many measures for user $userId ($totalCount total). Narrow the timeframe."
             }
+            val pageStart = System.currentTimeMillis()
             val response = httpClient.get("$baseUrl/api/v1/users/$userId/measures") {
                 header(HttpHeaders.Authorization, authorization)
                 header("X-Correlation-ID", correlationId)
@@ -62,9 +63,12 @@ class MeasuresClient(
                 if (from != null) parameter("from", from)
                 if (to != null) parameter("to", to)
             }
+            val pageMs = System.currentTimeMillis() - pageStart
             if (!response.status.isSuccess()) {
+                logger.warn { "Upstream measures page $page returned ${response.status.value} in ${pageMs}ms" }
                 throw UpstreamException("measures", response.status.value, response.status.description)
             }
+            logger.info { "Fetched measures page $page in ${pageMs}ms [status=${response.status.value}]" }
             val paged = response.body<PagedMeasureDto>()
             totalCount = paged.totalCount
             result.addAll(paged.items)
@@ -72,7 +76,8 @@ class MeasuresClient(
             if (paged.items.isEmpty()) break   // guard against a zero-item last page
         }
 
-        logger.debug { "Fetched ${result.size} measures for user $userId in $page page(s)" }
+        val totalMs = System.currentTimeMillis() - totalStart
+        logger.info { "Fetched ${result.size} measures in $page pages in ${totalMs}ms total" }
         return result
     }
 }

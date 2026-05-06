@@ -32,16 +32,19 @@ class TreatmentsClient(
         from: String? = null,
         to: String? = null,
     ): List<TreatmentDto> {
-        logger.debug { "Fetching treatments for user $userId from $baseUrl" }
+        val start = System.currentTimeMillis()
         val response = httpClient.get("$baseUrl/api/v1/users/$userId/treatments") {
             header(HttpHeaders.Authorization, authorization)
             header("X-Correlation-ID", correlationId)
             if (from != null) parameter("from", from)
             if (to != null) parameter("to", to)
         }
+        val ms = System.currentTimeMillis() - start
         if (!response.status.isSuccess()) {
+            logger.warn { "Upstream treatments returned ${response.status.value} in ${ms}ms" }
             throw UpstreamException("treatments", response.status.value, response.status.description)
         }
+        logger.info { "Fetched treatments from upstream in ${ms}ms [status=${response.status.value}]" }
         return response.body()
     }
 }
