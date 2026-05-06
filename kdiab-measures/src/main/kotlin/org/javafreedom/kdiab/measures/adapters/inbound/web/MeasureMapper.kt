@@ -15,6 +15,7 @@ import org.javafreedom.kdiab.measures.api.models.MeasureResponse
 import org.javafreedom.kdiab.measures.api.models.MeasureSource as ApiMeasureSource
 import org.javafreedom.kdiab.measures.api.models.MeasureStatus as ApiMeasureStatus
 import org.javafreedom.kdiab.measures.api.models.MeasureType as ApiMeasureType
+import org.javafreedom.kdiab.measures.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.measures.domain.model.Measure as DomainMeasure
 import org.javafreedom.kdiab.measures.domain.model.MeasureSource
 import org.javafreedom.kdiab.measures.domain.model.MeasureStatus
@@ -28,7 +29,14 @@ private const val ROUNDING_FACTOR = 10.0
 fun CreateMeasureRequest.toDomain(targetUserId: Uuid): DomainMeasure = DomainMeasure(
     id = Uuid.random(),
     userId = targetUserId,
-    measuredAt = Instant.parse(this.measuredAt),
+    measuredAt = try {
+        Instant.parse(this.measuredAt)
+    } catch (e: IllegalArgumentException) {
+        throw BusinessValidationException(
+            "Invalid measuredAt timestamp: '${this.measuredAt}' is not a valid ISO-8601 instant",
+            e
+        )
+    },
     createdAt = Clock.System.now(),
     type = MeasureType.valueOf(this.type.name),
     source = MeasureSource.valueOf(this.source.name),

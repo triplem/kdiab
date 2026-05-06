@@ -10,6 +10,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.javafreedom.kdiab.treatments.api.models.CreateTreatmentRequest
 import org.javafreedom.kdiab.treatments.api.models.TreatmentResponse
 import org.javafreedom.kdiab.treatments.api.models.TreatmentType as ApiTreatmentType
+import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.treatments.domain.model.Treatment as DomainTreatment
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
 
@@ -105,7 +106,14 @@ private fun jsonPrimitiveOf(value: Double): JsonPrimitive {
 fun CreateTreatmentRequest.toDomain(targetUserId: Uuid): DomainTreatment = DomainTreatment(
     id        = Uuid.random(),
     userId    = targetUserId,
-    treatedAt = Instant.parse(this.treatedAt),
+    treatedAt = try {
+        Instant.parse(this.treatedAt)
+    } catch (e: IllegalArgumentException) {
+        throw BusinessValidationException(
+            "Invalid treatedAt timestamp: '${this.treatedAt}' is not a valid ISO-8601 instant",
+            e
+        )
+    },
     createdAt = Clock.System.now(),
     type      = TreatmentType.valueOf(this.type.name),
     data      = normalizePayload(this.`data`),
