@@ -8,6 +8,11 @@ import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.*
 
 object DatabaseFactory {
+    private const val CONNECTION_TIMEOUT_MS = 30_000L
+    private const val IDLE_TIMEOUT_MS = 600_000L
+    private const val MAX_LIFETIME_MS = 1_800_000L
+    private const val LEAK_DETECTION_THRESHOLD_MS = 60_000L
+
     fun init(config: ApplicationConfig) {
         val storageConfig = config.config("storage")
         val driverClassName = storageConfig.property("driverClassName").getString()
@@ -26,6 +31,10 @@ object DatabaseFactory {
             this.maximumPoolSize = maximumPoolSize
             this.isAutoCommit = isAutoCommit
             this.transactionIsolation = transactionIsolation
+            this.connectionTimeout = CONNECTION_TIMEOUT_MS
+            this.idleTimeout = IDLE_TIMEOUT_MS
+            this.maxLifetime = MAX_LIFETIME_MS
+            this.leakDetectionThreshold = LEAK_DETECTION_THRESHOLD_MS
             validate()
         }
         val dataSource = HikariDataSource(hikariConfig)
