@@ -1,6 +1,7 @@
 package org.javafreedom.kdiab.analyze.application.service
 
 import io.mockk.coEvery
+import io.mockk.eq
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
@@ -78,10 +79,11 @@ class AnalyticsServiceTest {
     }
 
     @Test
-    fun `getHba1c uses all readings returned by upstream`() = runTest {
-        // Date filtering is delegated to getMeasures (from/to params); service uses all returned readings.
-        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
-            cgmDto(200.0, "2024-01-10T12:00:00Z"),
+    fun `getHba1c passes from and to to upstream and counts all returned readings`() = runTest {
+        // Filtering is server-side — the service forwards from/to to the upstream API.
+        // All items returned by the client are counted (no client-side date filtering).
+        coEvery { measuresClient.getMeasures(userId, auth, any(), eq(from), eq(to)) } returns listOf(
+            cgmDto(200.0, "2023-12-31T23:59:00Z"),
             cgmDto(100.0, "2024-01-15T12:00:00Z"),
         )
         val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")

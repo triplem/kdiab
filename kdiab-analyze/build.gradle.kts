@@ -139,6 +139,7 @@ testing {
 tasks.named("check") {
     dependsOn(testing.suites.named("integrationTest"))
     dependsOn(testing.suites.named("e2eTest"))
+    dependsOn("koverVerify")
 }
 
 tasks.withType<Test> {
