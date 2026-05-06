@@ -167,6 +167,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
               style={inputStyle}
               required
               autoFocus
+              aria-describedby={validationError ? 'validation-error' : undefined}
             />
           </label>
         )
@@ -187,6 +188,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
               style={inputStyle}
               required
               autoFocus
+              aria-describedby={validationError ? 'validation-error' : undefined}
             />
           </label>
         )
@@ -206,6 +208,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -220,6 +223,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
                 onChange={(e) => setBpDiastolic(e.target.value)}
                 style={inputStyle}
                 required
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
           </>
@@ -241,6 +245,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
               style={inputStyle}
               required
               autoFocus
+              aria-describedby={validationError ? 'validation-error' : undefined}
             />
           </label>
         )
@@ -259,6 +264,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
               style={inputStyle}
               required
               autoFocus
+              aria-describedby={validationError ? 'validation-error' : undefined}
             />
           </label>
         )
@@ -279,6 +285,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
               style={inputStyle}
               required
               autoFocus
+              aria-describedby={validationError ? 'validation-error' : undefined}
             />
           </label>
         )
@@ -298,6 +305,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -333,7 +341,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
           {t('modal.title')}
         </h2>
         {validationError && (
-          <div role="alert" className="error" style={{ marginBottom: '1rem' }}>
+          <div role="alert" className="error" id="validation-error" style={{ marginBottom: '1rem' }}>
             {validationError}
           </div>
         )}

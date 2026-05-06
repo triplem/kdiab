@@ -277,6 +277,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -291,6 +292,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 onChange={(e) => setMealCarbs(e.target.value)}
                 style={inputStyle}
                 required
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
           </>
@@ -312,6 +314,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -342,6 +345,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -388,6 +392,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -431,6 +436,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -445,6 +451,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 onChange={(e) => setTempBasalDurationMin(e.target.value)}
                 style={inputStyle}
                 required
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label
@@ -476,6 +483,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -506,6 +514,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -539,6 +548,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -566,6 +576,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
               style={{ ...inputStyle, minHeight: '80px', resize: 'vertical' }}
               required
               autoFocus
+              aria-describedby={validationError ? 'validation-error' : undefined}
             />
           </label>
         )
@@ -624,6 +635,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -638,6 +650,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 onChange={(e) => setActivityDuration(e.target.value)}
                 style={inputStyle}
                 required
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -670,6 +683,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 style={inputStyle}
                 required
                 autoFocus
+                aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>
             <label style={labelStyle}>
@@ -700,7 +714,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
           {t('treatmentModal.title')}
         </h2>
         {validationError && (
-          <div role="alert" className="error" style={{ marginBottom: '1rem' }}>
+          <div role="alert" className="error" id="validation-error" style={{ marginBottom: '1rem' }}>
             {validationError}
           </div>
         )}
