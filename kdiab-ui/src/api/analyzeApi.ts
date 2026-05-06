@@ -32,6 +32,7 @@ export interface Hba1cResponse {
   meanGlucose: number
   readingCount: number
   tir: TirBreakdown
+  warnings?: string[]
 }
 
 export interface AgpHourlyData {
@@ -46,6 +47,7 @@ export interface AgpHourlyData {
 
 export interface AgpResponse {
   hourlyData: AgpHourlyData[]
+  warnings?: string[]
 }
 
 export interface ProfileSummary {

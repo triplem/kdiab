@@ -13,6 +13,7 @@ data class Hba1cResult(
     val meanGlucose: Double,
     val readingCount: Int,
     val tir: TirBreakdown,
+    val warnings: List<String> = emptyList(),
 )
 
 data class AgpHourlyData(
@@ -27,6 +28,7 @@ data class AgpHourlyData(
 
 data class AgpResult(
     val hourlyData: List<AgpHourlyData>,
+    val warnings: List<String> = emptyList(),
 )
 
 data class ProfileSummary(

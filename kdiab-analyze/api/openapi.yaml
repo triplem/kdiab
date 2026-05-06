@@ -220,6 +220,11 @@ components:
           description: Total number of CGM readings used.
         tir:
           $ref: '#/components/schemas/TirBreakdown'
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Data quality warnings about CGM data sufficiency
 
     TirBreakdown:
       type: object
@@ -250,6 +255,11 @@ components:
           maxItems: 24
           items:
             $ref: '#/components/schemas/AgpHourlyData'
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Data quality warnings about CGM data sufficiency
 
     AgpHourlyData:
       type: object

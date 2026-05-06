@@ -15,6 +15,7 @@ import type { AgpHourlyData } from '../../api/analyzeApi'
 interface Props {
   hourlyData: AgpHourlyData[]
   glucoseUnit: string
+  warnings?: string[]
 }
 
 const MGDL_TO_MMOL = 1 / 18.0
@@ -24,7 +25,7 @@ function convert(val: number, unit: string): number {
   return Math.round(val)
 }
 
-export function AgpChart({ hourlyData, glucoseUnit }: Props) {
+export function AgpChart({ hourlyData, glucoseUnit, warnings }: Props) {
   const { t } = useTranslation()
   const yLabel = glucoseUnit === 'mmol/L' ? 'mmol/L' : 'mg/dL'
   const tirLow = convert(70, glucoseUnit)
@@ -51,6 +52,11 @@ export function AgpChart({ hourlyData, glucoseUnit }: Props) {
 
   return (
     <div className="card">
+      {warnings && warnings.length > 0 && (
+        <div className="warning-banner" role="alert">
+          {warnings.map((w, i) => <p key={i}>{w}</p>)}
+        </div>
+      )}
       <h3>
         {t('analytics.agp')}
         <span
