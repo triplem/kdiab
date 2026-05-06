@@ -67,13 +67,13 @@ Instead of docker-compose/docker compose, podman compose can be used.
 
 ### Backend (Kotlin/Ktor)
 ```bash
-./gradlew :backend:run               # Run backend (requires external Postgres + Keycloak)
-./gradlew :backend:test              # Unit tests only
-./gradlew :backend:integrationTest   # Integration tests
-./gradlew :backend:e2eTest           # E2E tests
-./gradlew :backend:check             # All tests + detekt + kover
-./gradlew :backend:detektMain        # Run detekt linter only
-./gradlew :backend:koverReport       # Generate code coverage report
+./gradlew run               # Run backend (requires external Postgres + Keycloak)
+./gradlew test              # Unit tests only
+./gradlew integrationTest   # Integration tests
+./gradlew e2eTest           # E2E tests
+./gradlew check             # All tests + detekt + kover
+./gradlew detektMain        # Run detekt linter only
+./gradlew koverReport       # Generate code coverage report
 ./gradlew asciidoctor                # Build docs from docs/ into build/docs/asciidoc/
 ```
 
