@@ -11,6 +11,7 @@ import org.javafreedom.kdiab.measures.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.measures.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.measures.domain.exception.ConflictException
 import org.javafreedom.kdiab.measures.domain.exception.ResourceNotFoundException
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 
 private val logger = KotlinLogging.logger {}
 
@@ -64,6 +65,24 @@ fun Application.configureStatusPages() {
                 HttpStatusCode.BadRequest,
                 ErrorResponse(HttpStatusCode.BadRequest.value, "Invalid request body")
             )
+        }
+        // Unique-constraint violation from the database.
+        // SQL state 23505 is the standard UNIQUE VIOLATION code across PostgreSQL and other JDBC drivers.
+        exception<ExposedSQLException> { call, cause ->
+            val sqlState = cause.cause?.let { (it as? java.sql.SQLException)?.sqlState }
+            if (sqlState == "23505") {
+                logger.warn(cause) { "Unique constraint violation" }
+                call.respond(
+                    HttpStatusCode.Conflict,
+                    ErrorResponse(HttpStatusCode.Conflict.value, cause.message ?: "Conflict")
+                )
+            } else {
+                logger.error(cause) { "Database error (SQL state: $sqlState)" }
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    ErrorResponse(HttpStatusCode.InternalServerError.value, "Internal Server Error")
+                )
+            }
         }
         exception<Throwable> { call, cause ->
             logger.error(cause) { "Unhandled internal server error" }
