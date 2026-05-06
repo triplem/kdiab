@@ -285,7 +285,8 @@
     "tooltipBasal": "Insulineinheiten pro Stunde. Typischer Bereich: 0,2–1,5 E/h",
     "tooltipIcr": "Gramm Kohlenhydrate pro Insulineinheit. Typisch: 1:8 bis 1:20",
     "tooltipIsf": "Wie stark 1 Insulineinheit Ihren Blutzucker senkt. Typisch: 30–80 mg/dL pro Einheit",
-    "tooltipTarget": "Ihr Blutzuckerzielbereich. Die ADA empfiehlt für die meisten Erwachsenen 80–130 mg/dL vor dem Essen"
+    "tooltipTarget": "Ihr Blutzuckerzielbereich. Die ADA empfiehlt für die meisten Erwachsenen 80–130 mg/dL vor dem Essen",
+    "zeroBasalWarning": "Warnung: Ein oder mehrere Basalsegmente haben eine Rate von 0 E/h. Dies stoppt die Basalinsulinabgabe — bitte prüfen Sie, ob dies beabsichtigt ist."
   },
   "services": {
     "label": "Dienste",

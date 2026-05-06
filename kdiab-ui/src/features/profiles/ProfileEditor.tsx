@@ -186,6 +186,7 @@ export function ProfileEditor({
     register,
     control,
     handleSubmit,
+    watch,
     setValue,
     getValues,
     formState: { errors, isDirty },
@@ -213,6 +214,9 @@ export function ProfileEditor({
           targets: [],
         },
   })
+
+  const basalSegments = watch('basal')
+  const hasZeroBasalSegment = basalSegments?.some((seg) => seg.value === 0) ?? false
 
   const { formatDate } = useTimeFormat()
 
@@ -470,6 +474,9 @@ export function ProfileEditor({
                 <HelpTooltip text={t('profile.tooltipBasal')} />
               </span>
             </h4>
+            {hasZeroBasalSegment && (
+              <div className="warning-banner" role="alert">{t('profile.zeroBasalWarning')}</div>
+            )}
             {basalFields.map((field, index) => (
               <div key={field.id} className="segment-row">
                 <Controller
