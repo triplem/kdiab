@@ -43,6 +43,14 @@ const renderDataSummary = (tr: TreatmentResponse): string => {
       return typeof d.duration === 'number'
         ? `${formatDuration(d.duration)}${typeof d.intensity === 'string' ? ` (${d.intensity})` : ''}`
         : JSON.stringify(d)
+    case 'ACTIVITY':
+      return typeof d.duration === 'number'
+        ? `${typeof d.name === 'string' ? d.name + ': ' : ''}${formatDuration(d.duration)}${typeof d.intensity === 'string' ? ` (${d.intensity})` : ''}`
+        : JSON.stringify(d)
+    case 'HYPO_TREATMENT':
+      return d.carbs != null
+        ? `${d.carbs as number}g carbs${typeof d.reason === 'string' ? ` (${d.reason})` : ''}`
+        : JSON.stringify(d)
     case 'NOTE':
       return d.text ? String(d.text).slice(0, 50) : JSON.stringify(d)
     case 'PUMP_SUSPEND':
