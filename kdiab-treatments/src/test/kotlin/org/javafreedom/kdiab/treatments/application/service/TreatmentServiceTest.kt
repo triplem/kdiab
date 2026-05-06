@@ -70,8 +70,17 @@ class TreatmentServiceTest {
     @Test
     fun `getTreatmentsByType returns filtered list from repository`() = runTest {
         val treatments = listOf(testTreatment())
-        coEvery { repo.findByUserIdAndType(userId, TreatmentType.BOLUS) } returns treatments
+        coEvery { repo.findByUserIdAndType(userId, TreatmentType.BOLUS, null, null) } returns treatments
         assertEquals(treatments, service.getTreatmentsByType(userId, TreatmentType.BOLUS))
+    }
+
+    @Test
+    fun `getTreatmentsByType passes from and to to repository`() = runTest {
+        val from = Instant.parse("2024-01-01T00:00:00Z")
+        val to = Instant.parse("2024-01-31T23:59:59Z")
+        val treatments = listOf(testTreatment())
+        coEvery { repo.findByUserIdAndType(userId, TreatmentType.BOLUS, from, to) } returns treatments
+        assertEquals(treatments, service.getTreatmentsByType(userId, TreatmentType.BOLUS, from, to))
     }
 
     @Test

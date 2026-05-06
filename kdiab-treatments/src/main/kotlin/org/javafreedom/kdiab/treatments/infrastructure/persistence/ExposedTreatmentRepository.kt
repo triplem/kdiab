@@ -71,11 +71,23 @@ class ExposedTreatmentRepository(
             }
         }
 
-    override suspend fun findByUserIdAndType(userId: Uuid, type: TreatmentType): List<Treatment> =
+    override suspend fun findByUserIdAndType(
+        userId: Uuid,
+        type: TreatmentType,
+        from: Instant?,
+        to: Instant?,
+    ): List<Treatment> =
         withContext(ioDispatcher) {
             suspendTransaction {
                 TreatmentsTable.selectAll()
-                    .where { (TreatmentsTable.userId eq userId) and (TreatmentsTable.type eq type.name) }
+                    .where {
+                        var condition = (TreatmentsTable.userId eq userId) and (TreatmentsTable.type eq type.name)
+                        if (from != null) condition = condition and (TreatmentsTable.treatedAt greaterEq
+                            java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
+                        if (to != null) condition = condition and (TreatmentsTable.treatedAt lessEq
+                            java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                        condition
+                    }
                     .orderBy(TreatmentsTable.treatedAt, SortOrder.DESC)
                     .map { it.toTreatment() }
             }

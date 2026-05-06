@@ -13,6 +13,11 @@ interface TreatmentRepository {
         from: Instant? = null,
         to: Instant? = null,
     ): List<Treatment>
-    suspend fun findByUserIdAndType(userId: Uuid, type: TreatmentType): List<Treatment>
+    suspend fun findByUserIdAndType(
+        userId: Uuid,
+        type: TreatmentType,
+        from: Instant? = null,
+        to: Instant? = null,
+    ): List<Treatment>
     suspend fun deleteAll(ids: List<Uuid>, userId: Uuid)
 }

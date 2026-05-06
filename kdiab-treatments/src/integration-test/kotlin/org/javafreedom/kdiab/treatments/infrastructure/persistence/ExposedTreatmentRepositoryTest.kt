@@ -85,6 +85,21 @@ class ExposedTreatmentRepositoryTest {
     }
 
     @Test
+    fun `findByUserIdAndType - applies date range filtering`() = runBlocking {
+        val userId = Uuid.parse("11111111-1111-1111-1111-111111111111")
+        val early = testTreatment(userId, TreatmentType.BOLUS, Instant.parse("2024-01-05T10:00:00Z"))
+        val mid   = testTreatment(userId, TreatmentType.BOLUS, Instant.parse("2024-01-15T10:00:00Z"))
+        val late  = testTreatment(userId, TreatmentType.BOLUS, Instant.parse("2024-01-25T10:00:00Z"))
+        repository.save(early); repository.save(mid); repository.save(late)
+
+        val from = Instant.parse("2024-01-10T00:00:00Z")
+        val to   = Instant.parse("2024-01-20T00:00:00Z")
+        val results = repository.findByUserIdAndType(userId, TreatmentType.BOLUS, from, to)
+        assertEquals(1, results.size)
+        assertEquals(mid.id, results[0].id)
+    }
+
+    @Test
     fun `deleteAll - deletes matching treatment for correct user`() = runBlocking {
         val userId = Uuid.parse("11111111-1111-1111-1111-111111111111")
         val t1 = repository.save(testTreatment(userId))

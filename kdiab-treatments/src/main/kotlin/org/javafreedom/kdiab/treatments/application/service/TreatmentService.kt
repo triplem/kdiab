@@ -28,8 +28,12 @@ class TreatmentService(
     suspend fun getTreatments(userId: Uuid, from: Instant? = null, to: Instant? = null): List<Treatment> =
         treatmentRepository.findByUserId(userId, from, to)
 
-    suspend fun getTreatmentsByType(userId: Uuid, type: TreatmentType): List<Treatment> =
-        treatmentRepository.findByUserIdAndType(userId, type)
+    suspend fun getTreatmentsByType(
+        userId: Uuid,
+        type: TreatmentType,
+        from: Instant? = null,
+        to: Instant? = null,
+    ): List<Treatment> = treatmentRepository.findByUserIdAndType(userId, type, from, to)
 
     suspend fun deleteTreatments(ids: List<Uuid>, userId: Uuid) {
         if (ids.isEmpty()) throw ResourceNotFoundException("No treatment IDs provided")

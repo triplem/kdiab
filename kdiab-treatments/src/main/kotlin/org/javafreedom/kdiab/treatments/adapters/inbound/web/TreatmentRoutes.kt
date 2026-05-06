@@ -55,7 +55,7 @@ private fun Route.listTreatments(treatmentService: TreatmentService, auditLogRep
         }
         val treatments = if (params.type != null) {
             val treatmentType = org.javafreedom.kdiab.treatments.domain.model.TreatmentType.valueOf(params.type.name)
-            treatmentService.getTreatmentsByType(targetUserId, treatmentType)
+            treatmentService.getTreatmentsByType(targetUserId, treatmentType, from, to)
         } else {
             treatmentService.getTreatments(targetUserId, from, to)
         }
