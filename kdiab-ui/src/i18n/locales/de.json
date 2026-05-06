@@ -223,6 +223,7 @@
     "preset7d": "7 Tage",
     "preset14d": "14 Tage",
     "preset30d": "30 Tage",
+    "preset90d": "90 Tage",
     "custom": "Benutzerdefiniert",
     "from": "Von",
     "to": "Bis"

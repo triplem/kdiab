@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { subDays, startOfDay, endOfDay, formatISO } from 'date-fns'
 
-type Preset = '1d' | '7d' | '14d' | '30d' | 'custom'
+type Preset = '1d' | '7d' | '14d' | '30d' | '90d' | 'custom'
 
 export interface Timeframe {
   from: string
@@ -10,7 +10,7 @@ export interface Timeframe {
 }
 
 function presetToTimeframe(preset: Exclude<Preset, 'custom'>): Timeframe {
-  const days = preset === '1d' ? 1 : preset === '7d' ? 7 : preset === '14d' ? 14 : 30
+  const days = preset === '1d' ? 1 : preset === '7d' ? 7 : preset === '14d' ? 14 : preset === '30d' ? 30 : 90
   const to = endOfDay(new Date())
   const from = startOfDay(subDays(to, days - 1))
   return { from: formatISO(from), to: formatISO(to) }
@@ -45,6 +45,7 @@ export function TimeframePicker({ value, onChange }: Props) {
     { key: '7d', label: t('timeframe.preset7d') },
     { key: '14d', label: t('timeframe.preset14d') },
     { key: '30d', label: t('timeframe.preset30d') },
+    { key: '90d', label: t('timeframe.preset90d') },
   ]
 
   return (
