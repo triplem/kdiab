@@ -26,14 +26,17 @@ class ProfilesClient(
     private val baseUrl: String,
 ) {
     suspend fun getProfiles(userId: String, authorization: String, correlationId: String): List<ProfileDto> {
-        logger.debug { "Fetching profiles for user $userId from $baseUrl" }
+        val start = System.currentTimeMillis()
         val response = httpClient.get("$baseUrl/api/v1/users/$userId/profiles") {
             header(HttpHeaders.Authorization, authorization)
             header("X-Correlation-ID", correlationId)
         }
+        val ms = System.currentTimeMillis() - start
         if (!response.status.isSuccess()) {
+            logger.warn { "Upstream profiles returned ${response.status.value} in ${ms}ms" }
             throw UpstreamException("profiles", response.status.value, response.status.description)
         }
+        logger.info { "Fetched profiles from upstream in ${ms}ms [status=${response.status.value}]" }
         return response.body()
     }
 }
