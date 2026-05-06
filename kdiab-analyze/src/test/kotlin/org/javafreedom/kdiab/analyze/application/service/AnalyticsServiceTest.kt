@@ -166,6 +166,34 @@ class AnalyticsServiceTest {
         val bucket8 = result.hourlyData.first { it.hour == 8 }
         assertEquals(108.0, bucket8.median, absoluteTolerance = 0.01)
     }
+
+    @Test
+    fun `getAgp single reading in bucket - all percentiles equal that value`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            cgmDto(120.0, "2024-01-15T06:00:00Z"),
+        )
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        val bucket6 = result.hourlyData.first { it.hour == 6 }
+        assertEquals(1, bucket6.count)
+        assertEquals(120.0, bucket6.p10!!, absoluteTolerance = 0.01)
+        assertEquals(120.0, bucket6.p25!!, absoluteTolerance = 0.01)
+        assertEquals(120.0, bucket6.median!!, absoluteTolerance = 0.01)
+        assertEquals(120.0, bucket6.p75!!, absoluteTolerance = 0.01)
+        assertEquals(120.0, bucket6.p90!!, absoluteTolerance = 0.01)
+    }
+
+    @Test
+    fun `getAgp excludes negative and zero glucose values`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            cgmDto(120.0, "2024-01-15T07:00:00Z"),
+            cgmDto(-5.0, "2024-01-15T07:05:00Z"),
+            cgmDto(0.0, "2024-01-15T07:10:00Z"),
+        )
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        val bucket7 = result.hourlyData.first { it.hour == 7 }
+        assertEquals(1, bucket7.count)
+        assertEquals(120.0, bucket7.median!!, absoluteTolerance = 0.01)
+    }
 }
 
 private fun assertEquals(expected: Double, actual: Double?, absoluteTolerance: Double) {

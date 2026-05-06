@@ -72,6 +72,7 @@ class AnalyticsService(
             val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach
             val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach
             val mgDl = if (glucoseUnit == "mmol/L") sgv * MMOL_TO_MGDL else sgv
+            if (mgDl <= 0.0) return@forEach
             val hour = t.toLocalDateTime(TimeZone.UTC).hour
             byHour[hour].add(mgDl)
         }
@@ -109,7 +110,9 @@ class AnalyticsService(
             .filter { dto -> dto.type == "CGM" }
             .mapNotNull { dto ->
                 val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
-                if (glucoseUnit == "mmol/L") sgv * MMOL_TO_MGDL else sgv
+                val mgDl = if (glucoseUnit == "mmol/L") sgv * MMOL_TO_MGDL else sgv
+                if (mgDl <= 0.0) return@mapNotNull null
+                mgDl
             }
     }
 
