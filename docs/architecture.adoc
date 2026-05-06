@@ -102,12 +102,13 @@ with all four audience mappers.
 |===
 | Service | Frontend | Backend / Swagger
 
-| kdiab-measures  | 3000 | 8080 / 8080/swagger
-| kdiab-profiles  | 3001 | 8082 / 8082/swagger
-| kdiab-treatments| 3002 | 8083 / 8083/swagger
-| kdiab-analyze       | 3003 | 8084 / 8084/swagger
-| Keycloak Admin  | —    | 8081
-| pgAdmin         | —    | 5050
+| kdiab-ui (all frontends) | 3005 | —
+| kdiab-measures  | — | 8080 / 8080/swagger
+| kdiab-profiles  | — | 8082 / 8082/swagger
+| kdiab-treatments| — | 8083 / 8083/swagger
+| kdiab-analyze   | — | 8084 / 8084/swagger
+| Keycloak Admin  | — | 8081
+| pgAdmin         | — | 5050
 |===
 
 == CI/CD Pipeline
