@@ -49,6 +49,7 @@ fun Application.module(
                 }
         )
     }
+    install(Resources)
     val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
         ?.getString()?.split(",")?.map { it.trim() }
         ?: listOf("http://localhost:3000")
@@ -70,7 +71,6 @@ fun Application.module(
         header("X-Frame-Options", "DENY")
         header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     }
-    install(Resources)
 
     // Initialize Database if requested
     if (initDatabase) {
