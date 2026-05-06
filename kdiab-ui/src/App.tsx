@@ -280,6 +280,7 @@ export default function App() {
                   userId={viewingUserId}
                   onSelectProfile={(p) => { setEditingProfile(p); setShowProfileEditor(true) }}
                   readOnly={isDoctorViewingPatient}
+                  glucoseUnit={glucoseUnit}
                 />
                 {isAdmin && <AdminInsulinManager />}
               </>
