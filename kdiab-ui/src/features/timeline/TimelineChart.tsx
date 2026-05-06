@@ -60,6 +60,47 @@ const treatmentColor = (type: string): string =>
 
 const MGDL_TO_MMOL = 1 / 18.0
 
+interface TtPayload {
+  dataKey?: string | number
+  value?: unknown
+  payload?: Record<string, unknown>
+}
+
+function TimelineTooltip({
+  active,
+  payload,
+  label,
+  glucoseUnit,
+}: {
+  active?: boolean
+  payload?: TtPayload[]
+  label?: number
+  glucoseUnit: string
+}) {
+  if (!active || !payload?.length || label == null) return null
+  const yUnit = glucoseUnit === 'mmol/L' ? 'mmol/L' : 'mg/dL'
+  return (
+    <div className="timeline-tooltip">
+      <p className="timeline-tooltip-time">{new Date(label).toLocaleString()}</p>
+      {payload.map((p, i) => {
+        const numVal = typeof p.value === 'number' ? p.value : undefined
+        if (p.dataKey === 'value') {
+          return <p key={i}><strong>CGM</strong> {numVal} {yUnit}</p>
+        }
+        if (p.dataKey === 'bgmValue') {
+          return <p key={i}><strong>BGM</strong> {numVal} {yUnit}</p>
+        }
+        if (p.dataKey === 'y') {
+          const type = (p.payload?.['type'] as string) ?? ''
+          const notes = p.payload?.['notes'] as string | undefined
+          return <p key={i}><strong>{type}</strong>{notes ? ` — ${notes}` : ''}</p>
+        }
+        return null
+      })}
+    </div>
+  )
+}
+
 function toMgDl(value: number, unit: string): number {
   return unit === 'mmol/L' ? value * 18.0 : value
 }
@@ -132,12 +173,7 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
         <YAxis
           label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 10 }}
         />
-        <Tooltip
-          labelFormatter={(val: number) => new Date(val).toLocaleString()}
-          formatter={(val: number, name: string) => [`${val} ${yLabel}`, name]}
-          contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
-          wrapperStyle={{ outline: 'none' }}
-        />
+        <Tooltip content={(props) => <TimelineTooltip {...props} glucoseUnit={glucoseUnit} />} />
         <Legend />
 
         <ReferenceArea y1={tirLow} y2={tirHigh} fill="rgba(16, 185, 129, 0.07)" />
