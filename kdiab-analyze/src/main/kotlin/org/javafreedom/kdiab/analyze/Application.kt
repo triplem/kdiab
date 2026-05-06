@@ -2,6 +2,7 @@ package org.javafreedom.kdiab.analyze
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -70,6 +71,8 @@ fun Application.module(
     val resolvedTimelineService: TimelineService
     val resolvedAnalyticsService: AnalyticsService
     val resolvedProfilesService: ProfilesService
+    var healthClient: HttpClient? = null
+    var upstreamHealthUrls: List<String> = emptyList()
 
     if (timelineService != null && analyticsService != null && profilesService != null) {
         resolvedTimelineService = timelineService
@@ -89,6 +92,9 @@ fun Application.module(
         val profilesUrl = environment.config.property("upstream.profilesUrl").getString()
         val treatmentsUrl = environment.config.property("upstream.treatmentsUrl").getString()
 
+        healthClient = httpClient
+        upstreamHealthUrls = listOf("$measuresUrl/healthz", "$profilesUrl/healthz", "$treatmentsUrl/healthz")
+
         val measuresClient = MeasuresClient(httpClient, measuresUrl)
         val profilesClient = ProfilesClient(httpClient, profilesUrl)
         val treatmentsClient = TreatmentsClient(httpClient, treatmentsUrl)
@@ -103,7 +109,19 @@ fun Application.module(
     routing {
         get("/") { call.respondText("kdiab BFF is running!") }
         get("/healthz") { call.respond(HttpStatusCode.OK) }
-        get("/readyz") { call.respond(HttpStatusCode.OK) }
+        get("/readyz") {
+            val client = healthClient
+            if (client == null || upstreamHealthUrls.isEmpty()) {
+                call.respond(HttpStatusCode.OK)
+            } else {
+                val allReady = upstreamHealthUrls.all { url ->
+                    runCatching { client.get(url).status.isSuccess() }
+                        .getOrDefault(false)
+                }
+                if (allReady) call.respond(HttpStatusCode.OK)
+                else call.respond(HttpStatusCode.ServiceUnavailable)
+            }
+        }
 
         bffRoutes(resolvedTimelineService, resolvedAnalyticsService, resolvedProfilesService)
 
