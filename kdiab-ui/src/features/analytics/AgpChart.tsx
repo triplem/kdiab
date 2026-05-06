@@ -70,6 +70,8 @@ export function AgpChart({ hourlyData, glucoseUnit }: Props) {
               if (Array.isArray(val)) return [`${val[0]}–${val[1]} ${yLabel}`, name]
               return [`${val} ${yLabel}`, name]
             }}
+            contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
+            wrapperStyle={{ outline: 'none' }}
           />
           <Legend />
 

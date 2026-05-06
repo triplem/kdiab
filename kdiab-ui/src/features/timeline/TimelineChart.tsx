@@ -133,6 +133,8 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
         <Tooltip
           labelFormatter={(val: number) => new Date(val).toLocaleString()}
           formatter={(val: number, name: string) => [`${val} ${yLabel}`, name]}
+          contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
+          wrapperStyle={{ outline: 'none' }}
         />
         <Legend />
 
