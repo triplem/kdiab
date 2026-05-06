@@ -158,6 +158,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
         <div className="profile-card-body">
           <p>
             Insulin: {profile.insulinType ?? 'N/A'} • Action: {profile.durationOfAction ?? 0}m
+            {profile.timeZone && <span> • {t('profile.timeZone')}: {profile.timeZone}</span>}
           </p>
           <p className="segments-count">
             {profile.basal?.length ?? 0} Basal • {profile.icr?.length ?? 0} ICR •{' '}

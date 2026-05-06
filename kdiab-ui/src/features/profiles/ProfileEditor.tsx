@@ -59,6 +59,7 @@ interface ProfileFormValues {
   insulinType: string
   durationOfAction: number
   proposalReason?: string
+  timeZone?: string
   basal: { startTime: string; value: number }[]
   icr: { startTime: string; value: number }[]
   isf: { startTime: string; value: number }[]
@@ -136,6 +137,7 @@ export function ProfileEditor({
           insulinType: z.string().min(1, 'Insulin type is required'),
           durationOfAction: z.number().int().min(1, 'Duration must be positive (minutes)'),
           proposalReason: z.string().optional(),
+          timeZone: z.string().optional(),
           basal: z
             .array(timeSegmentSchema)
             .nonempty('At least one basal segment required')
@@ -197,6 +199,7 @@ export function ProfileEditor({
           insulinType: initialProfile.insulinType || 'Humalog',
           durationOfAction: initialProfile.durationOfAction || 300,
           proposalReason: '',
+          timeZone: initialProfile.timeZone || '',
           basal: initialProfile.basal?.length ? initialProfile.basal : [{ startTime: '00:00', value: 0.5 }],
           icr: initialProfile.icr || [],
           isf: initialProfile.isf || [],
@@ -207,6 +210,7 @@ export function ProfileEditor({
           insulinType: 'Humalog',
           durationOfAction: 300,
           proposalReason: '',
+          timeZone: '',
           basal: [{ startTime: '00:00', value: 0.5 }],
           icr: [],
           isf: [],
@@ -254,6 +258,7 @@ export function ProfileEditor({
         insulinType: data.insulinType,
         durationOfAction: data.durationOfAction,
         proposalReason: data.proposalReason || undefined,
+        timeZone: data.timeZone || undefined,
         basal: data.basal,
         icr: data.icr,
         isf: data.isf,
@@ -448,6 +453,16 @@ export function ProfileEditor({
             />
           </div>
         )}
+
+        <div className="form-group">
+          <label htmlFor="timeZone">{t('profile.timeZone')}</label>
+          <input
+            id="timeZone"
+            type="text"
+            placeholder={t('profile.timeZonePlaceholder')}
+            {...register('timeZone')}
+          />
+        </div>
 
         <div className="tabs">
           {(['basal', 'icr', 'isf', 'targets'] as const).map((tab) => (

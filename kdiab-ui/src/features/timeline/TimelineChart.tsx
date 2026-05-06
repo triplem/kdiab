@@ -43,6 +43,8 @@ const TREATMENT_COLORS: Record<string, string> = {
   CARBS: 'var(--color-carbs)',
   HYPO_TREATMENT: 'var(--color-carbs)',
   EXERCISE: 'var(--color-activity)',
+  MEAL: 'var(--color-carbs)',
+  ACTIVITY: 'var(--color-activity)',
   BASAL: 'var(--color-basal)',
   TEMP_BASAL: 'var(--color-basal)',
   SITE_CHANGE: 'var(--color-device)',
