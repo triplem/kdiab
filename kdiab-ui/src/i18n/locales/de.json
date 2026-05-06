@@ -271,7 +271,10 @@
     "tirInRange": "Im Bereich",
     "tirLow": "Niedrig",
     "tirHigh2": "Hoch",
-    "tirVeryLow": "Sehr niedrig"
+    "tirVeryLow": "Sehr niedrig",
+    "hba1cError": "HbA1c-Daten konnten nicht geladen werden",
+    "agpError": "AGP-Daten konnten nicht geladen werden",
+    "profilesError": "Profile konnten nicht geladen werden"
   },
   "profile": {
     "id": "Profil-ID",

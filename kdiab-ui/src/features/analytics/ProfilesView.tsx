@@ -29,11 +29,15 @@ export function ProfilesView({ userId }: Props) {
         <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>
       )}
 
+      {profilesQuery.isError && (
+        <div className="error-banner" role="alert">{t('analytics.profilesError')}</div>
+      )}
+
       {profilesQuery.data && (
         <ProfilesTable profiles={profilesQuery.data.profiles} />
       )}
 
-      {!profilesQuery.isLoading && !profilesQuery.data && (
+      {!profilesQuery.isLoading && !profilesQuery.isError && !profilesQuery.data && (
         <div className="card">
           <h3>{t('analytics.profiles')}</h3>
           <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
