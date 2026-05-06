@@ -26,6 +26,7 @@ export interface Profile {
   targets?: TargetSegment[]
   createdAt?: string
   previousProfileId?: string
+  proposalReason?: string | null
 }
 
 export interface Insulin {

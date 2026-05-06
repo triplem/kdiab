@@ -222,6 +222,9 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false }: Profi
                 {t('profileList.proposedOn', { date: formatDate(profile.createdAt) })}
               </p>
             )}
+            {profile.proposalReason && (
+              <p className="proposal-reason">{profile.proposalReason}</p>
+            )}
             <button
               onClick={(e) => handleAccept(e, profile.id)}
               className="btn primary"

@@ -196,7 +196,9 @@
     "proposedOn": "Vorgeschlagen am {{date}}",
     "confirmAccept": "Das Akzeptieren dieses Vorschlags ersetzt Ihre aktuelle aktive Konfiguration. Fortfahren?",
     "confirmReject": "Das Ablehnen dieses Vorschlags archiviert ihn dauerhaft. Fortfahren?",
-    "confirmActivate": "Das Aktivieren dieses Profils archiviert Ihre aktuelle aktive Konfiguration. Fortfahren?"
+    "confirmActivate": "Das Aktivieren dieses Profils archiviert Ihre aktuelle aktive Konfiguration. Fortfahren?",
+    "proposalReason": "Klinische Begründung",
+    "proposalReasonPlaceholder": "z.B. Basalrate nachts reduzieren wegen 3-Uhr-Unterzuckerungen"
   },
   "tabs": {
     "timeline": "Zeitverlauf",

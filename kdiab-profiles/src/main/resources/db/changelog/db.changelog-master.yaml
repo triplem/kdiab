@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changes/003-audit-schema.yaml
   - include:
       file: db/changelog/changes/004-profile-timestamps.yaml
+  - include:
+      file: db/changelog/changes/005-proposal-reason.yaml

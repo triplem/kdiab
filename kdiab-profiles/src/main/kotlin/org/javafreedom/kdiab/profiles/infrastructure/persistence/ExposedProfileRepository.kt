@@ -50,6 +50,7 @@ object Profiles : Table("profiles") {
     val durationOfAction = integer("duration_of_action")
     val timeZone = varchar("time_zone", 50)
     val createdAt = timestamp("created_at")
+    val proposalReason = text("proposal_reason").nullable()
     val segments = jsonb<ProfileSegments>("segments", Json.Default)
 
     override val primaryKey = PrimaryKey(id)
@@ -265,6 +266,7 @@ class ExposedProfileRepository(
             it[durationOfAction] = profile.durationOfAction
             it[timeZone] = profile.timeZone.id
             it[createdAt] = java.time.Instant.ofEpochMilli(profile.createdAt.toEpochMilliseconds())
+            it[proposalReason] = profile.proposalReason
             it[segments] = ProfileSegments(
                 basal = profile.basal,
                 icr = profile.icr,
@@ -354,6 +356,7 @@ class ExposedProfileRepository(
             archivedAt = row[ProfileStatuses.archivedAt]?.let {
                 Instant.fromEpochMilliseconds(it.toEpochMilli())
             },
+            proposalReason = row[Profiles.proposalReason],
             basal = pSectors.basal,
             icr = pSectors.icr,
             isf = pSectors.isf,
