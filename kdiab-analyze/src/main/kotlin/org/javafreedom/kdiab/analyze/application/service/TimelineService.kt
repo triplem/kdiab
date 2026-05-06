@@ -7,7 +7,7 @@ import org.javafreedom.kdiab.analyze.domain.model.TimelineMeasure
 import org.javafreedom.kdiab.analyze.domain.model.TimelineTreatment
 import kotlinx.coroutines.async
 import kotlinx.coroutines.supervisorScope
-import java.time.Instant
+import kotlinx.datetime.Instant
 
 class TimelineService(
     private val measuresClient: MeasuresClient,
