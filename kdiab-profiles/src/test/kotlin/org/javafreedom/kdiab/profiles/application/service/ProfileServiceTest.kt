@@ -799,4 +799,38 @@ class ProfileServiceTest {
 
                 assertEquals("My Plan", result.name)
         }
+
+        // ── getHistory ────────────────────────────────────────────────────────────
+
+        @Test
+        fun `getHistory delegates to repository with correct params`() = runBlocking {
+                val userId = Uuid.random()
+                val from = kotlin.time.Instant.parse("2024-01-01T00:00:00Z")
+                val to = kotlin.time.Instant.parse("2024-01-31T23:59:59Z")
+                val profile = Profile(
+                        userId = userId, name = "Historical",
+                        status = ProfileStatus.ARCHIVED,
+                        basal = emptyList(), icr = emptyList(), isf = emptyList(),
+                        targets = emptyList(), insulinType = "Fiasp", durationOfAction = 180
+                )
+                coEvery { repository.findHistory(userId, from, to) } returns listOf(profile)
+
+                val result = service.getHistory(userId, from, to)
+
+                assertEquals(listOf(profile), result)
+                coVerify(exactly = 1) { repository.findHistory(userId, from, to) }
+        }
+
+        @Test
+        fun `getHistory returns empty list when no profiles in range`() = runBlocking {
+                val userId = Uuid.random()
+                val from = kotlin.time.Instant.parse("2020-01-01T00:00:00Z")
+                val to = kotlin.time.Instant.parse("2020-01-02T00:00:00Z")
+                coEvery { repository.findHistory(userId, from, to) } returns emptyList()
+
+                val result = service.getHistory(userId, from, to)
+
+                assert(result.isEmpty())
+                coVerify(exactly = 1) { repository.findHistory(userId, from, to) }
+        }
 }
