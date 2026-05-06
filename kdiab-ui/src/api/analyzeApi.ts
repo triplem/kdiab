@@ -16,6 +16,7 @@ export interface TimelineResponse {
     notes?: string
     data: Record<string, unknown>
   }>
+  errors?: string[]
 }
 
 export interface TirBreakdown {

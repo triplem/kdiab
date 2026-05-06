@@ -52,6 +52,11 @@ export function TimelineView({ userId, glucoseUnit }: Props) {
             profileChangeDates={profileChangeDates}
           />
         )}
+        {data && data.errors && data.errors.length > 0 && (
+          <div className="upstream-error-banner" role="alert">
+            {t('timeline.partialData')}: {data.errors.join(', ')}
+          </div>
+        )}
       </div>
     </div>
   )

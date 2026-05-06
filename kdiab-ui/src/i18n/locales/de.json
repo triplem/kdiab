@@ -235,7 +235,8 @@
     "trendFortyFiveDown": "Fällt langsam",
     "trendSingleDown": "Fällt",
     "trendDoubleDown": "Fällt schnell",
-    "profileChanged": "Profil geändert"
+    "profileChanged": "Profil geändert",
+    "partialData": "Einige Datenquellen nicht verfügbar"
   },
   "analytics": {
     "title": "Analyse",
