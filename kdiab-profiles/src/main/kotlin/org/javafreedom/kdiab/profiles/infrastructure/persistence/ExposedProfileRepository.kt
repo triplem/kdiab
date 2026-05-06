@@ -11,6 +11,7 @@ import kotlinx.datetime.IllegalTimeZoneException
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.javafreedom.kdiab.profiles.domain.exception.ConflictException
 import org.javafreedom.kdiab.profiles.domain.model.*
 import org.javafreedom.kdiab.profiles.domain.repository.ProfileRepository
 import org.jetbrains.exposed.v1.core.*
@@ -235,21 +236,32 @@ class ExposedProfileRepository(
      */
     override suspend fun activateProfile(oldActive: Profile?, newActive: Profile): Profile =
         withContext(ioDispatcher) {
-            suspendTransaction {
-                oldActive?.let { updateStatusInTx(it.id, ProfileStatus.ARCHIVED, archivedAt = it.archivedAt) }
+            try {
+                suspendTransaction {
+                    oldActive?.let { updateStatusInTx(it.id, ProfileStatus.ARCHIVED, archivedAt = it.archivedAt) }
 
-                val exists = Profiles.selectAll()
-                    .where { Profiles.id eq newActive.id }
-                    .count() > 0
+                    val exists = Profiles.selectAll()
+                        .where { Profiles.id eq newActive.id }
+                        .count() > 0
 
-                if (exists) {
-                    updateStatusInTx(newActive.id, ProfileStatus.ACTIVE, activatedAt = newActive.activatedAt)
-                } else {
-                    insertProfileInTx(newActive)
-                    insertStatusInTx(newActive)
+                    if (exists) {
+                        updateStatusInTx(newActive.id, ProfileStatus.ACTIVE, activatedAt = newActive.activatedAt)
+                    } else {
+                        insertProfileInTx(newActive)
+                        insertStatusInTx(newActive)
+                    }
+
+                    newActive
                 }
-
-                newActive
+            } catch (e: org.jetbrains.exposed.v1.exceptions.ExposedSQLException) {
+                val sqlState = e.cause?.let { (it as? java.sql.SQLException)?.sqlState }
+                if (sqlState == "23505") {
+                    throw ConflictException(
+                        "Only one profile can be active at a time — deactivate the current active profile first.",
+                        e
+                    )
+                }
+                throw e
             }
         }
 
