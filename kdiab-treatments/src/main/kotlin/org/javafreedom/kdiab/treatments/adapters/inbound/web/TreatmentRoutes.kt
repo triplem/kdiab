@@ -18,6 +18,7 @@ import org.javafreedom.kdiab.treatments.api.models.BulkTreatmentRequest
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.treatments.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
 import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.treatments.plugins.UserPrincipal
 
@@ -32,6 +33,7 @@ fun Route.treatmentRoutes(treatmentService: TreatmentService, auditLogRepository
     authenticate("auth-jwt") {
         listTreatments(treatmentService, auditLogRepository)
         createTreatment(treatmentService, auditLogRepository)
+        archiveTreatments(treatmentService, auditLogRepository)
         deleteTreatments(treatmentService, auditLogRepository)
     }
 }
@@ -53,11 +55,16 @@ private fun Route.listTreatments(treatmentService: TreatmentService, auditLogRep
                 throw BusinessValidationException("Invalid 'to' timestamp: $it")
             }
         }
+        val status = call.request.queryParameters["status"]?.let {
+            runCatching { TreatmentStatus.valueOf(it.uppercase()) }.getOrElse {
+                throw BusinessValidationException("Invalid status value: $it. Must be ACTIVE or ARCHIVED")
+            }
+        } ?: TreatmentStatus.ACTIVE
         val treatments = if (params.type != null) {
             val treatmentType = org.javafreedom.kdiab.treatments.domain.model.TreatmentType.valueOf(params.type.name)
-            treatmentService.getTreatmentsByType(targetUserId, treatmentType, from, to)
+            treatmentService.getTreatmentsByType(targetUserId, treatmentType, from, to, status)
         } else {
-            treatmentService.getTreatments(targetUserId, from, to)
+            treatmentService.getTreatments(targetUserId, from, to, status)
         }
         call.respond(treatments.map { it.toApi() })
     }
@@ -75,6 +82,21 @@ private fun Route.createTreatment(treatmentService: TreatmentService, auditLogRe
         val saved = treatmentService.addTreatment(treatment)
         logger.info { "Created treatment ${saved.id} for user $targetUserId" }
         call.respond(HttpStatusCode.Created, saved.toApi())
+    }
+}
+
+private fun Route.archiveTreatments(treatmentService: TreatmentService, auditLogRepository: AuditLogRepository) {
+    post<Paths.archiveTreatments> { params ->
+        val principal = call.principal<UserPrincipal>()
+        val targetUserId = parseUuid(params.userId)
+        checkAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "treatments.archive", auditLogRepository)
+
+        val request = call.receive<BulkTreatmentRequest>()
+        val ids = request.treatmentIds.map { parseUuid(it) }
+        treatmentService.archiveTreatments(ids, targetUserId)
+        logger.info { "Archived ${ids.size} treatments for user $targetUserId" }
+        call.respond(HttpStatusCode.OK)
     }
 }
 

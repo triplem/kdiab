@@ -8,6 +8,7 @@ import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.treatments.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.treatments.domain.model.Treatment
+import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
 import org.javafreedom.kdiab.treatments.domain.repository.TreatmentRepository
 
@@ -25,15 +26,25 @@ class TreatmentService(
         return treatmentRepository.save(treatment)
     }
 
-    suspend fun getTreatments(userId: Uuid, from: Instant? = null, to: Instant? = null): List<Treatment> =
-        treatmentRepository.findByUserId(userId, from, to)
+    suspend fun getTreatments(
+        userId: Uuid,
+        from: Instant? = null,
+        to: Instant? = null,
+        status: TreatmentStatus = TreatmentStatus.ACTIVE,
+    ): List<Treatment> = treatmentRepository.findByUserId(userId, from, to, status)
 
     suspend fun getTreatmentsByType(
         userId: Uuid,
         type: TreatmentType,
         from: Instant? = null,
         to: Instant? = null,
-    ): List<Treatment> = treatmentRepository.findByUserIdAndType(userId, type, from, to)
+        status: TreatmentStatus = TreatmentStatus.ACTIVE,
+    ): List<Treatment> = treatmentRepository.findByUserIdAndType(userId, type, from, to, status)
+
+    suspend fun archiveTreatments(ids: List<Uuid>, userId: Uuid) {
+        if (ids.isEmpty()) throw ResourceNotFoundException("No treatment IDs provided")
+        treatmentRepository.archiveAll(ids, userId)
+    }
 
     suspend fun deleteTreatments(ids: List<Uuid>, userId: Uuid) {
         if (ids.isEmpty()) throw ResourceNotFoundException("No treatment IDs provided")

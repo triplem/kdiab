@@ -114,7 +114,7 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 patient reads own treatments`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns listOf(testTreatment())
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns listOf(testTreatment())
         val resp = client.get("/api/v1/users/$SARAH_ID/treatments") {
             bearerAuth(sarahToken)
         }
@@ -131,7 +131,7 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 doctor reads allowed patient treatments`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns listOf(testTreatment())
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns listOf(testTreatment())
         val resp = client.get("/api/v1/users/$SARAH_ID/treatments") {
             bearerAuth(doctorToken)
         }
@@ -148,7 +148,7 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 admin reads any user treatments`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(MIKE_ID), any(), any()) } returns emptyList()
+        coEvery { repo.findByUserId(Uuid.parse(MIKE_ID), any(), any(), any()) } returns emptyList()
         val resp = client.get("/api/v1/users/$MIKE_ID/treatments") {
             bearerAuth(adminToken)
         }
@@ -157,7 +157,7 @@ class TreatmentRoutesTest {
 
     @Test
     fun `list treatments - 200 with from and to query params`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns listOf(testTreatment())
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns listOf(testTreatment())
         val resp = client.get(
             "/api/v1/users/$SARAH_ID/treatments?from=2024-01-01T00:00:00Z&to=2024-01-31T23:59:59Z"
         ) {
@@ -235,6 +235,50 @@ class TreatmentRoutesTest {
             setBody(createBody)
         }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
+    }
+
+    // ── POST /api/v1/users/{userId}/treatments/archive ───────────────────────
+
+    @Test
+    fun `archive treatments - 200 patient archives own treatments`() = routeTest { repo ->
+        coEvery { repo.archiveAll(any(), any()) } just runs
+        val resp = client.post("/api/v1/users/$SARAH_ID/treatments/archive") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(bulkBody)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `archive treatments - 403 patient cannot archive another users treatments`() = routeTest { _ ->
+        val resp = client.post("/api/v1/users/$MIKE_ID/treatments/archive") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(bulkBody)
+        }
+        assertEquals(HttpStatusCode.Forbidden, resp.status)
+    }
+
+    @Test
+    fun `archive treatments - 200 doctor archives for assigned patient`() = routeTest { repo ->
+        coEvery { repo.archiveAll(any(), any()) } just runs
+        val resp = client.post("/api/v1/users/$SARAH_ID/treatments/archive") {
+            bearerAuth(doctorToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(bulkBody)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `archive treatments - 404 when empty treatment ids`() = routeTest { _ ->
+        val resp = client.post("/api/v1/users/$SARAH_ID/treatments/archive") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody("""{"treatmentIds":[]}""")
+        }
+        assertEquals(HttpStatusCode.NotFound, resp.status)
     }
 
     // ── POST /api/v1/users/{userId}/treatments/delete ─────────────────────────
