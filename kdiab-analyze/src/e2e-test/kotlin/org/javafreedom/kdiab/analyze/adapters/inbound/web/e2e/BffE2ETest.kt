@@ -85,7 +85,7 @@ class BffE2ETest : BehaviorSpec({
         """"name":"Sarah Basal Profile","createdAt":"2024-01-01T00:00:00Z","validFrom":"2024-01-01T00:00:00Z"}"""
 
     val measuresPagedJson = """{"items":[$cgmMeasureJson],"page":0,"size":200,"totalCount":1}"""
-    val treatmentsJson = """[$bolusTreatmentJson]"""
+    val treatmentsJson = """{"items":[$bolusTreatmentJson],"page":0,"size":200,"totalCount":1}"""
     val profilesJson = """[$activeProfileJson]"""
 
     // 10 CGM readings at 10:xx UTC on different days — all land in hourly bucket 10
