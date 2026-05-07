@@ -12,7 +12,9 @@ import {
   Legend,
   Cell,
 } from 'recharts'
+import type { TooltipProps } from 'recharts'
 import { useTranslation } from 'react-i18next'
+import { useTimeFormat } from '../../context/TimeFormatContext'
 
 interface Measure {
   id: string
@@ -71,17 +73,58 @@ function displayValue(mgDl: number, unit: string): number {
 const BOLUS_TYPES = new Set(['BOLUS', 'CORRECTION_BOLUS', 'COMBO_BOLUS'])
 const CARBS_TYPES = new Set(['CARBS', 'MEAL', 'HYPO_TREATMENT'])
 
+interface TreatmentPoint {
+  ts: number
+  y: number
+  type: string
+  notes?: string
+  treatmentData: Record<string, unknown>
+}
+
+interface GlucosePoint {
+  ts: number
+  value?: number
+  bgmValue?: number
+}
+
+type TooltipEntry = {
+  name: string
+  value: number
+  color: string
+  payload: TreatmentPoint | GlucosePoint
+}
+
+function formatTreatmentLine(type: string, data: Record<string, unknown>): string {
+  if (BOLUS_TYPES.has(type)) {
+    const units = data['insulin'] ?? data['units']
+    const insulinType = data['insulinType']
+    return insulinType ? `${units} U (${insulinType})` : `${units} U`
+  }
+  if (CARBS_TYPES.has(type)) {
+    return `${data['carbs'] ?? '?'} g`
+  }
+  if (type === 'EXERCISE' || type === 'ACTIVITY') {
+    const duration = data['duration']
+    const intensity = data['intensity']
+    return [duration ? `${duration} min` : null, intensity ?? null].filter(Boolean).join(', ')
+  }
+  return type
+}
+
 export function TimelineChart({ measures, treatments, glucoseUnit, profileChangeDates }: Props) {
   const { t } = useTranslation()
+  const { formatDate, locale } = useTimeFormat()
 
   const tirLow = displayValue(70, glucoseUnit)
   const tirHigh = displayValue(180, glucoseUnit)
 
-  // Fixed absolute positions above the glucose range — 40 mg/dL (2.2 mmol/L) apart
+  // Fixed absolute positions well above the glucose range (40 mg/dL apart)
   // so paired bolus+carbs events at the same timestamp are clearly separated.
   const bolusY = displayValue(210, glucoseUnit)
   const carbsY = displayValue(250, glucoseUnit)
   const otherY = displayValue(290, glucoseUnit)
+
+  const yLabel = glucoseUnit === 'mmol/L' ? 'mmol/L' : 'mg/dL'
 
   const cgmData = measures
     .filter(m => m.type === 'CGM')
@@ -92,8 +135,7 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
         const val = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN
         if (isNaN(val)) return undefined
         const storageUnit = typeof m.data['unit'] === 'string' ? m.data['unit'] as string : 'mg/dL'
-        const mgDl = toMgDl(val, storageUnit)
-        return displayValue(mgDl, glucoseUnit)
+        return displayValue(toMgDl(val, storageUnit), glucoseUnit)
       })(),
     }))
     .filter(d => d.value !== undefined)
@@ -108,28 +150,63 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
         const val = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN
         if (isNaN(val)) return undefined
         const storageUnit = typeof m.data['unit'] === 'string' ? m.data['unit'] as string : 'mg/dL'
-        const mgDl = toMgDl(val, storageUnit)
-        return displayValue(mgDl, glucoseUnit)
+        return displayValue(toMgDl(val, storageUnit), glucoseUnit)
       })(),
     }))
     .filter(d => d.bgmValue !== undefined)
 
-  const bolusData = treatments
+  const bolusData: TreatmentPoint[] = treatments
     .filter(tr => BOLUS_TYPES.has(tr.type))
-    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: bolusY, type: tr.type, notes: tr.notes }))
+    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: bolusY, type: tr.type, notes: tr.notes, treatmentData: tr.data }))
 
-  const carbsData = treatments
+  const carbsData: TreatmentPoint[] = treatments
     .filter(tr => CARBS_TYPES.has(tr.type))
-    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: carbsY, type: tr.type, notes: tr.notes }))
+    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: carbsY, type: tr.type, notes: tr.notes, treatmentData: tr.data }))
 
-  const otherTreatmentData = treatments
+  const otherTreatmentData: TreatmentPoint[] = treatments
     .filter(tr => !BOLUS_TYPES.has(tr.type) && !CARBS_TYPES.has(tr.type))
-    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: otherY, type: tr.type, notes: tr.notes }))
+    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: otherY, type: tr.type, notes: tr.notes, treatmentData: tr.data }))
 
   const formatTs = (ts: number) =>
-    new Date(ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    new Date(ts).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 
-  const yLabel = glucoseUnit === 'mmol/L' ? 'mmol/L' : 'mg/dL'
+  const renderTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+    if (!active || !payload?.length || label == null) return null
+    const entries = payload as unknown as TooltipEntry[]
+
+    const dateLabel = formatDate(new Date(label as number).toISOString())
+
+    return (
+      <div style={{
+        backgroundColor: 'var(--tooltip-bg)',
+        border: '1px solid var(--tooltip-border)',
+        borderRadius: '8px',
+        color: 'var(--tooltip-text)',
+        padding: '8px 12px',
+        fontSize: '0.85rem',
+        lineHeight: 1.6,
+      }}>
+        <p style={{ margin: '0 0 4px', fontWeight: 600 }}>{dateLabel}</p>
+        {entries.map((entry, i) => {
+          const p = entry.payload as TreatmentPoint & GlucosePoint
+          // Glucose readings (CGM or BGM)
+          if ('value' in p && p.value !== undefined) {
+            return <p key={i} style={{ margin: 0, color: entry.color }}>{entry.name}: {p.value} {yLabel}</p>
+          }
+          if ('bgmValue' in p && p.bgmValue !== undefined) {
+            return <p key={i} style={{ margin: 0, color: entry.color }}>{entry.name}: {p.bgmValue} {yLabel}</p>
+          }
+          // Treatment points — show actual clinical value, not the Y position
+          if ('treatmentData' in p) {
+            const valueStr = formatTreatmentLine(p.type, p.treatmentData)
+            const label = p.notes ? `${p.type} (${p.notes})` : p.type
+            return <p key={i} style={{ margin: 0, color: entry.color }}>{label}: {valueStr}</p>
+          }
+          return null
+        })}
+      </div>
+    )
+  }
 
   return (
     <ResponsiveContainer width="100%" height={350}>
@@ -146,12 +223,7 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
         <YAxis
           label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 10 }}
         />
-        <Tooltip
-          labelFormatter={(val: number) => new Date(val).toLocaleString()}
-          formatter={(val: number, name: string) => [`${val} ${yLabel}`, name]}
-          contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
-          wrapperStyle={{ outline: 'none' }}
-        />
+        <Tooltip content={renderTooltip} wrapperStyle={{ outline: 'none' }} />
         <Legend />
 
         <ReferenceArea y1={tirLow} y2={tirHigh} fill="rgba(16, 185, 129, 0.07)" />

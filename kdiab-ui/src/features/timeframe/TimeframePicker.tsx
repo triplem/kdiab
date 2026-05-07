@@ -54,9 +54,14 @@ export function TimeframePicker({ value, onChange }: Props) {
       {presets.map(({ key, label }) => (
         <button
           key={key}
-          className={activePreset === key ? 'active-tab' : ''}
           onClick={() => selectPreset(key)}
-          style={{ padding: '0.4em 0.9em', fontSize: '0.9rem' }}
+          style={{
+            padding: '0.4em 0.9em',
+            fontSize: '0.9rem',
+            background: activePreset === key ? 'var(--accent-primary)' : undefined,
+            color: activePreset === key ? '#fff' : undefined,
+            borderColor: activePreset === key ? 'var(--accent-primary)' : undefined,
+          }}
         >
           {label}
         </button>
