@@ -353,11 +353,14 @@ components:
 
     ErrorResponse:
       type: object
+      description: Standard error envelope returned by all error responses
       required:
         - code
         - message
       properties:
         code:
           type: integer
+          description: HTTP status code
         message:
           type: string
+          description: Human-readable error description
