@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import {
   ComposedChart,
   Line,
@@ -167,6 +168,14 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
     .filter(tr => !BOLUS_TYPES.has(tr.type) && !CARBS_TYPES.has(tr.type))
     .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: otherY, type: tr.type, notes: tr.notes, treatmentData: tr.data }))
 
+  // Lookup map: timestamp → all treatment points at that time (for unified tooltip)
+  const allTreatmentsByTs = new Map<number, TreatmentPoint[]>()
+  for (const tr of [...bolusData, ...carbsData, ...otherTreatmentData]) {
+    const bucket = allTreatmentsByTs.get(tr.ts) ?? []
+    bucket.push(tr)
+    allTreatmentsByTs.set(tr.ts, bucket)
+  }
+
   const formatTs = (ts: number) =>
     new Date(ts).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 
@@ -175,6 +184,43 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
     const entries = payload as unknown as TooltipEntry[]
 
     const dateLabel = formatDate(new Date(label as number).toISOString())
+
+    const glucoseNodes: ReactNode[] = []
+    const treatmentTsSet = new Set<number>()
+
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+      const p = entry.payload as TreatmentPoint & GlucosePoint
+      if ('value' in p && p.value !== undefined) {
+        glucoseNodes.push(
+          <p key={`cgm-${i}`} style={{ margin: 0, color: entry.color }}>{entry.name}: {p.value} {yLabel}</p>
+        )
+      } else if ('bgmValue' in p && p.bgmValue !== undefined) {
+        glucoseNodes.push(
+          <p key={`bgm-${i}`} style={{ margin: 0, color: entry.color }}>{entry.name}: {p.bgmValue} {yLabel}</p>
+        )
+      } else if ('treatmentData' in p) {
+        treatmentTsSet.add(p.ts)
+      }
+    }
+
+    // When any treatment bubble is hovered, show ALL treatments at that timestamp
+    const treatmentNodes: ReactNode[] = []
+    const seen = new Set<string>()
+    for (const ts of treatmentTsSet) {
+      const atTs = allTreatmentsByTs.get(ts) ?? []
+      for (const tr of atTs) {
+        const key = `${ts}-${tr.type}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        const typeName = t(`treatmentModal.types.${tr.type}`, { defaultValue: tr.type })
+        const entryLabel = tr.notes ? `${typeName} (${tr.notes})` : typeName
+        const valueStr = formatTreatmentLine(tr.type, tr.treatmentData)
+        treatmentNodes.push(
+          <p key={key} style={{ margin: 0, color: treatmentColor(tr.type) }}>{entryLabel}: {valueStr}</p>
+        )
+      }
+    }
 
     return (
       <div style={{
@@ -187,23 +233,8 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
         lineHeight: 1.6,
       }}>
         <p style={{ margin: '0 0 4px', fontWeight: 600 }}>{dateLabel}</p>
-        {entries.map((entry, i) => {
-          const p = entry.payload as TreatmentPoint & GlucosePoint
-          // Glucose readings (CGM or BGM)
-          if ('value' in p && p.value !== undefined) {
-            return <p key={i} style={{ margin: 0, color: entry.color }}>{entry.name}: {p.value} {yLabel}</p>
-          }
-          if ('bgmValue' in p && p.bgmValue !== undefined) {
-            return <p key={i} style={{ margin: 0, color: entry.color }}>{entry.name}: {p.bgmValue} {yLabel}</p>
-          }
-          // Treatment points — show actual clinical value, not the Y position
-          if ('treatmentData' in p) {
-            const valueStr = formatTreatmentLine(p.type, p.treatmentData)
-            const label = p.notes ? `${p.type} (${p.notes})` : p.type
-            return <p key={i} style={{ margin: 0, color: entry.color }}>{label}: {valueStr}</p>
-          }
-          return null
-        })}
+        {glucoseNodes}
+        {treatmentNodes}
       </div>
     )
   }

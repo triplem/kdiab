@@ -6,9 +6,11 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.plugins.callid.*
+import io.ktor.server.resources.get
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
+import org.javafreedom.kdiab.analyze.api.Paths
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
@@ -24,68 +26,66 @@ fun Route.bffRoutes(
     profilesService: ProfilesService,
 ) {
     authenticate("auth-jwt") {
-        route("/api/v1/users/{userId}") {
-            get("/timeline") {
-                val ctx = extractContext(call)
-                val (from, to) = requireDateRange(call)
-                auditDoctorAccess(ctx, "analyze.timeline")
+        get<Paths.getTimeline> { params ->
+            val ctx = extractContext(call, params.userId)
+            val (from, to) = validateDateRange(params.from, params.to)
+            auditDoctorAccess(ctx, "analyze.timeline")
 
-                val timeline = timelineService.getTimeline(
-                    userId = ctx.targetUserId.toString(),
-                    from = from,
-                    to = to,
-                    authorization = ctx.authorization,
-                    correlationId = ctx.correlationId,
-                )
-                call.respond(timeline.toResponse())
-            }
+            val timeline = timelineService.getTimeline(
+                userId = ctx.targetUserId.toString(),
+                from = from,
+                to = to,
+                authorization = ctx.authorization,
+                correlationId = ctx.correlationId,
+            )
+            call.respond(timeline.toResponse())
+        }
 
-            get("/analytics/hba1c") {
-                val ctx = extractContext(call)
-                val (from, to) = requireDateRange(call)
-                auditDoctorAccess(ctx, "analyze.hba1c")
+        get<Paths.getHba1c> { params ->
+            val ctx = extractContext(call, params.userId)
+            val (from, to) = validateDateRange(params.from, params.to)
+            auditDoctorAccess(ctx, "analyze.hba1c")
 
-                val result = analyticsService.getHba1c(
-                    userId = ctx.targetUserId.toString(),
-                    from = from,
-                    to = to,
-                    authorization = ctx.authorization,
-                    glucoseUnit = ctx.principal.glucoseUnit,
-                    correlationId = ctx.correlationId,
-                )
-                call.respond(result.toResponse())
-            }
+            val result = analyticsService.getHba1c(
+                userId = ctx.targetUserId.toString(),
+                from = from,
+                to = to,
+                authorization = ctx.authorization,
+                glucoseUnit = ctx.principal.glucoseUnit,
+                correlationId = ctx.correlationId,
+            )
+            call.respond(result.toResponse())
+        }
 
-            get("/analytics/agp") {
-                val ctx = extractContext(call)
-                val (from, to) = requireDateRange(call)
-                auditDoctorAccess(ctx, "analyze.agp")
+        get<Paths.getAgp> { params ->
+            val ctx = extractContext(call, params.userId)
+            val (from, to) = validateDateRange(params.from, params.to)
+            auditDoctorAccess(ctx, "analyze.agp")
 
-                val result = analyticsService.getAgp(
-                    userId = ctx.targetUserId.toString(),
-                    from = from,
-                    to = to,
-                    authorization = ctx.authorization,
-                    glucoseUnit = ctx.principal.glucoseUnit,
-                    correlationId = ctx.correlationId,
-                )
-                call.respond(result.toResponse())
-            }
+            val result = analyticsService.getAgp(
+                userId = ctx.targetUserId.toString(),
+                from = from,
+                to = to,
+                authorization = ctx.authorization,
+                glucoseUnit = ctx.principal.glucoseUnit,
+                correlationId = ctx.correlationId,
+            )
+            call.respond(result.toResponse())
+        }
 
-            get("/profiles/active") {
-                val ctx = extractContext(call)
-                val (from, to) = requireDateRange(call)
-                auditDoctorAccess(ctx, "analyze.profiles")
+        get<Paths.getActiveProfiles> { params ->
+            val ctx = extractContext(call, params.userId)
+            val (from, to) = validateDateRange(params.from, params.to)
+            auditDoctorAccess(ctx, "analyze.profiles")
 
-                val result = profilesService.getProfiles(
-                    userId = ctx.targetUserId.toString(),
-                    from = from,
-                    to = to,
-                    authorization = ctx.authorization,
-                    correlationId = ctx.correlationId,
-                )
-                call.respond(result.toResponse())
-            }
+            val result = profilesService.getProfiles(
+                userId = ctx.targetUserId.toString(),
+                from = from,
+                to = to,
+                authorization = ctx.authorization,
+                correlationId = ctx.correlationId,
+            )
+            call.respond(result.toResponse())
         }
     }
 }
@@ -104,10 +104,8 @@ private data class RequestContext(
     val correlationId: String,
 )
 
-private fun extractContext(call: ApplicationCall): RequestContext {
+private fun extractContext(call: ApplicationCall, rawUserId: String): RequestContext {
     val principal = call.principal<UserPrincipal>()
-    val rawUserId = call.parameters["userId"]
-        ?: throw BusinessValidationException("userId is required")
     val targetUserId = runCatching { Uuid.parse(rawUserId) }.getOrElse {
         throw BusinessValidationException("Invalid userId format: $rawUserId")
     }
@@ -132,11 +130,7 @@ private fun extractContext(call: ApplicationCall): RequestContext {
     return RequestContext(principal!!, targetUserId, authorization, correlationId)
 }
 
-private fun requireDateRange(call: ApplicationCall): Pair<String, String> {
-    val from = call.request.queryParameters["from"]
-        ?: throw BusinessValidationException("Query parameter 'from' is required")
-    val to = call.request.queryParameters["to"]
-        ?: throw BusinessValidationException("Query parameter 'to' is required")
+private fun validateDateRange(from: String, to: String): Pair<String, String> {
     val fromInstant = runCatching { kotlinx.datetime.Instant.parse(from) }.getOrElse {
         throw BusinessValidationException("Invalid 'from' date: must be ISO-8601 (e.g. 2024-01-01T00:00:00Z)")
     }

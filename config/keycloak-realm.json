@@ -357,7 +357,10 @@
       "publicClient": true,
       "redirectUris": ["http://localhost:*"],
       "webOrigins": ["http://localhost:3000", "http://localhost:3005"],
-      "attributes": {"pkce.code.challenge.method": "S256"},
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000 http://localhost:3005"
+      },
       "protocolMappers": [
         {
           "name": "roles",

@@ -10,6 +10,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.swagger.*
+import io.ktor.server.resources.Resources
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
@@ -50,6 +51,7 @@ fun Application.module(
         ignoreUnknownKeys = true
     }
 
+    install(Resources)
     install(ContentNegotiation) { json(json) }
 
     val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
@@ -146,7 +148,9 @@ fun Application.module(
             }
         }
 
-        bffRoutes(resolvedTimelineService, resolvedAnalyticsService, resolvedProfilesService)
+        route("/api/v1") {
+            bffRoutes(resolvedTimelineService, resolvedAnalyticsService, resolvedProfilesService)
+        }
 
         if (swaggerEnabled) {
             swaggerUI(path = "swagger", swaggerFile = "openapi.yaml")

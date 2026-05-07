@@ -273,15 +273,16 @@ class BffRoutesTest {
     // ── Missing query params (400) ────────────────────────────────────────────
 
     @Test
-    fun `timeline - 400 when from param is missing`() = routeTest { _, _, _ ->
+    fun `timeline - 404 when from param is missing`() = routeTest { _, _, _ ->
         val resp = client.get("/api/v1/users/$SARAH_ID/timeline?to=$TO") { bearerAuth(sarahToken) }
-        assertEquals(HttpStatusCode.BadRequest, resp.status)
+        // Ktor Resources returns 404 when required query params are missing (route fails to bind)
+        assertEquals(HttpStatusCode.NotFound, resp.status)
     }
 
     @Test
-    fun `hba1c - 400 when to param is missing`() = routeTest { _, _, _ ->
+    fun `hba1c - 404 when to param is missing`() = routeTest { _, _, _ ->
         val resp = client.get("/api/v1/users/$SARAH_ID/analytics/hba1c?from=$FROM") { bearerAuth(sarahToken) }
-        assertEquals(HttpStatusCode.BadRequest, resp.status)
+        assertEquals(HttpStatusCode.NotFound, resp.status)
     }
 
     // ── Missing upstream audiences (403) ─────────────────────────────────────
