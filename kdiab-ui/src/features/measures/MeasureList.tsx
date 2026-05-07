@@ -156,11 +156,13 @@ export const MeasureList: React.FC<MeasureListProps> = ({
   const [editTarget, setEditTarget] = useState<MeasureEditMode | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
 
   const { isLoading, isError } = useQuery({
-    queryKey: ['measures', userId, page, pageSize],
+    queryKey: ['measures', userId, page, pageSize, showArchived],
     queryFn: async () => {
-      const res = await measuresApi.listMeasures(userId, page, pageSize)
+      const status = showArchived ? 'ARCHIVED' : 'ACTIVE'
+      const res = await measuresApi.listMeasures(userId, page, pageSize, status)
       const paged = res.data as PagedMeasures
       if (page === 0) {
         setMeasures(paged.items ?? [])
@@ -191,6 +193,13 @@ export const MeasureList: React.FC<MeasureListProps> = ({
     void queryClient.invalidateQueries({ queryKey: ['measures', userId] })
   }
 
+  const toggleShowArchived = () => {
+    setShowArchived((prev) => !prev)
+    setMeasures([])
+    setPage(0)
+    setSelectedIds(new Set())
+  }
+
   const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const next = Number(e.target.value) as (typeof PAGE_SIZES)[number]
     setPageSize(next)
@@ -200,6 +209,12 @@ export const MeasureList: React.FC<MeasureListProps> = ({
 
   const archiveMutation = useMutation({
     mutationFn: (ids: string[]) => measuresApi.archiveMeasures(userId, { measureIds: ids }),
+    onSuccess: resetAndRefetch,
+    onError: onMutationError,
+  })
+
+  const unarchiveMutation = useMutation({
+    mutationFn: (ids: string[]) => measuresApi.unarchiveMeasures(userId, { measureIds: ids }),
     onSuccess: resetAndRefetch,
     onError: onMutationError,
   })
@@ -330,6 +345,13 @@ export const MeasureList: React.FC<MeasureListProps> = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>{t('list.title')}</h2>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+          <button
+            className={`btn outline${showArchived ? ' active-tab' : ''}`}
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}
+            onClick={toggleShowArchived}
+          >
+            {showArchived ? t('list.showActive', { defaultValue: 'Show Active' }) : t('list.showArchived', { defaultValue: 'Show Archived' })}
+          </button>
           <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
             {t('list.pageSize')}
             <select
@@ -343,15 +365,26 @@ export const MeasureList: React.FC<MeasureListProps> = ({
             </select>
           </label>
           <div className="bulk-actions" style={{ display: 'flex', gap: '10px' }}>
-          {canArchive && (
+          {showArchived ? (
             <button
-              disabled={selectedIds.size === 0 || archiveMutation.isPending}
-              onClick={handleBulkArchive}
+              disabled={selectedIds.size === 0 || unarchiveMutation.isPending}
+              onClick={() => unarchiveMutation.mutate(Array.from(selectedIds))}
               className="btn outline"
               style={{ padding: '0.4rem 0.8rem' }}
             >
-              {t('list.archiveSelected', { count: selectedIds.size })}
+              {t('list.unarchiveSelected', { defaultValue: 'Unarchive Selected ({{count}})', count: selectedIds.size })}
             </button>
+          ) : (
+            canArchive && (
+              <button
+                disabled={selectedIds.size === 0 || archiveMutation.isPending}
+                onClick={handleBulkArchive}
+                className="btn outline"
+                style={{ padding: '0.4rem 0.8rem' }}
+              >
+                {t('list.archiveSelected', { count: selectedIds.size })}
+              </button>
+            )
           )}
           {canDelete && (
             <button
@@ -448,15 +481,26 @@ export const MeasureList: React.FC<MeasureListProps> = ({
                     >
                       {t('list.edit', { defaultValue: 'Edit' })}
                     </button>
-                    {canArchive && (
+                    {showArchived ? (
                       <button
                         className="btn outline"
                         style={{ marginRight: '5px', padding: '2px 8px', fontSize: '0.8rem' }}
-                        disabled={archiveMutation.isPending}
-                        onClick={() => archiveMutation.mutate([m.id])}
+                        disabled={unarchiveMutation.isPending}
+                        onClick={() => unarchiveMutation.mutate([m.id])}
                       >
-                        {t('list.archive')}
+                        {t('list.unarchive', { defaultValue: 'Unarchive' })}
                       </button>
+                    ) : (
+                      canArchive && (
+                        <button
+                          className="btn outline"
+                          style={{ marginRight: '5px', padding: '2px 8px', fontSize: '0.8rem' }}
+                          disabled={archiveMutation.isPending}
+                          onClick={() => archiveMutation.mutate([m.id])}
+                        >
+                          {t('list.archive')}
+                        </button>
+                      )
                     )}
                     {canDelete && (
                       <button

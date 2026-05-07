@@ -52,6 +52,7 @@ fun Route.treatmentRoutes(treatmentService: TreatmentService, auditLogRepository
         createTreatment(treatmentService, auditLogRepository)
         updateTreatment(treatmentService, auditLogRepository)
         archiveTreatments(treatmentService, auditLogRepository)
+        unarchiveTreatments(treatmentService, auditLogRepository)
         deleteTreatments(treatmentService, auditLogRepository)
     }
 }
@@ -142,6 +143,21 @@ private fun Route.archiveTreatments(treatmentService: TreatmentService, auditLog
         val ids = request.treatmentIds.map { parseUuid(it) }
         treatmentService.archiveTreatments(ids, targetUserId)
         logger.info { "Archived ${ids.size} treatments for user $targetUserId" }
+        call.respond(HttpStatusCode.OK)
+    }
+}
+
+private fun Route.unarchiveTreatments(treatmentService: TreatmentService, auditLogRepository: AuditLogRepository) {
+    post<Paths.unarchiveTreatments> { params ->
+        val principal = call.principal<UserPrincipal>()
+        val targetUserId = parseUuid(params.userId)
+        checkAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "treatments.unarchive", auditLogRepository)
+
+        val request = call.receive<BulkTreatmentRequest>()
+        val ids = request.treatmentIds.map { parseUuid(it) }
+        treatmentService.unarchiveTreatments(ids, targetUserId)
+        logger.info { "Unarchived ${ids.size} treatments for user $targetUserId" }
         call.respond(HttpStatusCode.OK)
     }
 }

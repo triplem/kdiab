@@ -51,6 +51,14 @@ paths:
           schema:
             type: string
             format: date-time
+        - name: status
+          in: query
+          required: false
+          description: Filter by measure status (default ACTIVE)
+          schema:
+            type: string
+            enum: [ACTIVE, ARCHIVED]
+            default: ACTIVE
       responses:
         '200':
           description: Paginated list of active measures
@@ -152,6 +160,32 @@ paths:
       responses:
         '200':
           description: Measures archived successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}/measures/unarchive:
+    post:
+      summary: Unarchive measures
+      description: Restore archived measures to ACTIVE status.
+      operationId: unarchiveMeasures
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkMeasureRequest'
+      responses:
+        '200':
+          description: Measures unarchived successfully
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

@@ -166,6 +166,16 @@ class ExposedTreatmentRepository(
         }
     }
 
+    override suspend fun unarchiveAll(ids: List<Uuid>, userId: Uuid): Unit = withContext(ioDispatcher) {
+        suspendTransaction {
+            TreatmentsTable.update({
+                (TreatmentsTable.id inList ids) and (TreatmentsTable.userId eq userId)
+            }) {
+                it[TreatmentsTable.status] = TreatmentStatus.ACTIVE.name
+            }
+        }
+    }
+
     override suspend fun deleteAll(ids: List<Uuid>, userId: Uuid): Unit = withContext(ioDispatcher) {
         suspendTransaction {
             TreatmentsTable.deleteWhere {

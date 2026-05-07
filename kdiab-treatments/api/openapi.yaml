@@ -178,6 +178,32 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /users/{userId}/treatments/unarchive:
+    post:
+      summary: Unarchive treatments
+      description: Restore archived treatments to ACTIVE status.
+      operationId: unarchiveTreatments
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkTreatmentRequest'
+      responses:
+        '200':
+          description: Treatments unarchived successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /users/{userId}/treatments/delete:
     post:
       summary: Permanently delete treatments

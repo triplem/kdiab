@@ -63,6 +63,11 @@ class TreatmentService(
         treatmentRepository.archiveAll(ids, userId)
     }
 
+    suspend fun unarchiveTreatments(ids: List<Uuid>, userId: Uuid) {
+        if (ids.isEmpty()) throw ResourceNotFoundException("No treatment IDs provided")
+        treatmentRepository.unarchiveAll(ids, userId)
+    }
+
     suspend fun deleteTreatments(ids: List<Uuid>, userId: Uuid) {
         if (ids.isEmpty()) throw ResourceNotFoundException("No treatment IDs provided")
         treatmentRepository.deleteAll(ids, userId)

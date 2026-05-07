@@ -119,11 +119,13 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
   const [editTarget, setEditTarget] = useState<TreatmentEditMode | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
 
   const { data: treatments = [], isLoading, isError } = useQuery<TreatmentResponse[]>({
-    queryKey: ['treatments', userId],
+    queryKey: ['treatments', userId, showArchived],
     queryFn: async () => {
-      const res = await treatmentsApi.listTreatments(userId)
+      const status = showArchived ? 'ARCHIVED' : 'ACTIVE'
+      const res = await treatmentsApi.listTreatments(userId, status)
       return res.data
     },
     enabled: !!userId,
@@ -144,6 +146,19 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
 
   const archiveMutation = useMutation({
     mutationFn: (ids: string[]) => treatmentsApi.archiveTreatments(userId, { treatmentIds: ids }),
+    onSuccess: () => {
+      setMutationError(null)
+      setSelectedIds(new Set())
+      void queryClient.invalidateQueries({ queryKey: ['treatments', userId] })
+    },
+    onError: (err: unknown) => {
+      const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
+      setMutationError(apiErr?.response?.data?.message ?? apiErr?.message ?? t('list.mutationError'))
+    },
+  })
+
+  const unarchiveMutation = useMutation({
+    mutationFn: (ids: string[]) => treatmentsApi.unarchiveTreatments(userId, { treatmentIds: ids }),
     onSuccess: () => {
       setMutationError(null)
       setSelectedIds(new Set())
@@ -263,15 +278,33 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2>{t('list.title')}</h2>
         <div className="bulk-actions" style={{ display: 'flex', gap: '0.5rem' }}>
-          {canArchive && (
+          <button
+            className={`btn outline${showArchived ? ' active-tab' : ''}`}
+            style={{ padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}
+            onClick={() => { setShowArchived((p) => !p); setSelectedIds(new Set()) }}
+          >
+            {showArchived ? t('list.showActive', { defaultValue: 'Show Active' }) : t('list.showArchived', { defaultValue: 'Show Archived' })}
+          </button>
+          {showArchived ? (
             <button
-              disabled={selectedIds.size === 0 || archiveMutation.isPending}
-              onClick={handleBulkArchive}
+              disabled={selectedIds.size === 0 || unarchiveMutation.isPending}
+              onClick={() => unarchiveMutation.mutate(Array.from(selectedIds))}
               className="btn outline"
               style={{ padding: '0.4rem 0.8rem' }}
             >
-              {t('list.archiveSelected', { count: selectedIds.size })}
+              {t('list.unarchiveSelected', { defaultValue: 'Unarchive Selected ({{count}})', count: selectedIds.size })}
             </button>
+          ) : (
+            canArchive && (
+              <button
+                disabled={selectedIds.size === 0 || archiveMutation.isPending}
+                onClick={handleBulkArchive}
+                className="btn outline"
+                style={{ padding: '0.4rem 0.8rem' }}
+              >
+                {t('list.archiveSelected', { count: selectedIds.size })}
+              </button>
+            )
           )}
           {canDelete && (
             <button
@@ -374,15 +407,26 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                       >
                         {t('list.edit', { defaultValue: 'Edit' })}
                       </button>
-                      {canArchive && (
+                      {showArchived ? (
                         <button
                           className="btn outline"
                           style={{ padding: '2px 8px', fontSize: '0.8rem' }}
-                          disabled={archiveMutation.isPending}
-                          onClick={() => handleSingleArchive(tr.id)}
+                          disabled={unarchiveMutation.isPending}
+                          onClick={() => unarchiveMutation.mutate([tr.id])}
                         >
-                          {t('list.archive')}
+                          {t('list.unarchive', { defaultValue: 'Unarchive' })}
                         </button>
+                      ) : (
+                        canArchive && (
+                          <button
+                            className="btn outline"
+                            style={{ padding: '2px 8px', fontSize: '0.8rem' }}
+                            disabled={archiveMutation.isPending}
+                            onClick={() => handleSingleArchive(tr.id)}
+                          >
+                            {t('list.archive')}
+                          </button>
+                        )
                       )}
                       {canDelete && (
                         <button

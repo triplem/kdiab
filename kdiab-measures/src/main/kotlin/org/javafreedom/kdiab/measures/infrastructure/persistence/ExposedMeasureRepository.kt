@@ -54,13 +54,16 @@ class ExposedMeasureRepository(
         }
     }
 
-    override suspend fun findByUserId(userId: Uuid, page: Int, size: Int, from: Instant?, to: Instant?): List<Measure> =
+    override suspend fun findByUserId(
+        userId: Uuid, page: Int, size: Int, from: Instant?, to: Instant?,
+        status: MeasureStatus,
+    ): List<Measure> =
         withContext(ioDispatcher) {
             suspendTransaction {
                 MeasuresTable.selectAll()
                     .where {
                         var condition = (MeasuresTable.userId eq userId) and
-                            (MeasuresTable.status eq MeasureStatus.ACTIVE.name)
+                            (MeasuresTable.status eq status.name)
                         if (from != null) {
                             condition = condition and (MeasuresTable.measuredAt greaterEq
                                 java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
@@ -78,25 +81,26 @@ class ExposedMeasureRepository(
             }
         }
 
-    override suspend fun countByUserId(userId: Uuid, from: Instant?, to: Instant?): Long = withContext(ioDispatcher) {
-        suspendTransaction {
-            MeasuresTable.selectAll()
-                .where {
-                    var condition = (MeasuresTable.userId eq userId) and
-                        (MeasuresTable.status eq MeasureStatus.ACTIVE.name)
-                    if (from != null) {
-                        condition = condition and (MeasuresTable.measuredAt greaterEq
-                            java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
+    override suspend fun countByUserId(userId: Uuid, from: Instant?, to: Instant?, status: MeasureStatus): Long =
+        withContext(ioDispatcher) {
+            suspendTransaction {
+                MeasuresTable.selectAll()
+                    .where {
+                        var condition = (MeasuresTable.userId eq userId) and
+                            (MeasuresTable.status eq status.name)
+                        if (from != null) {
+                            condition = condition and (MeasuresTable.measuredAt greaterEq
+                                java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
+                        }
+                        if (to != null) {
+                            condition = condition and (MeasuresTable.measuredAt lessEq
+                                java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                        }
+                        condition
                     }
-                    if (to != null) {
-                        condition = condition and (MeasuresTable.measuredAt lessEq
-                            java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
-                    }
-                    condition
-                }
-                .count()
+                    .count()
+            }
         }
-    }
 
     override suspend fun findByUserIdAndType(userId: Uuid, type: MeasureType): List<Measure> =
         withContext(ioDispatcher) {
@@ -130,6 +134,16 @@ class ExposedMeasureRepository(
                 (MeasuresTable.id inList ids) and (MeasuresTable.userId eq userId)
             }) {
                 it[MeasuresTable.status] = MeasureStatus.ARCHIVED.name
+            }
+        }
+    }
+
+    override suspend fun unarchive(ids: List<Uuid>, userId: Uuid): Unit = withContext(ioDispatcher) {
+        suspendTransaction {
+            MeasuresTable.update({
+                (MeasuresTable.id inList ids) and (MeasuresTable.userId eq userId)
+            }) {
+                it[MeasuresTable.status] = MeasureStatus.ACTIVE.name
             }
         }
     }

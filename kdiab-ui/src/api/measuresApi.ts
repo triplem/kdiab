@@ -21,12 +21,14 @@ interface PagedMeasures {
 }
 
 export const measuresApi = {
-  listMeasures: (userId: string, page = 0, size = 50) =>
+  listMeasures: (userId: string, page = 0, size = 50, status?: string) =>
     axiosInstance.get<PagedMeasures>(`${BASE}/users/${userId}/measures`, {
-      params: { page, size },
+      params: { page, size, ...(status ? { status } : {}) },
     }),
   archiveMeasures: (userId: string, body: { measureIds: string[] }) =>
     axiosInstance.post(`${BASE}/users/${userId}/measures/archive`, body),
+  unarchiveMeasures: (userId: string, body: { measureIds: string[] }) =>
+    axiosInstance.post(`${BASE}/users/${userId}/measures/unarchive`, body),
   deleteMeasures: (userId: string, body: { measureIds: string[] }) =>
     axiosInstance.delete(`${BASE}/users/${userId}/measures`, { data: body }),
   createMeasure: (userId: string, body: Record<string, unknown>) =>

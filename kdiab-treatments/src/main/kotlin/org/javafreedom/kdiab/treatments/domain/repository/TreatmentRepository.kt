@@ -34,5 +34,6 @@ interface TreatmentRepository {
         status: TreatmentStatus = TreatmentStatus.ACTIVE,
     ): List<Treatment>
     suspend fun archiveAll(ids: List<Uuid>, userId: Uuid)
+    suspend fun unarchiveAll(ids: List<Uuid>, userId: Uuid)
     suspend fun deleteAll(ids: List<Uuid>, userId: Uuid)
 }

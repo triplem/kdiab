@@ -14,14 +14,18 @@ export interface TreatmentResponse {
 }
 
 export const treatmentsApi = {
-  listTreatments: (userId: string) =>
-    axiosInstance.get<TreatmentResponse[]>(`${BASE}/users/${userId}/treatments`),
+  listTreatments: (userId: string, status?: string) =>
+    axiosInstance.get<TreatmentResponse[]>(`${BASE}/users/${userId}/treatments`, {
+      params: status ? { status } : {},
+    }),
   createTreatment: (userId: string, body: Record<string, unknown>) =>
     axiosInstance.post<TreatmentResponse>(`${BASE}/users/${userId}/treatments`, body),
   deleteTreatments: (userId: string, body: { treatmentIds: string[] }) =>
     axiosInstance.delete(`${BASE}/users/${userId}/treatments`, { data: body }),
   archiveTreatments: (userId: string, body: { treatmentIds: string[] }) =>
     axiosInstance.post(`${BASE}/users/${userId}/treatments/archive`, body),
+  unarchiveTreatments: (userId: string, body: { treatmentIds: string[] }) =>
+    axiosInstance.post(`${BASE}/users/${userId}/treatments/unarchive`, body),
   updateTreatment: (
     userId: string,
     treatmentId: string,

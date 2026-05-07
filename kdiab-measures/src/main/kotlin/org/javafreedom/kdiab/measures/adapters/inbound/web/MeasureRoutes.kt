@@ -24,6 +24,7 @@ import org.javafreedom.kdiab.measures.api.models.UpdateMeasureRequest
 import org.javafreedom.kdiab.measures.application.service.MeasureService
 import org.javafreedom.kdiab.measures.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.measures.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.measures.domain.model.MeasureStatus
 import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.measures.plugins.UserPrincipal
 
@@ -51,6 +52,7 @@ fun Route.measureRoutes(measureService: MeasureService, auditLogRepository: Audi
         createMeasure(measureService, auditLogRepository)
         updateMeasure(measureService, auditLogRepository)
         archiveMeasures(measureService, auditLogRepository)
+        unarchiveMeasures(measureService, auditLogRepository)
         deleteMeasures(measureService, auditLogRepository)
     }
 }
@@ -76,9 +78,14 @@ private fun Route.listMeasures(measureService: MeasureService, auditLogRepositor
             }
         }
 
+        val status = call.request.queryParameters["status"]?.let {
+            runCatching { MeasureStatus.valueOf(it) }.getOrElse {
+                throw BusinessValidationException("Invalid status value: $it. Must be ACTIVE or ARCHIVED")
+            }
+        } ?: MeasureStatus.ACTIVE
         val glucoseUnit = principal?.glucoseUnit ?: "mg/dL"
         val weightUnit = principal?.weightUnit ?: "kg"
-        val paged = measureService.getMeasures(targetUserId, page, size, from, to)
+        val paged = measureService.getMeasures(targetUserId, page, size, from, to, status)
         call.respond(PagedMeasureResponse(
             items = paged.items.map { it.toApi(glucoseUnit, weightUnit) },
             page = paged.page,
@@ -137,6 +144,21 @@ private fun Route.archiveMeasures(measureService: MeasureService, auditLogReposi
         val ids = request.measureIds.map { parseUuid(it) }
         measureService.archiveMeasures(ids, targetUserId)
         logger.info { "Archived ${ids.size} measures for user $targetUserId" }
+        call.respond(HttpStatusCode.OK)
+    }
+}
+
+private fun Route.unarchiveMeasures(measureService: MeasureService, auditLogRepository: AuditLogRepository) {
+    post<Paths.unarchiveMeasures> { params ->
+        val principal = call.principal<UserPrincipal>()
+        val targetUserId = parseUuid(params.userId)
+        checkReadAccess(principal, targetUserId)
+        auditIfDoctor(call, principal, targetUserId, "measures.unarchive", auditLogRepository)
+
+        val request = call.receive<BulkMeasureRequest>()
+        val ids = request.measureIds.map { parseUuid(it) }
+        measureService.unarchiveMeasures(ids, targetUserId)
+        logger.info { "Unarchived ${ids.size} measures for user $targetUserId" }
         call.respond(HttpStatusCode.OK)
     }
 }
