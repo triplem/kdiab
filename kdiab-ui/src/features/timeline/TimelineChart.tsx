@@ -11,7 +11,6 @@ import {
   ReferenceArea,
   ResponsiveContainer,
   Legend,
-  Cell,
 } from 'recharts'
 import type { TooltipProps } from 'recharts'
 import { useTranslation } from 'react-i18next'
@@ -74,12 +73,16 @@ function displayValue(mgDl: number, unit: string): number {
 const BOLUS_TYPES = new Set(['BOLUS', 'CORRECTION_BOLUS', 'COMBO_BOLUS'])
 const CARBS_TYPES = new Set(['CARBS', 'MEAL', 'HYPO_TREATMENT'])
 
-interface TreatmentPoint {
-  ts: number
-  y: number
+interface TreatmentEntry {
   type: string
   notes?: string
   treatmentData: Record<string, unknown>
+}
+
+interface TreatmentMarker {
+  ts: number
+  y: number
+  entries: TreatmentEntry[]
 }
 
 interface GlucosePoint {
@@ -88,11 +91,11 @@ interface GlucosePoint {
   bgmValue?: number
 }
 
-type TooltipEntry = {
+type TooltipPayload = {
   name: string
   value: number
   color: string
-  payload: TreatmentPoint | GlucosePoint
+  payload: (TreatmentMarker | GlucosePoint) & Record<string, unknown>
 }
 
 function formatTreatmentLine(type: string, data: Record<string, unknown>): string {
@@ -109,7 +112,25 @@ function formatTreatmentLine(type: string, data: Record<string, unknown>): strin
     const intensity = data['intensity']
     return [duration ? `${duration} min` : null, intensity ?? null].filter(Boolean).join(', ')
   }
-  return type
+  return ''
+}
+
+// Linear interpolation of the CGM value at a given timestamp
+function interpolateCgm(ts: number, cgmData: { ts: number; value?: number }[]): number | undefined {
+  if (cgmData.length === 0) return undefined
+  let lo = -1
+  let hi = -1
+  for (let i = 0; i < cgmData.length; i++) {
+    if (cgmData[i].ts <= ts) lo = i
+    if (cgmData[i].ts >= ts && hi === -1) hi = i
+  }
+  if (lo === -1 && hi === -1) return undefined
+  if (lo === -1) return cgmData[hi].value
+  if (hi === -1) return cgmData[lo].value
+  if (lo === hi) return cgmData[lo].value
+  const t0 = cgmData[lo].ts, t1 = cgmData[hi].ts
+  const v0 = cgmData[lo].value!, v1 = cgmData[hi].value!
+  return v0 + ((ts - t0) / (t1 - t0)) * (v1 - v0)
 }
 
 export function TimelineChart({ measures, treatments, glucoseUnit, profileChangeDates }: Props) {
@@ -118,13 +139,6 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
 
   const tirLow = displayValue(70, glucoseUnit)
   const tirHigh = displayValue(180, glucoseUnit)
-
-  // Fixed absolute positions well above the glucose range (40 mg/dL apart)
-  // so paired bolus+carbs events at the same timestamp are clearly separated.
-  const bolusY = displayValue(210, glucoseUnit)
-  const carbsY = displayValue(250, glucoseUnit)
-  const otherY = displayValue(290, glucoseUnit)
-
   const yLabel = glucoseUnit === 'mmol/L' ? 'mmol/L' : 'mg/dL'
 
   const cgmData = measures
@@ -156,69 +170,64 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
     }))
     .filter(d => d.bgmValue !== undefined)
 
-  const bolusData: TreatmentPoint[] = treatments
-    .filter(tr => BOLUS_TYPES.has(tr.type))
-    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: bolusY, type: tr.type, notes: tr.notes, treatmentData: tr.data }))
-
-  const carbsData: TreatmentPoint[] = treatments
-    .filter(tr => CARBS_TYPES.has(tr.type))
-    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: carbsY, type: tr.type, notes: tr.notes, treatmentData: tr.data }))
-
-  const otherTreatmentData: TreatmentPoint[] = treatments
-    .filter(tr => !BOLUS_TYPES.has(tr.type) && !CARBS_TYPES.has(tr.type))
-    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: otherY, type: tr.type, notes: tr.notes, treatmentData: tr.data }))
-
-  // Lookup map: timestamp → all treatment points at that time (for unified tooltip)
-  const allTreatmentsByTs = new Map<number, TreatmentPoint[]>()
-  for (const tr of [...bolusData, ...carbsData, ...otherTreatmentData]) {
-    const bucket = allTreatmentsByTs.get(tr.ts) ?? []
-    bucket.push(tr)
-    allTreatmentsByTs.set(tr.ts, bucket)
+  // Group all treatments by timestamp → one diamond marker per unique ts on the CGM line
+  const byTs = new Map<number, TreatmentEntry[]>()
+  for (const tr of treatments) {
+    const ts = new Date(tr.treatedAt).getTime()
+    const bucket = byTs.get(ts) ?? []
+    bucket.push({ type: tr.type, notes: tr.notes, treatmentData: tr.data })
+    byTs.set(ts, bucket)
   }
+
+  const treatmentMarkers: TreatmentMarker[] = Array.from(byTs.entries()).map(([ts, entries]) => ({
+    ts,
+    y: interpolateCgm(ts, cgmData) ?? tirLow,
+    entries,
+  }))
 
   const formatTs = (ts: number) =>
     new Date(ts).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 
   const renderTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (!active || !payload?.length || label == null) return null
-    const entries = payload as unknown as TooltipEntry[]
+    const entries = payload as unknown as TooltipPayload[]
 
     const dateLabel = formatDate(new Date(label as number).toISOString())
-
-    const glucoseNodes: ReactNode[] = []
-    const treatmentTsSet = new Set<number>()
+    const nodes: ReactNode[] = []
 
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i]
-      const p = entry.payload as TreatmentPoint & GlucosePoint
+      const p = entry.payload
+
       if ('value' in p && p.value !== undefined) {
-        glucoseNodes.push(
-          <p key={`cgm-${i}`} style={{ margin: 0, color: entry.color }}>{entry.name}: {p.value} {yLabel}</p>
+        const gp = p as GlucosePoint
+        nodes.push(
+          <p key={`cgm-${i}`} style={{ margin: 0, color: entry.color }}>
+            {entry.name}: {gp.value} {yLabel}
+          </p>
         )
       } else if ('bgmValue' in p && p.bgmValue !== undefined) {
-        glucoseNodes.push(
-          <p key={`bgm-${i}`} style={{ margin: 0, color: entry.color }}>{entry.name}: {p.bgmValue} {yLabel}</p>
+        const gp = p as GlucosePoint
+        nodes.push(
+          <p key={`bgm-${i}`} style={{ margin: 0, color: entry.color }}>
+            {entry.name}: {gp.bgmValue} {yLabel}
+          </p>
         )
-      } else if ('treatmentData' in p) {
-        treatmentTsSet.add(p.ts)
-      }
-    }
-
-    // When any treatment bubble is hovered, show ALL treatments at that timestamp
-    const treatmentNodes: ReactNode[] = []
-    const seen = new Set<string>()
-    for (const ts of treatmentTsSet) {
-      const atTs = allTreatmentsByTs.get(ts) ?? []
-      for (const tr of atTs) {
-        const key = `${ts}-${tr.type}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        const typeName = t(`treatmentModal.types.${tr.type}`, { defaultValue: tr.type })
-        const entryLabel = tr.notes ? `${typeName} (${tr.notes})` : typeName
-        const valueStr = formatTreatmentLine(tr.type, tr.treatmentData)
-        treatmentNodes.push(
-          <p key={key} style={{ margin: 0, color: treatmentColor(tr.type) }}>{entryLabel}: {valueStr}</p>
-        )
+      } else if ('entries' in p && Array.isArray(p.entries)) {
+        const seen = new Set<string>()
+        for (const te of p.entries as TreatmentEntry[]) {
+          const key = `${te.type}-${te.notes ?? ''}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          const typeName = t(`treatmentModal.types.${te.type}`, { defaultValue: te.type })
+          const entryLabel = te.notes ? `${typeName} (${te.notes})` : typeName
+          const valueStr = formatTreatmentLine(te.type, te.treatmentData)
+          nodes.push(
+            <p key={`tr-${key}-${i}`} style={{ margin: 0, color: treatmentColor(te.type) }}>
+              {entryLabel}{valueStr ? `: ${valueStr}` : ''}
+            </p>
+          )
+        }
       }
     }
 
@@ -233,8 +242,7 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
         lineHeight: 1.6,
       }}>
         <p style={{ margin: '0 0 4px', fontWeight: 600 }}>{dateLabel}</p>
-        {glucoseNodes}
-        {treatmentNodes}
+        {nodes}
       </div>
     )
   }
@@ -304,49 +312,28 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
           />
         )}
 
-        {bolusData.length > 0 && (
+        {treatmentMarkers.length > 0 && (
           <Scatter
-            data={bolusData}
+            data={treatmentMarkers}
             dataKey="y"
-            name={t('timeline.bolus')}
-            fill="var(--color-bolus)"
-            shape="triangle"
+            name={t('timeline.treatment')}
+            fill="var(--accent-primary)"
             isAnimationActive={false}
-          >
-            {bolusData.map((entry, index) => (
-              <Cell key={index} fill={treatmentColor(entry.type)} />
-            ))}
-          </Scatter>
-        )}
-
-        {carbsData.length > 0 && (
-          <Scatter
-            data={carbsData}
-            dataKey="y"
-            name={t('timeline.carbs')}
-            fill="var(--color-carbs)"
-            shape="triangle"
-            isAnimationActive={false}
-          >
-            {carbsData.map((entry, index) => (
-              <Cell key={index} fill={treatmentColor(entry.type)} />
-            ))}
-          </Scatter>
-        )}
-
-        {otherTreatmentData.length > 0 && (
-          <Scatter
-            data={otherTreatmentData}
-            dataKey="y"
-            name={t('timeline.other')}
-            fill="var(--color-other)"
-            shape="triangle"
-            isAnimationActive={false}
-          >
-            {otherTreatmentData.map((entry, index) => (
-              <Cell key={index} fill={treatmentColor(entry.type)} />
-            ))}
-          </Scatter>
+            shape={(props: unknown) => {
+              const p = props as { cx?: number; cy?: number }
+              const cx = p.cx ?? 0
+              const cy = p.cy ?? 0
+              const s = 7
+              return (
+                <polygon
+                  points={`${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}`}
+                  fill="var(--accent-primary)"
+                  stroke="var(--bg-primary)"
+                  strokeWidth={1.5}
+                />
+              )
+            }}
+          />
         )}
       </ComposedChart>
     </ResponsiveContainer>
