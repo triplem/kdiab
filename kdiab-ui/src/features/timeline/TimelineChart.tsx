@@ -68,11 +68,19 @@ function displayValue(mgDl: number, unit: string): number {
   return unit === 'mmol/L' ? Math.round(mgDl * MGDL_TO_MMOL * 10) / 10 : Math.round(mgDl)
 }
 
+const BOLUS_TYPES = new Set(['BOLUS', 'CORRECTION_BOLUS', 'COMBO_BOLUS'])
+const CARBS_TYPES = new Set(['CARBS', 'MEAL', 'HYPO_TREATMENT'])
+
 export function TimelineChart({ measures, treatments, glucoseUnit, profileChangeDates }: Props) {
   const { t } = useTranslation()
 
   const tirLow = displayValue(70, glucoseUnit)
   const tirHigh = displayValue(180, glucoseUnit)
+
+  // Three rows above the 180 line so bolus+carbs pairs don't overlap
+  const bolusY = tirHigh + displayValue(8, glucoseUnit)
+  const carbsY = tirHigh + displayValue(18, glucoseUnit)
+  const otherY = tirHigh + displayValue(28, glucoseUnit)
 
   const cgmData = measures
     .filter(m => m.type === 'CGM')
@@ -105,12 +113,17 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
     }))
     .filter(d => d.bgmValue !== undefined)
 
-  const treatmentData = treatments.map(tr => ({
-    ts: new Date(tr.treatedAt).getTime(),
-    y: tirHigh + 10,
-    type: tr.type,
-    notes: tr.notes,
-  }))
+  const bolusData = treatments
+    .filter(tr => BOLUS_TYPES.has(tr.type))
+    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: bolusY, type: tr.type, notes: tr.notes }))
+
+  const carbsData = treatments
+    .filter(tr => CARBS_TYPES.has(tr.type))
+    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: carbsY, type: tr.type, notes: tr.notes }))
+
+  const otherTreatmentData = treatments
+    .filter(tr => !BOLUS_TYPES.has(tr.type) && !CARBS_TYPES.has(tr.type))
+    .map(tr => ({ ts: new Date(tr.treatedAt).getTime(), y: otherY, type: tr.type, notes: tr.notes }))
 
   const formatTs = (ts: number) =>
     new Date(ts).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
@@ -173,16 +186,46 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
           />
         )}
 
-        {treatmentData.length > 0 && (
+        {bolusData.length > 0 && (
           <Scatter
-            data={treatmentData}
+            data={bolusData}
             dataKey="y"
-            name={t('timeline.treatment')}
+            name={t('timeline.bolus')}
+            fill="var(--color-bolus)"
+            shape="triangle"
+            isAnimationActive={false}
+          >
+            {bolusData.map((entry, index) => (
+              <Cell key={index} fill={treatmentColor(entry.type)} />
+            ))}
+          </Scatter>
+        )}
+
+        {carbsData.length > 0 && (
+          <Scatter
+            data={carbsData}
+            dataKey="y"
+            name={t('timeline.carbs')}
+            fill="var(--color-carbs)"
+            shape="triangle"
+            isAnimationActive={false}
+          >
+            {carbsData.map((entry, index) => (
+              <Cell key={index} fill={treatmentColor(entry.type)} />
+            ))}
+          </Scatter>
+        )}
+
+        {otherTreatmentData.length > 0 && (
+          <Scatter
+            data={otherTreatmentData}
+            dataKey="y"
+            name={t('timeline.other')}
             fill="var(--color-other)"
             shape="triangle"
             isAnimationActive={false}
           >
-            {treatmentData.map((entry, index) => (
+            {otherTreatmentData.map((entry, index) => (
               <Cell key={index} fill={treatmentColor(entry.type)} />
             ))}
           </Scatter>
