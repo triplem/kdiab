@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { treatmentsApi } from '../../api/treatmentsApi'
-import type { TreatmentResponse } from '../../api/treatmentsApi'
+import type { TreatmentResponse, PagedTreatments } from '../../api/treatmentsApi'
 import { AddTreatmentModal } from './AddTreatmentModal'
 import type { TreatmentEditMode } from './AddTreatmentModal'
 import { useTimeFormat } from '../../context/TimeFormatContext'
@@ -126,7 +126,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
     queryFn: async () => {
       const status = showArchived ? 'ARCHIVED' : 'ACTIVE'
       const res = await treatmentsApi.listTreatments(userId, status)
-      return res.data
+      return (res.data as PagedTreatments).items ?? []
     },
     enabled: !!userId,
   })

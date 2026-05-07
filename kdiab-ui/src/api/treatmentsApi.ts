@@ -13,9 +13,16 @@ export interface TreatmentResponse {
   data: Record<string, unknown>
 }
 
+export interface PagedTreatments {
+  items: TreatmentResponse[]
+  page: number
+  size: number
+  totalCount: number
+}
+
 export const treatmentsApi = {
   listTreatments: (userId: string, status?: string) =>
-    axiosInstance.get<TreatmentResponse[]>(`${BASE}/users/${userId}/treatments`, {
+    axiosInstance.get<PagedTreatments>(`${BASE}/users/${userId}/treatments`, {
       params: status ? { status } : {},
     }),
   createTreatment: (userId: string, body: Record<string, unknown>) =>
