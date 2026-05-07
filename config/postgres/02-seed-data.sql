@@ -113,10 +113,10 @@ BEGIN
 
   -- 3 bolus+carbs pairs per day per user for 30 days (breakfast, lunch, dinner)
   FOR day IN 0..29 LOOP
-    -- Breakfast ~08:00
+    -- Breakfast ~08:00  (carbs 10–30 g, bolus 1.0–3.0 U, ICR ~10)
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '8 hours';
-    carbs := 45 + (day % 20);
-    units := ROUND((carbs / 10.0 + 0.5)::NUMERIC, 1);
+    carbs := 10 + (day % 21);
+    units := ROUND((carbs / 10.0)::NUMERIC, 1);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t, 'CARBS',
             jsonb_build_object('carbs', carbs), 'Frühstück');
@@ -124,10 +124,10 @@ BEGIN
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Breakfast bolus');
 
-    -- Lunch ~13:00
+    -- Lunch ~13:00  (carbs 20–45 g, bolus 2.0–4.5 U)
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '13 hours';
-    carbs := 55 + (day % 30);
-    units := ROUND((carbs / 10.0 + 0.3)::NUMERIC, 1);
+    carbs := 20 + (day % 26);
+    units := ROUND((carbs / 10.0)::NUMERIC, 1);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t, 'CARBS',
             jsonb_build_object('carbs', carbs), 'Mittagessen');
@@ -135,10 +135,10 @@ BEGIN
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Lunch bolus');
 
-    -- Dinner ~19:00
+    -- Dinner ~19:00  (carbs 5–35 g, bolus 0.5–3.5 U)
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '19 hours';
-    carbs := 65 + (day % 25);
-    units := ROUND((carbs / 10.0 + 0.8)::NUMERIC, 1);
+    carbs := 5 + (day % 31);
+    units := GREATEST(ROUND((carbs / 10.0)::NUMERIC, 1), 0.5);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t, 'CARBS',
             jsonb_build_object('carbs', carbs), 'Abendessen');
@@ -148,8 +148,8 @@ BEGIN
 
     -- Mike — same meal structure
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '7 hours' + INTERVAL '30 minutes';
-    carbs := 40 + (day % 25);
-    units := ROUND((carbs / 10.0 + 0.4)::NUMERIC, 1);
+    carbs := 15 + (day % 21);
+    units := ROUND((carbs / 10.0)::NUMERIC, 1);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t, 'CARBS',
             jsonb_build_object('carbs', carbs), 'Frühstück');
@@ -158,8 +158,8 @@ BEGIN
             jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Breakfast bolus');
 
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '12 hours' + INTERVAL '30 minutes';
-    carbs := 50 + (day % 20);
-    units := ROUND((carbs / 10.0 + 0.2)::NUMERIC, 1);
+    carbs := 20 + (day % 26);
+    units := ROUND((carbs / 10.0)::NUMERIC, 1);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t, 'CARBS',
             jsonb_build_object('carbs', carbs), 'Mittagessen');
@@ -168,8 +168,8 @@ BEGIN
             jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Lunch bolus');
 
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '18 hours' + INTERVAL '30 minutes';
-    carbs := 60 + (day % 30);
-    units := ROUND((carbs / 10.0 + 0.6)::NUMERIC, 1);
+    carbs := 5 + (day % 26);
+    units := GREATEST(ROUND((carbs / 10.0)::NUMERIC, 1), 0.5);
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t, 'CARBS',
             jsonb_build_object('carbs', carbs), 'Abendessen');
