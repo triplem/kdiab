@@ -136,7 +136,7 @@
     "mealBolus": "Insulin (units):",
     "mealCarbs": "Carbohydrates (g):",
     "types": {
-      "BOLUS": "Bolus (fast-acting insulin)",
+      "BOLUS": "Bolus",
       "CORRECTION_BOLUS": "Correction bolus",
       "CARBS": "Carbohydrates",
       "BASAL": "Basal insulin (long-acting)",

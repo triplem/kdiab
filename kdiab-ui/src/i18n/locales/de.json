@@ -136,7 +136,7 @@
     "mealBolus": "Insulin (Einheiten):",
     "mealCarbs": "Kohlenhydrate (g):",
     "types": {
-      "BOLUS": "Bolus (schnellwirkendes Insulin)",
+      "BOLUS": "Bolus",
       "CORRECTION_BOLUS": "Korrekturbolus",
       "CARBS": "Kohlenhydrate",
       "BASAL": "Basalinsulin (langwirkend)",
