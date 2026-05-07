@@ -1,4 +1,4 @@
-@file:Suppress("MatchingDeclarationName")
+@file:Suppress("MatchingDeclarationName", "UnreachableCode")
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.measures.adapters.inbound.web
 

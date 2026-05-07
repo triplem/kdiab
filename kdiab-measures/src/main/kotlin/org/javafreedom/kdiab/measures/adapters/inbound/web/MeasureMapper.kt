@@ -60,7 +60,7 @@ fun DomainMeasure.toApi(glucoseUnit: String = "mg/dL", weightUnit: String = "kg"
 // Glucose types (BGM, CGM, BG_CHECK): store in mg/dL.
 // WEIGHT: store in kg.
 // Other types: store as-is.
-@Suppress("ReturnCount")
+@Suppress("ReturnCount", "UnreachableCode")
 private fun normalizeToCanonical(typeName: String, data: JsonObject): JsonObject {
     return when (typeName) {
         "BGM", "CGM", "BG_CHECK" -> {
@@ -84,7 +84,7 @@ private fun normalizeToCanonical(typeName: String, data: JsonObject): JsonObject
 }
 
 // Convert canonical payload to the user's preferred units for the response.
-@Suppress("ReturnCount")
+@Suppress("ReturnCount", "UnreachableCode")
 private fun convertFromCanonical(
     typeName: String,
     data: JsonObject,

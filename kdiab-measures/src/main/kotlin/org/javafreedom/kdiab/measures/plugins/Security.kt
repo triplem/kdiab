@@ -10,7 +10,22 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.measures.domain.model.Role
-import org.javafreedom.kdiab.measures.domain.exception.AuthenticationException
+@Suppress("ReturnCount", "UnreachableCode")
+private fun buildPrincipal(credential: JWTCredential, jwtAudience: String): UserPrincipal? {
+    if (credential.payload.audience?.contains(jwtAudience) != true) return null
+    val userId = runCatching { Uuid.parse(credential.payload.subject) }.getOrNull() ?: return null
+    val rawRoles = credential.payload.getClaim("roles").asList(String::class.java) ?: emptyList()
+    val roles = rawRoles.mapNotNull { Role.fromString(it) }.toSet()
+    if (roles.isEmpty()) return null
+    val allowedPatients = credential.payload.getClaim("allowed_patients")
+        .asList(String::class.java)
+        ?.mapNotNull { raw -> runCatching { Uuid.parse(raw) }.getOrNull() }
+        ?.toSet()
+        ?: emptySet()
+    val glucoseUnit = credential.payload.getClaim("glucose_unit").asString() ?: "mg/dL"
+    val weightUnit = credential.payload.getClaim("weight_unit").asString() ?: "kg"
+    return UserPrincipal(userId, roles, allowedPatients, glucoseUnit, weightUnit)
+}
 
 private const val JWK_CACHE_MAX_SIZE = 10L
 private const val JWK_CACHE_EXPIRES_IN = 24L
@@ -52,7 +67,7 @@ fun Application.configureSecurity() {
             
             if (isTest) {
                 verifier(
-                    JWT.require(Algorithm.HMAC256(jwtSecret!!))
+                    JWT.require(Algorithm.HMAC256(requireNotNull(jwtSecret)))
                         .withAudience(jwtAudience)
                         .withIssuer(jwtDomain)
                         .build()
@@ -63,35 +78,7 @@ fun Application.configureSecurity() {
                     acceptLeeway(JWT_ACCEPT_LEEWAY)
                 }
             }
-            validate { credential ->
-                if (credential.payload.audience?.contains(jwtAudience) == true) {
-                    val userId = runCatching { Uuid.parse(credential.payload.subject) }.getOrNull()
-                        ?: return@validate null
-                    val rawRoles =
-                            credential.payload.getClaim("roles").asList(String::class.java)
-                                    ?: emptyList()
-                    val roles = rawRoles.mapNotNull { Role.fromString(it) }.toSet()
-                    if (roles.isEmpty()) return@validate null
-
-                    val allowedPatients =
-                           credential
-                                    .payload
-                                    .getClaim("allowed_patients")
-                                    .asList(String::class.java)
-                                    ?.mapNotNull { raw -> runCatching { Uuid.parse(raw) }.getOrNull() }
-                                    ?.toSet()
-                                    ?: emptySet()
-
-                    val glucoseUnit = credential.payload.getClaim("glucose_unit")
-                        .asString() ?: "mg/dL"
-                    val weightUnit = credential.payload.getClaim("weight_unit")
-                        .asString() ?: "kg"
-
-                    UserPrincipal(userId, roles, allowedPatients, glucoseUnit, weightUnit)
-                } else {
-                    null
-                }
-            }
+            validate { credential -> buildPrincipal(credential, jwtAudience) }
         }
     }
 }
