@@ -237,6 +237,12 @@ export function ProfileEditor({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
 
+  useEffect(() => {
+    if (!insulinsLoading && insulins.length > 0 && initialProfile?.insulinType) {
+      setValue('insulinType', initialProfile.insulinType)
+    }
+  }, [insulinsLoading, insulins, initialProfile?.insulinType, setValue])
+
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['profiles', userId],
     queryFn: () => profilesApi.listProfiles(userId).then((res) => res.data),

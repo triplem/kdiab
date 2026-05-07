@@ -67,10 +67,10 @@ class BffTimelineIntegrationTest {
         val emptyPagedJson = """{"items":[],"page":0,"size":200,"totalCount":0}"""
 
         val treatmentInRangeJson = """
-            [{"id":"cccccccc-cccc-cccc-cccc-cccccccccccc","userId":"$SARAH_ID","treatedAt":"2024-01-15T12:00:00Z","type":"BOLUS","data":{"units":3.5}}]
+            {"items":[{"id":"cccccccc-cccc-cccc-cccc-cccccccccccc","userId":"$SARAH_ID","treatedAt":"2024-01-15T12:00:00Z","type":"BOLUS","data":{"units":3.5}}],"page":0,"size":200,"totalCount":1}
         """.trimIndent()
 
-        val emptyTreatmentsJson = "[]"
+        val emptyTreatmentsJson = """{"items":[],"page":0,"size":200,"totalCount":0}"""
 
         private val lenientJson = Json { ignoreUnknownKeys = true }
 

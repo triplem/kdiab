@@ -7,8 +7,6 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,9 +23,14 @@ class TreatmentsClientTest {
     private fun treatmentJson(id: String) =
         """{"id":"$id","userId":"$userId","treatedAt":"2024-01-15T08:00:00Z","type":"BOLUS","data":{"insulin":2.5}}"""
 
+    private fun pagedJson(items: String, totalCount: Int) =
+        """{"items":[$items],"page":0,"size":200,"totalCount":$totalCount}"""
+
+    private fun emptyPagedJson() = pagedJson("", 0)
+
     @Test
-    fun `getTreatments returns list from plain array response`() = runTest {
-        val body = """[${treatmentJson("t-1")},${treatmentJson("t-2")}]"""
+    fun `getTreatments returns list from paged response`() = runTest {
+        val body = pagedJson("${treatmentJson("t-1")},${treatmentJson("t-2")}", 2)
         val engine = MockEngine { _ ->
             respond(
                 content = body,
@@ -43,16 +46,70 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatments returns empty list for empty array`() = runTest {
+    fun `getTreatments returns empty list when first page is empty`() = runTest {
         val engine = MockEngine { _ ->
             respond(
-                content = "[]",
+                content = emptyPagedJson(),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )
         }
         val client = buildClient(engine)
-        assertEquals(0, client.getTreatments(userId, auth, correlationId).size)
+        val result = client.getTreatments(userId, auth, correlationId)
+        assertEquals(0, result.size)
+        assertEquals(1, (engine as MockEngine).requestHistory.size)
+    }
+
+    @Test
+    fun `getTreatments fetches multiple pages until all items retrieved`() = runTest {
+        var callCount = 0
+        val engine = MockEngine { request ->
+            callCount++
+            val page = request.url.parameters["page"]?.toInt() ?: 0
+            val body = if (page == 0)
+                pagedJson(treatmentJson("t-1"), 2)
+            else
+                pagedJson(treatmentJson("t-2"), 2)
+            respond(
+                content = body,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val result = buildClient(engine).getTreatments(userId, auth, correlationId)
+        assertEquals(2, result.size)
+        assertEquals(2, callCount)
+    }
+
+    @Test
+    fun `getTreatments throws UpstreamException when first page returns 500`() = runTest {
+        val engine = MockEngine { _ ->
+            respond(content = """{"code":500,"message":"Internal Server Error"}""", status = HttpStatusCode.InternalServerError)
+        }
+        val ex = assertFailsWith<UpstreamException> {
+            buildClient(engine).getTreatments(userId, auth, correlationId)
+        }
+        assertEquals("treatments", ex.service)
+        assertEquals(500, ex.statusCode)
+    }
+
+    @Test
+    fun `getTreatments throws UpstreamException when second page returns 502`() = runTest {
+        var page = 0
+        val engine = MockEngine { _ ->
+            if (page++ == 0) {
+                respond(
+                    content = pagedJson(treatmentJson("t-1"), 2),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            } else {
+                respond(content = "", status = HttpStatusCode.BadGateway)
+            }
+        }
+        assertFailsWith<UpstreamException> {
+            buildClient(engine).getTreatments(userId, auth, correlationId)
+        }
     }
 
     @Test
@@ -69,13 +126,12 @@ class TreatmentsClientTest {
         val engine = MockEngine { request ->
             capturedCorrelationId = request.headers["X-Correlation-ID"]
             respond(
-                content = "[]",
+                content = emptyPagedJson(),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )
         }
-        val client = buildClient(engine)
-        client.getTreatments(userId, auth, correlationId)
+        buildClient(engine).getTreatments(userId, auth, correlationId)
         assertEquals(correlationId, capturedCorrelationId)
     }
 
@@ -85,14 +141,15 @@ class TreatmentsClientTest {
         val engine = MockEngine { request ->
             capturedParams += request.url.parameters["from"] to request.url.parameters["to"]
             respond(
-                content = "[]",
+                content = emptyPagedJson(),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )
         }
-        val client = buildClient(engine)
-        client.getTreatments(userId, auth, correlationId, from = "2024-01-01T00:00:00Z", to = "2024-01-31T23:59:59Z")
-
+        buildClient(engine).getTreatments(
+            userId, auth, correlationId,
+            from = "2024-01-01T00:00:00Z", to = "2024-01-31T23:59:59Z"
+        )
         assertEquals(1, capturedParams.size)
         assertEquals("2024-01-01T00:00:00Z", capturedParams[0].first)
         assertEquals("2024-01-31T23:59:59Z", capturedParams[0].second)
@@ -104,14 +161,12 @@ class TreatmentsClientTest {
         val engine = MockEngine { request ->
             capturedParams += request.url.parameters["from"] to request.url.parameters["to"]
             respond(
-                content = "[]",
+                content = emptyPagedJson(),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )
         }
-        val client = buildClient(engine)
-        client.getTreatments(userId, auth, correlationId)
-
+        buildClient(engine).getTreatments(userId, auth, correlationId)
         assertEquals(1, capturedParams.size)
         assertEquals(null, capturedParams[0].first)
         assertEquals(null, capturedParams[0].second)
