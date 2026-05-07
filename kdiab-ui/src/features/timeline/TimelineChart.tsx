@@ -77,10 +77,11 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
   const tirLow = displayValue(70, glucoseUnit)
   const tirHigh = displayValue(180, glucoseUnit)
 
-  // Three rows above the 180 line so bolus+carbs pairs don't overlap
-  const bolusY = tirHigh + displayValue(8, glucoseUnit)
-  const carbsY = tirHigh + displayValue(18, glucoseUnit)
-  const otherY = tirHigh + displayValue(28, glucoseUnit)
+  // Fixed absolute positions above the glucose range — 40 mg/dL (2.2 mmol/L) apart
+  // so paired bolus+carbs events at the same timestamp are clearly separated.
+  const bolusY = displayValue(210, glucoseUnit)
+  const carbsY = displayValue(250, glucoseUnit)
+  const otherY = displayValue(290, glucoseUnit)
 
   const cgmData = measures
     .filter(m => m.type === 'CGM')
@@ -173,6 +174,7 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
           name={t('timeline.glucose') + ' (CGM)'}
           stroke="var(--chart-cgm)"
           dot={false}
+          activeDot={false}
           strokeWidth={2}
           connectNulls={false}
         />
@@ -183,6 +185,19 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
             dataKey="bgmValue"
             name={t('timeline.glucose') + ' (BGM)'}
             fill="var(--chart-bgm)"
+            shape={(props: unknown) => {
+              const p = props as { cx?: number; cy?: number; fill?: string }
+              return (
+                <circle
+                  cx={p.cx ?? 0}
+                  cy={p.cy ?? 0}
+                  r={7}
+                  fill={p.fill ?? 'var(--chart-bgm)'}
+                  stroke="var(--bg-primary)"
+                  strokeWidth={1.5}
+                />
+              )
+            }}
           />
         )}
 
