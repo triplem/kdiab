@@ -298,15 +298,13 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
             fill="var(--chart-bgm)"
             shape={(props: unknown) => {
               const p = props as { cx?: number; cy?: number; fill?: string }
+              const cx = p.cx ?? 0
+              const cy = p.cy ?? 0
               return (
-                <circle
-                  cx={p.cx ?? 0}
-                  cy={p.cy ?? 0}
-                  r={7}
-                  fill={p.fill ?? 'var(--chart-bgm)'}
-                  stroke="var(--bg-primary)"
-                  strokeWidth={1.5}
-                />
+                <g>
+                  <circle cx={cx} cy={cy} r={16} fill="transparent" />
+                  <circle cx={cx} cy={cy} r={7} fill={p.fill ?? 'var(--chart-bgm)'} stroke="var(--bg-primary)" strokeWidth={1.5} />
+                </g>
               )
             }}
           />
@@ -325,12 +323,15 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
               const cy = p.cy ?? 0
               const s = 7
               return (
-                <polygon
-                  points={`${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}`}
-                  fill="var(--accent-primary)"
-                  stroke="var(--bg-primary)"
-                  strokeWidth={1.5}
-                />
+                <g>
+                  <circle cx={cx} cy={cy} r={16} fill="transparent" />
+                  <polygon
+                    points={`${cx},${cy - s} ${cx + s},${cy} ${cx},${cy + s} ${cx - s},${cy}`}
+                    fill="var(--accent-primary)"
+                    stroke="var(--bg-primary)"
+                    strokeWidth={1.5}
+                  />
+                </g>
               )
             }}
           />

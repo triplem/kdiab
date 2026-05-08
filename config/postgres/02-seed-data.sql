@@ -122,7 +122,7 @@ BEGIN
             jsonb_build_object('carbs', carbs), 'Frühstück');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
-            jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Breakfast bolus');
+            jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Frühstücksbolus');
 
     -- Lunch ~13:00  (carbs 20–45 g, bolus 2.0–4.5 U)
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '13 hours';
@@ -133,7 +133,7 @@ BEGIN
             jsonb_build_object('carbs', carbs), 'Mittagessen');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
-            jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Lunch bolus');
+            jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Mittagsbolus');
 
     -- Dinner ~19:00  (carbs 5–35 g, bolus 0.5–3.5 U)
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '19 hours';
@@ -144,7 +144,7 @@ BEGIN
             jsonb_build_object('carbs', carbs), 'Abendessen');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
-            jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Dinner bolus');
+            jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Abendbolus');
 
     -- Mike — same meal structure
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '7 hours' + INTERVAL '30 minutes';
@@ -155,7 +155,7 @@ BEGIN
             jsonb_build_object('carbs', carbs), 'Frühstück');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t + INTERVAL '5 minutes', 'BOLUS',
-            jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Breakfast bolus');
+            jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Frühstücksbolus');
 
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '12 hours' + INTERVAL '30 minutes';
     carbs := 20 + (day % 26);
@@ -165,7 +165,7 @@ BEGIN
             jsonb_build_object('carbs', carbs), 'Mittagessen');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t + INTERVAL '5 minutes', 'BOLUS',
-            jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Lunch bolus');
+            jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Mittagsbolus');
 
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '18 hours' + INTERVAL '30 minutes';
     carbs := 5 + (day % 26);
@@ -175,7 +175,7 @@ BEGIN
             jsonb_build_object('carbs', carbs), 'Abendessen');
     INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
     VALUES (gen_random_uuid(), mike_id, t + INTERVAL '5 minutes', 'BOLUS',
-            jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Dinner bolus');
+            jsonb_build_object('insulin', units, 'insulinType', 'Novolog'), 'Abendbolus');
 
     -- Occasional correction bolus for sarah (every 3 days)
     IF day % 3 = 0 THEN
