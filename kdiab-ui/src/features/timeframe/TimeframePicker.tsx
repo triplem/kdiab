@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { subDays, startOfDay, endOfDay, formatISO } from 'date-fns'
+import { useTimeFormat } from '../../context/TimeFormatContext'
 
 type Preset = '1d' | '7d' | '14d' | '30d' | '90d' | 'custom'
 
@@ -28,6 +29,7 @@ interface Props {
 
 export function TimeframePicker({ value, onChange }: Props) {
   const { t } = useTranslation()
+  const { locale } = useTimeFormat()
   const [activePreset, setActivePreset] = useState<Preset>('7d')
 
   const selectPreset = (preset: Exclude<Preset, 'custom'>) => {
@@ -74,6 +76,7 @@ export function TimeframePicker({ value, onChange }: Props) {
       <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>{t('timeframe.custom')}:</span>
       <input
         type="datetime-local"
+        lang={locale}
         defaultValue={value.from.slice(0, 16)}
         onChange={handleCustomFrom}
         style={{ fontSize: '0.85rem', padding: '0.3rem 0.5rem' }}
@@ -81,6 +84,7 @@ export function TimeframePicker({ value, onChange }: Props) {
       <span style={{ color: 'var(--text-secondary)' }}>—</span>
       <input
         type="datetime-local"
+        lang={locale}
         defaultValue={value.to.slice(0, 16)}
         onChange={handleCustomTo}
         style={{ fontSize: '0.85rem', padding: '0.3rem 0.5rem' }}
