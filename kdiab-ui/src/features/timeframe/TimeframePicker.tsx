@@ -10,8 +10,13 @@ export interface Timeframe {
 }
 
 function presetToTimeframe(preset: Exclude<Preset, 'custom'>): Timeframe {
-  const days = preset === '1d' ? 1 : preset === '7d' ? 7 : preset === '14d' ? 14 : preset === '30d' ? 30 : 90
-  const to = endOfDay(new Date())
+  const now = new Date()
+  if (preset === '1d') {
+    const from = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+    return { from: formatISO(from), to: formatISO(now) }
+  }
+  const days = preset === '7d' ? 7 : preset === '14d' ? 14 : preset === '30d' ? 30 : 90
+  const to = endOfDay(now)
   const from = startOfDay(subDays(to, days - 1))
   return { from: formatISO(from), to: formatISO(to) }
 }
