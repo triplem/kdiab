@@ -44,11 +44,12 @@ databaseChangeLog:
                   type: text
                   constraints:
                     nullable: true
-
-  - changeSet:
-      id: 002
-      author: javafreedom
-      changes:
+              - column:
+                  name: status
+                  type: varchar(50)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
         - createIndex:
             indexName: idx_treatments_user_id
             tableName: treatments
@@ -69,24 +70,12 @@ databaseChangeLog:
             columns:
               - column:
                   name: treated_at
-  - changeSet:
-      id: 003
-      author: javafreedom
-      dbms: postgresql
-      changes:
         - createIndex:
-            indexName: idx_treatments_user_time
+            indexName: idx_treatments_status
             tableName: treatments
             columns:
               - column:
-                  name: user_id
-              - column:
-                  name: treated_at
-                  descending: true
-  - changeSet:
-      id: 004
-      author: javafreedom
-      changes:
+                  name: status
         - createTable:
             tableName: audit_logs
             columns:
@@ -122,6 +111,11 @@ databaseChangeLog:
               - column:
                   name: user_agent
                   type: text
+              - column:
+                  name: detail
+                  type: text
+                  constraints:
+                    nullable: true
         - createIndex:
             indexName: idx_audit_logs_patient_id
             tableName: audit_logs
@@ -135,21 +129,16 @@ databaseChangeLog:
               - column:
                   name: occurred_at
   - changeSet:
-      id: 005
+      id: 002
       author: javafreedom
+      dbms: postgresql
       changes:
-        - addColumn:
-            tableName: treatments
-            columns:
-              - column:
-                  name: status
-                  type: varchar(50)
-                  defaultValue: ACTIVE
-                  constraints:
-                    nullable: false
         - createIndex:
-            indexName: idx_treatments_status
+            indexName: idx_treatments_user_time
             tableName: treatments
             columns:
               - column:
-                  name: status
+                  name: user_id
+              - column:
+                  name: treated_at
+                  descending: true

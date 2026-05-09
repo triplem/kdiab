@@ -50,10 +50,6 @@ databaseChangeLog:
                   defaultValue: 'ACTIVE'
                   constraints:
                     nullable: false
-  - changeSet:
-      id: 002
-      author: javafreedom
-      changes:
         - createIndex:
             indexName: idx_measures_user_id
             tableName: measures
@@ -74,24 +70,6 @@ databaseChangeLog:
             columns:
               - column:
                   name: measured_at
-  - changeSet:
-      id: 003
-      author: javafreedom
-      dbms: postgresql
-      changes:
-        - createIndex:
-            indexName: idx_measures_user_time
-            tableName: measures
-            columns:
-              - column:
-                  name: user_id
-              - column:
-                  name: measured_at
-                  descending: true
-  - changeSet:
-      id: 004
-      author: javafreedom
-      changes:
         - createTable:
             tableName: audit_logs
             columns:
@@ -127,6 +105,11 @@ databaseChangeLog:
               - column:
                   name: user_agent
                   type: text
+              - column:
+                  name: detail
+                  type: text
+                  constraints:
+                    nullable: true
         - createIndex:
             indexName: idx_audit_logs_patient_id
             tableName: audit_logs
@@ -139,3 +122,17 @@ databaseChangeLog:
             columns:
               - column:
                   name: occurred_at
+  - changeSet:
+      id: 002
+      author: javafreedom
+      dbms: postgresql
+      changes:
+        - createIndex:
+            indexName: idx_measures_user_time
+            tableName: measures
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: measured_at
+                  descending: true
