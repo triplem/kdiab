@@ -88,3 +88,27 @@ internal suspend fun auditIfDoctor(
         )
     )
 }
+
+internal suspend fun auditDeletion(
+    call: ApplicationCall,
+    principal: UserPrincipal?,
+    targetUserId: Uuid,
+    ids: List<Uuid>,
+    repository: AuditLogRepository,
+) {
+    if (principal == null) return
+    val ip = call.request.headers["X-Forwarded-For"]?.split(",")?.firstOrNull()?.trim()
+        ?: call.request.local.remoteHost
+    repository.save(
+        AuditLog(
+            id = Uuid.random(),
+            doctorId = principal.userId,
+            patientId = targetUserId,
+            action = "treatments.delete",
+            occurredAt = Clock.System.now(),
+            ipAddress = ip,
+            userAgent = call.request.headers[HttpHeaders.UserAgent],
+            detail = ids.joinToString(","),
+        )
+    )
+}

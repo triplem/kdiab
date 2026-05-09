@@ -173,10 +173,10 @@ private fun Route.deleteMeasures(measureService: MeasureService, auditLogReposit
             throw AuthorizationException("Only doctors and admins can permanently delete measures")
         }
         checkReadAccess(principal, targetUserId)
-        auditIfDoctor(call, principal, targetUserId, "measures.delete", auditLogRepository)
 
         val request = call.receive<BulkMeasureRequest>()
         val ids = request.measureIds.map { parseUuid(it) }
+        auditDeletion(call, principal, targetUserId, ids, auditLogRepository)
         measureService.deleteMeasures(ids, targetUserId)
         logger.info { "Deleted ${ids.size} measures for user $targetUserId" }
         call.respond(HttpStatusCode.OK)

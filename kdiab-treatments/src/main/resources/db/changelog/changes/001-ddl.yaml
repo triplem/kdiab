@@ -153,3 +153,15 @@ databaseChangeLog:
             columns:
               - column:
                   name: status
+  - changeSet:
+      id: 006
+      author: javafreedom
+      changes:
+        - addColumn:
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: detail
+                  type: TEXT
+                  constraints:
+                    nullable: true

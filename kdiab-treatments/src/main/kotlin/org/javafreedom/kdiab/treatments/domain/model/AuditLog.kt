@@ -12,4 +12,5 @@ data class AuditLog(
     val occurredAt: Instant,
     val ipAddress: String?,
     val userAgent: String?,
+    val detail: String? = null,
 )
