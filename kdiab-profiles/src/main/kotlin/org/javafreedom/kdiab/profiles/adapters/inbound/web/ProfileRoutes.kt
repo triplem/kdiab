@@ -11,12 +11,25 @@ import io.ktor.server.resources.put
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
+import kotlinx.serialization.Serializable
 import org.javafreedom.kdiab.profiles.api.models.CreateProfileRequest
+import org.javafreedom.kdiab.profiles.api.models.Profile as ApiProfile
 import org.javafreedom.kdiab.profiles.api.models.RejectProfileRequest
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
+
+private const val DEFAULT_PAGE_SIZE = 50
+private const val MAX_PAGE_SIZE = 200
+
+@Serializable
+private data class PagedProfilesResponse(
+    val items: List<ApiProfile>,
+    val page: Int,
+    val size: Int,
+    val totalCount: Long,
+)
 
 private val logger = KotlinLogging.logger {}
 
@@ -50,8 +63,17 @@ private fun Route.listProfiles(profileService: ProfileService, auditLogRepositor
         checkReadAccess(principal, targetUserId)
         auditIfDoctor(call, principal, targetUserId, "profiles.list", auditLogRepository)
 
-        val profiles = profileService.getProfiles(targetUserId)
-        call.respond(profiles.map { it.toApi() })
+        val page = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+        val size = call.request.queryParameters["size"]?.toIntOrNull()
+            ?.coerceIn(1, MAX_PAGE_SIZE) ?: DEFAULT_PAGE_SIZE
+
+        val paged = profileService.getProfiles(targetUserId, page, size)
+        call.respond(PagedProfilesResponse(
+            items = paged.items.map { it.toApi() },
+            page = paged.page,
+            size = paged.size,
+            totalCount = paged.totalCount,
+        ))
     }
 }
 

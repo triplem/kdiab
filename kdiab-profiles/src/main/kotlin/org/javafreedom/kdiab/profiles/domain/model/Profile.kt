@@ -34,6 +34,8 @@ data class Profile(
         val proposalReason: String? = null,
         val createdBy: Uuid? = null,
         val rejectionReason: String? = null,
+        val analysisLow: Double? = null,
+        val analysisHigh: Double? = null,
         val basal: List<BasalSegment>,
         val icr: List<IcrSegment>,
         val isf: List<IsfSegment>,
@@ -96,14 +98,14 @@ data class Profile(
                 "Profile must have at least one basal segment"
             )
         }
-        
+
         val sortedBasal = basal.sortedBy { it.startTime }
         if (sortedBasal.firstOrNull()?.startTime != LocalTime(0, 0)) {
              throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
                  "Basal profile must start at 00:00"
              )
         }
-        
+
         val distinctTimes = basal.map { it.startTime }.distinct()
         if (distinctTimes.size != basal.size) {
              throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
@@ -122,7 +124,7 @@ data class Profile(
             val durationInHours = (nextTimeInSeconds - current.startTime.toSecondOfDay()) / SECONDS_IN_HOUR
             totalDailyBasal += durationInHours * current.value
         }
-        
+
         if (totalDailyBasal > MAX_DAILY_BASAL_U) {
             throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
                 "Total Daily Basal exceeds safe clinical limit ($MAX_DAILY_BASAL_U U/day)"
@@ -171,6 +173,13 @@ data class Profile(
         const val MAX_ISF_MGDL = 200.0
     }
 }
+
+data class PagedProfiles(
+    val items: List<Profile>,
+    val page: Int,
+    val size: Int,
+    val totalCount: Long,
+)
 
 interface TimeSegment {
         val startTime: LocalTime

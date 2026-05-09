@@ -9,7 +9,8 @@ import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 interface ProfileRepository {
     suspend fun save(profile: Profile): Profile
     suspend fun findById(id: Uuid): Profile?
-    suspend fun findAllByUserId(userId: Uuid): List<Profile>
+    suspend fun findAllByUserId(userId: Uuid, page: Int = 0, size: Int = 50): List<Profile>
+    suspend fun countByUserId(userId: Uuid): Long
     suspend fun findActiveByUserId(userId: Uuid): Profile?
     suspend fun update(profile: Profile): Profile
     suspend fun findHistory(

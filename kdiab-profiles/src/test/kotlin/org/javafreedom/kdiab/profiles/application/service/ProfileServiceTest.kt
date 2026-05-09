@@ -14,6 +14,7 @@ import kotlinx.datetime.LocalTime
 import org.javafreedom.kdiab.profiles.domain.model.BasalSegment
 import org.javafreedom.kdiab.profiles.domain.model.IcrSegment
 import org.javafreedom.kdiab.profiles.domain.model.IsfSegment
+import org.javafreedom.kdiab.profiles.domain.model.PagedProfiles
 import org.javafreedom.kdiab.profiles.domain.model.Profile
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.domain.model.TargetSegment
@@ -74,7 +75,7 @@ class ProfileServiceTest {
         }
 
         @Test
-        fun `getProfiles should return list of profiles`() = runBlocking {
+        fun `getProfiles should return paginated profiles`() = runBlocking {
                 val userId = Uuid.random()
                 val profiles =
                         listOf(
@@ -91,11 +92,26 @@ class ProfileServiceTest {
                                 )
                         )
 
-                coEvery { repository.findAllByUserId(userId) } returns profiles
+                coEvery { repository.findAllByUserId(userId, 0, 50) } returns profiles
+                coEvery { repository.countByUserId(userId) } returns 1L
 
                 val result = service.getProfiles(userId)
 
-                assertEquals(profiles, result)
+                assertEquals(PagedProfiles(items = profiles, page = 0, size = 50, totalCount = 1L), result)
+        }
+
+        @Test
+        fun `getProfiles page beyond total returns empty items`() = runBlocking {
+                val userId = Uuid.random()
+
+                coEvery { repository.findAllByUserId(userId, 5, 50) } returns emptyList()
+                coEvery { repository.countByUserId(userId) } returns 3L
+
+                val result = service.getProfiles(userId, page = 5, size = 50)
+
+                assertEquals(0, result.items.size)
+                assertEquals(3L, result.totalCount)
+                assertEquals(5, result.page)
         }
 
         @Test

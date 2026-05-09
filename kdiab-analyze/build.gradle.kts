@@ -143,6 +143,7 @@ tasks.named("check") {
 }
 
 tasks.withType<Test> {
+    jvmArgs("-Djdk.attach.allowAttachSelf=true", "-XX:+EnableDynamicAgentLoading")
     testLogging {
         events("passed", "skipped", "failed")
         showStandardStreams = true

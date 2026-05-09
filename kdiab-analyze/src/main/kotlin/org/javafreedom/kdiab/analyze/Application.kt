@@ -40,6 +40,7 @@ fun Application.module(
     timelineService: TimelineService? = null,
     analyticsService: AnalyticsService? = null,
     profilesService: ProfilesService? = null,
+    profilesClient: ProfilesClient? = null,
 ) {
     configureLogging()
     configureMetrics()
@@ -76,6 +77,7 @@ fun Application.module(
     val resolvedTimelineService: TimelineService
     val resolvedAnalyticsService: AnalyticsService
     val resolvedProfilesService: ProfilesService
+    var resolvedProfilesClient: ProfilesClient? = profilesClient
     var healthClient: HttpClient? = null
     var upstreamHealthUrls: List<String> = emptyList()
 
@@ -121,12 +123,13 @@ fun Application.module(
         upstreamHealthUrls = listOf("$measuresUrl/healthz", "$profilesUrl/healthz", "$treatmentsUrl/healthz")
 
         val measuresClient = MeasuresClient(httpClient, measuresUrl)
-        val profilesClient = ProfilesClient(httpClient, profilesUrl)
+        val realProfilesClient = ProfilesClient(httpClient, profilesUrl)
         val treatmentsClient = TreatmentsClient(httpClient, treatmentsUrl)
 
         resolvedTimelineService = TimelineService(measuresClient, treatmentsClient)
         resolvedAnalyticsService = AnalyticsService(measuresClient)
-        resolvedProfilesService = ProfilesService(profilesClient)
+        resolvedProfilesService = ProfilesService(realProfilesClient)
+        resolvedProfilesClient = realProfilesClient
     }
 
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
@@ -149,7 +152,12 @@ fun Application.module(
         }
 
         route("/api/v1") {
-            bffRoutes(resolvedTimelineService, resolvedAnalyticsService, resolvedProfilesService)
+            bffRoutes(
+                resolvedTimelineService,
+                resolvedAnalyticsService,
+                resolvedProfilesService,
+                resolvedProfilesClient,
+            )
         }
 
         if (swaggerEnabled) {

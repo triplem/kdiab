@@ -17,6 +17,7 @@ import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.profiles.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.profiles.domain.exception.ConflictException
 import org.javafreedom.kdiab.profiles.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.profiles.domain.model.PagedProfiles
 import org.javafreedom.kdiab.profiles.domain.model.Profile
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.domain.model.Role
@@ -67,7 +68,7 @@ class ProfileApiTest {
                                 targets = emptyList()
                         )
                 coEvery { profileService.createProfile(any()) } returns createdProfile
-                coEvery { profileService.getProfiles(userId) } returns listOf(createdProfile)
+                coEvery { profileService.getProfiles(userId, any(), any()) } returns PagedProfiles(items = listOf(createdProfile), page = 0, size = 50, totalCount = 1L)
                 coEvery { profileService.getProfile(newProfileId) } returns createdProfile
                 coEvery { profileService.activateProfile(userId, newProfileId) } returns
                         createdProfile
@@ -453,7 +454,7 @@ class ProfileApiTest {
                 val patientId = Uuid.random()
                 val doctorToken = generateToken(Role.DOCTOR, Uuid.random(), listOf(patientId))
 
-                coEvery { profileService.getProfiles(patientId) } returns emptyList()
+                coEvery { profileService.getProfiles(patientId, any(), any()) } returns PagedProfiles(items = emptyList(), page = 0, size = 50, totalCount = 0L)
 
                 client.get("/api/v1/users/$patientId/profiles") {
                         header(HttpHeaders.Authorization, "Bearer $doctorToken")
@@ -481,7 +482,7 @@ class ProfileApiTest {
                 val patientId = Uuid.random()
                 val adminToken = generateToken(Role.ADMIN, Uuid.random())
 
-                coEvery { profileService.getProfiles(patientId) } returns emptyList()
+                coEvery { profileService.getProfiles(patientId, any(), any()) } returns PagedProfiles(items = emptyList(), page = 0, size = 50, totalCount = 0L)
 
                 client.get("/api/v1/users/$patientId/profiles") {
                         header(HttpHeaders.Authorization, "Bearer $adminToken")

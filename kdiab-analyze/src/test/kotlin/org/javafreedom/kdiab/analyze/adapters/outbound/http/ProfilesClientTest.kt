@@ -23,9 +23,12 @@ class ProfilesClientTest {
     private fun profileJson(id: String, status: String = "ACTIVE") =
         """{"id":"$id","userId":"$userId","status":"$status","name":"My Profile","createdAt":"2024-01-01T00:00:00Z"}"""
 
+    private fun pagedResponse(vararg profiles: String, page: Int = 0, size: Int = 50, totalCount: Int = profiles.size) =
+        """{"items":[${profiles.joinToString(",")}],"page":$page,"size":$size,"totalCount":$totalCount}"""
+
     @Test
-    fun `getProfiles returns list from plain array response`() = runTest {
-        val body = """[${profileJson("p-1", "ACTIVE")},${profileJson("p-2", "ARCHIVED")}]"""
+    fun `getProfiles returns list from paginated response`() = runTest {
+        val body = pagedResponse(profileJson("p-1", "ACTIVE"), profileJson("p-2", "ARCHIVED"), totalCount = 2)
         val engine = MockEngine { _ ->
             respond(
                 content = body,
@@ -42,10 +45,11 @@ class ProfilesClientTest {
     }
 
     @Test
-    fun `getProfiles returns empty list for empty array`() = runTest {
+    fun `getProfiles returns empty list for empty paginated response`() = runTest {
+        val body = pagedResponse(totalCount = 0)
         val engine = MockEngine { _ ->
             respond(
-                content = "[]",
+                content = body,
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )
@@ -67,7 +71,7 @@ class ProfilesClientTest {
         val engine = MockEngine { request ->
             capturedCorrelationId = request.headers["X-Correlation-ID"]
             respond(
-                content = "[]",
+                content = pagedResponse(totalCount = 0),
                 status = HttpStatusCode.OK,
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )

@@ -12,6 +12,7 @@ import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 private val logger = KotlinLogging.logger {}
 
 private const val LOG_BODY_MAX_CHARS = 200
+private const val DEFAULT_PAGE_SIZE = 50
 
 @Serializable
 data class ProfileDto(
@@ -24,6 +25,16 @@ data class ProfileDto(
     val previousProfileId: String? = null,
     val activatedAt: String? = null,
     val archivedAt: String? = null,
+    val analysisLow: Double? = null,
+    val analysisHigh: Double? = null,
+)
+
+@Serializable
+private data class PagedProfilesDto(
+    val items: List<ProfileDto>,
+    val page: Int,
+    val size: Int,
+    val totalCount: Long,
 )
 
 class ProfilesClient(
@@ -33,6 +44,8 @@ class ProfilesClient(
     suspend fun getProfiles(userId: String, authorization: String, correlationId: String): List<ProfileDto> {
         val start = System.currentTimeMillis()
         val response = httpClient.get("$baseUrl/api/v1/users/$userId/profiles") {
+            parameter("page", 0)
+            parameter("size", DEFAULT_PAGE_SIZE)
             header(HttpHeaders.Authorization, authorization)
             header("X-Correlation-ID", correlationId)
         }
@@ -53,6 +66,6 @@ class ProfilesClient(
             )
         }
         logger.info { "Fetched profiles from upstream in ${ms}ms [status=${response.status.value}]" }
-        return response.body()
+        return response.body<PagedProfilesDto>().items
     }
 }

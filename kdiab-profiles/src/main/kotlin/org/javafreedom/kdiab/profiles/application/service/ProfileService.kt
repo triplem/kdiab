@@ -7,6 +7,7 @@ import kotlin.time.Instant
 import kotlinx.datetime.LocalTime
 import org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.profiles.domain.exception.ConflictException
+import org.javafreedom.kdiab.profiles.domain.model.PagedProfiles
 import org.javafreedom.kdiab.profiles.domain.model.Profile
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.domain.repository.ProfileRepository
@@ -25,8 +26,11 @@ class ProfileService(private val profileRepository: ProfileRepository) {
 
         suspend fun getProfile(id: Uuid): Profile? = profileRepository.findById(id)
 
-        suspend fun getProfiles(userId: Uuid): List<Profile> =
-                profileRepository.findAllByUserId(userId)
+        suspend fun getProfiles(userId: Uuid, page: Int = 0, size: Int = 50): PagedProfiles {
+                val items = profileRepository.findAllByUserId(userId, page, size)
+                val totalCount = profileRepository.countByUserId(userId)
+                return PagedProfiles(items = items, page = page, size = size, totalCount = totalCount)
+        }
 
         suspend fun getHistory(
                 userId: Uuid,

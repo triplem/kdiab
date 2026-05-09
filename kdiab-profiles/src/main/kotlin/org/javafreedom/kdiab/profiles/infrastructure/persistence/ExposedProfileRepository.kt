@@ -54,6 +54,8 @@ object Profiles : Table("profiles") {
     val proposalReason = text("proposal_reason").nullable()
     val createdBy = uuid("created_by").nullable()
     val rejectionReason = text("rejection_reason").nullable()
+    val analysisLow = double("analysis_low").nullable()
+    val analysisHigh = double("analysis_high").nullable()
     val segments = jsonb<ProfileSegments>("segments", Json.Default)
 
     override val primaryKey = PrimaryKey(id)
@@ -97,12 +99,22 @@ class ExposedProfileRepository(
         }
     }
 
-    override suspend fun findAllByUserId(userId: Uuid): List<Profile> = withContext(ioDispatcher) {
+    override suspend fun findAllByUserId(userId: Uuid, page: Int, size: Int): List<Profile> = withContext(ioDispatcher) {
         suspendTransaction {
             (Profiles innerJoin ProfileStatuses).selectAll()
                 .where { Profiles.userId eq userId }
                 .orderBy(Profiles.createdAt, SortOrder.DESC)
+                .limit(size)
+                .offset(page.toLong() * size.toLong())
                 .map { mapToProfile(it) }
+        }
+    }
+
+    override suspend fun countByUserId(userId: Uuid): Long = withContext(ioDispatcher) {
+        suspendTransaction {
+            (Profiles innerJoin ProfileStatuses).selectAll()
+                .where { Profiles.userId eq userId }
+                .count()
         }
     }
 
@@ -283,6 +295,8 @@ class ExposedProfileRepository(
             it[proposalReason] = profile.proposalReason
             it[createdBy] = profile.createdBy
             it[rejectionReason] = profile.rejectionReason
+            it[analysisLow] = profile.analysisLow
+            it[analysisHigh] = profile.analysisHigh
             it[segments] = ProfileSegments(
                 basal = profile.basal,
                 icr = profile.icr,
@@ -316,6 +330,8 @@ class ExposedProfileRepository(
             it[durationOfAction] = profile.durationOfAction
             it[timeZone] = profile.timeZone.id
             it[rejectionReason] = profile.rejectionReason
+            it[analysisLow] = profile.analysisLow
+            it[analysisHigh] = profile.analysisHigh
             it[segments] = ProfileSegments(
                 basal = profile.basal,
                 icr = profile.icr,
@@ -376,6 +392,8 @@ class ExposedProfileRepository(
             proposalReason = row[Profiles.proposalReason],
             createdBy = row[Profiles.createdBy],
             rejectionReason = row[Profiles.rejectionReason],
+            analysisLow = row[Profiles.analysisLow],
+            analysisHigh = row[Profiles.analysisHigh],
             basal = pSectors.basal,
             icr = pSectors.icr,
             isf = pSectors.isf,

@@ -86,7 +86,7 @@ class BffE2ETest : BehaviorSpec({
 
     val measuresPagedJson = """{"items":[$cgmMeasureJson],"page":0,"size":200,"totalCount":1}"""
     val treatmentsJson = """{"items":[$bolusTreatmentJson],"page":0,"size":200,"totalCount":1}"""
-    val profilesJson = """[$activeProfileJson]"""
+    val profilesJson = """{"items":[$activeProfileJson],"page":0,"size":50,"totalCount":1}"""
 
     // 10 CGM readings at 10:xx UTC on different days — all land in hourly bucket 10
     val agpCgmReadings = (1..10).joinToString(",") { day ->

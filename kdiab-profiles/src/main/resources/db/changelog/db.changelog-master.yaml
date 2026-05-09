@@ -11,3 +11,5 @@ databaseChangeLog:
       file: db/changelog/changes/005-proposal-reason.yaml
   - include:
       file: db/changelog/changes/006-created-by-rejection-reason.yaml
+  - include:
+      file: db/changelog/changes/007-analysis-range.yaml
