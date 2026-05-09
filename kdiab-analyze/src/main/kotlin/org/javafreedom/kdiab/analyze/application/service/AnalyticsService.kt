@@ -38,6 +38,8 @@ private const val P75 = 75
 private const val P90 = 90
 private const val PERCENT_FACTOR = 100.0
 
+private data class CgmFetchResult(val readings: List<Double>, val mismatchCount: Int)
+
 class AnalyticsService(
     private val measuresClient: MeasuresClient,
 ) {
@@ -49,8 +51,11 @@ class AnalyticsService(
         authorization: String,
         glucoseUnit: String,
         correlationId: String,
+        tirLow: Double = TIR_LOW,
+        tirHigh: Double = TIR_HIGH,
     ): Hba1cResult {
-        val readings = fetchCgmReadings(userId, from, to, authorization, glucoseUnit, correlationId)
+        val fetchResult = fetchCgmReadings(userId, from, to, authorization, glucoseUnit, correlationId)
+        val readings = fetchResult.readings
 
         val warnings = buildList {
             if (readings.isEmpty()) {
@@ -59,6 +64,12 @@ class AnalyticsService(
                 add("Fewer than 1 day of CGM readings — HbA1c estimate is unreliable.")
             } else if (readings.size < MIN_READINGS_MEANINGFUL) {
                 add("Fewer than 14 days of CGM data — estimate may not reflect long-term glucose control.")
+            }
+            if (fetchResult.mismatchCount > 0) {
+                add(
+                    "Unit mismatch detected: ${fetchResult.mismatchCount} readings stored in a different unit " +
+                        "than your profile setting. Values may be inaccurate."
+                )
             }
         }
 
@@ -70,14 +81,14 @@ class AnalyticsService(
 
         val mean = readings.average()
         val hba1c = (mean + DCCT_ADDEND) / DCCT_DIVISOR
-        val tir = computeTir(readings)
+        val tir = computeTir(readings, tirLow, tirHigh)
 
         return Hba1cResult(
             hba1c = hba1c, meanGlucose = mean, readingCount = readings.size, tir = tir, warnings = warnings
         )
     }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "UnusedParameter")
     suspend fun getAgp(
         userId: String,
         from: String,
@@ -85,6 +96,8 @@ class AnalyticsService(
         authorization: String,
         glucoseUnit: String,
         correlationId: String,
+        tirLow: Double = TIR_LOW,
+        tirHigh: Double = TIR_HIGH,
     ): AgpResult {
         val allMeasures = measuresClient.getMeasures(userId, authorization, correlationId, from, to)
 
@@ -94,7 +107,8 @@ class AnalyticsService(
             if (dto.type != "CGM") return@forEach
             val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach
             val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach
-            val mgDl = if (glucoseUnit == "mmol/L") sgv * MMOL_TO_MGDL else sgv
+            val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
+            val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * MMOL_TO_MGDL else sgv
             if (mgDl <= 0.0) return@forEach
             val hour = t.toLocalDateTime(TimeZone.UTC).hour
             byHour[hour].add(mgDl)
@@ -135,26 +149,30 @@ class AnalyticsService(
         authorization: String,
         glucoseUnit: String,
         correlationId: String,
-    ): List<Double> {
-        return measuresClient.getMeasures(userId, authorization, correlationId, from, to)
+    ): CgmFetchResult {
+        var mismatchCount = 0
+        val readings = measuresClient.getMeasures(userId, authorization, correlationId, from, to)
             .filter { dto -> dto.type == "CGM" }
             .mapNotNull { dto ->
                 val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
-                val mgDl = if (glucoseUnit == "mmol/L") sgv * MMOL_TO_MGDL else sgv
+                val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
+                if (storageUnit != glucoseUnit) mismatchCount++
+                val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * MMOL_TO_MGDL else sgv
                 if (mgDl <= 0.0) return@mapNotNull null
                 mgDl
             }
+        return CgmFetchResult(readings = readings, mismatchCount = mismatchCount)
     }
 
-    private fun computeTir(readings: List<Double>): TirBreakdown {
+    private fun computeTir(readings: List<Double>, tirLow: Double = TIR_LOW, tirHigh: Double = TIR_HIGH): TirBreakdown {
         var below = 0
         var inRange = 0
         var above = 0
         var high = 0
         readings.forEach { v ->
             when {
-                v < TIR_LOW -> below++
-                v <= TIR_HIGH -> inRange++
+                v < tirLow -> below++
+                v <= tirHigh -> inRange++
                 v <= TIR_VERY_HIGH -> above++
                 else -> high++
             }

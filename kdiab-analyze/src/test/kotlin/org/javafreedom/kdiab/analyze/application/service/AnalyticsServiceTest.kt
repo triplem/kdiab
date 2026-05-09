@@ -31,6 +31,15 @@ class AnalyticsServiceTest {
         status = "ACTIVE",
     )
 
+    private fun cgmDtoMmol(sgv: Double, measuredAt: String = "2024-01-15T12:00:00Z") = MeasureDto(
+        id = "m-2",
+        userId = userId,
+        measuredAt = measuredAt,
+        type = "CGM",
+        data = buildJsonObject { put("value", sgv); put("unit", "mmol/L") },
+        status = "ACTIVE",
+    )
+
     // ── HbA1c ────────────────────────────────────────────────────────────────
 
     @Test
@@ -61,8 +70,8 @@ class AnalyticsServiceTest {
 
     @Test
     fun `getHba1c converts mmol per L to mg_dL before DCCT calc`() = runTest {
-        // 8.0 mmol/L * 18 = 144 mg/dL
-        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(cgmDto(8.0))
+        // 8.0 mmol/L * 18 = 144 mg/dL — uses per-measure storage unit (mmol/L)
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(cgmDtoMmol(8.0))
         val result = service.getHba1c(userId, from, to, auth, "mmol/L", "")
         assertEquals(144.0, result.meanGlucose, absoluteTolerance = 0.01)
     }
@@ -162,9 +171,9 @@ class AnalyticsServiceTest {
 
     @Test
     fun `getAgp converts mmol per L before bucketing`() = runTest {
-        // 6.0 mmol/L * 18 = 108 mg/dL
+        // 6.0 mmol/L * 18 = 108 mg/dL — uses per-measure storage unit (mmol/L)
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
-            cgmDto(6.0, "2024-01-15T08:00:00Z"),
+            cgmDtoMmol(6.0, "2024-01-15T08:00:00Z"),
         )
         val result = service.getAgp(userId, from, to, auth, "mmol/L", "")
         val bucket8 = result.hourlyData.first { it.hour == 8 }
@@ -250,6 +259,30 @@ class AnalyticsServiceTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns readings
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
         assertTrue(result.warnings.isEmpty())
+    }
+
+    // ── Unit mismatch ────────────────────────────────────────────────────────
+
+    @Test
+    fun `measures stored in mmol per L with glucoseUnit=mg_dL are correctly converted and warn`() = runTest {
+        // 7.2 mmol/L * 18 = 129.6 mg/dL (stored as mmol/L, JWT claims mg/dL → mismatch)
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            cgmDtoMmol(7.2),
+            cgmDtoMmol(7.2),
+        )
+        val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
+        assertEquals(129.6, result.meanGlucose, absoluteTolerance = 0.01)
+        assertTrue(result.warnings.any { it.contains("Unit mismatch detected") && it.contains("2 readings") })
+    }
+
+    @Test
+    fun `measures with matching unit produce no unit-mismatch warning`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            cgmDto(140.0),
+            cgmDto(160.0),
+        )
+        val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
+        assertTrue(result.warnings.none { it.contains("Unit mismatch") })
     }
 }
 
