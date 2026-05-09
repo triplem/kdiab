@@ -10,6 +10,10 @@ import io.ktor.server.metrics.dropwizard.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
+private const val NANOS_PER_SECOND: Double = 1_000_000_000.0
+
+private fun sanitize(name: String): String = name.replace(Regex("[^a-zA-Z0-9_:]"), "_")
+
 fun Application.configureMetrics() {
     val registry = MetricRegistry()
 
@@ -24,23 +28,37 @@ fun Application.configureMetrics() {
         get("/metrics") {
             val sb = StringBuilder()
             registry.gauges.forEach { (name, gauge) ->
-                runCatching { sb.appendLine("$name ${gauge.value}") }
+                val n = sanitize(name)
+                runCatching {
+                    sb.appendLine("# TYPE $n gauge")
+                    sb.appendLine("$n ${gauge.value}")
+                }
             }
             registry.counters.forEach { (name, counter) ->
-                sb.appendLine("$name ${counter.count}")
+                val n = sanitize(name)
+                sb.appendLine("# TYPE ${n}_total counter")
+                sb.appendLine("${n}_total ${counter.count}")
             }
             registry.meters.forEach { (name, meter) ->
-                sb.appendLine("${name}_total ${meter.count}")
-                sb.appendLine("${name}_rate1m ${meter.oneMinuteRate}")
+                val n = sanitize(name)
+                sb.appendLine("# TYPE ${n}_total counter")
+                sb.appendLine("${n}_total ${meter.count}")
+                sb.appendLine("# TYPE ${n}_rate1m gauge")
+                sb.appendLine("${n}_rate1m ${meter.oneMinuteRate}")
             }
             registry.timers.forEach { (name, timer) ->
+                val n = sanitize(name)
                 val snap = timer.snapshot
-                sb.appendLine("${name}_count ${timer.count}")
-                sb.appendLine("${name}_p50 ${snap.median}")
-                sb.appendLine("${name}_p95 ${snap.get95thPercentile()}")
-                sb.appendLine("${name}_p99 ${snap.get99thPercentile()}")
+                sb.appendLine("# TYPE ${n}_count counter")
+                sb.appendLine("${n}_count ${timer.count}")
+                sb.appendLine("# TYPE ${n}_p50_seconds gauge")
+                sb.appendLine("${n}_p50_seconds ${snap.median / NANOS_PER_SECOND}")
+                sb.appendLine("# TYPE ${n}_p95_seconds gauge")
+                sb.appendLine("${n}_p95_seconds ${snap.get95thPercentile() / NANOS_PER_SECOND}")
+                sb.appendLine("# TYPE ${n}_p99_seconds gauge")
+                sb.appendLine("${n}_p99_seconds ${snap.get99thPercentile() / NANOS_PER_SECOND}")
             }
-            call.respondText(sb.toString(), ContentType.Text.Plain)
+            call.respondText(sb.toString(), ContentType.parse("text/plain; version=0.0.4; charset=utf-8"))
         }
     }
 }
