@@ -122,9 +122,9 @@ fun Application.module(
         healthClient = httpClient
         upstreamHealthUrls = listOf("$measuresUrl/healthz", "$profilesUrl/healthz", "$treatmentsUrl/healthz")
 
-        val measuresClient = MeasuresClient(httpClient, measuresUrl)
-        val realProfilesClient = ProfilesClient(httpClient, profilesUrl)
-        val treatmentsClient = TreatmentsClient(httpClient, treatmentsUrl)
+        val measuresClient = MeasuresClient(httpClient.engine, measuresUrl)
+        val realProfilesClient = ProfilesClient(httpClient.engine, profilesUrl)
+        val treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl)
 
         resolvedTimelineService = TimelineService(measuresClient, treatmentsClient)
         resolvedAnalyticsService = AnalyticsService(measuresClient)

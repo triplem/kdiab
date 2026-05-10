@@ -1,30 +1,23 @@
 package org.javafreedom.kdiab.analyze.adapters.outbound.http
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.*
-import io.ktor.client.statement.*
-import io.ktor.http.*
-import kotlinx.serialization.Serializable
+import io.ktor.client.engine.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.request.header
+import io.ktor.client.statement.request
+import io.ktor.serialization.kotlinx.json.*
+import kotlinx.serialization.json.Json
+import org.javafreedom.kdiab.analyze.api.upstream.treatments.DefaultApi
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentResponse
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 
 private val logger = KotlinLogging.logger {}
 
 private const val PAGE_SIZE = 200
-private const val LOG_BODY_MAX_CHARS = 200
-
-@Serializable
-private data class PagedTreatmentDto(
-    val items: List<TreatmentResponse>,
-    val page: Int,
-    val size: Int,
-    val totalCount: Long,
-)
 
 class TreatmentsClient(
-    private val httpClient: HttpClient,
+    private val httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
 ) {
     suspend fun getTreatments(
@@ -34,6 +27,16 @@ class TreatmentsClient(
         from: String? = null,
         to: String? = null,
     ): List<TreatmentResponse> {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val api = DefaultApi(
+            baseUrl = "$baseUrl/api/v1",
+            httpClientEngine = httpClientEngine,
+            httpClientConfig = { config ->
+                config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+            },
+        ).apply { setBearerToken(token) }
+
         val result = mutableListOf<TreatmentResponse>()
         var page = 0
         var totalCount = Long.MAX_VALUE
@@ -41,32 +44,31 @@ class TreatmentsClient(
 
         while (result.size < totalCount) {
             val pageStart = System.currentTimeMillis()
-            val response = httpClient.get("$baseUrl/api/v1/users/$userId/treatments") {
-                header(HttpHeaders.Authorization, authorization)
-                header("X-Correlation-ID", correlationId)
-                parameter("page", page)
-                parameter("size", PAGE_SIZE)
-                if (from != null) parameter("from", from)
-                if (to != null) parameter("to", to)
-            }
+            val httpResponse = api.listTreatments(
+                userId = userId,
+                type = null,
+                from = from,
+                to = to,
+                status = null,
+                page = page,
+                size = PAGE_SIZE,
+            )
             val pageMs = System.currentTimeMillis() - pageStart
-            if (!response.status.isSuccess()) {
-                val body = runCatching { response.bodyAsText() }.getOrNull()
-                val requestUrl = response.request.url.toString()
+            if (!httpResponse.success) {
+                val requestUrl = httpResponse.response.request.url.toString()
                 logger.warn {
-                    "Upstream treatments page $page returned ${response.status.value} in ${pageMs}ms" +
-                        " url=$requestUrl body=${body?.take(LOG_BODY_MAX_CHARS)}"
+                    "Upstream treatments page $page returned ${httpResponse.status} in ${pageMs}ms url=$requestUrl"
                 }
                 throw UpstreamException(
-                    "treatments",
-                    response.status.value,
-                    response.status.description,
-                    responseBody = body,
+                    service = "treatments",
+                    statusCode = httpResponse.status,
+                    message = httpResponse.response.status.description,
+                    responseBody = null,
                     url = requestUrl,
                 )
             }
-            logger.info { "Fetched treatments page $page in ${pageMs}ms [status=${response.status.value}]" }
-            val paged = response.body<PagedTreatmentDto>()
+            logger.info { "Fetched treatments page $page in ${pageMs}ms [status=${httpResponse.status}]" }
+            val paged = httpResponse.body()
             totalCount = paged.totalCount
             result.addAll(paged.items)
             page++

@@ -1,10 +1,7 @@
 package org.javafreedom.kdiab.analyze.adapters.outbound.http
 
-import io.ktor.client.*
 import io.ktor.client.engine.mock.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -22,7 +19,6 @@ import kotlin.test.assertFailsWith
 @Suppress("LongMethod")
 class MeasuresClientTest {
 
-    private val json = Json { ignoreUnknownKeys = true }
     private val auth = "Bearer test-token"
     private val correlationId = "test-cid"
     private val userId = "user-123"
@@ -279,10 +275,6 @@ class MeasuresClientTest {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
-    private fun buildClient(engine: MockEngine): MeasuresClient {
-        val httpClient = HttpClient(engine) {
-            install(ContentNegotiation) { json(json) }
-        }
-        return MeasuresClient(httpClient, baseUrl)
-    }
+    private fun buildClient(engine: MockEngine): MeasuresClient =
+        MeasuresClient(engine, baseUrl)
 }

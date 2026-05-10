@@ -2,10 +2,8 @@ package org.javafreedom.kdiab.analyze.adapters.inbound.web
 
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
-import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -13,7 +11,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
+
 import io.ktor.server.config.MapApplicationConfig
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
@@ -88,12 +86,9 @@ class BffAnalyticsIntegrationTest {
                     )
                 }
             }
-            val httpClient = HttpClient(mockEngine) {
-                install(ContentNegotiation) { json() }
-            }
-            val measuresClient = MeasuresClient(httpClient, "http://mock-measures")
-            val treatmentsClient = TreatmentsClient(httpClient, "http://mock-treatments")
-            val profilesClient = ProfilesClient(httpClient, "http://mock-profiles")
+            val measuresClient = MeasuresClient(mockEngine, "http://mock-measures")
+            val treatmentsClient = TreatmentsClient(mockEngine, "http://mock-treatments")
+            val profilesClient = ProfilesClient(mockEngine, "http://mock-profiles")
             val timelineService = TimelineService(measuresClient, treatmentsClient)
             val analyticsService = AnalyticsService(measuresClient)
             val profilesService = ProfilesService(profilesClient)

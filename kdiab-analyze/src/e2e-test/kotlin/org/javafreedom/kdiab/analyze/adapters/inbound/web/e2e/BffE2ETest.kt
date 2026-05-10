@@ -8,10 +8,10 @@ import io.kotest.matchers.collections.shouldNotBeEmpty
 import io.kotest.matchers.doubles.plusOrMinus
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import io.ktor.client.HttpClient
+
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
@@ -19,7 +19,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import io.ktor.serialization.kotlinx.json.json
+
 import io.ktor.server.config.MapApplicationConfig
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
@@ -138,12 +138,10 @@ class BffE2ETest : BehaviorSpec({
     }
 
     fun buildServices(): Triple<TimelineService, AnalyticsService, ProfilesService> {
-        val httpClient = HttpClient(buildMockEngine()) {
-            install(ContentNegotiation) { json() }
-        }
-        val measuresClient = MeasuresClient(httpClient, "http://mock-measures")
-        val treatmentsClient = TreatmentsClient(httpClient, "http://mock-treatments")
-        val profilesClient = ProfilesClient(httpClient, "http://mock-profiles")
+        val mockEngine = buildMockEngine()
+        val measuresClient = MeasuresClient(mockEngine, "http://mock-measures")
+        val treatmentsClient = TreatmentsClient(mockEngine, "http://mock-treatments")
+        val profilesClient = ProfilesClient(mockEngine, "http://mock-profiles")
         return Triple(
             TimelineService(measuresClient, treatmentsClient),
             AnalyticsService(measuresClient),
@@ -237,8 +235,7 @@ class BffE2ETest : BehaviorSpec({
                         )
                     }
                 }
-                val agpHttpClient = HttpClient(agpEngine) { install(ContentNegotiation) { json() } }
-                val agpMeasuresClient = MeasuresClient(agpHttpClient, "http://mock-measures")
+                val agpMeasuresClient = MeasuresClient(agpEngine, "http://mock-measures")
                 val agpAnalyticsService = AnalyticsService(agpMeasuresClient)
                 val agpServices = Triple(timelineService, agpAnalyticsService, profilesService)
 
@@ -312,9 +309,8 @@ class BffE2ETest : BehaviorSpec({
                         )
                     }
                 }
-                val failingHttpClient = HttpClient(failingEngine) { install(ContentNegotiation) { json() } }
-                val failingMeasuresClient = MeasuresClient(failingHttpClient, "http://mock-measures")
-                val failingTreatmentsClient = TreatmentsClient(failingHttpClient, "http://mock-treatments")
+                val failingMeasuresClient = MeasuresClient(failingEngine, "http://mock-measures")
+                val failingTreatmentsClient = TreatmentsClient(failingEngine, "http://mock-treatments")
                 val failingTimelineService = TimelineService(failingMeasuresClient, failingTreatmentsClient)
 
                 testApplication {

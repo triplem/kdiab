@@ -101,7 +101,7 @@ fun Application.module(
         monitor.subscribe(ApplicationStopping) { httpClient.close() }
 
         val profilesUrl = environment.config.property("upstream.profilesUrl").getString()
-        val profilesClient = ProfilesClient(httpClient, profilesUrl)
+        val profilesClient = ProfilesClient(httpClient.engine, profilesUrl)
         resolvedService = DoseCalculationService(profilesClient)
     }
 

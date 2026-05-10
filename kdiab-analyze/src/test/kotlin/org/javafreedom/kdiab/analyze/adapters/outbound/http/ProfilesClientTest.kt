@@ -1,12 +1,8 @@
 package org.javafreedom.kdiab.analyze.adapters.outbound.http
 
-import io.ktor.client.*
 import io.ktor.client.engine.mock.*
-import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,7 +10,6 @@ import kotlin.test.assertFailsWith
 
 class ProfilesClientTest {
 
-    private val json = Json { ignoreUnknownKeys = true }
     private val auth = "Bearer test-token"
     private val correlationId = "test-cid"
     private val userId = "user-123"
@@ -81,10 +76,6 @@ class ProfilesClientTest {
         assertEquals(correlationId, capturedCorrelationId)
     }
 
-    private fun buildClient(engine: MockEngine): ProfilesClient {
-        val httpClient = HttpClient(engine) {
-            install(ContentNegotiation) { json(json) }
-        }
-        return ProfilesClient(httpClient, baseUrl)
-    }
+    private fun buildClient(engine: MockEngine): ProfilesClient =
+        ProfilesClient(engine, baseUrl)
 }

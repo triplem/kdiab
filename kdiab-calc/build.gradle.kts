@@ -193,19 +193,20 @@ openApiGenerate {
 }
 
 val generateProfilesModels by tasks.registering(GenerateTask::class) {
-    generatorName.set("kotlin-server")
+    generatorName.set("kotlin")
     inputSpec.set(layout.projectDirectory.file("../kdiab-profiles/api/openapi.yaml").asFile.absolutePath)
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-profiles")
     packageName.set("org.javafreedom.kdiab.calc.api.upstream.profiles")
     modelPackage.set("org.javafreedom.kdiab.calc.api.upstream.profiles.models")
+    apiPackage.set("org.javafreedom.kdiab.calc.api.upstream.profiles")
     globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
     configOptions.set(mapOf(
-        "library" to "ktor",
-        "dateLibrary" to "java8",
+        "library" to "jvm-ktor",
+        "dateLibrary" to "string",
         "serializationLibrary" to "kotlinx_serialization",
+        "useCoroutines" to "true",
     ))
     typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
-    templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
 }
 
 tasks.compileKotlin {

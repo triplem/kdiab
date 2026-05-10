@@ -202,11 +202,12 @@ openApiGenerate {
 }
 
 val generateMeasuresModels by tasks.registering(GenerateTask::class) {
-    generatorName.set("kotlin-server")
+    generatorName.set("kotlin")
     inputSpec.set(layout.projectDirectory.file("../kdiab-measures/api/openapi.yaml").asFile.absolutePath)
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-measures")
     packageName.set("org.javafreedom.kdiab.analyze.api.upstream.measures")
     modelPackage.set("org.javafreedom.kdiab.analyze.api.upstream.measures.models")
+    apiPackage.set("org.javafreedom.kdiab.analyze.api.upstream.measures")
     globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
     schemaMappings.set(mapOf(
         "MeasurePayload" to "kotlinx.serialization.json.JsonObject",
@@ -215,20 +216,21 @@ val generateMeasuresModels by tasks.registering(GenerateTask::class) {
         "JsonObject" to "kotlinx.serialization.json.JsonObject",
     ))
     configOptions.set(mapOf(
-        "library" to "ktor",
-        "dateLibrary" to "java8",
+        "library" to "jvm-ktor",
+        "dateLibrary" to "string",
         "serializationLibrary" to "kotlinx_serialization",
+        "useCoroutines" to "true",
     ))
     typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
-    templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
 }
 
 val generateTreatmentsModels by tasks.registering(GenerateTask::class) {
-    generatorName.set("kotlin-server")
+    generatorName.set("kotlin")
     inputSpec.set(layout.projectDirectory.file("../kdiab-treatments/api/openapi.yaml").asFile.absolutePath)
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-treatments")
     packageName.set("org.javafreedom.kdiab.analyze.api.upstream.treatments")
     modelPackage.set("org.javafreedom.kdiab.analyze.api.upstream.treatments.models")
+    apiPackage.set("org.javafreedom.kdiab.analyze.api.upstream.treatments")
     globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
     schemaMappings.set(mapOf(
         "TreatmentPayload" to "kotlinx.serialization.json.JsonObject",
@@ -237,28 +239,29 @@ val generateTreatmentsModels by tasks.registering(GenerateTask::class) {
         "JsonObject" to "kotlinx.serialization.json.JsonObject",
     ))
     configOptions.set(mapOf(
-        "library" to "ktor",
-        "dateLibrary" to "java8",
+        "library" to "jvm-ktor",
+        "dateLibrary" to "string",
         "serializationLibrary" to "kotlinx_serialization",
+        "useCoroutines" to "true",
     ))
     typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
-    templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
 }
 
 val generateProfilesModels by tasks.registering(GenerateTask::class) {
-    generatorName.set("kotlin-server")
+    generatorName.set("kotlin")
     inputSpec.set(layout.projectDirectory.file("../kdiab-profiles/api/openapi.yaml").asFile.absolutePath)
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-profiles")
     packageName.set("org.javafreedom.kdiab.analyze.api.upstream.profiles")
     modelPackage.set("org.javafreedom.kdiab.analyze.api.upstream.profiles.models")
+    apiPackage.set("org.javafreedom.kdiab.analyze.api.upstream.profiles")
     globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
     configOptions.set(mapOf(
-        "library" to "ktor",
-        "dateLibrary" to "java8",
+        "library" to "jvm-ktor",
+        "dateLibrary" to "string",
         "serializationLibrary" to "kotlinx_serialization",
+        "useCoroutines" to "true",
     ))
     typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
-    templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
 }
 
 tasks.compileKotlin {
