@@ -3,13 +3,3 @@ databaseChangeLog:
       file: db/changelog/changes/001-initial-schema.yaml
   - include:
       file: db/changelog/changes/002-initial-data.yaml
-  - include:
-      file: db/changelog/changes/003-audit-schema.yaml
-  - include:
-      file: db/changelog/changes/004-profile-timestamps.yaml
-  - include:
-      file: db/changelog/changes/005-proposal-reason.yaml
-  - include:
-      file: db/changelog/changes/006-created-by-rejection-reason.yaml
-  - include:
-      file: db/changelog/changes/007-analysis-range.yaml

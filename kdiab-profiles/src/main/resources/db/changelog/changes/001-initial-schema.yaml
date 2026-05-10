@@ -65,15 +65,36 @@ databaseChangeLog:
                   type: jsonb
                   constraints:
                     nullable: false
+              - column:
+                  name: proposal_reason
+                  type: TEXT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_by
+                  type: uuid
+                  constraints:
+                    nullable: true
+              - column:
+                  name: rejection_reason
+                  type: TEXT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: analysis_low
+                  type: DOUBLE
+                  constraints:
+                    nullable: true
+              - column:
+                  name: analysis_high
+                  type: DOUBLE
+                  constraints:
+                    nullable: true
 
   # ── 2. profile_statuses ───────────────────────────────────────────────────────
   # Mutable lifecycle state per profile. One row per profile; updated on every
   # status transition (DRAFT → ACTIVE → ARCHIVED, PROPOSED → ACTIVE/ARCHIVED).
   # ON DELETE CASCADE keeps the tables consistent when DRAFTs are hard-deleted.
-  - changeSet:
-      id: 002
-      author: javafreedom
-      changes:
         - createTable:
             tableName: profile_statuses
             columns:
@@ -101,12 +122,18 @@ databaseChangeLog:
                   type: timestamp
                   constraints:
                     nullable: false
+              - column:
+                  name: activated_at
+                  type: timestamp
+                  constraints:
+                    nullable: true
+              - column:
+                  name: archived_at
+                  type: timestamp
+                  constraints:
+                    nullable: true
 
   # ── 3. insulins ───────────────────────────────────────────────────────────────
-  - changeSet:
-      id: 003
-      author: javafreedom
-      changes:
         - createTable:
             tableName: insulins
             columns:
@@ -123,11 +150,65 @@ databaseChangeLog:
                     nullable: false
                     unique: true
 
-  # ── 4. One-ACTIVE-per-user — PostgreSQL (production) ─────────────────────────
+  # ── 4. audit_logs ─────────────────────────────────────────────────────────────
+        - createTable:
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: doctor_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: patient_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: action
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occurred_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: ip_address
+                  type: varchar(100)
+              - column:
+                  name: user_agent
+                  type: text
+              - column:
+                  name: detail
+                  type: text
+                  constraints:
+                    nullable: true
+        - createIndex:
+            indexName: idx_audit_logs_patient_id
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: patient_id
+        - createIndex:
+            indexName: idx_audit_logs_occurred_at
+            tableName: audit_logs
+            columns:
+              - column:
+                  name: occurred_at
+
+  # ── 5. One-ACTIVE-per-user — PostgreSQL (production) ─────────────────────────
   # Partial unique index: only ACTIVE rows compete for the uniqueness slot.
   # DRAFT, ARCHIVED, and PROPOSED profiles are unconstrained.
   - changeSet:
-      id: 004
+      id: 002
       author: javafreedom
       dbms: postgresql
       changes:
@@ -141,12 +222,12 @@ databaseChangeLog:
             sql: >-
               DROP INDEX IF EXISTS IDX_PROFILE_STATUSES_USER_ACTIVE
 
-  # ── 5. One-ACTIVE-per-user — H2 (integration / E2E tests) ────────────────────
+  # ── 6. One-ACTIVE-per-user — H2 (integration / E2E tests) ────────────────────
   # H2 does not support partial/conditional indexes. A virtual generated column
   # equals user_id when status = 'ACTIVE' and NULL otherwise. A unique index on
   # this column enforces the invariant because NULL values are not constrained.
   - changeSet:
-      id: 005
+      id: 003
       author: javafreedom
       dbms: h2
       changes:
