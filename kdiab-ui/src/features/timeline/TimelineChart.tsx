@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import {
   ComposedChart,
   Line,
@@ -12,7 +11,6 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts'
-import type { TooltipProps } from 'recharts'
 import { useTranslation } from 'react-i18next'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 
@@ -37,28 +35,6 @@ interface Props {
   glucoseUnit: string
   profileChangeDates?: number[]
 }
-
-const TREATMENT_COLORS: Record<string, string> = {
-  BOLUS: 'var(--color-bolus)',
-  CORRECTION_BOLUS: 'var(--color-bolus)',
-  COMBO_BOLUS: 'var(--color-bolus)',
-  CARBS: 'var(--color-carbs)',
-  HYPO_TREATMENT: 'var(--color-carbs)',
-  EXERCISE: 'var(--color-activity)',
-  MEAL: 'var(--color-carbs)',
-  ACTIVITY: 'var(--color-activity)',
-  BASAL: 'var(--color-basal)',
-  TEMP_BASAL: 'var(--color-basal)',
-  SITE_CHANGE: 'var(--color-device)',
-  SENSOR_INSERT: 'var(--color-device)',
-  INSULIN_CHANGE: 'var(--color-device)',
-  PUMP_SUSPEND: 'var(--color-device)',
-  NOTE: 'var(--color-other)',
-  BG_CHECK: 'var(--color-other)',
-}
-
-const treatmentColor = (type: string): string =>
-  TREATMENT_COLORS[type] ?? 'var(--color-other)'
 
 const MGDL_TO_MMOL = 1 / 18.0
 
@@ -111,9 +87,6 @@ function displayValue(mgDl: number, unit: string): number {
   return unit === 'mmol/L' ? Math.round(mgDl * MGDL_TO_MMOL * 10) / 10 : Math.round(mgDl)
 }
 
-const BOLUS_TYPES = new Set(['BOLUS', 'CORRECTION_BOLUS', 'COMBO_BOLUS'])
-const CARBS_TYPES = new Set(['CARBS', 'MEAL', 'HYPO_TREATMENT'])
-
 interface TreatmentEntry {
   type: string
   notes?: string
@@ -124,36 +97,6 @@ interface TreatmentMarker {
   ts: number
   y: number
   entries: TreatmentEntry[]
-}
-
-interface GlucosePoint {
-  ts: number
-  value?: number
-  bgmValue?: number
-}
-
-type TooltipPayload = {
-  name: string
-  value: number
-  color: string
-  payload: (TreatmentMarker | GlucosePoint) & Record<string, unknown>
-}
-
-function formatTreatmentLine(type: string, data: Record<string, unknown>): string {
-  if (BOLUS_TYPES.has(type)) {
-    const units = data['insulin'] ?? data['units']
-    const insulinType = data['insulinType']
-    return insulinType ? `${units} U (${insulinType})` : `${units} U`
-  }
-  if (CARBS_TYPES.has(type)) {
-    return `${data['carbs'] ?? '?'} g`
-  }
-  if (type === 'EXERCISE' || type === 'ACTIVITY') {
-    const duration = data['duration']
-    const intensity = data['intensity']
-    return [duration ? `${duration} min` : null, intensity ?? null].filter(Boolean).join(', ')
-  }
-  return ''
 }
 
 // Linear interpolation of the CGM value at a given timestamp
@@ -176,7 +119,7 @@ function interpolateCgm(ts: number, cgmData: { ts: number; value?: number }[]): 
 
 export function TimelineChart({ measures, treatments, glucoseUnit, profileChangeDates }: Props) {
   const { t } = useTranslation()
-  const { formatDate, locale } = useTimeFormat()
+  const { locale } = useTimeFormat()
 
   const tirLow = displayValue(70, glucoseUnit)
   const tirHigh = displayValue(180, glucoseUnit)
@@ -228,65 +171,6 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
 
   const formatTs = (ts: number) =>
     new Date(ts).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
-
-  const renderTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
-    if (!active || !payload?.length || label == null) return null
-    const entries = payload as unknown as TooltipPayload[]
-
-    const dateLabel = formatDate(new Date(label as number).toISOString())
-    const nodes: ReactNode[] = []
-
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i]
-      const p = entry.payload
-
-      if ('value' in p && p.value !== undefined) {
-        const gp = p as GlucosePoint
-        nodes.push(
-          <p key={`cgm-${i}`} style={{ margin: 0, color: entry.color }}>
-            {entry.name}: {gp.value} {yLabel}
-          </p>
-        )
-      } else if ('bgmValue' in p && p.bgmValue !== undefined) {
-        const gp = p as GlucosePoint
-        nodes.push(
-          <p key={`bgm-${i}`} style={{ margin: 0, color: entry.color }}>
-            {entry.name}: {gp.bgmValue} {yLabel}
-          </p>
-        )
-      } else if ('entries' in p && Array.isArray(p.entries)) {
-        const seen = new Set<string>()
-        for (const te of p.entries as TreatmentEntry[]) {
-          const key = `${te.type}-${te.notes ?? ''}`
-          if (seen.has(key)) continue
-          seen.add(key)
-          const typeName = t(`treatmentModal.types.${te.type}`, { defaultValue: te.type })
-          const entryLabel = te.notes ? `${typeName} (${te.notes})` : typeName
-          const valueStr = formatTreatmentLine(te.type, te.treatmentData)
-          nodes.push(
-            <p key={`tr-${key}-${i}`} style={{ margin: 0, color: treatmentColor(te.type) }}>
-              {entryLabel}{valueStr ? `: ${valueStr}` : ''}
-            </p>
-          )
-        }
-      }
-    }
-
-    return (
-      <div style={{
-        backgroundColor: 'var(--tooltip-bg)',
-        border: '1px solid var(--tooltip-border)',
-        borderRadius: '8px',
-        color: 'var(--tooltip-text)',
-        padding: '8px 12px',
-        fontSize: '0.85rem',
-        lineHeight: 1.6,
-      }}>
-        <p style={{ margin: '0 0 4px', fontWeight: 600 }}>{dateLabel}</p>
-        {nodes}
-      </div>
-    )
-  }
 
   return (
     <ResponsiveContainer width="100%" height={350}>
