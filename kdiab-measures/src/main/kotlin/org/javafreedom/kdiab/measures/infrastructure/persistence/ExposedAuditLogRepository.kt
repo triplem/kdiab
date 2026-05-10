@@ -25,6 +25,7 @@ object AuditLogsTable : Table("audit_logs") {
     val occurredAt = timestamp("occurred_at")
     val ipAddress = varchar("ip_address", IP_MAX_LEN).nullable()
     val userAgent = text("user_agent").nullable()
+    val detail = text("detail").nullable()
     override val primaryKey = PrimaryKey(id)
 }
 
@@ -42,6 +43,7 @@ class ExposedAuditLogRepository(
                 it[occurredAt] = java.time.Instant.ofEpochMilli(entry.occurredAt.toEpochMilliseconds())
                 it[ipAddress] = entry.ipAddress
                 it[userAgent] = entry.userAgent
+                it[detail] = entry.detail
             }
         }
     }
@@ -67,6 +69,7 @@ class ExposedAuditLogRepository(
                             occurredAt = Instant.fromEpochMilliseconds(row[AuditLogsTable.occurredAt].toEpochMilli()),
                             ipAddress = row[AuditLogsTable.ipAddress],
                             userAgent = row[AuditLogsTable.userAgent],
+                            detail = row[AuditLogsTable.detail],
                         )
                     }
             }

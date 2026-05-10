@@ -41,7 +41,7 @@ object DatabaseFactory {
         Database.connect(dataSource)
 
         transaction {
-            SchemaUtils.create(TreatmentsTable)
+            SchemaUtils.create(TreatmentsTable, AuditLogsTable)
         }
     }
 }

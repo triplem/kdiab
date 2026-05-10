@@ -168,10 +168,10 @@ private fun Route.deleteTreatments(treatmentService: TreatmentService, auditLogR
         val targetUserId = parseUuid(params.userId)
         // Patients may delete their own; doctors for assigned patients; admins for all
         checkAccess(principal, targetUserId)
-        auditIfDoctor(call, principal, targetUserId, "treatments.delete", auditLogRepository)
 
         val request = call.receive<BulkTreatmentRequest>()
         val ids = request.treatmentIds.map { parseUuid(it) }
+        auditDeletion(call, principal, targetUserId, ids, auditLogRepository)
         treatmentService.deleteTreatments(ids, targetUserId)
         logger.info { "Deleted ${ids.size} treatments for user $targetUserId" }
         call.respond(HttpStatusCode.OK)
