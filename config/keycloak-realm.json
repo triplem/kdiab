@@ -573,6 +573,16 @@
           }
         },
         {
+          "name": "calc-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "calc",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        },
+        {
           "name": "glucose_unit",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-usermodel-attribute-mapper",

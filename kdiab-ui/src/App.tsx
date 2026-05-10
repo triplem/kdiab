@@ -22,12 +22,13 @@ import { TimelineView } from './features/timeline/TimelineView'
 import { AnalyticsView } from './features/analytics/AnalyticsView'
 import { ProfilesView } from './features/analytics/ProfilesView'
 import { FoodDatabase } from './features/carbs/FoodDatabase'
+import { DoseCalculator } from './features/calc/DoseCalculator'
 import { measuresApi } from './api/measuresApi'
 import { treatmentsApi } from './api/treatmentsApi'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Profile } from './api/profilesApi'
 
-type Tab = 'measures' | 'treatments' | 'profiles' | 'timeline' | 'analytics' | 'carbs'
+type Tab = 'measures' | 'treatments' | 'profiles' | 'timeline' | 'analytics' | 'carbs' | 'calc'
 
 export default function App() {
   const auth = useAuth()
@@ -187,6 +188,7 @@ export default function App() {
     { key: 'timeline', label: t('nav.timeline') },
     { key: 'analytics', label: t('nav.analytics') },
     { key: 'carbs', label: t('nav.foodDatabase') },
+    { key: 'calc', label: t('nav.doseCalculator') },
   ]
 
   const renderTabContent = () => {
@@ -310,6 +312,9 @@ export default function App() {
 
       case 'carbs':
         return <FoodDatabase userId={viewingUserId} />
+
+      case 'calc':
+        return <DoseCalculator userId={viewingUserId} glucoseUnit={glucoseUnit} />
     }
   }
 

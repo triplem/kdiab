@@ -19,7 +19,8 @@
     "profiles": "Profiles",
     "timeline": "Timeline",
     "analytics": "Analytics",
-    "foodDatabase": "Food DB"
+    "foodDatabase": "Food DB",
+    "doseCalculator": "Dose Calc"
   },
   "patientBanner": {
     "viewingMessage": "You are viewing patient data",
@@ -328,5 +329,22 @@
     "measures": "Measures",
     "treatments": "Treatments",
     "profiles": "Profiles"
+  },
+  "doseCalc": {
+    "title": "Insulin Dose Calculator",
+    "currentBg": "Current Blood Glucose:",
+    "trend": "CGM Trend:",
+    "carbsGrams": "Carbs to cover (g):",
+    "calculate": "Calculate",
+    "calculating": "Calculating...",
+    "totalDose": "Recommended Dose",
+    "correction": "Correction:",
+    "carbDose": "Carbs:",
+    "trendAdj": "Trend:",
+    "total": "Total:",
+    "units": "units",
+    "warnings": "Warnings",
+    "noProfile": "No active profile found. Please activate a profile first.",
+    "error": "Calculation failed. Please try again."
   }
 }

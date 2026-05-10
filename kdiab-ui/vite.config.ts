@@ -14,6 +14,10 @@ export default defineConfig({
         target: 'http://localhost:8085',
         rewrite: (path: string) => path.replace(/^\/api\/carbs/, '/api'),
       },
+      '/api/calc': {
+        target: 'http://localhost:8086',
+        rewrite: (path: string) => path.replace(/^\/api\/calc/, '/api'),
+      },
     },
   },
   test: {

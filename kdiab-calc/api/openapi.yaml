@@ -1,0 +1,132 @@
+openapi: "3.1.0"
+info:
+  title: kdiab-calc API
+  version: "1.0.0"
+servers:
+  - url: /api/v1
+paths:
+  /users/{userId}/calc/dose:
+    post:
+      operationId: calculateDose
+      summary: Calculate recommended insulin dose
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoseRequest'
+      responses:
+        "200":
+          description: Dose calculation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DoseResponse'
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: No active profile found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    DoseRequest:
+      type: object
+      required: [currentBg, glucoseUnit, trend]
+      properties:
+        currentBg:
+          type: number
+          format: double
+        glucoseUnit:
+          type: string
+          enum: [mg/dL, mmol/L]
+        trend:
+          type: string
+          enum: [DOUBLE_UP, SINGLE_UP, FORTY_FIVE_UP, FLAT, FORTY_FIVE_DOWN, SINGLE_DOWN, DOUBLE_DOWN, NONE]
+        carbsGrams:
+          type: number
+          format: double
+          default: 0.0
+        useProfileTime:
+          type: string
+          nullable: true
+    DoseBreakdown:
+      type: object
+      properties:
+        currentBgMgDl:
+          type: number
+          format: double
+        targetBgMgDl:
+          type: number
+          format: double
+        isf:
+          type: number
+          format: double
+        icr:
+          type: number
+          format: double
+        trend:
+          type: string
+        carbsGrams:
+          type: number
+          format: double
+    DoseResponse:
+      type: object
+      properties:
+        correctionDose:
+          type: number
+          format: double
+        carbDose:
+          type: number
+          format: double
+        trendAdjustment:
+          type: number
+          format: double
+        totalRecommended:
+          type: number
+          format: double
+        breakdown:
+          $ref: '#/components/schemas/DoseBreakdown'
+        profileId:
+          type: string
+          format: uuid
+        warnings:
+          type: array
+          items:
+            type: string
+    ErrorResponse:
+      type: object
+      description: Standard error envelope returned by all error responses
+      properties:
+        code:
+          type: integer
+          description: HTTP status code
+        message:
+          type: string
+          description: Human-readable error description

@@ -19,7 +19,8 @@
     "profiles": "Profile",
     "timeline": "Zeitverlauf",
     "analytics": "Analyse",
-    "foodDatabase": "Lebensmittel"
+    "foodDatabase": "Lebensmittel",
+    "doseCalculator": "Dosis Rechner"
   },
   "patientBanner": {
     "viewingMessage": "Sie sehen Patientendaten",
@@ -328,5 +329,22 @@
     "measures": "Messungen",
     "treatments": "Behandlungen",
     "profiles": "Profile"
+  },
+  "doseCalc": {
+    "title": "Insulindosis-Rechner",
+    "currentBg": "Aktueller Blutzucker:",
+    "trend": "CGM-Trend:",
+    "carbsGrams": "Kohlenhydrate (g):",
+    "calculate": "Berechnen",
+    "calculating": "Wird berechnet...",
+    "totalDose": "Empfohlene Dosis",
+    "correction": "Korrektur:",
+    "carbDose": "KH-Dosis:",
+    "trendAdj": "Trend:",
+    "total": "Gesamt:",
+    "units": "Einheiten",
+    "warnings": "Warnungen",
+    "noProfile": "Kein aktives Profil gefunden. Bitte zuerst ein Profil aktivieren.",
+    "error": "Berechnung fehlgeschlagen. Bitte erneut versuchen."
   }
 }
