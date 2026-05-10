@@ -18,7 +18,8 @@
     "treatments": "Treatments",
     "profiles": "Profiles",
     "timeline": "Timeline",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "foodDatabase": "Food DB"
   },
   "patientBanner": {
     "viewingMessage": "You are viewing patient data",
@@ -97,6 +98,24 @@
       "KETONE_CHECK": "Ketone Test"
     }
   },
+  "foodDatabase": {
+    "title": "My Food Database",
+    "loading": "Loading food entries...",
+    "error": "Failed to load food entries.",
+    "empty": "No food entries yet.",
+    "addFood": "+ Add Food",
+    "name": "Food name",
+    "portionGrams": "Portion (g)",
+    "carbsPer100g": "Carbs / 100g",
+    "carbsForPortion": "Carbs / portion",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "confirmDelete": "Delete this food entry?",
+    "namePlaceholder": "e.g. White rice",
+    "validationError": "Please fill in all fields with valid values."
+  },
   "treatmentModal": {
     "title": "Add Treatment",
     "type": "Type:",
@@ -127,6 +146,8 @@
     "tempBasalAbsolute": "Absolute rate (uncheck for percentage)",
     "pumpSuspendReason": "Reason (optional):",
     "hypoReason": "Reason (optional):",
+    "foodSearch": "Quick-fill from food database (optional):",
+    "foodSearchPlaceholder": "Type to search your food list...",
     "intensityLight": "Light",
     "intensityModerate": "Moderate",
     "intensityIntense": "Intense",

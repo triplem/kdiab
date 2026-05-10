@@ -1,0 +1,270 @@
+openapi: 3.0.3
+info:
+  title: kdiab-carbs API
+  version: 0.0.1
+  description: Personal food database for carb tracking
+
+servers:
+  - url: http://localhost:8085/api/v1
+
+security:
+  - bearerAuth: []
+
+paths:
+  /users/{userId}/foods:
+    get:
+      summary: List food entries for a user (paginated)
+      operationId: listFoods
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+        - name: q
+          in: query
+          required: false
+          description: Optional name search filter (case-insensitive substring)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated list of food entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedFoodResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      summary: Create a food entry
+      operationId: createFoodEntry
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFoodEntryRequest'
+      responses:
+        '201':
+          description: Created food entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}/foods/{foodId}:
+    put:
+      summary: Update a food entry
+      operationId: updateFoodEntry
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: foodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFoodEntryRequest'
+      responses:
+        '200':
+          description: Updated food entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodEntryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Delete a food entry
+      operationId: deleteFoodEntry
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: foodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    FoodEntryResponse:
+      type: object
+      required: [id, userId, name, portionGrams, carbsPer100g, carbsForPortion, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        portionGrams:
+          type: number
+          description: Typical portion size in grams
+        carbsPer100g:
+          type: number
+          description: Carb content per 100 grams
+        carbsForPortion:
+          type: number
+          description: Computed carbs for typical portion
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PagedFoodResponse:
+      type: object
+      required: [items, page, size, totalCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FoodEntryResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        totalCount:
+          type: integer
+
+    CreateFoodEntryRequest:
+      type: object
+      required: [name, portionGrams, carbsPer100g]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        portionGrams:
+          type: number
+          minimum: 0
+        carbsPer100g:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    UpdateFoodEntryRequest:
+      type: object
+      required: [name, portionGrams, carbsPer100g]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        portionGrams:
+          type: number
+          minimum: 0
+        carbsPer100g:
+          type: number
+          minimum: 0
+          maximum: 100
+
+    ErrorResponse:
+      type: object
+      description: Standard error envelope returned by all error responses
+      required: [code, message]
+      properties:
+        code:
+          type: integer
+          description: HTTP status code
+        message:
+          type: string
+          description: Human-readable error description
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

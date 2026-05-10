@@ -10,6 +10,10 @@ export default defineConfig({
       '/api/profiles': { target: 'http://localhost:8082', rewrite: (path: string) => path.replace(/^\/api\/profiles/, '/api') },
       '/api/treatments': { target: 'http://localhost:8083', rewrite: (path: string) => path.replace(/^\/api\/treatments/, '/api') },
       '/api/analyze': { target: 'http://localhost:8084', rewrite: (path: string) => path.replace(/^\/api\/analyze/, '/api') },
+      '/api/carbs': {
+        target: 'http://localhost:8085',
+        rewrite: (path: string) => path.replace(/^\/api\/carbs/, '/api'),
+      },
     },
   },
   test: {

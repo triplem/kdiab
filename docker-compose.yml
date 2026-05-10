@@ -159,7 +159,66 @@ services:
           memory: 256M
           cpus: '0.5'
 
-  # Runs after all three Liquibase migrations to insert seed data
+  liquibase-carbs:
+    container_name: kdiab-carbs-liquibase
+    image: localhost/kdiab-carbs-liquibase:latest
+    build:
+      context: ./kdiab-carbs
+      dockerfile: Dockerfile.liquibase
+    command: >
+      --url=jdbc:postgresql://postgres:5432/kdiab-carbs
+      --username=${POSTGRES_USER:-postgres}
+      --password=${POSTGRES_PASSWORD}
+      --searchPath=/liquibase
+      --changeLogFile=db/changelog/db.changelog-root.yaml
+      update
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shared
+
+  carbs-backend:
+    container_name: kdiab-carbs-backend
+    image: localhost/kdiab-carbs-backend:latest
+    build:
+      context: ./kdiab-carbs
+      dockerfile: Dockerfile
+    environment:
+      JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-carbs
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_DOMAIN: http://localhost:8081/realms/kdiab
+      JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
+      JWT_AUDIENCE: carbs
+      JWT_REALM: kdiab
+      CORS_ALLOWED_ORIGINS: http://localhost:3005
+    ports:
+      - "8085:8085"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      liquibase-carbs:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
+    networks:
+      shared:
+      kdiab-ui-net:
+        aliases:
+          - carbs-backend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+
+  # Runs after all Liquibase migrations to insert seed data
   pg-seed:
     container_name: kdiab-pg-seed
     image: postgres:15
@@ -175,6 +234,8 @@ services:
       liquibase-profiles:
         condition: service_completed_successfully
       liquibase-treatments:
+        condition: service_completed_successfully
+      liquibase-carbs:
         condition: service_completed_successfully
     networks:
       - shared

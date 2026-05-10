@@ -21,12 +21,13 @@ import { AdminInsulinManager } from './features/profiles/AdminInsulinManager'
 import { TimelineView } from './features/timeline/TimelineView'
 import { AnalyticsView } from './features/analytics/AnalyticsView'
 import { ProfilesView } from './features/analytics/ProfilesView'
+import { FoodDatabase } from './features/carbs/FoodDatabase'
 import { measuresApi } from './api/measuresApi'
 import { treatmentsApi } from './api/treatmentsApi'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Profile } from './api/profilesApi'
 
-type Tab = 'measures' | 'treatments' | 'profiles' | 'timeline' | 'analytics'
+type Tab = 'measures' | 'treatments' | 'profiles' | 'timeline' | 'analytics' | 'carbs'
 
 export default function App() {
   const auth = useAuth()
@@ -185,6 +186,7 @@ export default function App() {
     { key: 'profiles', label: t('nav.profiles') },
     { key: 'timeline', label: t('nav.timeline') },
     { key: 'analytics', label: t('nav.analytics') },
+    { key: 'carbs', label: t('nav.foodDatabase') },
   ]
 
   const renderTabContent = () => {
@@ -245,6 +247,7 @@ export default function App() {
               onSaveMeal={(meal) => void handleSaveMeal(meal)}
               isSaving={treatmentSaving}
               error={treatmentError}
+              userId={viewingUserId}
             />
           </>
         )
@@ -304,6 +307,9 @@ export default function App() {
             <ProfilesView userId={viewingUserId} />
           </>
         )
+
+      case 'carbs':
+        return <FoodDatabase userId={viewingUserId} />
     }
   }
 

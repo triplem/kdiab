@@ -18,7 +18,8 @@
     "treatments": "Behandlungen",
     "profiles": "Profile",
     "timeline": "Zeitverlauf",
-    "analytics": "Analyse"
+    "analytics": "Analyse",
+    "foodDatabase": "Lebensmittel"
   },
   "patientBanner": {
     "viewingMessage": "Sie sehen Patientendaten",
@@ -97,6 +98,24 @@
       "KETONE_CHECK": "Ketontest"
     }
   },
+  "foodDatabase": {
+    "title": "Meine Lebensmitteldatenbank",
+    "loading": "Lade Einträge...",
+    "error": "Fehler beim Laden.",
+    "empty": "Noch keine Einträge.",
+    "addFood": "+ Hinzufügen",
+    "name": "Name",
+    "portionGrams": "Portion (g)",
+    "carbsPer100g": "KH / 100g",
+    "carbsForPortion": "KH / Portion",
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "confirmDelete": "Diesen Eintrag löschen?",
+    "namePlaceholder": "z.B. Weißbrot",
+    "validationError": "Bitte alle Felder ausfüllen."
+  },
   "treatmentModal": {
     "title": "Behandlung hinzufügen",
     "type": "Typ:",
@@ -127,6 +146,8 @@
     "tempBasalAbsolute": "Absolute Rate (deaktivieren für Prozentsatz)",
     "pumpSuspendReason": "Grund (optional):",
     "hypoReason": "Grund (optional):",
+    "foodSearch": "Aus Lebensmitteldatenbank (optional):",
+    "foodSearchPlaceholder": "Lebensmittel suchen...",
     "intensityLight": "Leicht",
     "intensityModerate": "Moderat",
     "intensityIntense": "Intensiv",

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
+import { carbsApi } from '../../api/carbsApi'
+import type { FoodEntryResponse } from '../../api/carbsApi'
 
 type PatientTreatmentType =
   | 'BOLUS'
@@ -48,6 +50,7 @@ interface AddTreatmentModalProps {
   isSaving?: boolean
   error?: string | null
   editMode?: TreatmentEditMode
+  userId?: string
 }
 
 const TREATMENT_TYPES: PatientTreatmentType[] = [
@@ -97,6 +100,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
   isSaving = false,
   error,
   editMode,
+  userId,
 }) => {
   const { locale } = useTimeFormat()
   const { t } = useTranslation()
@@ -145,6 +149,11 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
 
   const [hypoCarbs, setHypoCarbs] = useState('')
   const [hypoReason, setHypoReason] = useState('')
+
+  // Food search for CARBS quick-fill
+  const [foodSearchQuery, setFoodSearchQuery] = useState('')
+  const [foodSearchResults, setFoodSearchResults] = useState<FoodEntryResponse[]>([])
+  const foodSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Pre-fill form when entering edit mode
   useEffect(() => {
@@ -225,6 +234,22 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, onClose])
+
+  useEffect(() => {
+    if (type !== 'CARBS' || !userId) {
+      setFoodSearchResults([])
+      return
+    }
+    if (foodSearchTimerRef.current) clearTimeout(foodSearchTimerRef.current)
+    foodSearchTimerRef.current = setTimeout(() => {
+      carbsApi.listFoods(userId, 0, 10, foodSearchQuery || undefined)
+        .then((res) => setFoodSearchResults(res.data.items))
+        .catch(() => setFoodSearchResults([]))
+    }, 300)
+    return () => {
+      if (foodSearchTimerRef.current) clearTimeout(foodSearchTimerRef.current)
+    }
+  }, [foodSearchQuery, type, userId])
 
   if (!isOpen) return null
 
@@ -582,6 +607,54 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'CARBS':
         return (
           <>
+            {userId && (
+              <div style={{ position: 'relative' }}>
+                <label style={labelStyle}>
+                  <span>{t('treatmentModal.foodSearch')}</span>
+                  <input
+                    type="text"
+                    placeholder={t('treatmentModal.foodSearchPlaceholder')}
+                    value={foodSearchQuery}
+                    onChange={(e) => setFoodSearchQuery(e.target.value)}
+                    style={inputStyle}
+                    autoComplete="off"
+                  />
+                </label>
+                {foodSearchResults.length > 0 && (
+                  <ul style={{
+                    position: 'absolute',
+                    zIndex: 100,
+                    background: 'var(--bg-surface, #fff)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '4px',
+                    margin: 0,
+                    padding: 0,
+                    listStyle: 'none',
+                    width: '100%',
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                  }}>
+                    {foodSearchResults.map((food) => (
+                      <li
+                        key={food.id}
+                        style={{ padding: '0.5rem 0.75rem', cursor: 'pointer', borderBottom: '1px solid var(--border-color)' }}
+                        onClick={() => {
+                          setCarbs(String(Math.round(food.carbsForPortion)))
+                          setFoodSearchQuery('')
+                          setFoodSearchResults([])
+                        }}
+                      >
+                        <strong>{food.name}</strong>
+                        <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem', fontSize: '0.85rem' }}>
+                          {food.portionGrams}g → {food.carbsForPortion.toFixed(1)}g carbs
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
             <label style={labelStyle}>
               <span>{t('treatmentModal.carbs')}</span>
               <input
@@ -594,7 +667,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 onChange={(e) => setCarbs(e.target.value)}
                 style={inputStyle}
                 required
-                autoFocus
+                autoFocus={!userId}
                 aria-describedby={validationError ? 'validation-error' : undefined}
               />
             </label>

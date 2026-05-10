@@ -9,12 +9,13 @@ val buildFrontend by tasks.registering(Exec::class) {
 // ── Backend aggregate (no frontend) ───────────────────────────────────────────
 val buildBackends by tasks.registering {
     group = "build"
-    description = "Builds all four service backends via Gradle (no frontend)."
+    description = "Builds all five service backends via Gradle (no frontend)."
     dependsOn(
         gradle.includedBuild("kdiab-measures").task(":buildAll"),
         gradle.includedBuild("kdiab-profiles").task(":buildAll"),
         gradle.includedBuild("kdiab-treatments").task(":buildAll"),
         gradle.includedBuild("kdiab-analyze").task(":buildAll"),
+        gradle.includedBuild("kdiab-carbs").task(":buildAll"),
     )
 }
 
@@ -34,6 +35,7 @@ tasks.register("check") {
         gradle.includedBuild("kdiab-profiles").task(":checkAll"),
         gradle.includedBuild("kdiab-treatments").task(":checkAll"),
         gradle.includedBuild("kdiab-analyze").task(":checkAll"),
+        gradle.includedBuild("kdiab-carbs").task(":checkAll"),
     )
 }
 
@@ -46,6 +48,7 @@ tasks.register("clean") {
         gradle.includedBuild("kdiab-profiles").task(":cleanAll"),
         gradle.includedBuild("kdiab-treatments").task(":cleanAll"),
         gradle.includedBuild("kdiab-analyze").task(":cleanAll"),
+        gradle.includedBuild("kdiab-carbs").task(":cleanAll"),
     )
 }
 
@@ -58,8 +61,8 @@ tasks.register<Exec>("dockerBuild") {
     commandLine(
         "bash", "-c",
         "podman compose build liquibase-measures liquibase-profiles " +
-        "liquibase-treatments measures-backend profiles-backend treatments-backend " +
-        "analyze-backend kdiab-ui"
+        "liquibase-treatments liquibase-carbs measures-backend profiles-backend treatments-backend " +
+        "carbs-backend analyze-backend kdiab-ui"
     )
 }
 
