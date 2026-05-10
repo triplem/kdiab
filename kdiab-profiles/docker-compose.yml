@@ -58,6 +58,7 @@ services:
       JWT_REALM: kdiab-profiles
       CORS_ALLOWED_ORIGINS: http://localhost:3001
       LOG_LEVEL: DEBUG
+      JSON_PRETTY_PRINT: "true"
     ports:
       - "8082:8080"
     healthcheck:
