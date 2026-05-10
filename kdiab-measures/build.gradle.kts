@@ -18,6 +18,9 @@ repositories {
 }
 
 dependencies {
+    // Common shared library
+    implementation("org.javafreedom.kdiab:kdiab-common")
+
     // Ktor Server
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.netty)

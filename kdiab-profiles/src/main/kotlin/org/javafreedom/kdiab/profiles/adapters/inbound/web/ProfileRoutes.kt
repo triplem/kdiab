@@ -16,7 +16,11 @@ import org.javafreedom.kdiab.profiles.api.models.CreateProfileRequest
 import org.javafreedom.kdiab.profiles.api.models.Profile as ApiProfile
 import org.javafreedom.kdiab.profiles.api.models.RejectProfileRequest
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
-import org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 
@@ -40,7 +44,7 @@ private fun parseUuid(value: String): Uuid =
 
 fun Route.profileRoutes(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
 
-    authenticate {
+    authenticate("auth-jwt") {
         listProfiles(profileService, auditLogRepository)
         getProfileHistory(profileService, auditLogRepository)
         getProfile(profileService, auditLogRepository)
@@ -57,7 +61,7 @@ fun Route.profileRoutes(profileService: ProfileService, auditLogRepository: Audi
 
 private fun Route.listProfiles(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     get<org.javafreedom.kdiab.profiles.api.Paths.listProfiles> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkReadAccess(principal, targetUserId)
@@ -79,7 +83,7 @@ private fun Route.listProfiles(profileService: ProfileService, auditLogRepositor
 
 private fun Route.getProfileHistory(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     get<org.javafreedom.kdiab.profiles.api.Paths.getProfileHistory> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkReadAccess(principal, targetUserId)
@@ -95,7 +99,7 @@ private fun Route.getProfileHistory(profileService: ProfileService, auditLogRepo
 
 private fun Route.getProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     get<org.javafreedom.kdiab.profiles.api.Paths.getProfile> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkReadAccess(principal, targetUserId)
@@ -106,22 +110,18 @@ private fun Route.getProfile(profileService: ProfileService, auditLogRepository:
 
         if (profile != null) {
             if (profile.userId != targetUserId) {
-                throw org.javafreedom.kdiab.profiles.domain.exception.ResourceNotFoundException(
-                        "Profile not found"
-                )
+                throw ResourceNotFoundException("Profile not found")
             }
             call.respond(profile.toApi())
         } else {
-            throw org.javafreedom.kdiab.profiles.domain.exception.ResourceNotFoundException(
-                    "Profile not found"
-            )
+            throw ResourceNotFoundException("Profile not found")
         }
     }
 }
 
 private fun Route.createProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     post<org.javafreedom.kdiab.profiles.api.Paths.createProfile> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkReadAccess(principal, targetUserId)
@@ -131,30 +131,29 @@ private fun Route.createProfile(profileService: ProfileService, auditLogReposito
             principal?.userId == targetUserId -> {
                 // User creating for themselves — standard write access
                 checkWriteAccess(principal, targetUserId)
-                org.javafreedom.kdiab.profiles.domain.model.ProfileStatus.DRAFT
+                ProfileStatus.DRAFT
             }
             principal?.isDoctor() == true -> {
                 // Doctor acting for another user — must be in allowedPatients regardless of other roles
                 if (!principal.allowedPatients.contains(targetUserId)) {
-                    throw org.javafreedom.kdiab.profiles.domain.exception
-                        .AuthorizationException("Write Access Denied")
+                    throw AuthorizationException("Write Access Denied")
                 }
-                org.javafreedom.kdiab.profiles.domain.model.ProfileStatus.PROPOSED
+                ProfileStatus.PROPOSED
             }
             principal?.isAdmin() == true -> {
                 // Pure admin (not a doctor) acting for a user — allowed, creates DRAFT
-                org.javafreedom.kdiab.profiles.domain.model.ProfileStatus.DRAFT
+                ProfileStatus.DRAFT
             }
             else -> {
                 checkWriteAccess(principal, targetUserId)
-                org.javafreedom.kdiab.profiles.domain.model.ProfileStatus.DRAFT
+                ProfileStatus.DRAFT
             }
         }
 
         auditIfDoctor(call, principal, targetUserId, "profiles.create", auditLogRepository)
 
         val request = call.receive<CreateProfileRequest>()
-        val createdBy = if (status == org.javafreedom.kdiab.profiles.domain.model.ProfileStatus.PROPOSED) {
+        val createdBy = if (status == ProfileStatus.PROPOSED) {
             principal?.userId
         } else null
         val domainProfile = request.toDomain(targetUserId, status, createdBy)
@@ -166,7 +165,7 @@ private fun Route.createProfile(profileService: ProfileService, auditLogReposito
 
 private fun Route.updateProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     put<org.javafreedom.kdiab.profiles.api.Paths.updateProfile> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
@@ -178,14 +177,10 @@ private fun Route.updateProfile(profileService: ProfileService, auditLogReposito
 
         // Ensure both the ID and the userId in the body match the path parameters
         if (domainProfile.id != profileId) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                    "Profile ID mismatch"
-            )
+            throw BusinessValidationException("Profile ID mismatch")
         }
         if (domainProfile.userId != targetUserId) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                    "Profile userId does not match URL"
-            )
+            throw BusinessValidationException("Profile userId does not match URL")
         }
 
         val updated = profileService.updateProfile(domainProfile)
@@ -196,7 +191,7 @@ private fun Route.updateProfile(profileService: ProfileService, auditLogReposito
 
 private fun Route.activateProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     post<org.javafreedom.kdiab.profiles.api.Paths.activateProfile> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
@@ -211,7 +206,7 @@ private fun Route.activateProfile(profileService: ProfileService, auditLogReposi
 
 private fun Route.acceptProposedProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     post<org.javafreedom.kdiab.profiles.api.Paths.acceptProposedProfile> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
@@ -225,7 +220,7 @@ private fun Route.acceptProposedProfile(profileService: ProfileService, auditLog
 
 private fun Route.rejectProposedProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     post<org.javafreedom.kdiab.profiles.api.Paths.rejectProposedProfile> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
@@ -240,7 +235,7 @@ private fun Route.rejectProposedProfile(profileService: ProfileService, auditLog
 
 private fun Route.deleteSegment(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     delete<org.javafreedom.kdiab.profiles.api.Paths.deleteSegment> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
@@ -257,7 +252,7 @@ private fun Route.deleteSegment(profileService: ProfileService, auditLogReposito
 
 private fun Route.deleteProfile(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     delete<org.javafreedom.kdiab.profiles.api.Paths.deleteProfile> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
@@ -268,16 +263,14 @@ private fun Route.deleteProfile(profileService: ProfileService, auditLogReposito
         if (deleted) {
             call.respond(HttpStatusCode.NoContent)
         } else {
-            throw org.javafreedom.kdiab.profiles.domain.exception.ResourceNotFoundException(
-                    "Profile not found"
-            )
+            throw ResourceNotFoundException("Profile not found")
         }
     }
 }
 
 private fun Route.deleteAllProfiles(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
     delete<org.javafreedom.kdiab.profiles.api.Paths.deleteProfiles> { params ->
-        val principal = call.principal<org.javafreedom.kdiab.profiles.plugins.UserPrincipal>()
+        val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
         checkWriteAccess(principal, targetUserId)
@@ -290,7 +283,7 @@ private fun Route.deleteAllProfiles(profileService: ProfileService, auditLogRepo
 }
 
 private fun checkReadAccess(
-        principal: org.javafreedom.kdiab.profiles.plugins.UserPrincipal?,
+        principal: UserPrincipal?,
         targetUserId: Uuid
 ) {
     if (principal == null || !principal.canAccess(targetUserId)) {
@@ -300,14 +293,12 @@ private fun checkReadAccess(
             "allowedPatients=${principal?.allowedPatients} " +
             "targetUserId=$targetUserId"
         }
-        throw org.javafreedom.kdiab.profiles.domain.exception.AuthorizationException(
-                "Access Not Authorized"
-        )
+        throw AuthorizationException("Access Not Authorized")
     }
 }
 
 private fun checkWriteAccess(
-        principal: org.javafreedom.kdiab.profiles.plugins.UserPrincipal?,
+        principal: UserPrincipal?,
         targetUserId: Uuid
 ) {
     if (principal == null || (principal.userId != targetUserId && !principal.isAdmin())) {
@@ -317,8 +308,6 @@ private fun checkWriteAccess(
             "allowedPatients=${principal?.allowedPatients} " +
             "targetUserId=$targetUserId"
         }
-        throw org.javafreedom.kdiab.profiles.domain.exception.AuthorizationException(
-                "Write Access Denied"
-        )
+        throw AuthorizationException("Write Access Denied")
     }
 }

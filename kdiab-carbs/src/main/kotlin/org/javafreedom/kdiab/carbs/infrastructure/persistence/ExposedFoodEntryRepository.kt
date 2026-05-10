@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.javafreedom.kdiab.carbs.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.carbs.domain.model.FoodEntry
 import org.javafreedom.kdiab.carbs.domain.repository.FoodEntryRepository
 import org.jetbrains.exposed.v1.core.*

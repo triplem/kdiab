@@ -7,8 +7,8 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.JsonObject
-import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
-import org.javafreedom.kdiab.treatments.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.treatments.domain.model.PagedTreatments
 import org.javafreedom.kdiab.treatments.domain.model.Treatment
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus

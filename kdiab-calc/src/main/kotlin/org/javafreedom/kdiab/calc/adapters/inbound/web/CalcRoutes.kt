@@ -11,9 +11,9 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.calc.application.service.DoseCalculationService
-import org.javafreedom.kdiab.calc.domain.exception.AuthorizationException
-import org.javafreedom.kdiab.calc.domain.exception.BusinessValidationException
-import org.javafreedom.kdiab.calc.plugins.UserPrincipal
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
 
 private val logger = KotlinLogging.logger {}
 

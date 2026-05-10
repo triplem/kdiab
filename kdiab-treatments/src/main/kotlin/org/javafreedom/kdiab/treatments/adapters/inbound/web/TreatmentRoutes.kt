@@ -22,11 +22,11 @@ import org.javafreedom.kdiab.treatments.api.models.BulkTreatmentRequest
 import org.javafreedom.kdiab.treatments.api.models.TreatmentResponse
 import org.javafreedom.kdiab.treatments.api.models.UpdateTreatmentRequest
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
-import org.javafreedom.kdiab.treatments.domain.exception.AuthorizationException
-import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
 import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
-import org.javafreedom.kdiab.treatments.plugins.UserPrincipal
 
 private const val DEFAULT_PAGE_SIZE = 50
 private const val MAX_PAGE_SIZE = 200

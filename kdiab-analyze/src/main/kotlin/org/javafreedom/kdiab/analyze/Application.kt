@@ -21,10 +21,16 @@ import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
-import org.javafreedom.kdiab.analyze.plugins.configureLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.plugins.statuspages.*
+import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import org.javafreedom.kdiab.analyze.plugins.configureMetrics
-import org.javafreedom.kdiab.analyze.plugins.configureSecurity
-import org.javafreedom.kdiab.analyze.plugins.configureStatusPages
+import org.javafreedom.kdiab.common.plugins.ErrorResponse
+import org.javafreedom.kdiab.common.plugins.configureLogging
+import org.javafreedom.kdiab.common.plugins.configureSecurity
+import org.javafreedom.kdiab.common.plugins.configureStatusPages
+
+private val logger = KotlinLogging.logger {}
 
 private const val HTTP_SERVER_ERROR_STATUS = 500
 private const val HTTP_CONNECT_TIMEOUT_MS_DEFAULT = 5_000L
@@ -45,7 +51,13 @@ fun Application.module(
     configureLogging()
     configureMetrics()
     configureSecurity()
-    configureStatusPages()
+    configureStatusPages {
+        exception<UpstreamException> { call, cause ->
+            logger.error(cause) { "Upstream service error: ${cause.service}" }
+            val status = HttpStatusCode.BadGateway
+            call.respond(status, ErrorResponse(status.value, "Upstream service unavailable: ${cause.service}"))
+        }
+    }
 
     val json = Json {
         prettyPrint = false

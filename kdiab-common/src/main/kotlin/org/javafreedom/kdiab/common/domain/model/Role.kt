@@ -1,4 +1,4 @@
-package org.javafreedom.kdiab.treatments.domain.model
+package org.javafreedom.kdiab.common.domain.model
 
 enum class Role {
     PATIENT, DOCTOR, ADMIN;

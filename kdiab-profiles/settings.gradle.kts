@@ -6,3 +6,5 @@ pluginManagement {
 }
 
 rootProject.name = "kdiab-profiles"
+
+includeBuild("../kdiab-common")

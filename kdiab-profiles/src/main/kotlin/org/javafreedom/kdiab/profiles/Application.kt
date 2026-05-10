@@ -22,12 +22,18 @@ import org.javafreedom.kdiab.profiles.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedProfileRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedInsulinRepository
-import org.javafreedom.kdiab.profiles.plugins.configureLogging
-import org.javafreedom.kdiab.profiles.plugins.configureMetrics
-import org.javafreedom.kdiab.profiles.plugins.configureSecurity
-import org.javafreedom.kdiab.profiles.plugins.configureStatusPages
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.plugins.swagger.*
 import io.ktor.server.resources.Resources
+import org.javafreedom.kdiab.common.plugins.ErrorResponse
+import org.javafreedom.kdiab.common.plugins.configureLogging
+import org.javafreedom.kdiab.common.plugins.configureSecurity
+import org.javafreedom.kdiab.common.plugins.configureStatusPages
+import org.javafreedom.kdiab.profiles.plugins.configureMetrics
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
+
+private val logger = KotlinLogging.logger {}
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -40,7 +46,22 @@ fun Application.module(
     configureLogging()
     configureMetrics()
     configureSecurity()
-    configureStatusPages()
+    configureStatusPages {
+        // Unique-constraint violation from the database.
+        // SQL state 23505 is the standard UNIQUE VIOLATION code across PostgreSQL and other JDBC drivers.
+        exception<ExposedSQLException> { call, cause ->
+            val sqlState = cause.cause?.let { (it as? java.sql.SQLException)?.sqlState }
+            if (sqlState == "23505") {
+                logger.warn(cause) { "Unique constraint violation" }
+                call.respond(HttpStatusCode.Conflict,
+                    ErrorResponse(HttpStatusCode.Conflict.value, cause.message ?: "Conflict"))
+            } else {
+                logger.error(cause) { "Database error (SQL state: $sqlState)" }
+                call.respond(HttpStatusCode.InternalServerError,
+                    ErrorResponse(HttpStatusCode.InternalServerError.value, "Internal Server Error"))
+            }
+        }
+    }
     install(ContentNegotiation) {
         json(
                 Json {

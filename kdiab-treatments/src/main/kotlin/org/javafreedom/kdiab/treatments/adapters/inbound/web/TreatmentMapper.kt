@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import org.javafreedom.kdiab.treatments.api.models.CreateTreatmentRequest
 import org.javafreedom.kdiab.treatments.api.models.TreatmentResponse
 import org.javafreedom.kdiab.treatments.api.models.TreatmentType as ApiTreatmentType
-import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.treatments.domain.model.Treatment as DomainTreatment
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
 

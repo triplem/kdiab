@@ -6,6 +6,7 @@ import kotlin.time.Instant
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 
 @Serializable
 enum class ProfileStatus {
@@ -51,66 +52,46 @@ data class Profile(
     private fun validateTimeSegments() {
         val sortedIcr = icr.sortedBy { it.startTime }
         if (sortedIcr.isNotEmpty() && sortedIcr.first().startTime != LocalTime(0, 0)) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                "ICR profile must start at 00:00"
-            )
+            throw BusinessValidationException("ICR profile must start at 00:00")
         }
 
         val sortedIsf = isf.sortedBy { it.startTime }
         if (sortedIsf.isNotEmpty() && sortedIsf.first().startTime != LocalTime(0, 0)) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                "ISF profile must start at 00:00"
-            )
+            throw BusinessValidationException("ISF profile must start at 00:00")
         }
     }
 
     private fun validatePhysics() {
         if (durationOfAction <= 0) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                "Duration of action must be positive"
-            )
+            throw BusinessValidationException("Duration of action must be positive")
         }
         if (basal.any { it.value < 0 }) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                "Basal values cannot be negative"
-            )
+            throw BusinessValidationException("Basal values cannot be negative")
         }
         if (icr.any { it.value < 0 }) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                "ICR values cannot be negative"
-            )
+            throw BusinessValidationException("ICR values cannot be negative")
         }
         if (isf.any { it.value < 0 }) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                "ISF values cannot be negative"
-            )
+            throw BusinessValidationException("ISF values cannot be negative")
         }
         if (targets.any { it.low < 0 || it.high < 0 || it.low > it.high }) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                "Target values are invalid or low exceeds high"
-            )
+            throw BusinessValidationException("Target values are invalid or low exceeds high")
         }
     }
 
     private fun validateBasalRequirements() {
         if (basal.isEmpty()) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                "Profile must have at least one basal segment"
-            )
+            throw BusinessValidationException("Profile must have at least one basal segment")
         }
 
         val sortedBasal = basal.sortedBy { it.startTime }
         if (sortedBasal.firstOrNull()?.startTime != LocalTime(0, 0)) {
-             throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                 "Basal profile must start at 00:00"
-             )
+             throw BusinessValidationException("Basal profile must start at 00:00")
         }
 
         val distinctTimes = basal.map { it.startTime }.distinct()
         if (distinctTimes.size != basal.size) {
-             throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                 "Basal segments cannot have overlapping start times"
-             )
+             throw BusinessValidationException("Basal segments cannot have overlapping start times")
         }
 
         var totalDailyBasal = 0.0
@@ -126,7 +107,7 @@ data class Profile(
         }
 
         if (totalDailyBasal > MAX_DAILY_BASAL_U) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
+            throw BusinessValidationException(
                 "Total Daily Basal exceeds safe clinical limit ($MAX_DAILY_BASAL_U U/day)"
             )
         }
@@ -134,27 +115,21 @@ data class Profile(
 
     private fun validateUnitHeuristics() {
         if (icr.any { it.value < MIN_ICR || it.value > MAX_ICR }) {
-            throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                "ICR values must be between $MIN_ICR and $MAX_ICR g/U"
-            )
+            throw BusinessValidationException("ICR values must be between $MIN_ICR and $MAX_ICR g/U")
         }
 
         val normalizedUnits = units.lowercase()
         if (normalizedUnits == "mmol/l") {
             if (isf.any { it.value > MMOL_UPPER_BOUND } ||
                 targets.any { it.low > MMOL_UPPER_BOUND || it.high > MMOL_UPPER_BOUND }) {
-                 throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                     "Value too high for mmol/L (suspected mg/dL)"
-                 )
+                 throw BusinessValidationException("Value too high for mmol/L (suspected mg/dL)")
             }
         } else if (normalizedUnits == "mg/dl") {
             if (targets.any { it.low < MGDL_LOWER_BOUND || it.high < MGDL_LOWER_BOUND }) {
-                 throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
-                     "Target value too low for mg/dL (suspected mmol/L)"
-                 )
+                 throw BusinessValidationException("Target value too low for mg/dL (suspected mmol/L)")
             }
             if (isf.any { it.value < MIN_ISF_MGDL || it.value > MAX_ISF_MGDL }) {
-                 throw org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException(
+                 throw BusinessValidationException(
                      "ISF value for mg/dL must be between $MIN_ISF_MGDL and $MAX_ISF_MGDL"
                  )
             }

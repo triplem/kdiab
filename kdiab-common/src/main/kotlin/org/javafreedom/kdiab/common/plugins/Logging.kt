@@ -1,4 +1,4 @@
-package org.javafreedom.kdiab.treatments.plugins
+package org.javafreedom.kdiab.common.plugins
 
 import io.ktor.server.application.Application
 import io.ktor.server.application.install

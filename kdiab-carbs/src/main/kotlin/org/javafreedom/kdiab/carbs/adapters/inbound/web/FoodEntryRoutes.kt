@@ -18,9 +18,9 @@ import org.javafreedom.kdiab.carbs.api.models.CreateFoodEntryRequest
 import org.javafreedom.kdiab.carbs.api.models.FoodEntryResponse
 import org.javafreedom.kdiab.carbs.api.models.UpdateFoodEntryRequest
 import org.javafreedom.kdiab.carbs.application.service.FoodEntryService
-import org.javafreedom.kdiab.carbs.domain.exception.AuthorizationException
-import org.javafreedom.kdiab.carbs.domain.exception.BusinessValidationException
-import org.javafreedom.kdiab.carbs.plugins.UserPrincipal
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
 
 private const val DEFAULT_PAGE_SIZE = 50
 private const val MAX_PAGE_SIZE = 200

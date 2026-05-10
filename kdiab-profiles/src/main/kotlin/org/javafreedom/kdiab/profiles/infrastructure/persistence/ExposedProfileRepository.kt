@@ -11,7 +11,7 @@ import kotlinx.datetime.IllegalTimeZoneException
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import org.javafreedom.kdiab.profiles.domain.exception.ConflictException
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.profiles.domain.model.*
 import org.javafreedom.kdiab.profiles.domain.repository.ProfileRepository
 import org.jetbrains.exposed.v1.core.*

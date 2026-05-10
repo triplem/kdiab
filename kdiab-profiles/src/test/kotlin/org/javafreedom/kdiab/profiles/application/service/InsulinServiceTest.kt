@@ -9,7 +9,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.runBlocking
-import org.javafreedom.kdiab.profiles.domain.exception.ConflictException
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.profiles.domain.model.Insulin
 import org.javafreedom.kdiab.profiles.domain.repository.InsulinRepository
 

@@ -2,7 +2,7 @@
 package org.javafreedom.kdiab.profiles.domain.model
 
 import kotlinx.datetime.LocalTime
-import org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.uuid.Uuid

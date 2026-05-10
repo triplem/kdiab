@@ -4,7 +4,7 @@ package org.javafreedom.kdiab.measures.application.service
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.JsonObject
-import org.javafreedom.kdiab.measures.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.measures.domain.model.Measure
 import org.javafreedom.kdiab.measures.domain.model.MeasureStatus
 import org.javafreedom.kdiab.measures.domain.model.PagedMeasures

@@ -5,7 +5,8 @@ import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
-import org.javafreedom.kdiab.treatments.domain.model.Role
+import org.javafreedom.kdiab.common.domain.model.Role
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
 
 class UserPrincipalTest {
 

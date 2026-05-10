@@ -18,6 +18,8 @@ import org.javafreedom.kdiab.profiles.domain.model.PagedProfiles
 import org.javafreedom.kdiab.profiles.domain.model.Profile
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.domain.model.TargetSegment
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.profiles.domain.repository.ProfileRepository
 
 class ProfileServiceTest {
@@ -224,7 +226,7 @@ class ProfileServiceTest {
                                 relaxed = true
                         )
 
-                assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.ConflictException> {
+                assertFailsWith<ConflictException> {
                         service.activateProfile(userId, profileId)
                 }
         }
@@ -254,7 +256,7 @@ class ProfileServiceTest {
                                 relaxed = true
                         )
 
-                assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.ConflictException> {
+                assertFailsWith<ConflictException> {
                         service.acceptProposedProfile(userId, profileId)
                 }
         }
@@ -267,7 +269,7 @@ class ProfileServiceTest {
                 coEvery { repository.findById(profileId) } returns null
 
                 assertFailsWith<
-                        org.javafreedom.kdiab.profiles.domain.exception.ResourceNotFoundException> {
+                        org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException> {
                         service.activateProfile(userId, profileId)
                 }
         }
@@ -294,7 +296,7 @@ class ProfileServiceTest {
                 coEvery { repository.findById(profileId) } returns profile
 
                 assertFailsWith<
-                        org.javafreedom.kdiab.profiles.domain.exception.AuthorizationException> {
+                        org.javafreedom.kdiab.common.domain.exception.AuthorizationException> {
                         service.activateProfile(userId, profileId)
                 }
         }
@@ -391,7 +393,7 @@ class ProfileServiceTest {
                 )
                 coEvery { repository.findById(profileId) } returns profile
 
-                assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException> {
+                assertFailsWith<BusinessValidationException> {
                         service.acceptProposedProfile(userId, profileId)
                 }
         }
@@ -432,7 +434,7 @@ class ProfileServiceTest {
                 )
                 coEvery { repository.findById(profileId) } returns profile
 
-                assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException> {
+                assertFailsWith<BusinessValidationException> {
                         service.rejectProposedProfile(userId, profileId)
                 }
         }
@@ -474,7 +476,7 @@ class ProfileServiceTest {
                 )
                 coEvery { repository.findById(profileId) } returns profile
 
-                assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException> {
+                assertFailsWith<BusinessValidationException> {
                         service.deleteProfile(userId, profileId)
                 }
         }
@@ -485,7 +487,7 @@ class ProfileServiceTest {
                 val profileId = Uuid.random()
                 coEvery { repository.findById(profileId) } returns null
                 assertFailsWith<
-                        org.javafreedom.kdiab.profiles.domain.exception.ResourceNotFoundException> {
+                        org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException> {
                         service.deleteProfile(userId, profileId)
                 }
         }
@@ -558,7 +560,7 @@ class ProfileServiceTest {
                 )
                 coEvery { repository.findById(profileId) } returns profile
 
-                assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException> {
+                assertFailsWith<BusinessValidationException> {
                         service.deleteSegment(userId, profileId, "basal", LocalTime(0, 0))
                 }
         }
@@ -579,7 +581,7 @@ class ProfileServiceTest {
                 )
                 coEvery { repository.findById(profileId) } returns profile
 
-                assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException> {
+                assertFailsWith<BusinessValidationException> {
                         service.deleteSegment(userId, profileId, "basal", missingTime)
                 }
         }
@@ -619,7 +621,7 @@ class ProfileServiceTest {
                 )
                 coEvery { repository.findById(profile.id) } returns profile
 
-                assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException> {
+                assertFailsWith<BusinessValidationException> {
                         service.updateProfile(profile)
                 }
         }
@@ -737,7 +739,7 @@ class ProfileServiceTest {
                 )
                 coEvery { repository.existsActiveOrDraftWithName(userId, "Basal Plan") } returns true
 
-                assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.ConflictException> {
+                assertFailsWith<ConflictException> {
                         service.createProfile(newProfile)
                 }
                 coVerify(exactly = 0) { repository.save(any()) }
@@ -791,7 +793,7 @@ class ProfileServiceTest {
                 coEvery { repository.findById(profileBeingUpdated.id) } returns profileBeingUpdated
                 coEvery { repository.existsActiveOrDraftWithName(userId, "Morning Plan", profileBeingUpdated.id) } returns true
 
-                assertFailsWith<org.javafreedom.kdiab.profiles.domain.exception.ConflictException> {
+                assertFailsWith<ConflictException> {
                         service.updateProfile(renamed)
                 }
         }

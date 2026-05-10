@@ -12,11 +12,11 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
-import org.javafreedom.kdiab.profiles.domain.exception.AuthorizationException
-import org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.profiles.domain.model.AuditLog
 import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
-import org.javafreedom.kdiab.profiles.plugins.UserPrincipal
 
 @Serializable
 data class AuditLogResponse(
@@ -30,7 +30,7 @@ data class AuditLogResponse(
 )
 
 fun Route.auditRoutes(auditLogRepository: AuditLogRepository) {
-    authenticate {
+    authenticate("auth-jwt") {
         get("/audit") {
             val principal = call.principal<UserPrincipal>()
             if (principal?.isAdmin() != true) throw AuthorizationException("Admin access required")

@@ -15,10 +15,16 @@ import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.calc.adapters.inbound.web.calcRoutes
 import org.javafreedom.kdiab.calc.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.calc.application.service.DoseCalculationService
-import org.javafreedom.kdiab.calc.plugins.configureLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.plugins.statuspages.*
+import org.javafreedom.kdiab.calc.domain.exception.UpstreamException
 import org.javafreedom.kdiab.calc.plugins.configureMetrics
-import org.javafreedom.kdiab.calc.plugins.configureSecurity
-import org.javafreedom.kdiab.calc.plugins.configureStatusPages
+import org.javafreedom.kdiab.common.plugins.ErrorResponse
+import org.javafreedom.kdiab.common.plugins.configureLogging
+import org.javafreedom.kdiab.common.plugins.configureSecurity
+import org.javafreedom.kdiab.common.plugins.configureStatusPages
+
+private val logger = KotlinLogging.logger {}
 
 private const val HTTP_SERVER_ERROR_STATUS = 500
 private const val HTTP_CONNECT_TIMEOUT_MS_DEFAULT = 5_000L
@@ -36,7 +42,13 @@ fun Application.module(
     configureLogging()
     configureMetrics()
     configureSecurity()
-    configureStatusPages()
+    configureStatusPages {
+        exception<UpstreamException> { call, cause ->
+            logger.error(cause) { "Upstream service error: ${cause.service}" }
+            val status = HttpStatusCode.BadGateway
+            call.respond(status, ErrorResponse(status.value, "Upstream service unavailable: ${cause.service}"))
+        }
+    }
 
     val json = Json {
         prettyPrint = false

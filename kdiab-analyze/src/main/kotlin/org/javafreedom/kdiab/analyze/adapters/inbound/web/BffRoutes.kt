@@ -16,9 +16,9 @@ import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
-import org.javafreedom.kdiab.analyze.domain.exception.AuthorizationException
-import org.javafreedom.kdiab.analyze.domain.exception.BusinessValidationException
-import org.javafreedom.kdiab.analyze.plugins.UserPrincipal
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
 
 private val logger = KotlinLogging.logger {}
 

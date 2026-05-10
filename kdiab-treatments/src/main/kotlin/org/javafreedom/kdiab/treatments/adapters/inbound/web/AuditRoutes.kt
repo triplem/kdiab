@@ -12,11 +12,11 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
-import org.javafreedom.kdiab.treatments.domain.exception.AuthorizationException
-import org.javafreedom.kdiab.treatments.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.treatments.domain.model.AuditLog
 import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
-import org.javafreedom.kdiab.treatments.plugins.UserPrincipal
 
 @Serializable
 data class AuditLogResponse(

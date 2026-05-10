@@ -1,7 +1,6 @@
-package org.javafreedom.kdiab.treatments.domain.exception
+package org.javafreedom.kdiab.common.domain.exception
 
-class AuthenticationException(message: String = "Authentication failed") :
-        RuntimeException(message)
+class AuthenticationException(message: String = "Authentication failed") : RuntimeException(message)
 
 class AuthorizationException(message: String = "Access denied") : RuntimeException(message)
 

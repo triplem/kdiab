@@ -6,3 +6,5 @@ pluginManagement {
 }
 
 rootProject.name = "kdiab-calc"
+
+includeBuild("../kdiab-common")
