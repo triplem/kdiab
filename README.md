@@ -1,13 +1,16 @@
 # kdiab
 
-A Type 1 Diabetes (T1D) management platform consisting of four services in a single monorepo.
+A Type 1 Diabetes (T1D) management platform — a monorepo of seven components.
 
-| Service | Description |
+| Component | Description |
 |---|---|
 | **kdiab-measures** | Health measurement tracking — CGM, BGM, blood pressure, weight, pulse |
 | **kdiab-profiles** | Insulin pump basal profile management |
 | **kdiab-treatments** | Treatment event tracking — bolus, basal, carbs, corrections |
-| **kdiab-analyze** | Stateless BFF: aggregates all three services into a unified analytics dashboard |
+| **kdiab-analyze** | Stateless BFF: aggregates all services into a unified analytics dashboard |
+| **kdiab-carbs** | Food / carbohydrate database and entry tracking |
+| **kdiab-calc** | Stateless dose calculator — bolus recommendation from profile + CGM trend |
+| **kdiab-common** | Shared Kotlin library: domain types, Ktor plugins, security, logging |
 
 ## Prerequisites
 
@@ -18,10 +21,10 @@ A Type 1 Diabetes (T1D) management platform consisting of four services in a sin
 ## Quick Start
 
 ```bash
-# Copy the example env file and fill in secrets
+# Copy the example env file (required before first run)
 cp .env.example .env
 
-# Start the full platform (all 4 services + Keycloak + PostgreSQL)
+# Start the full platform (all services + Keycloak + PostgreSQL)
 docker compose up --build
 
 # Optionally include pgAdmin (database browser at http://localhost:5050)
@@ -35,7 +38,7 @@ Navigate to http://localhost:3005 for the kdiab-ui frontend (all UIs accessible 
 ### Monorepo Gradle build (root)
 
 The monorepo is a [Gradle composite build](https://docs.gradle.org/current/userguide/composite_builds.html).
-All four service backends and the `kdiab-ui` gateway frontend are orchestrated from the root:
+All service backends (including `kdiab-common`) and the `kdiab-ui` gateway frontend are orchestrated from the root:
 
 ```bash
 ./gradlew build              # Build all backends (Gradle) + kdiab-ui frontend (npm)
@@ -66,15 +69,18 @@ cd kdiab-<service>
 ./gradlew e2eTest            # E2E tests only
 ```
 
-### Per-service frontend (React/TypeScript)
+### Unified frontend (React/TypeScript)
+
+All frontends are consolidated into `kdiab-ui`:
 
 ```bash
-cd kdiab-<service>/frontend
+cd kdiab-ui
 npm install
-npm run api:generate             # Regenerate TypeScript client from openapi.yaml
-npm run dev                      # Dev server
+npm run api:generate             # Regenerate TypeScript clients from all openapi.yaml specs
+npm run dev                      # Dev server (http://localhost:3005)
 npm run build                    # Production build
 npm run lint                     # ESLint
+npm run test                     # Vitest unit tests
 ```
 
 ### Standalone per-service stack
@@ -98,6 +104,8 @@ docker compose down -v           # Tear down and wipe volumes
 | kdiab-profiles backend / Swagger | http://localhost:8082 / http://localhost:8082/swagger |
 | kdiab-treatments backend / Swagger | http://localhost:8083 / http://localhost:8083/swagger |
 | kdiab-analyze backend / Swagger | http://localhost:8084 / http://localhost:8084/swagger |
+| kdiab-carbs backend / Swagger | http://localhost:8085 / http://localhost:8085/swagger |
+| kdiab-calc backend / Swagger | http://localhost:8086 / http://localhost:8086/swagger |
 | Keycloak Admin | http://localhost:8081 (admin / from `.env`) |
 | pgAdmin | http://localhost:5050 — opt-in via `docker-compose.pgadmin.yml` |
 

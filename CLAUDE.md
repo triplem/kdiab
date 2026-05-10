@@ -5,11 +5,14 @@ Service-specific details are in each service's own `CLAUDE.md`.
 
 ## Project Overview
 
-**kdiab** is a T1D (Type 1 Diabetes) management platform consisting of four services:
+**kdiab** is a T1D (Type 1 Diabetes) management platform — a monorepo of seven components:
 - **kdiab-measures** — health measurement tracking (CGM, BGM, blood pressure, weight, pulse)
 - **kdiab-profiles** — insulin pump basal profile management
 - **kdiab-treatments** — treatment event tracking (bolus, basal, carbs, corrections, etc.)
-- **kdiab-analyze** — stateless Backend-for-Frontend: aggregates data from all three services and provides a unified analytics dashboard (timeline, HbA1c, AGP, profiles)
+- **kdiab-analyze** — stateless Backend-for-Frontend: aggregates data from all services into a unified analytics dashboard (timeline, HbA1c, AGP, profiles)
+- **kdiab-carbs** — food / carbohydrate database and entry tracking
+- **kdiab-calc** — stateless dose calculator: bolus recommendation from profile + CGM trend
+- **kdiab-common** — shared Kotlin library: domain types (`Role`, `DomainExceptions`), Ktor plugins (`configureSecurity`, `configureLogging`, `configureStatusPages`), `UserPrincipal`
 
 Each service follows the same stack and architecture conventions. All commands below must be run from the service directory.
 
@@ -37,7 +40,7 @@ Each service follows the same stack and architecture conventions. All commands b
 Gradle output is in each service's `build/` directory. Use `--info` or `--parallel` flags as needed.
 
 ### Full Stack (Docker/Podman) — Root Compose
-The root `docker-compose.yml` starts the entire platform (all 4 services + Keycloak + PostgreSQL):
+The root `docker-compose.yml` starts the entire platform (all services + Keycloak + PostgreSQL):
 ```bash
 docker compose up --build        # Start everything
 docker compose down -v           # Tear down and wipe all volumes
@@ -47,8 +50,8 @@ docker compose -f docker-compose.yml -f docker-compose.pgadmin.yml up --build
 ```
 
 The database is automatically initialised by:
-1. `config/postgres/01-init-databases.sh` — creates `kdiab-measures`, `kdiab-profiles`, `kdiab-treatments` databases
-2. `liquibase-measures` / `liquibase-profiles` / `liquibase-treatments` — run schema migrations
+1. `config/postgres/01-init-databases.sh` — creates `kdiab-measures`, `kdiab-profiles`, `kdiab-treatments`, `kdiab-carbs` databases
+2. `liquibase-measures` / `liquibase-profiles` / `liquibase-treatments` / `liquibase-carbs` — run schema migrations
 3. `pg-seed` — inserts 30 days of realistic CGM, treatment, and profile data for `sarah` and `mike`
 
 ### Per-Service Stack
@@ -78,15 +81,16 @@ Instead of docker-compose/docker compose, podman compose can be used.
 ```
 
 ### Frontend (React/TypeScript)
+All frontends are in `kdiab-ui` (unified SPA):
 ```bash
-cd frontend
+cd kdiab-ui
 npm install
-npm run api:generate             # Regenerate TypeScript API client from openapi.yaml
-npm run dev                      # Dev server (port 3000, proxies /api to backend on 8080)
-npm run build                    # Generate API client + TS compile + Vite build
+npm run api:generate             # Regenerate TypeScript clients from all openapi.yaml specs
+npm run dev                      # Dev server (http://localhost:3005)
+npm run build                    # Generate API clients + TS compile + Vite build
 npm run lint                     # ESLint
 npm run test                     # Vitest unit tests
-npx playwright test              # E2E tests (requires running app)
+npm run test:e2e                 # Playwright e2e tests (requires running app)
 ```
 
 ### Service URLs
@@ -94,13 +98,15 @@ npx playwright test              # E2E tests (requires running app)
 **Root compose (all services):**
 | Service | URL |
 |---|---|
-| Keycloak Admin | http://localhost:8081 (admin / admin) |
+| Keycloak Admin | http://localhost:8081 (admin / from `.env`) |
 | pgAdmin | http://localhost:5050 (opt-in via docker-compose.pgadmin.yml) |
 | kdiab-ui (all frontends) | http://localhost:3005 |
 | kdiab-measures backend / Swagger | http://localhost:8080 / http://localhost:8080/swagger |
 | kdiab-profiles backend / Swagger | http://localhost:8082 / http://localhost:8082/swagger |
 | kdiab-treatments backend / Swagger | http://localhost:8083 / http://localhost:8083/swagger |
 | kdiab-analyze backend / Swagger | http://localhost:8084 / http://localhost:8084/swagger |
+| kdiab-carbs backend / Swagger | http://localhost:8085 / http://localhost:8085/swagger |
+| kdiab-calc backend / Swagger | http://localhost:8086 / http://localhost:8086/swagger |
 
 **Per-service compose (standalone):**
 - Frontend: http://localhost:3000
@@ -153,7 +159,7 @@ In tests, JWT uses HMAC256 symmetric signing (`jwt.test=true`, `jwt.secret` in c
 - Domain exceptions thrown instead of manual HTTP status codes — caught by `StatusPages`
 
 ### JWT Forwarding (kdiab-analyze)
-The BFF receives a user JWT and forwards it unchanged to all upstream services. For this to work, the Keycloak client used to log in must have audience mappers for all four audiences (`analyze`, `measure`, `profile`, `treatment`). The root `config/keycloak-realm.json` configures the `kdiab-analyze-frontend` client with all four audience mappers so a single token is accepted by every upstream service.
+The BFF receives a user JWT and forwards it unchanged to all upstream services. For this to work, the Keycloak client used to log in must have audience mappers for all six audiences (`analyze`, `measure`, `profile`, `treatment`, `carbs`, `calc`). The root `config/keycloak-realm.json` configures the `kdiab-analyze-frontend` client with all six audience mappers so a single token is accepted by every upstream service.
 
 ### Test Suites (Backend)
 ```
@@ -183,9 +189,9 @@ Roles are parsed from the JWT access token directly (Keycloak's OIDC profile doe
 config/
   keycloak-realm.json          # Unified Keycloak realm "kdiab" used by root docker-compose.yml.
                                # Contains all clients, roles, and test users. The kdiab-analyze-frontend
-                               # client has 4 audience mappers (bff, measure, profile, treatment).
+                               # client has 6 audience mappers (analyze, measure, profile, treatment, carbs, calc).
   postgres/
-    01-init-databases.sh       # Creates kdiab-measures, kdiab-profiles, kdiab-treatments databases.
+    01-init-databases.sh       # Creates kdiab-measures, kdiab-profiles, kdiab-treatments, kdiab-carbs databases.
                                # Runs once on first Postgres startup via docker-entrypoint-initdb.d.
     02-seed-data.sql           # Seeds 30 days of CGM readings, treatments, and profiles for sarah
                                # and mike. Runs via the pg-seed container after all Liquibase migrations.
