@@ -7,7 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
+import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentResponse
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 
 private val logger = KotlinLogging.logger {}
@@ -16,18 +16,8 @@ private const val PAGE_SIZE = 200
 private const val LOG_BODY_MAX_CHARS = 200
 
 @Serializable
-data class TreatmentDto(
-    val id: String,
-    val userId: String,
-    val treatedAt: String,
-    val type: String,
-    val notes: String? = null,
-    val data: JsonObject,
-)
-
-@Serializable
 private data class PagedTreatmentDto(
-    val items: List<TreatmentDto>,
+    val items: List<TreatmentResponse>,
     val page: Int,
     val size: Int,
     val totalCount: Long,
@@ -43,8 +33,8 @@ class TreatmentsClient(
         correlationId: String,
         from: String? = null,
         to: String? = null,
-    ): List<TreatmentDto> {
-        val result = mutableListOf<TreatmentDto>()
+    ): List<TreatmentResponse> {
+        val result = mutableListOf<TreatmentResponse>()
         var page = 0
         var totalCount = Long.MAX_VALUE
         val totalStart = System.currentTimeMillis()

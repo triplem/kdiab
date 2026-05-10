@@ -12,6 +12,7 @@ import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.analyze.api.Paths
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
+import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
@@ -54,7 +55,7 @@ fun Route.bffRoutes(
             val activeProfile = if (profilesClient != null) {
                 runCatching {
                     profilesClient.getProfiles(ctx.targetUserId.toString(), ctx.authorization, ctx.correlationId)
-                        .firstOrNull { it.status == "ACTIVE" }
+                        .firstOrNull { it.status == Profile.Status.ACTIVE }
                 }.getOrNull()
             } else null
             val tirLow = activeProfile?.analysisLow ?: DEFAULT_TIR_LOW
@@ -81,7 +82,7 @@ fun Route.bffRoutes(
             val activeProfile = if (profilesClient != null) {
                 runCatching {
                     profilesClient.getProfiles(ctx.targetUserId.toString(), ctx.authorization, ctx.correlationId)
-                        .firstOrNull { it.status == "ACTIVE" }
+                        .firstOrNull { it.status == Profile.Status.ACTIVE }
                 }.getOrNull()
             } else null
             val tirLow = activeProfile?.analysisLow ?: DEFAULT_TIR_LOW

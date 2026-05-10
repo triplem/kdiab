@@ -47,14 +47,14 @@ class BffAnalyticsIntegrationTest {
         val tenCgmReadingsJson = buildString {
             val items = (0 until 10).joinToString(",") { i ->
                 val minute = i.toString().padStart(2, '0')
-                """{"id":"${i.toString().repeat(8)}-${i.toString().repeat(4)}-${i.toString().repeat(4)}-${i.toString().repeat(4)}-${i.toString().repeat(12)}","userId":"$SARAH_ID","measuredAt":"2024-01-15T10:${minute}:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"value":120.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"}"""
+                """{"id":"${i.toString().repeat(8)}-${i.toString().repeat(4)}-${i.toString().repeat(4)}-${i.toString().repeat(4)}-${i.toString().repeat(12)}","userId":"$SARAH_ID","measuredAt":"2024-01-15T10:${minute}:00Z","createdAt":"2024-01-15T10:${minute}:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"value":120.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"}"""
             }
             append("""{"items":[$items],"page":0,"size":200,"totalCount":10}""")
         }
 
         val emptyPagedJson = """{"items":[],"page":0,"size":200,"totalCount":0}"""
-        val emptyTreatmentsJson = "[]"
-        val emptyProfilesJson = "[]"
+        val emptyTreatmentsJson = """{"items":[],"page":0,"size":200,"totalCount":0}"""
+        val emptyProfilesJson = """{"items":[],"page":0,"size":200,"totalCount":0}"""
 
         private val lenientJson = Json { ignoreUnknownKeys = true }
 

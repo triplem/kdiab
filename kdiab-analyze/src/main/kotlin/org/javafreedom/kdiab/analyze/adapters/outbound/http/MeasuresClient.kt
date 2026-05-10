@@ -7,25 +7,14 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonObject
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 
 private val logger = KotlinLogging.logger {}
 
 @Serializable
-data class MeasureDto(
-    val id: String,
-    val userId: String,
-    val measuredAt: String,
-    val type: String,
-    val source: String? = null,
-    val data: JsonObject,
-    val status: String,
-)
-
-@Serializable
 private data class PagedMeasureDto(
-    val items: List<MeasureDto>,
+    val items: List<MeasureResponse>,
     val page: Int,
     val size: Int,
     val totalCount: Long,
@@ -45,8 +34,8 @@ class MeasuresClient(
         correlationId: String,
         from: String? = null,
         to: String? = null,
-    ): List<MeasureDto> {
-        val result = mutableListOf<MeasureDto>()
+    ): List<MeasureResponse> {
+        val result = mutableListOf<MeasureResponse>()
         var page = 0
         val pageSize = PAGE_SIZE
         var totalCount = Long.MAX_VALUE

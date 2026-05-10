@@ -51,23 +51,23 @@ class BffTimelineIntegrationTest {
 
         // A CGM measure INSIDE the timeframe [2024-01-01, 2024-01-31]
         val measuresInRangeJson = """
-            {"items":[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","userId":"$SARAH_ID","measuredAt":"2024-01-15T10:00:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"value":120.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"}],"page":0,"size":200,"totalCount":1}
+            {"items":[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","userId":"$SARAH_ID","measuredAt":"2024-01-15T10:00:00Z","createdAt":"2024-01-15T10:00:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"value":120.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"}],"page":0,"size":200,"totalCount":1}
         """.trimIndent()
 
         // A CGM measure OUTSIDE the timeframe (December 2023)
         val measuresOutOfRangeJson = """
-            {"items":[{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","userId":"$SARAH_ID","measuredAt":"2023-12-31T10:00:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"value":100.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"}],"page":0,"size":200,"totalCount":1}
+            {"items":[{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","userId":"$SARAH_ID","measuredAt":"2023-12-31T10:00:00Z","createdAt":"2023-12-31T10:00:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"value":100.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"}],"page":0,"size":200,"totalCount":1}
         """.trimIndent()
 
         // Both in-range and out-of-range measures combined
         val measuresMixedJson = """
-            {"items":[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","userId":"$SARAH_ID","measuredAt":"2024-01-15T10:00:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"value":120.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"},{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","userId":"$SARAH_ID","measuredAt":"2023-12-31T10:00:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"value":100.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"}],"page":0,"size":200,"totalCount":2}
+            {"items":[{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","userId":"$SARAH_ID","measuredAt":"2024-01-15T10:00:00Z","createdAt":"2024-01-15T10:00:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"value":120.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"},{"id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","userId":"$SARAH_ID","measuredAt":"2023-12-31T10:00:00Z","createdAt":"2023-12-31T10:00:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"value":100.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"}],"page":0,"size":200,"totalCount":2}
         """.trimIndent()
 
         val emptyPagedJson = """{"items":[],"page":0,"size":200,"totalCount":0}"""
 
         val treatmentInRangeJson = """
-            {"items":[{"id":"cccccccc-cccc-cccc-cccc-cccccccccccc","userId":"$SARAH_ID","treatedAt":"2024-01-15T12:00:00Z","type":"BOLUS","data":{"units":3.5}}],"page":0,"size":200,"totalCount":1}
+            {"items":[{"id":"cccccccc-cccc-cccc-cccc-cccccccccccc","userId":"$SARAH_ID","treatedAt":"2024-01-15T12:00:00Z","createdAt":"2024-01-15T12:00:00Z","type":"BOLUS","data":{"units":3.5},"status":"ACTIVE"}],"page":0,"size":200,"totalCount":1}
         """.trimIndent()
 
         val emptyTreatmentsJson = """{"items":[],"page":0,"size":200,"totalCount":0}"""

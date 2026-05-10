@@ -1,12 +1,14 @@
 package org.javafreedom.kdiab.calc.application.service
 
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.javafreedom.kdiab.calc.adapters.outbound.http.IcrSegmentDto
-import org.javafreedom.kdiab.calc.adapters.outbound.http.IsfSegmentDto
 import org.javafreedom.kdiab.calc.adapters.outbound.http.ProfilesClient
-import org.javafreedom.kdiab.calc.adapters.outbound.http.TargetSegmentDto
+import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IcrSegment
+import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IsfSegment
+import org.javafreedom.kdiab.calc.api.upstream.profiles.models.TargetSegment
 import org.javafreedom.kdiab.calc.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.calc.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.calc.domain.model.CgmTrend
@@ -35,9 +37,9 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
             ?: throw ResourceNotFoundException("No active profile found for user")
 
         val refTime: LocalTime = if (request.useProfileTime != null) {
-            kotlin.time.Instant.parse(request.useProfileTime).toLocalDateTime(TimeZone.UTC).time
+            Instant.parse(request.useProfileTime).toLocalDateTime(TimeZone.UTC).time
         } else {
-            kotlin.time.Clock.System.now().toLocalDateTime(TimeZone.UTC).time
+            Clock.System.now().toLocalDateTime(TimeZone.UTC).time
         }
 
         val bgMgDl = if (request.glucoseUnit.equals("mmol/L", ignoreCase = true) ||
@@ -48,9 +50,9 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
             request.currentBg
         }
 
-        val isf = lookupIsfSegment(profile.isf, refTime)
-        val icr = lookupIcrSegment(profile.icr, refTime)
-        val target = lookupTargetSegment(profile.targets, refTime)
+        val isf = lookupIsfSegment(profile.isf.orEmpty(), refTime)
+        val icr = lookupIcrSegment(profile.icr.orEmpty(), refTime)
+        val target = lookupTargetSegment(profile.targets.orEmpty(), refTime)
 
         val correctionDose = (bgMgDl - target) / isf
         val carbDose = if (request.carbsGrams > 0) request.carbsGrams / icr else 0.0
@@ -86,29 +88,29 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
         )
     }
 
-    private fun lookupIsfSegment(segments: List<IsfSegmentDto>, refTime: LocalTime): Double {
+    private fun lookupIsfSegment(segments: List<IsfSegment>, refTime: LocalTime): Double {
         if (segments.isEmpty()) throw BusinessValidationException("Profile has no ISF segments")
         val match = segments
-            .filter { parseSegmentTime(it.time) <= refTime }
-            .maxByOrNull { parseSegmentTime(it.time) }
+            .filter { parseSegmentTime(it.startTime) <= refTime }
+            .maxByOrNull { parseSegmentTime(it.startTime) }
             ?: segments.last()
-        return match.value
+        return match.`value`
     }
 
-    private fun lookupIcrSegment(segments: List<IcrSegmentDto>, refTime: LocalTime): Double {
+    private fun lookupIcrSegment(segments: List<IcrSegment>, refTime: LocalTime): Double {
         if (segments.isEmpty()) throw BusinessValidationException("Profile has no ICR segments")
         val match = segments
-            .filter { parseSegmentTime(it.time) <= refTime }
-            .maxByOrNull { parseSegmentTime(it.time) }
+            .filter { parseSegmentTime(it.startTime) <= refTime }
+            .maxByOrNull { parseSegmentTime(it.startTime) }
             ?: segments.last()
-        return match.value
+        return match.`value`
     }
 
-    private fun lookupTargetSegment(segments: List<TargetSegmentDto>, refTime: LocalTime): Double {
+    private fun lookupTargetSegment(segments: List<TargetSegment>, refTime: LocalTime): Double {
         if (segments.isEmpty()) throw BusinessValidationException("Profile has no target segments")
         val match = segments
-            .filter { parseSegmentTime(it.time) <= refTime }
-            .maxByOrNull { parseSegmentTime(it.time) }
+            .filter { parseSegmentTime(it.startTime) <= refTime }
+            .maxByOrNull { parseSegmentTime(it.startTime) }
             ?: segments.last()
         return (match.low + match.high) / 2.0
     }

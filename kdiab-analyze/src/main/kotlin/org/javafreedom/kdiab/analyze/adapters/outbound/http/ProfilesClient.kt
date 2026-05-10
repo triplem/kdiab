@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
+import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 
 private val logger = KotlinLogging.logger {}
@@ -15,23 +16,8 @@ private const val LOG_BODY_MAX_CHARS = 200
 private const val DEFAULT_PAGE_SIZE = 50
 
 @Serializable
-data class ProfileDto(
-    val id: String,
-    val userId: String,
-    val status: String,
-    val name: String,
-    val createdAt: String? = null,
-    val validFrom: String? = null,
-    val previousProfileId: String? = null,
-    val activatedAt: String? = null,
-    val archivedAt: String? = null,
-    val analysisLow: Double? = null,
-    val analysisHigh: Double? = null,
-)
-
-@Serializable
 private data class PagedProfilesDto(
-    val items: List<ProfileDto>,
+    val items: List<Profile>,
     val page: Int,
     val size: Int,
     val totalCount: Long,
@@ -41,7 +27,7 @@ class ProfilesClient(
     private val httpClient: HttpClient,
     private val baseUrl: String,
 ) {
-    suspend fun getProfiles(userId: String, authorization: String, correlationId: String): List<ProfileDto> {
+    suspend fun getProfiles(userId: String, authorization: String, correlationId: String): List<Profile> {
         val start = System.currentTimeMillis()
         val response = httpClient.get("$baseUrl/api/v1/users/$userId/profiles") {
             parameter("page", 0)

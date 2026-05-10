@@ -1,3 +1,5 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
 plugins {
     alias(libs.plugins.asciidoctor)
     alias(libs.plugins.kotlin.jvm)
@@ -69,6 +71,9 @@ kotlin {
         main {
             kotlin.srcDir("src/main/kotlin")
             kotlin.srcDir("${layout.buildDirectory.get()}/generated/api/src/main/kotlin")
+            kotlin.srcDir("${layout.buildDirectory.get()}/generated/upstream-measures/src/main/kotlin")
+            kotlin.srcDir("${layout.buildDirectory.get()}/generated/upstream-treatments/src/main/kotlin")
+            kotlin.srcDir("${layout.buildDirectory.get()}/generated/upstream-profiles/src/main/kotlin")
             kotlin.exclude("**/AppMain.kt")
         }
     }
@@ -196,8 +201,68 @@ openApiGenerate {
     templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
 }
 
+val generateMeasuresModels by tasks.registering(GenerateTask::class) {
+    generatorName.set("kotlin-server")
+    inputSpec.set(layout.projectDirectory.file("../kdiab-measures/api/openapi.yaml").asFile.absolutePath)
+    outputDir.set("${layout.buildDirectory.get()}/generated/upstream-measures")
+    packageName.set("org.javafreedom.kdiab.analyze.api.upstream.measures")
+    modelPackage.set("org.javafreedom.kdiab.analyze.api.upstream.measures.models")
+    globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
+    schemaMappings.set(mapOf(
+        "MeasurePayload" to "kotlinx.serialization.json.JsonObject",
+    ))
+    importMappings.set(mapOf(
+        "JsonObject" to "kotlinx.serialization.json.JsonObject",
+    ))
+    configOptions.set(mapOf(
+        "library" to "ktor",
+        "dateLibrary" to "java8",
+        "serializationLibrary" to "kotlinx_serialization",
+    ))
+    typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
+    templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
+}
+
+val generateTreatmentsModels by tasks.registering(GenerateTask::class) {
+    generatorName.set("kotlin-server")
+    inputSpec.set(layout.projectDirectory.file("../kdiab-treatments/api/openapi.yaml").asFile.absolutePath)
+    outputDir.set("${layout.buildDirectory.get()}/generated/upstream-treatments")
+    packageName.set("org.javafreedom.kdiab.analyze.api.upstream.treatments")
+    modelPackage.set("org.javafreedom.kdiab.analyze.api.upstream.treatments.models")
+    globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
+    schemaMappings.set(mapOf(
+        "TreatmentPayload" to "kotlinx.serialization.json.JsonObject",
+    ))
+    importMappings.set(mapOf(
+        "JsonObject" to "kotlinx.serialization.json.JsonObject",
+    ))
+    configOptions.set(mapOf(
+        "library" to "ktor",
+        "dateLibrary" to "java8",
+        "serializationLibrary" to "kotlinx_serialization",
+    ))
+    typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
+    templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
+}
+
+val generateProfilesModels by tasks.registering(GenerateTask::class) {
+    generatorName.set("kotlin-server")
+    inputSpec.set(layout.projectDirectory.file("../kdiab-profiles/api/openapi.yaml").asFile.absolutePath)
+    outputDir.set("${layout.buildDirectory.get()}/generated/upstream-profiles")
+    packageName.set("org.javafreedom.kdiab.analyze.api.upstream.profiles")
+    modelPackage.set("org.javafreedom.kdiab.analyze.api.upstream.profiles.models")
+    globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
+    configOptions.set(mapOf(
+        "library" to "ktor",
+        "dateLibrary" to "java8",
+        "serializationLibrary" to "kotlinx_serialization",
+    ))
+    typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
+    templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
+}
+
 tasks.compileKotlin {
-    dependsOn(tasks.named("openApiGenerate"))
+    dependsOn(tasks.named("openApiGenerate"), generateMeasuresModels, generateTreatmentsModels, generateProfilesModels)
 }
 
 tasks.named<ProcessResources>("processResources") {
@@ -215,6 +280,9 @@ kover {
                 )
                 packages(
                     "org.javafreedom.kdiab.analyze.api",
+                    "org.javafreedom.kdiab.analyze.api.upstream.measures.models",
+                    "org.javafreedom.kdiab.analyze.api.upstream.treatments.models",
+                    "org.javafreedom.kdiab.analyze.api.upstream.profiles.models",
                     // Adapters require live Ktor test engine or running upstream services;
                     // covered by integration/e2e tests, not unit tests
                     "org.javafreedom.kdiab.analyze.adapters.inbound.web",

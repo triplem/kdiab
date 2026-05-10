@@ -7,6 +7,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
+import org.javafreedom.kdiab.calc.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.calc.domain.exception.UpstreamException
 
 private val logger = KotlinLogging.logger {}
@@ -15,38 +16,18 @@ private const val LOG_BODY_MAX_CHARS = 200
 private const val DEFAULT_PAGE_SIZE = 50
 
 @Serializable
-data class IsfSegmentDto(val time: String, val value: Double)
-
-@Serializable
-data class IcrSegmentDto(val time: String, val value: Double)
-
-@Serializable
-data class TargetSegmentDto(val time: String, val low: Double, val high: Double)
-
-@Serializable
-data class ProfileDto(
-    val id: String,
-    val userId: String,
-    val status: String,
-    val durationOfAction: Int = 180,
-    val isf: List<IsfSegmentDto> = emptyList(),
-    val icr: List<IcrSegmentDto> = emptyList(),
-    val targets: List<TargetSegmentDto> = emptyList(),
-)
-
-@Serializable
 private data class PagedProfilesDto(
-    val items: List<ProfileDto>,
-    val page: Int = 0,
-    val size: Int = DEFAULT_PAGE_SIZE,
-    val totalCount: Long = 0,
+    val items: List<Profile>,
+    val page: Int,
+    val size: Int,
+    val totalCount: Long,
 )
 
 class ProfilesClient(
     private val httpClient: HttpClient,
     private val baseUrl: String,
 ) {
-    suspend fun getActiveProfile(userId: String, authorization: String, correlationId: String): ProfileDto? {
+    suspend fun getActiveProfile(userId: String, authorization: String, correlationId: String): Profile? {
         val start = System.currentTimeMillis()
         val response = httpClient.get("$baseUrl/api/v1/users/$userId/profiles") {
             parameter("page", 0)
@@ -72,6 +53,6 @@ class ProfilesClient(
         }
         logger.info { "Fetched profiles from upstream in ${ms}ms [status=${response.status.value}]" }
         val paged = response.body<PagedProfilesDto>()
-        return paged.items.firstOrNull { it.status == "ACTIVE" }
+        return paged.items.firstOrNull { it.status == Profile.Status.ACTIVE }
     }
 }

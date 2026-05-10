@@ -1,6 +1,7 @@
 package org.javafreedom.kdiab.analyze.application.service
 
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
@@ -104,7 +105,7 @@ class AnalyticsService(
         val byHour = Array(HOURS_IN_DAY) { mutableListOf<Double>() }
 
         allMeasures.forEach { dto ->
-            if (dto.type != "CGM") return@forEach
+            if (dto.type != MeasureType.CGM) return@forEach
             val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach
             val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach
             val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
@@ -152,7 +153,7 @@ class AnalyticsService(
     ): CgmFetchResult {
         var mismatchCount = 0
         val readings = measuresClient.getMeasures(userId, authorization, correlationId, from, to)
-            .filter { dto -> dto.type == "CGM" }
+            .filter { dto -> dto.type == MeasureType.CGM }
             .mapNotNull { dto ->
                 val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
                 val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit

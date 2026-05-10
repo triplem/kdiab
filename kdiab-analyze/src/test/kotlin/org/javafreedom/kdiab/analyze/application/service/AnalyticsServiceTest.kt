@@ -5,11 +5,13 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasureDto
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureSource
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureStatus
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureType
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class AnalyticsServiceTest {
@@ -22,22 +24,26 @@ class AnalyticsServiceTest {
     private val from = "2024-01-01T00:00:00Z"
     private val to = "2024-01-31T23:59:59Z"
 
-    private fun cgmDto(sgv: Double, measuredAt: String = "2024-01-15T12:00:00Z") = MeasureDto(
+    private fun cgmDto(sgv: Double, measuredAt: String = "2024-01-15T12:00:00Z") = MeasureResponse(
         id = "m-1",
         userId = userId,
         measuredAt = measuredAt,
-        type = "CGM",
-        data = buildJsonObject { put("value", sgv); put("unit", "mg/dL") },
-        status = "ACTIVE",
+        createdAt = measuredAt,
+        type = MeasureType.CGM,
+        source = MeasureSource.MANUAL,
+        `data` = buildJsonObject { put("value", sgv); put("unit", "mg/dL") },
+        status = MeasureStatus.ACTIVE,
     )
 
-    private fun cgmDtoMmol(sgv: Double, measuredAt: String = "2024-01-15T12:00:00Z") = MeasureDto(
+    private fun cgmDtoMmol(sgv: Double, measuredAt: String = "2024-01-15T12:00:00Z") = MeasureResponse(
         id = "m-2",
         userId = userId,
         measuredAt = measuredAt,
-        type = "CGM",
-        data = buildJsonObject { put("value", sgv); put("unit", "mmol/L") },
-        status = "ACTIVE",
+        createdAt = measuredAt,
+        type = MeasureType.CGM,
+        source = MeasureSource.MANUAL,
+        `data` = buildJsonObject { put("value", sgv); put("unit", "mmol/L") },
+        status = MeasureStatus.ACTIVE,
     )
 
     // ── HbA1c ────────────────────────────────────────────────────────────────
@@ -80,9 +86,11 @@ class AnalyticsServiceTest {
     fun `getHba1c ignores non-CGM readings`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(200.0),
-            MeasureDto(
+            MeasureResponse(
                 id = "m-2", userId = userId, measuredAt = "2024-01-15T13:00:00Z",
-                type = "BGM", data = buildJsonObject { put("value", 180.0) }, status = "ACTIVE"
+                createdAt = "2024-01-15T13:00:00Z",
+                type = MeasureType.BGM, source = MeasureSource.MANUAL,
+                `data` = buildJsonObject { put("value", 180.0) }, status = MeasureStatus.ACTIVE
             ),
         )
         val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")

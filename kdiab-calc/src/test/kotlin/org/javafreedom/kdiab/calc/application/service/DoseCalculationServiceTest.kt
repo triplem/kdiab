@@ -3,11 +3,11 @@ package org.javafreedom.kdiab.calc.application.service
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import org.javafreedom.kdiab.calc.adapters.outbound.http.IcrSegmentDto
-import org.javafreedom.kdiab.calc.adapters.outbound.http.IsfSegmentDto
-import org.javafreedom.kdiab.calc.adapters.outbound.http.ProfileDto
 import org.javafreedom.kdiab.calc.adapters.outbound.http.ProfilesClient
-import org.javafreedom.kdiab.calc.adapters.outbound.http.TargetSegmentDto
+import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IcrSegment
+import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IsfSegment
+import org.javafreedom.kdiab.calc.api.upstream.profiles.models.Profile
+import org.javafreedom.kdiab.calc.api.upstream.profiles.models.TargetSegment
 import org.javafreedom.kdiab.calc.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.calc.domain.model.CgmTrend
 import org.javafreedom.kdiab.calc.domain.model.DoseRequest
@@ -21,14 +21,16 @@ class DoseCalculationServiceTest {
     private val profilesClient = mockk<ProfilesClient>()
     private val service = DoseCalculationService(profilesClient)
 
-    private val testProfile = ProfileDto(
+    private val testProfile = Profile(
         id = "profile-123",
         userId = "user-123",
-        status = "ACTIVE",
+        name = "Test Profile",
+        insulinType = "rapid",
         durationOfAction = 180,
-        isf = listOf(IsfSegmentDto("00:00", 50.0)),
-        icr = listOf(IcrSegmentDto("00:00", 15.0)),
-        targets = listOf(TargetSegmentDto("00:00", 100.0, 120.0)),
+        status = Profile.Status.ACTIVE,
+        isf = listOf(IsfSegment(startTime = "00:00", `value` = 50.0)),
+        icr = listOf(IcrSegment(startTime = "00:00", `value` = 15.0)),
+        targets = listOf(TargetSegment(startTime = "00:00", low = 100.0, high = 120.0)),
     )
 
     @Test

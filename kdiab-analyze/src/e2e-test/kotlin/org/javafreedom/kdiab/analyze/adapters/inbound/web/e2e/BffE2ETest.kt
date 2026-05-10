@@ -75,14 +75,15 @@ class BffE2ETest : BehaviorSpec({
     // Realistic mock data for sarah
     val cgmMeasureJson =
         """{"id":"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa","userId":"$sarahId",""" +
-        """"measuredAt":"2024-01-15T10:00:00Z","type":"CGM","source":"NIGHTSCOUT",""" +
+        """"measuredAt":"2024-01-15T10:00:00Z","createdAt":"2024-01-15T10:00:00Z","type":"CGM","source":"NIGHTSCOUT",""" +
         """"data":{"value":120.0,"unit":"mg/dL","trend":"Flat"},"status":"ACTIVE"}"""
     val bolusTreatmentJson =
         """{"id":"cccccccc-cccc-cccc-cccc-cccccccccccc","userId":"$sarahId",""" +
-        """"treatedAt":"2024-01-15T12:00:00Z","type":"BOLUS","data":{"units":3.5}}"""
+        """"treatedAt":"2024-01-15T12:00:00Z","createdAt":"2024-01-15T12:00:00Z","type":"BOLUS","data":{"units":3.5},"status":"ACTIVE"}"""
     val activeProfileJson =
         """{"id":"dddddddd-dddd-dddd-dddd-dddddddddddd","userId":"$sarahId","status":"ACTIVE",""" +
-        """"name":"Sarah Basal Profile","createdAt":"2024-01-01T00:00:00Z","validFrom":"2024-01-01T00:00:00Z"}"""
+        """"name":"Sarah Basal Profile","insulinType":"rapid","durationOfAction":180,""" +
+        """"createdAt":"2024-01-01T00:00:00Z","validFrom":"2024-01-01T00:00:00Z"}"""
 
     val measuresPagedJson = """{"items":[$cgmMeasureJson],"page":0,"size":200,"totalCount":1}"""
     val treatmentsJson = """{"items":[$bolusTreatmentJson],"page":0,"size":200,"totalCount":1}"""
@@ -91,8 +92,10 @@ class BffE2ETest : BehaviorSpec({
     // 10 CGM readings at 10:xx UTC on different days — all land in hourly bucket 10
     val agpCgmReadings = (1..10).joinToString(",") { day ->
         val dayStr = day.toString().padStart(2, '0')
+        val minStr = (day * 3).toString().padStart(2, '0')
         """{"id":"${"a".repeat(8)}-${"a".repeat(4)}-${"a".repeat(4)}-${"a".repeat(4)}-${day.toString().padStart(12, '0')}",""" +
-        """"userId":"$sarahId","measuredAt":"2024-01-${dayStr}T10:${(day * 3).toString().padStart(2, '0')}:00Z",""" +
+        """"userId":"$sarahId","measuredAt":"2024-01-${dayStr}T10:${minStr}:00Z",""" +
+        """"createdAt":"2024-01-${dayStr}T10:${minStr}:00Z",""" +
         """"type":"CGM","source":"NIGHTSCOUT","data":{"value":${100.0 + day * 2},"unit":"mg/dL","trend":"Flat"},""" +
         """"status":"ACTIVE"}"""
     }

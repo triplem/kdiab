@@ -10,6 +10,10 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureSource
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureStatus
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -24,16 +28,18 @@ class MeasuresClientTest {
     private val userId = "user-123"
     private val baseUrl = "http://measures"
 
-    private fun measure(id: String, sgv: Double = 120.0) = MeasureDto(
+    private fun measure(id: String, sgv: Double = 120.0) = MeasureResponse(
         id = id,
         userId = userId,
         measuredAt = "2024-01-15T12:00:00Z",
-        type = "CGM",
-        data = buildJsonObject { put("value", sgv); put("unit", "mg/dL") },
-        status = "ACTIVE",
+        createdAt = "2024-01-15T12:00:00Z",
+        type = MeasureType.CGM,
+        source = MeasureSource.MANUAL,
+        `data` = buildJsonObject { put("value", sgv); put("unit", "mg/dL") },
+        status = MeasureStatus.ACTIVE,
     )
 
-    private fun pagedJson(items: List<MeasureDto>, page: Int, size: Int, total: Long) =
+    private fun pagedJson(items: List<MeasureResponse>, page: Int, size: Int, total: Long) =
         buildString {
             append("""{"items":""")
             append(Json.encodeToString(items))

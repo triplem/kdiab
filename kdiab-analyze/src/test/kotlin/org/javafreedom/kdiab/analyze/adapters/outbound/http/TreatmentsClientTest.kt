@@ -21,7 +21,7 @@ class TreatmentsClientTest {
     private val baseUrl = "http://treatments"
 
     private fun treatmentJson(id: String) =
-        """{"id":"$id","userId":"$userId","treatedAt":"2024-01-15T08:00:00Z","type":"BOLUS","data":{"insulin":2.5}}"""
+        """{"id":"$id","userId":"$userId","treatedAt":"2024-01-15T08:00:00Z","createdAt":"2024-01-15T08:00:00Z","type":"BOLUS","data":{"insulin":2.5},"status":"ACTIVE"}"""
 
     private fun pagedJson(items: String, totalCount: Int) =
         """{"items":[$items],"page":0,"size":200,"totalCount":$totalCount}"""
@@ -42,7 +42,7 @@ class TreatmentsClientTest {
         val result = client.getTreatments(userId, auth, correlationId)
         assertEquals(2, result.size)
         assertEquals("t-1", result[0].id)
-        assertEquals("BOLUS", result[0].type)
+        assertEquals("BOLUS", result[0].type.value)
     }
 
     @Test
