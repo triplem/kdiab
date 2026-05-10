@@ -35,6 +35,7 @@ class ProfilesServiceTest {
 
     @Test
     fun `getProfiles includes ACTIVE profiles`() = runTest {
+        // Upstream already filters to ACTIVE+ARCHIVED, so mock returns only those
         coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", Profile.Status.ACTIVE),
         )
@@ -45,34 +46,13 @@ class ProfilesServiceTest {
 
     @Test
     fun `getProfiles includes ARCHIVED profiles`() = runTest {
+        // Upstream already filters to ACTIVE+ARCHIVED, so mock returns only those
         coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", Profile.Status.ARCHIVED),
         )
         val result = service.getProfiles(userId, from, to, auth, "")
         assertEquals(1, result.profiles.size)
         assertEquals("ARCHIVED", result.profiles.first().status)
-    }
-
-    @Test
-    fun `getProfiles excludes DRAFT profiles`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
-            profile("p1", Profile.Status.DRAFT),
-            profile("p2", Profile.Status.ACTIVE),
-        )
-        val result = service.getProfiles(userId, from, to, auth, "")
-        assertEquals(1, result.profiles.size)
-        assertEquals("p2", result.profiles.first().id)
-    }
-
-    @Test
-    fun `getProfiles excludes PROPOSED profiles`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
-            profile("p1", Profile.Status.PROPOSED),
-            profile("p2", Profile.Status.ACTIVE),
-        )
-        val result = service.getProfiles(userId, from, to, auth, "")
-        assertEquals(1, result.profiles.size)
-        assertEquals("p2", result.profiles.first().id)
     }
 
     @Test
@@ -98,11 +78,10 @@ class ProfilesServiceTest {
 
     @Test
     fun `getProfiles returns both ACTIVE and ARCHIVED when mixed`() = runTest {
+        // Upstream already filters to ACTIVE+ARCHIVED — mock reflects that
         coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", Profile.Status.ARCHIVED),
             profile("p2", Profile.Status.ACTIVE),
-            profile("p3", Profile.Status.DRAFT),
-            profile("p4", Profile.Status.PROPOSED),
         )
         val result = service.getProfiles(userId, from, to, auth, "")
         assertEquals(2, result.profiles.size)

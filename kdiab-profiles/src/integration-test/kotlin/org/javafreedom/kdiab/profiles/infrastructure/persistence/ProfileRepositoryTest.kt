@@ -224,6 +224,47 @@ class ProfileRepositoryTest {
         assertNotNull(repository.findById(active.id))
     }
 
+    // ── findByStatuses / countByStatuses ──────────────────────────────────────
+
+    @Test
+    fun `findByStatuses returns only matching statuses`() = runBlocking {
+        val userId = Uuid.random()
+        val draft = createTestProfile(userId = userId, name = "Draft", status = ProfileStatus.DRAFT)
+        val active = createTestProfile(userId = userId, name = "Active", status = ProfileStatus.ACTIVE)
+        val archived = createTestProfile(userId = userId, name = "Archived", status = ProfileStatus.ARCHIVED)
+        repository.save(draft)
+        repository.save(active)
+        repository.save(archived)
+
+        val results = repository.findByStatuses(userId, listOf(ProfileStatus.ACTIVE, ProfileStatus.ARCHIVED))
+        assertEquals(2, results.size)
+        assert(results.none { it.status == ProfileStatus.DRAFT })
+    }
+
+    @Test
+    fun `findByStatuses returns empty list when no profiles match`() = runBlocking {
+        val userId = Uuid.random()
+        val draft = createTestProfile(userId = userId, name = "Draft", status = ProfileStatus.DRAFT)
+        repository.save(draft)
+
+        val results = repository.findByStatuses(userId, listOf(ProfileStatus.ACTIVE, ProfileStatus.ARCHIVED))
+        assertEquals(0, results.size)
+    }
+
+    @Test
+    fun `countByStatuses counts only matching statuses`() = runBlocking {
+        val userId = Uuid.random()
+        val draft = createTestProfile(userId = userId, name = "Draft", status = ProfileStatus.DRAFT)
+        val active = createTestProfile(userId = userId, name = "Active", status = ProfileStatus.ACTIVE)
+        val archived = createTestProfile(userId = userId, name = "Archived", status = ProfileStatus.ARCHIVED)
+        repository.save(draft)
+        repository.save(active)
+        repository.save(archived)
+
+        val count = repository.countByStatuses(userId, listOf(ProfileStatus.ACTIVE, ProfileStatus.ARCHIVED))
+        assertEquals(2L, count)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun createTestProfile(

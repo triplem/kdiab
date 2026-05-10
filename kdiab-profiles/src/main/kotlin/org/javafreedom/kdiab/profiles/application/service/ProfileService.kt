@@ -26,9 +26,22 @@ class ProfileService(private val profileRepository: ProfileRepository) {
 
         suspend fun getProfile(id: Uuid): Profile? = profileRepository.findById(id)
 
-        suspend fun getProfiles(userId: Uuid, page: Int = 0, size: Int = 50): PagedProfiles {
-                val items = profileRepository.findAllByUserId(userId, page, size)
-                val totalCount = profileRepository.countByUserId(userId)
+        suspend fun getProfiles(
+                userId: Uuid,
+                page: Int = 0,
+                size: Int = 50,
+                statuses: List<ProfileStatus> = emptyList()
+        ): PagedProfiles {
+                val items = if (statuses.isEmpty()) {
+                        profileRepository.findAllByUserId(userId, page, size)
+                } else {
+                        profileRepository.findByStatuses(userId, statuses, page, size)
+                }
+                val totalCount = if (statuses.isEmpty()) {
+                        profileRepository.countByUserId(userId)
+                } else {
+                        profileRepository.countByStatuses(userId, statuses)
+                }
                 return PagedProfiles(items = items, page = page, size = size, totalCount = totalCount)
         }
 

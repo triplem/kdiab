@@ -179,6 +179,18 @@ paths:
             default: 50
             minimum: 1
             maximum: 200
+        - name: status
+          in: query
+          required: false
+          description: Filter by profile status. Multiple values allowed. If omitted, all statuses are returned.
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [DRAFT, PROPOSED, ACTIVE, ARCHIVED]
+            default: []
+          style: form
+          explode: true
       responses:
         '200':
           description: A paginated list of profiles
