@@ -412,6 +412,24 @@ label {
 .field-error { color: var(--accent-danger); font-size: 0.82rem; margin-top: 0.2rem; }
 .form-group { margin-bottom: 1rem; }
 
+/* Timeline chart tooltip */
+.timeline-tooltip {
+  background: var(--tooltip-bg);
+  border: 1px solid var(--tooltip-border);
+  border-radius: 8px;
+  color: var(--tooltip-text);
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  max-width: 260px;
+  pointer-events: none;
+}
+.timeline-tooltip-time {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
 /* Tooltip */
 .tooltip-wrapper { position: relative; display: inline-flex; align-items: center; gap: 0.3rem; }
 .tooltip-icon { cursor: help; color: var(--text-secondary); font-size: 0.85rem; border: 1px solid var(--border-color); border-radius: 50%; width: 1.1rem; height: 1.1rem; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
