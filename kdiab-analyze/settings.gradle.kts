@@ -14,3 +14,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "kdiab-analyze"
+
+includeBuild("../kdiab-common")

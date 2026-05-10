@@ -368,7 +368,7 @@ class MeasureRoutesTest {
     @Test
     fun `status pages - 409 on ConflictException from repository`() = routeTest { repo ->
         coEvery { repo.save(any()) } throws
-            org.javafreedom.kdiab.measures.domain.exception.ConflictException("duplicate")
+            org.javafreedom.kdiab.common.domain.exception.ConflictException("duplicate")
         val resp = client.post("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
@@ -380,7 +380,7 @@ class MeasureRoutesTest {
     @Test
     fun `status pages - 400 on BusinessValidationException from repository`() = routeTest { repo ->
         coEvery { repo.save(any()) } throws
-            org.javafreedom.kdiab.measures.domain.exception.BusinessValidationException("invalid data")
+            org.javafreedom.kdiab.common.domain.exception.BusinessValidationException("invalid data")
         val resp = client.post("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())

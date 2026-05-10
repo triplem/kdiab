@@ -15,7 +15,7 @@ import org.javafreedom.kdiab.measures.api.models.MeasureResponse
 import org.javafreedom.kdiab.measures.api.models.MeasureSource as ApiMeasureSource
 import org.javafreedom.kdiab.measures.api.models.MeasureStatus as ApiMeasureStatus
 import org.javafreedom.kdiab.measures.api.models.MeasureType as ApiMeasureType
-import org.javafreedom.kdiab.measures.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.measures.domain.model.Measure as DomainMeasure
 import org.javafreedom.kdiab.measures.domain.model.MeasureSource
 import org.javafreedom.kdiab.measures.domain.model.MeasureStatus

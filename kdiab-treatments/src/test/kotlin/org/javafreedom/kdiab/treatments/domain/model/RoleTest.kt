@@ -1,5 +1,6 @@
 package org.javafreedom.kdiab.treatments.domain.model
 
+import org.javafreedom.kdiab.common.domain.model.Role
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

@@ -5,8 +5,10 @@ import kotlin.uuid.Uuid
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.datetime.LocalTime
-import org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException
-import org.javafreedom.kdiab.profiles.domain.exception.ConflictException
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.profiles.domain.model.PagedProfiles
 import org.javafreedom.kdiab.profiles.domain.model.Profile
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
@@ -89,8 +91,7 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                 checkOwnership(profile, userId)
 
                 if (profile.status != ProfileStatus.PROPOSED) {
-                        throw org.javafreedom.kdiab.profiles.domain.exception
-                                .BusinessValidationException("Only PROPOSED profiles can be accepted")
+                        throw BusinessValidationException("Only PROPOSED profiles can be accepted")
                 }
 
                 profile.validate()
@@ -108,8 +109,7 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                 checkOwnership(profile, userId)
 
                 if (profile.status != ProfileStatus.PROPOSED) {
-                        throw org.javafreedom.kdiab.profiles.domain.exception
-                                .BusinessValidationException("Only PROPOSED profiles can be rejected")
+                        throw BusinessValidationException("Only PROPOSED profiles can be rejected")
                 }
 
                 val rejected = profile.copy(
@@ -169,8 +169,7 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                 if (profile.status == ProfileStatus.ACTIVE ||
                                 profile.status == ProfileStatus.ARCHIVED
                 ) {
-                        throw org.javafreedom.kdiab.profiles.domain.exception
-                                .BusinessValidationException(
+                        throw BusinessValidationException(
                                         "Cannot delete an active or archived profile"
                                 )
                 }
@@ -191,8 +190,7 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                 checkOwnership(profile, userId)
 
                 if (profile.status == ProfileStatus.ARCHIVED) {
-                        throw org.javafreedom.kdiab.profiles.domain.exception
-                                .BusinessValidationException(
+                        throw BusinessValidationException(
                                         "Cannot modify segments of an archived profile"
                                 )
                 }
@@ -249,8 +247,7 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                 }
 
                 if (newSize == originalSize) {
-                        throw org.javafreedom.kdiab.profiles.domain.exception
-                                .BusinessValidationException(
+                        throw BusinessValidationException(
                                         "No $segmentType segment found at $startTime"
                                 )
                 }
@@ -276,13 +273,11 @@ class ProfileService(private val profileRepository: ProfileRepository) {
 
         private suspend fun getProfileOrThrow(id: Uuid): Profile =
                 profileRepository.findById(id)
-                        ?: throw org.javafreedom.kdiab.profiles.domain.exception
-                                .ResourceNotFoundException("Profile not found")
+                        ?: throw ResourceNotFoundException("Profile not found")
 
         private fun checkOwnership(profile: Profile, userId: Uuid) {
                 if (profile.userId != userId) {
-                        throw org.javafreedom.kdiab.profiles.domain.exception
-                                .AuthorizationException("Profile does not belong to user")
+                        throw AuthorizationException("Profile does not belong to user")
                 }
         }
 

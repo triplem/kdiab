@@ -11,9 +11,9 @@ import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.profiles.application.service.InsulinService
-import org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException
-import org.javafreedom.kdiab.profiles.plugins.ErrorResponse
-import org.javafreedom.kdiab.profiles.plugins.UserPrincipal
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.plugins.ErrorResponse
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.profiles.api.models.Insulin as ApiInsulin
 import org.javafreedom.kdiab.profiles.domain.model.Insulin as DomainInsulin
 
@@ -26,7 +26,7 @@ private fun isValidInsulinName(name: String) = name.isNotBlank() && name.length 
 data class InsulinRequest(val name: String)
 
 fun Route.insulinRoutes(service: InsulinService) {
-    authenticate {
+    authenticate("auth-jwt") {
         route("/api/v1/insulins") {
             get {
                 val insulins = service.findAll().map { it.toApi() }

@@ -2,7 +2,7 @@
 package org.javafreedom.kdiab.profiles.application.service
 
 import kotlin.uuid.Uuid
-import org.javafreedom.kdiab.profiles.domain.exception.ConflictException
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.profiles.domain.model.Insulin as DomainInsulin
 import org.javafreedom.kdiab.profiles.domain.repository.InsulinRepository
 

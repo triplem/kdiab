@@ -1,4 +1,4 @@
-package org.javafreedom.kdiab.measures.plugins
+package org.javafreedom.kdiab.common.plugins
 
 import kotlinx.serialization.Serializable
 

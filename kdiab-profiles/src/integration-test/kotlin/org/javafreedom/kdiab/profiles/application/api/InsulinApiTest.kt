@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.profiles.application.service.InsulinService
 import org.javafreedom.kdiab.profiles.domain.model.Insulin
-import org.javafreedom.kdiab.profiles.domain.model.Role
+import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.profiles.domain.repository.InsulinRepository
 import org.javafreedom.kdiab.profiles.module
 
@@ -98,7 +98,7 @@ class InsulinApiTest {
     fun `POST insulin returns 409 when a ConflictException is raised`() = testApplication {
         val repo = mockk<InsulinRepository>()
         coEvery { repo.create("Fiasp") } throws
-            org.javafreedom.kdiab.profiles.domain.exception.ConflictException(
+            org.javafreedom.kdiab.common.domain.exception.ConflictException(
                 "An insulin with that name already exists"
             )
         setupApp(repo)
@@ -135,7 +135,7 @@ class InsulinApiTest {
         val repo = mockk<InsulinRepository>()
         val id = Uuid.random()
         coEvery { repo.update(id, "Fiasp") } throws
-            org.javafreedom.kdiab.profiles.domain.exception.ConflictException(
+            org.javafreedom.kdiab.common.domain.exception.ConflictException(
                 "An insulin with that name already exists"
             )
         setupApp(repo)

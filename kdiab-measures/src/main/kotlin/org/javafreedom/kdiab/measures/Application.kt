@@ -21,10 +21,16 @@ import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.measures.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository
-import org.javafreedom.kdiab.measures.plugins.configureLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.server.plugins.statuspages.*
+import org.javafreedom.kdiab.common.plugins.ErrorResponse
+import org.javafreedom.kdiab.common.plugins.configureLogging
+import org.javafreedom.kdiab.common.plugins.configureSecurity
+import org.javafreedom.kdiab.common.plugins.configureStatusPages
 import org.javafreedom.kdiab.measures.plugins.configureMetrics
-import org.javafreedom.kdiab.measures.plugins.configureSecurity
-import org.javafreedom.kdiab.measures.plugins.configureStatusPages
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
+
+private val logger = KotlinLogging.logger {}
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -36,7 +42,20 @@ fun Application.module(
     configureLogging()
     configureMetrics()
     configureSecurity()
-    configureStatusPages()
+    configureStatusPages {
+        exception<ExposedSQLException> { call, cause ->
+            val sqlState = cause.cause?.let { (it as? java.sql.SQLException)?.sqlState }
+            if (sqlState == "23505") {
+                logger.warn(cause) { "Unique constraint violation" }
+                call.respond(HttpStatusCode.Conflict,
+                    ErrorResponse(HttpStatusCode.Conflict.value, cause.message ?: "Conflict"))
+            } else {
+                logger.error(cause) { "Database error (SQL state: $sqlState)" }
+                call.respond(HttpStatusCode.InternalServerError,
+                    ErrorResponse(HttpStatusCode.InternalServerError.value, "Internal Server Error"))
+            }
+        }
+    }
     val prettyPrint = environment.config.propertyOrNull("json.prettyPrint")
         ?.getString()?.toBoolean() ?: false
     install(ContentNegotiation) {

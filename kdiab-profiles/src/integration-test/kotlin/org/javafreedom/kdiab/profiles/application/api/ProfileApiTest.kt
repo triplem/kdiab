@@ -14,13 +14,13 @@ import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
-import org.javafreedom.kdiab.profiles.domain.exception.AuthorizationException
-import org.javafreedom.kdiab.profiles.domain.exception.ConflictException
-import org.javafreedom.kdiab.profiles.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.profiles.domain.model.PagedProfiles
 import org.javafreedom.kdiab.profiles.domain.model.Profile
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
-import org.javafreedom.kdiab.profiles.domain.model.Role
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.profiles.module

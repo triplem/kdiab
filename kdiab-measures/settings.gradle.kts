@@ -14,3 +14,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "kdiab-measures"
+
+includeBuild("../kdiab-common")

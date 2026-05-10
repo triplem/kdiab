@@ -14,3 +14,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "kdiab-carbs"
+
+includeBuild("../kdiab-common")

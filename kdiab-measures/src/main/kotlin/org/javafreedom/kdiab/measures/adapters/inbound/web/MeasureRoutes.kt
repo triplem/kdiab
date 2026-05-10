@@ -22,11 +22,11 @@ import org.javafreedom.kdiab.measures.api.models.BulkMeasureRequest
 import org.javafreedom.kdiab.measures.api.models.MeasureResponse
 import org.javafreedom.kdiab.measures.api.models.UpdateMeasureRequest
 import org.javafreedom.kdiab.measures.application.service.MeasureService
-import org.javafreedom.kdiab.measures.domain.exception.AuthorizationException
-import org.javafreedom.kdiab.measures.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.measures.domain.model.MeasureStatus
 import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
-import org.javafreedom.kdiab.measures.plugins.UserPrincipal
 
 private const val DEFAULT_PAGE_SIZE = 50
 private const val MAX_PAGE_SIZE = 200

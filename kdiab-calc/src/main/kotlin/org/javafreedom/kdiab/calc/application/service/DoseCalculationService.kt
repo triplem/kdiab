@@ -9,8 +9,8 @@ import org.javafreedom.kdiab.calc.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IcrSegment
 import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IsfSegment
 import org.javafreedom.kdiab.calc.api.upstream.profiles.models.TargetSegment
-import org.javafreedom.kdiab.calc.domain.exception.BusinessValidationException
-import org.javafreedom.kdiab.calc.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.calc.domain.model.CgmTrend
 import org.javafreedom.kdiab.calc.domain.model.DoseBreakdown
 import org.javafreedom.kdiab.calc.domain.model.DoseRequest

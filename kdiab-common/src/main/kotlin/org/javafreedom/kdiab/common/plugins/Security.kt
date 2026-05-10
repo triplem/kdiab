@@ -1,16 +1,25 @@
-package org.javafreedom.kdiab.measures.plugins
+@file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+package org.javafreedom.kdiab.common.plugins
 
 import com.auth0.jwk.JwkProviderBuilder
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.server.application.*
-import java.net.URI
-import java.util.concurrent.TimeUnit
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import java.net.URI
+import java.util.concurrent.TimeUnit
 import kotlin.uuid.Uuid
-import org.javafreedom.kdiab.measures.domain.model.Role
-@Suppress("ReturnCount", "UnreachableCode")
+import org.javafreedom.kdiab.common.domain.exception.AuthenticationException
+import org.javafreedom.kdiab.common.domain.model.Role
+
+private const val JWK_CACHE_MAX_SIZE = 10L
+private const val JWK_CACHE_EXPIRES_IN = 24L
+private const val JWK_RATE_LIMIT_BUCKET_SIZE = 10L
+private const val JWK_RATE_LIMIT_REFILL_RATE = 1L
+private const val JWT_ACCEPT_LEEWAY = 3L
+
+@Suppress("ReturnCount")
 private fun buildPrincipal(credential: JWTCredential, jwtAudience: String): UserPrincipal? {
     if (credential.payload.audience?.contains(jwtAudience) != true) return null
     val userId = runCatching { Uuid.parse(credential.payload.subject) }.getOrNull() ?: return null
@@ -24,14 +33,9 @@ private fun buildPrincipal(credential: JWTCredential, jwtAudience: String): User
         ?: emptySet()
     val glucoseUnit = credential.payload.getClaim("glucose_unit").asString() ?: "mg/dL"
     val weightUnit = credential.payload.getClaim("weight_unit").asString() ?: "kg"
-    return UserPrincipal(userId, roles, allowedPatients, glucoseUnit, weightUnit)
+    val audiences = credential.payload.audience ?: emptyList()
+    return UserPrincipal(userId, roles, allowedPatients, glucoseUnit, weightUnit, audiences)
 }
-
-private const val JWK_CACHE_MAX_SIZE = 10L
-private const val JWK_CACHE_EXPIRES_IN = 24L
-private const val JWK_RATE_LIMIT_BUCKET_SIZE = 10L
-private const val JWK_RATE_LIMIT_REFILL_RATE = 1L
-private const val JWT_ACCEPT_LEEWAY = 3L
 
 fun Application.configureSecurity() {
     val jwtAudience = environment.config.property("jwt.audience").getString()
@@ -41,7 +45,7 @@ fun Application.configureSecurity() {
     val jwtSecret = environment.config.propertyOrNull("jwt.secret")?.getString()
     check(!isTest || jwtSecret != null) {
         "jwt.secret (JWT_SECRET env var) must be set explicitly when jwt.test=true. " +
-        "Do not use the test JWT mode in production."
+            "Do not use the test JWT mode in production."
     }
 
     val jwkProvider = if (!isTest) {
@@ -53,7 +57,7 @@ fun Application.configureSecurity() {
             (jwksUri.host != null && !jwksUri.host.contains('.'))
         check(isInternal || jwksUri.scheme == "https") {
             "JWKS URL must use HTTPS for non-local endpoints (got '$jwksUrl'). " +
-            "Set JWKS_URL to a secure https:// endpoint."
+                "Set JWKS_URL to a secure https:// endpoint."
         }
         JwkProviderBuilder(jwksUri.toURL())
             .cached(JWK_CACHE_MAX_SIZE, JWK_CACHE_EXPIRES_IN, TimeUnit.HOURS)
@@ -64,7 +68,7 @@ fun Application.configureSecurity() {
     authentication {
         jwt("auth-jwt") {
             realm = jwtRealm
-            
+
             if (isTest) {
                 verifier(
                     JWT.require(Algorithm.HMAC256(requireNotNull(jwtSecret)))
@@ -89,11 +93,12 @@ data class UserPrincipal(
     val allowedPatients: Set<Uuid>,
     val glucoseUnit: String = "mg/dL",
     val weightUnit: String = "kg",
+    val audiences: List<String> = emptyList(),
 ) {
     fun isAdmin() = roles.contains(Role.ADMIN)
     fun isDoctor() = roles.contains(Role.DOCTOR)
     fun canAccess(targetUserId: Uuid) =
-            userId == targetUserId ||
-                    isAdmin() ||
-                    (isDoctor() && allowedPatients.contains(targetUserId))
+        userId == targetUserId ||
+            isAdmin() ||
+            (isDoctor() && allowedPatients.contains(targetUserId))
 }
