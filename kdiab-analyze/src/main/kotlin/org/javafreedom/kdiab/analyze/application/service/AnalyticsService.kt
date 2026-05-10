@@ -32,11 +32,11 @@ private const val MIN_READINGS_MEANINGFUL = 4032
 // At least half of all 24 UTC hours must have at least one reading
 private const val MIN_COVERED_HOURS = 12
 
-private const val P10 = 10
-private const val P25 = 25
-private const val P50 = 50
-private const val P75 = 75
-private const val P90 = 90
+private const val AGP_TENTH_PERCENTILE = 10
+private const val AGP_LOWER_QUARTILE = 25
+private const val AGP_MEDIAN_PERCENTILE = 50
+private const val AGP_UPPER_QUARTILE = 75
+private const val AGP_NINETIETH_PERCENTILE = 90
 private const val PERCENT_FACTOR = 100.0
 
 private data class CgmFetchResult(val readings: List<Double>, val mismatchCount: Int)
@@ -122,11 +122,11 @@ class AnalyticsService(
                 values.sort()
                 AgpHourlyData(
                     hour = hour,
-                    p10 = percentile(values, P10),
-                    p25 = percentile(values, P25),
-                    median = percentile(values, P50),
-                    p75 = percentile(values, P75),
-                    p90 = percentile(values, P90),
+                    p10 = percentile(values, AGP_TENTH_PERCENTILE),
+                    p25 = percentile(values, AGP_LOWER_QUARTILE),
+                    median = percentile(values, AGP_MEDIAN_PERCENTILE),
+                    p75 = percentile(values, AGP_UPPER_QUARTILE),
+                    p90 = percentile(values, AGP_NINETIETH_PERCENTILE),
                     count = values.size,
                 )
             }
