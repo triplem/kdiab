@@ -11,6 +11,13 @@ interface ProfileRepository {
     suspend fun findById(id: Uuid): Profile?
     suspend fun findAllByUserId(userId: Uuid, page: Int = 0, size: Int = 50): List<Profile>
     suspend fun countByUserId(userId: Uuid): Long
+    suspend fun findByStatuses(
+        userId: Uuid,
+        statuses: List<ProfileStatus>,
+        page: Int = 0,
+        size: Int = 50
+    ): List<Profile>
+    suspend fun countByStatuses(userId: Uuid, statuses: List<ProfileStatus>): Long
     suspend fun findActiveByUserId(userId: Uuid): Profile?
     suspend fun update(profile: Profile): Profile
     suspend fun findHistory(

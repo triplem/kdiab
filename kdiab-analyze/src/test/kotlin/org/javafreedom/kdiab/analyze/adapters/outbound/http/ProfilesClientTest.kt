@@ -76,6 +76,23 @@ class ProfilesClientTest {
         assertEquals(correlationId, capturedCorrelationId)
     }
 
+    @Test
+    fun `getProfiles sends status=ACTIVE and status=ARCHIVED query params`() = runTest {
+        var capturedUrl: String? = null
+        val engine = MockEngine { request ->
+            capturedUrl = request.url.toString()
+            respond(
+                content = pagedResponse(totalCount = 0),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        buildClient(engine).getProfiles(userId, auth, correlationId)
+        val url = capturedUrl ?: ""
+        assert(url.contains("status=ACTIVE")) { "Expected status=ACTIVE in URL but got: $url" }
+        assert(url.contains("status=ARCHIVED")) { "Expected status=ARCHIVED in URL but got: $url" }
+    }
+
     private fun buildClient(engine: MockEngine): ProfilesClient =
         ProfilesClient(engine, baseUrl)
 }

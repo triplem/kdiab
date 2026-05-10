@@ -118,6 +118,37 @@ class ExposedProfileRepository(
         }
     }
 
+    override suspend fun findByStatuses(
+        userId: Uuid,
+        statuses: List<ProfileStatus>,
+        page: Int,
+        size: Int
+    ): List<Profile> = withContext(ioDispatcher) {
+        suspendTransaction {
+            (Profiles innerJoin ProfileStatuses).selectAll()
+                .where {
+                    (Profiles.userId eq userId) and
+                        (ProfileStatuses.status inList statuses)
+                }
+                .orderBy(Profiles.createdAt, SortOrder.DESC)
+                .limit(size)
+                .offset(page.toLong() * size.toLong())
+                .map { mapToProfile(it) }
+        }
+    }
+
+    override suspend fun countByStatuses(userId: Uuid, statuses: List<ProfileStatus>): Long =
+        withContext(ioDispatcher) {
+            suspendTransaction {
+                (Profiles innerJoin ProfileStatuses).selectAll()
+                    .where {
+                        (Profiles.userId eq userId) and
+                            (ProfileStatuses.status inList statuses)
+                    }
+                    .count()
+            }
+        }
+
     override suspend fun findActiveByUserId(userId: Uuid): Profile? = withContext(ioDispatcher) {
         suspendTransaction {
             (Profiles innerJoin ProfileStatuses).selectAll()

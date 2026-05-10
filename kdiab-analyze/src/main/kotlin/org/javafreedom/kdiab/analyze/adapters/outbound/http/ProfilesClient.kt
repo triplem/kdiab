@@ -32,7 +32,12 @@ class ProfilesClient(
         ).apply { setBearerToken(token) }
 
         val start = System.currentTimeMillis()
-        val httpResponse = api.listProfiles(userId = userId, page = 0, size = DEFAULT_PAGE_SIZE)
+        val httpResponse = api.listProfiles(
+            userId = userId,
+            page = 0,
+            size = DEFAULT_PAGE_SIZE,
+            status = listOf("ACTIVE", "ARCHIVED"),
+        )
         val ms = System.currentTimeMillis() - start
         if (!httpResponse.success) {
             val requestUrl = httpResponse.response.request.url.toString()

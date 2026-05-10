@@ -17,6 +17,7 @@ import org.javafreedom.kdiab.profiles.api.models.Profile as ApiProfile
 import org.javafreedom.kdiab.profiles.api.models.RejectProfileRequest
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.profiles.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 
@@ -66,8 +67,11 @@ private fun Route.listProfiles(profileService: ProfileService, auditLogRepositor
         val page = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(0) ?: 0
         val size = call.request.queryParameters["size"]?.toIntOrNull()
             ?.coerceIn(1, MAX_PAGE_SIZE) ?: DEFAULT_PAGE_SIZE
+        val statuses = call.request.queryParameters.getAll("status")
+            ?.mapNotNull { s -> runCatching { ProfileStatus.valueOf(s) }.getOrNull() }
+            ?: emptyList()
 
-        val paged = profileService.getProfiles(targetUserId, page, size)
+        val paged = profileService.getProfiles(targetUserId, page, size, statuses)
         call.respond(PagedProfilesResponse(
             items = paged.items.map { it.toApi() },
             page = paged.page,

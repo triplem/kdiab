@@ -489,6 +489,31 @@ class ProfileApiTest {
                 }.apply { assertEquals(HttpStatusCode.OK, status) }
         }
 
+        @Test
+        fun `listProfiles - status query params are forwarded to service`() = testApplication {
+                val profileService = mockk<ProfileService>()
+                setupApp(profileService)
+                val client = createClient { install(ContentNegotiation) { json() } }
+                val patientId = Uuid.random()
+                val token = generateToken(Role.PATIENT, patientId)
+                val expectedStatuses = listOf(ProfileStatus.ACTIVE, ProfileStatus.ARCHIVED)
+
+                // This mock will only match when statuses contains ACTIVE and ARCHIVED
+                coEvery {
+                        profileService.getProfiles(
+                                patientId,
+                                any(),
+                                any(),
+                                expectedStatuses
+                        )
+                } returns PagedProfiles(items = emptyList(), page = 0, size = 50, totalCount = 0L)
+
+                val response = client.get("/api/v1/users/$patientId/profiles?status=ACTIVE&status=ARCHIVED") {
+                        header(HttpHeaders.Authorization, "Bearer $token")
+                }
+                assertEquals(HttpStatusCode.OK, response.status)
+        }
+
         // ── createProfile — cross-user 403 ────────────────────────────────────────
 
         @Test

@@ -115,6 +115,36 @@ class ProfileServiceTest {
         }
 
         @Test
+        fun `getProfiles with statuses delegates to findByStatuses and countByStatuses`() = runBlocking {
+                val userId = Uuid.random()
+                val statuses = listOf(ProfileStatus.ACTIVE, ProfileStatus.ARCHIVED)
+                val profiles = listOf(
+                        Profile(
+                                userId = userId,
+                                name = "Active Profile",
+                                insulinType = "Fiasp",
+                                durationOfAction = 180,
+                                status = ProfileStatus.ACTIVE,
+                                basal = emptyList(),
+                                icr = emptyList(),
+                                isf = emptyList(),
+                                targets = emptyList()
+                        )
+                )
+
+                coEvery { repository.findByStatuses(userId, statuses, 0, 50) } returns profiles
+                coEvery { repository.countByStatuses(userId, statuses) } returns 1L
+
+                val result = service.getProfiles(userId, page = 0, size = 50, statuses = statuses)
+
+                assertEquals(PagedProfiles(items = profiles, page = 0, size = 50, totalCount = 1L), result)
+                coVerify(exactly = 1) { repository.findByStatuses(userId, statuses, 0, 50) }
+                coVerify(exactly = 1) { repository.countByStatuses(userId, statuses) }
+                coVerify(exactly = 0) { repository.findAllByUserId(any(), any(), any()) }
+                coVerify(exactly = 0) { repository.countByUserId(any()) }
+        }
+
+        @Test
         fun `getActiveProfile should return active profile`() = runBlocking {
                 val userId = Uuid.random()
                 val profile =
