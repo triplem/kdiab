@@ -9,40 +9,111 @@ Use it when you need canonical API references, not guesses.
 
 **API docs**: https://kotlinlang.org/api/kotlinx-datetime/kotlinx-datetime/
 
-### Imports
+> **Kotlin 2.1 / kotlinx-datetime 0.7+ split**: `Clock` and `Instant` moved to the Kotlin stdlib (`kotlin.time`). The `kotlinx.datetime` package still owns `LocalDate`, `LocalTime`, `LocalDateTime`, `TimeZone`, and conversion extensions.
+
+### Imports (Kotlin 2.1 / kotlinx-datetime 0.7+)
 ```kotlin
-import kotlinx.datetime.*
+import kotlin.time.Clock          // Clock.System.now() — stdlib
+import kotlin.time.Instant        // Instant, Instant.parse() — stdlib
+import kotlinx.datetime.*         // LocalTime, LocalDateTime, TimeZone, toLocalDateTime()
 ```
 
 ### Key APIs
 
-| What you need | Correct API |
+| What you need | Correct API (Kotlin 2.1+) |
 |---|---|
-| Current instant (UTC) | `Clock.System.now()` → `Instant` |
-| Parse ISO-8601 string | `Instant.parse("2024-01-15T10:30:00Z")` |
-| Instant → local datetime | `instant.toLocalDateTime(TimeZone.UTC)` |
-| Local time of day | `localDateTime.time` → `LocalTime` |
-| Construct LocalTime | `LocalTime(hour = 10, minute = 30)` |
+| Current instant (UTC) | `Clock.System.now()` → `kotlin.time.Instant` |
+| Parse ISO-8601 string | `Instant.parse("2024-01-15T10:30:00Z")` — `kotlin.time.Instant` |
+| Instant → local datetime | `instant.toLocalDateTime(TimeZone.UTC)` — returns `kotlinx.datetime.LocalDateTime` |
+| Local time of day | `localDateTime.time` → `kotlinx.datetime.LocalTime` |
+| Construct LocalTime | `LocalTime(hour = 10, minute = 30)` — `kotlinx.datetime.LocalTime` |
 | Compare LocalTime | `LocalTime` implements `Comparable` — use `<=`, `>=` |
-| UTC timezone | `TimeZone.UTC` |
+| UTC timezone | `TimeZone.UTC` — `kotlinx.datetime.TimeZone` |
 | System timezone | `TimeZone.currentSystemDefault()` |
 
 ### Common mistakes to avoid
-- `Clock.System` is from `kotlinx.datetime` — **do not** import from `kotlin.time`
-- `Instant.parse()` is on the `Instant` companion — no extra import needed
-- In `domain/` and `application/` layers: use `kotlinx.datetime.Instant` and `LocalTime` — **never** `java.time.*`
+- `Clock` and `Instant` are from `kotlin.time` (stdlib) — **not** `kotlinx.datetime`
+- `LocalTime`, `LocalDateTime`, `TimeZone` are from `kotlinx.datetime` — **not** `kotlin.time`
+- In `domain/` and `application/` layers: use `kotlin.time.Instant` and `kotlinx.datetime.LocalTime` — **never** `java.time.*`
 - Infrastructure/persistence layers may use `java.time.*` only when Exposed ORM requires it
 
 ### Segment time lookup pattern (used in profile-aware services)
 ```kotlin
 // Find last segment whose time <= refTime; fall back to last if none qualifies (midnight wrap)
-private fun <T> lookupSegment(segments: List<T>, refTime: LocalTime, timeOf: (T) -> LocalTime, valueOf: (T) -> Double): Double {
+private fun lookupSegment(segments: List<IsfSegment>, refTime: LocalTime): Double {
     require(segments.isNotEmpty()) { "Segment list must not be empty" }
-    return segments
-        .filter { timeOf(it) <= refTime }
-        .maxByOrNull { timeOf(it) }
-        ?.let { valueOf(it) }
-        ?: valueOf(segments.last())
+    return (segments.filter { parseTime(it.startTime) <= refTime }
+        .maxByOrNull { parseTime(it.startTime) }
+        ?: segments.last()).value
+}
+
+private fun parseTime(hhmm: String): LocalTime {
+    val (h, m) = hhmm.split(":").map { it.toInt() }
+    return LocalTime(h, m)
+}
+```
+
+---
+
+## Ktor
+
+**API docs**: https://api.ktor.io/
+
+### HttpClient for upstream calls
+
+```kotlin
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.*
+
+val httpClient = HttpClient(CIO) {
+    install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+    install(HttpTimeout) {
+        connectTimeoutMillis = 5_000L
+        requestTimeoutMillis = 10_000L
+        socketTimeoutMillis = 5_000L
+    }
+    install(HttpRequestRetry) {
+        retryOnServerErrors(maxRetries = 3)
+        exponentialDelay(maxDelayMs = 8_000L)
+    }
+}
+```
+
+### Generated jvm-ktor clients (upstream codegen)
+
+Upstream API clients are generated via openapi-generator (`kotlin` generator, `library=jvm-ktor`).
+The generated `DefaultApi` wraps an `ApiClient`. Pass the shared engine + inject per-request headers:
+
+```kotlin
+// In adapter constructor
+class MeasuresClient(private val httpClientEngine: HttpClientEngine, private val baseUrl: String)
+
+// Per-call: create ApiClient with JWT + correlation ID
+val apiClient = ApiClient(
+    baseUrl = baseUrl,
+    httpClientEngine = httpClientEngine,
+    httpClientConfig = {
+        install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+    }
+).apply { setBearerToken(authorization.removePrefix("Bearer ").trim()) }
+val api = DefaultApi(apiClient)
+```
+
+### Non-2xx error handling with generated clients
+
+```kotlin
+import io.ktor.client.plugins.ResponseException
+
+val result = try {
+    api.listMeasures(userId = userId, page = page, size = PAGE_SIZE)
+} catch (e: ResponseException) {
+    val body = runCatching { e.response.bodyAsText() }.getOrNull()
+    throw UpstreamException("measures", e.response.status.value,
+        e.response.status.description, body, e.response.request.url.toString())
 }
 ```
 
@@ -84,38 +155,13 @@ suspend fun <T> dbQuery(block: () -> T): T =
 
 ---
 
-## Ktor HttpClient for upstream calls
+## OpenAPI codegen — upstream clients
 
-```kotlin
-val httpClient = HttpClient(CIO) {
-    install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
-    install(HttpTimeout) {
-        connectTimeoutMillis = 5_000L
-        requestTimeoutMillis = 10_000L
-        socketTimeoutMillis = 5_000L
-    }
-    install(HttpRequestRetry) {
-        retryOnServerErrors(maxRetries = 3)
-        exponentialDelay(maxDelayMs = 8_000L)
-    }
-}
-```
+Generated from upstream `api/openapi.yaml` using `kotlin` generator + `library=jvm-ktor`:
+- Models in: `org.javafreedom.kdiab.<service>.api.upstream.<upstream>.models`
+- API class in: `org.javafreedom.kdiab.<service>.api.upstream.<upstream>.apis.DefaultApi`
+- Infrastructure in: `org.javafreedom.kdiab.<service>.api.upstream.<upstream>.infrastructure`
 
-Forward JWT and correlation ID in every upstream request:
-```kotlin
-httpClient.get(url) {
-    header(HttpHeaders.Authorization, authorization)   // forward unchanged
-    header("X-Correlation-ID", correlationId)
-}
-```
-
----
-
-## OpenAPI codegen — upstream client models
-
-When a service needs DTOs matching an upstream service's API:
-- **Do not** hand-write DTOs — generate them from the upstream `api/openapi.yaml`
-- Use a `GenerateTask` in `build.gradle.kts` (see issue kdiab-ocg for full pattern)
-- Generated model package convention: `org.javafreedom.kdiab.<service>.api.upstream.<upstream>`
+**Do not** hand-write upstream DTOs or HTTP client code — generate from the spec.
 
 $ARGUMENTS
