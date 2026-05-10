@@ -24,6 +24,7 @@ services:
       JWKS_URL: ${JWKS_URL:-http://keycloak:8080/realms/kdiab-analyze/protocol/openid-connect/certs}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-analyze}
       JWT_REALM: ${JWT_REALM:-kdiab-analyze}
+      JSON_PRETTY_PRINT: "true"
     ports:
       - "8084:8080"
     healthcheck:

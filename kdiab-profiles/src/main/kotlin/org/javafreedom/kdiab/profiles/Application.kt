@@ -41,10 +41,12 @@ fun Application.module(
     configureMetrics()
     configureSecurity()
     configureStatusPages()
+    val prettyPrint = environment.config.propertyOrNull("json.prettyPrint")
+        ?.getString()?.toBoolean() ?: false
     install(ContentNegotiation) {
         json(
                 Json {
-                    prettyPrint = false
+                    this.prettyPrint = prettyPrint
                     ignoreUnknownKeys = true
                 }
         )

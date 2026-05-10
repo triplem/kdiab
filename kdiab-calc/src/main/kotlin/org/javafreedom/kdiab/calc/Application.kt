@@ -38,8 +38,10 @@ fun Application.module(
     configureSecurity()
     configureStatusPages()
 
+    val prettyPrint = environment.config.propertyOrNull("json.prettyPrint")
+        ?.getString()?.toBoolean() ?: false
     val json = Json {
-        prettyPrint = false
+        this.prettyPrint = prettyPrint
         ignoreUnknownKeys = true
     }
 
