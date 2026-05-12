@@ -1,0 +1,27 @@
+# Production Keycloak override.
+# Use with: docker compose -f docker-compose.yml -f docker-compose.keycloak-prod.yml up
+#
+# Changes from the default docker-compose.yml:
+#   - Switches Keycloak from start-dev to start (production mode)
+#   - Enables HTTP (TLS is terminated at the load balancer / reverse proxy)
+#   - Sets KC_PROXY=edge so Keycloak trusts X-Forwarded-* headers from the proxy
+#   - Adds a kdiab-keycloak PostgreSQL database for Keycloak persistence
+#     (avoids the embedded H2 used by start-dev which is unsuitable for production)
+#
+# Prerequisites:
+#   - Add KEYCLOAK_DB_PASSWORD to your .env file (or pass via environment)
+#   - Ensure config/postgres/01-init-databases.sh creates the kdiab-keycloak database,
+#     or create it manually before first run:
+#       psql -U postgres -c "CREATE DATABASE \"kdiab-keycloak\";"
+
+services:
+  keycloak:
+    command: start --import-realm
+    environment:
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY: edge
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/kdiab-keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_HOSTNAME_STRICT: "false"
