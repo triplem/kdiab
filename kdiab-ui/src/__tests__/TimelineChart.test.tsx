@@ -2,6 +2,7 @@ import { render } from '@testing-library/react'
 import { describe, test, vi } from 'vitest'
 import '../i18n'
 import React from 'react'
+import { TimeFormatProvider } from '../context/TimeFormatContext'
 
 vi.mock('recharts', () => ({
   ComposedChart: ({ children }: { children: React.ReactNode }) => <div data-testid="composed-chart">{children}</div>,
@@ -36,21 +37,25 @@ const makeTreatments = (count: number) =>
     data: { units: 2 },
   }))
 
+function wrap(ui: React.ReactElement) {
+  return render(<TimeFormatProvider>{ui}</TimeFormatProvider>)
+}
+
 describe('TimelineChart', () => {
   test('renders without crashing with empty data', () => {
-    render(<TimelineChart measures={[]} treatments={[]} glucoseUnit="mg/dL" />)
+    wrap(<TimelineChart measures={[]} treatments={[]} glucoseUnit="mg/dL" />)
   })
 
   test('renders without crashing with CGM data', () => {
-    render(<TimelineChart measures={makeCgmMeasures(5)} treatments={[]} glucoseUnit="mg/dL" />)
+    wrap(<TimelineChart measures={makeCgmMeasures(5)} treatments={[]} glucoseUnit="mg/dL" />)
   })
 
   test('renders without crashing with treatments', () => {
-    render(<TimelineChart measures={[]} treatments={makeTreatments(3)} glucoseUnit="mg/dL" />)
+    wrap(<TimelineChart measures={[]} treatments={makeTreatments(3)} glucoseUnit="mg/dL" />)
   })
 
   test('renders without crashing with both measures and treatments', () => {
-    render(
+    wrap(
       <TimelineChart
         measures={makeCgmMeasures(5)}
         treatments={makeTreatments(3)}
@@ -60,7 +65,7 @@ describe('TimelineChart', () => {
   })
 
   test('renders without crashing in mmol/L mode', () => {
-    render(
+    wrap(
       <TimelineChart
         measures={makeCgmMeasures(5)}
         treatments={[]}
@@ -71,7 +76,7 @@ describe('TimelineChart', () => {
 
   test('renders without crashing with profile change dates', () => {
     const profileDates = [Date.now() - 86400000, Date.now() - 172800000]
-    render(
+    wrap(
       <TimelineChart
         measures={makeCgmMeasures(5)}
         treatments={[]}
@@ -88,6 +93,6 @@ describe('TimelineChart', () => {
       type: 'BGM',
       data: { value: 115 + i, unit: 'mg/dL' },
     }))
-    render(<TimelineChart measures={bgmMeasures} treatments={[]} glucoseUnit="mg/dL" />)
+    wrap(<TimelineChart measures={bgmMeasures} treatments={[]} glucoseUnit="mg/dL" />)
   })
 })
