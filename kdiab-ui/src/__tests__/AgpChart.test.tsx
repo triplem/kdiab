@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { describe, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import '../i18n'
 import type { AgpHourlyData } from '../api/analyzeApi'
 import React from 'react'
