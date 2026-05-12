@@ -22,6 +22,10 @@ fun Application.configureMetrics() {
 
     routing {
         get("/metrics") {
+            if (call.request.headers[HttpHeaders.Authorization] == null) {
+                call.respond(HttpStatusCode.Unauthorized)
+                return@get
+            }
             val sb = StringBuilder()
             registry.gauges.forEach { (name, gauge) ->
                 runCatching { sb.appendLine("$name ${gauge.value}") }

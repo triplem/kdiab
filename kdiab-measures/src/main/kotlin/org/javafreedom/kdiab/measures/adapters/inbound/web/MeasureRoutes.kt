@@ -99,7 +99,7 @@ private fun Route.createMeasure(measureService: MeasureService, auditLogReposito
     post<Paths.createMeasure> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
-        checkReadAccess(principal, targetUserId)
+        checkWriteAccess(principal, targetUserId)
         auditIfDoctor(call, principal, targetUserId, "measures.create", auditLogRepository)
 
         val glucoseUnit = principal?.glucoseUnit ?: "mg/dL"
@@ -189,6 +189,18 @@ private fun checkReadAccess(principal: UserPrincipal?, targetUserId: Uuid) {
     if (principal == null || !principal.canAccess(targetUserId)) {
         logger.warn {
             "Read access denied: principalId=${principal?.userId} " +
+            "roles=${principal?.roles} " +
+            "allowedPatients=${principal?.allowedPatients} " +
+            "targetUserId=$targetUserId"
+        }
+        throw AuthorizationException("Access Not Authorized")
+    }
+}
+
+private fun checkWriteAccess(principal: UserPrincipal?, targetUserId: Uuid) {
+    if (principal == null || !principal.canAccess(targetUserId)) {
+        logger.warn {
+            "Write access denied: principalId=${principal?.userId} " +
             "roles=${principal?.roles} " +
             "allowedPatients=${principal?.allowedPatients} " +
             "targetUserId=$targetUserId"

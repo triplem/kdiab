@@ -74,8 +74,7 @@ internal suspend fun auditIfDoctor(
     repository: AuditLogRepository,
 ) {
     if (principal?.isDoctor() != true) return
-    val ip = call.request.headers["X-Forwarded-For"]?.split(",")?.firstOrNull()?.trim()
-        ?: call.request.local.remoteHost
+    val ip = call.request.local.remoteAddress
     repository.save(
         AuditLog(
             id = Uuid.random(),
@@ -97,8 +96,7 @@ internal suspend fun auditDeletion(
     repository: AuditLogRepository,
 ) {
     if (principal == null) return
-    val ip = call.request.headers["X-Forwarded-For"]?.split(",")?.firstOrNull()?.trim()
-        ?: call.request.local.remoteHost
+    val ip = call.request.local.remoteAddress
     repository.save(
         AuditLog(
             id = Uuid.random(),

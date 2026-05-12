@@ -35,14 +35,14 @@ class TreatmentE2ETest : BehaviorSpec({
             .apply { if (allowedPatients.isNotEmpty()) withClaim("allowed_patients", allowedPatients) }
             .sign(Algorithm.HMAC256(JWT_SECRET))
 
-    val e2eConfig = MapApplicationConfig(
+    fun treatmentsConfig(dbName: String) = MapApplicationConfig(
         "jwt.domain" to ISSUER,
         "jwt.audience" to AUDIENCE,
         "jwt.realm" to "kdiab-treatments",
         "jwt.secret" to JWT_SECRET,
         "jwt.test" to "true",
         "storage.driverClassName" to "org.h2.Driver",
-        "storage.jdbcUrl" to "jdbc:h2:mem:e2e_treatments;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
+        "storage.jdbcUrl" to "jdbc:h2:mem:$dbName;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
         "storage.username" to "root",
         "storage.password" to "password",
         "storage.maximumPoolSize" to "3",
@@ -54,7 +54,7 @@ class TreatmentE2ETest : BehaviorSpec({
         `when`("a patient manages their BOLUS treatments") {
             then("they can create, list with type filter, and delete a treatment") {
                 testApplication {
-                    environment { config = e2eConfig }
+                    environment { config = treatmentsConfig("e2e_treatments_patient") }
                     application { module() }
                     val client = createClient { install(ContentNegotiation) { json() } }
 
@@ -117,7 +117,7 @@ class TreatmentE2ETest : BehaviorSpec({
         `when`("a patient tries to access another user's treatments") {
             then("they receive 403") {
                 testApplication {
-                    environment { config = e2eConfig }
+                    environment { config = treatmentsConfig("e2e_treatments_403") }
                     application { module() }
                     val client = createClient { install(ContentNegotiation) { json() } }
                     val sarahToken = token(SARAH_ID, listOf("PATIENT"))
@@ -132,7 +132,7 @@ class TreatmentE2ETest : BehaviorSpec({
         `when`("a request has no auth token") {
             then("they receive 401") {
                 testApplication {
-                    environment { config = e2eConfig }
+                    environment { config = treatmentsConfig("e2e_treatments_401") }
                     application { module() }
                     val resp = client.get("/api/v1/users/$SARAH_ID/treatments")
                     resp.status shouldBe HttpStatusCode.Unauthorized

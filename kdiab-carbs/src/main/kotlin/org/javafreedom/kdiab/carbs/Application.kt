@@ -12,8 +12,10 @@ import io.ktor.server.plugins.swagger.*
 import io.ktor.server.resources.Resources
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.javafreedom.kdiab.carbs.adapters.inbound.web.foodEntryRoutes
 import org.javafreedom.kdiab.carbs.application.service.FoodEntryService
 import org.javafreedom.kdiab.carbs.infrastructure.persistence.DatabaseFactory
@@ -95,9 +97,9 @@ fun Application.module(
         get("/") { call.respondText("T1D Carbs Service is running!") }
         get("/healthz") { call.respond(io.ktor.http.HttpStatusCode.OK) }
         get("/readyz") {
-            val ready = runCatching {
-                transaction { exec("SELECT 1") }
-            }.isSuccess
+            val ready = withContext(Dispatchers.IO) {
+                runCatching { transaction { exec("SELECT 1") } }.isSuccess
+            }
             if (ready) call.respond(HttpStatusCode.OK)
             else call.respond(HttpStatusCode.ServiceUnavailable)
         }

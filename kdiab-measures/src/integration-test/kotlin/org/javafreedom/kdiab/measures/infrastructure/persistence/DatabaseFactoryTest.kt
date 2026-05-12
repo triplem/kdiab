@@ -8,7 +8,7 @@ import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 class DatabaseFactoryTest {
 
     @Test
-    fun `init creates both MeasuresTable and AuditLogsTable`() {
+    fun `init runs Liquibase migrations creating both MeasuresTable and AuditLogsTable`() {
         val config = MapApplicationConfig(
             "storage.driverClassName" to "org.h2.Driver",
             "storage.jdbcUrl" to "jdbc:h2:mem:db_factory_test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
@@ -21,7 +21,7 @@ class DatabaseFactoryTest {
 
         DatabaseFactory.init(config)
 
-        // Both queries succeed only if SchemaUtils.create() included each table.
+        // Both queries succeed only if Liquibase migrations ran and created each table.
         // A missing table causes H2 to throw JdbcSQLSyntaxErrorException, failing the test.
         transaction {
             val measureCount = exec("SELECT COUNT(*) FROM measures") { rs ->

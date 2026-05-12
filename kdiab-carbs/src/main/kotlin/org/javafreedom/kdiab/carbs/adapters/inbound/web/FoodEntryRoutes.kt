@@ -52,6 +52,18 @@ private fun checkReadAccess(principal: UserPrincipal?, targetUserId: Uuid) {
     }
 }
 
+private fun checkWriteAccess(principal: UserPrincipal?, targetUserId: Uuid) {
+    if (principal == null || (principal.userId != targetUserId && !principal.isAdmin())) {
+        logger.warn {
+            "Write access denied: principalId=${principal?.userId} " +
+            "roles=${principal?.roles} " +
+            "allowedPatients=${principal?.allowedPatients} " +
+            "targetUserId=$targetUserId"
+        }
+        throw AuthorizationException("Access Not Authorized")
+    }
+}
+
 fun Route.foodEntryRoutes(service: FoodEntryService) {
     authenticate("auth-jwt") {
         listFoods(service)
@@ -86,7 +98,7 @@ private fun Route.createFoodEntry(service: FoodEntryService) {
     post<Paths.createFoodEntry> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
-        checkReadAccess(principal, targetUserId)
+        checkWriteAccess(principal, targetUserId)
 
         val request = call.receive<CreateFoodEntryRequest>()
         val entry = request.toDomain(targetUserId)
@@ -101,7 +113,7 @@ private fun Route.updateFoodEntry(service: FoodEntryService) {
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
         val foodId = parseUuid(params.foodId)
-        checkReadAccess(principal, targetUserId)
+        checkWriteAccess(principal, targetUserId)
 
         val request = call.receive<UpdateFoodEntryRequest>()
         val updated = service.updateEntry(
@@ -117,7 +129,7 @@ private fun Route.deleteFoodEntry(service: FoodEntryService) {
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
         val foodId = parseUuid(params.foodId)
-        checkReadAccess(principal, targetUserId)
+        checkWriteAccess(principal, targetUserId)
 
         service.deleteEntry(foodId, targetUserId)
         logger.info { "Deleted food entry $foodId for user $targetUserId" }

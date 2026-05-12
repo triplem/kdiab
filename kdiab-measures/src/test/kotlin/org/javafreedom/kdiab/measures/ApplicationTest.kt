@@ -33,8 +33,18 @@ class ApplicationTest {
     fun `GET metrics returns 200 with text content`() = testApplication {
         configureTestEnv()
         application { module(initDatabase = false) }
-        val response = client.get("/metrics")
+        val response = client.get("/metrics") {
+            header(HttpHeaders.Authorization, "Bearer test-token")
+        }
         assertEquals(HttpStatusCode.OK, response.status)
         assertEquals(ContentType.Text.Plain, response.contentType()?.withoutParameters())
+    }
+
+    @Test
+    fun `GET metrics without authorization returns 401`() = testApplication {
+        configureTestEnv()
+        application { module(initDatabase = false) }
+        val response = client.get("/metrics")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 }

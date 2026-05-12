@@ -56,6 +56,7 @@ private fun measuresConfig(dbName: String = "e2e_measures") = MapApplicationConf
     "storage.transactionIsolation" to "TRANSACTION_REPEATABLE_READ",
 )
 
+
 private val createCgmBody = """
     {"measuredAt":"2024-01-15T10:00:00Z","type":"CGM","source":"NIGHTSCOUT","data":{"sgv":120,"trend":"Flat"}}
 """.trimIndent()
