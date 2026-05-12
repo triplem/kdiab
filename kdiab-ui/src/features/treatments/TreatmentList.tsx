@@ -140,6 +140,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
   })
 
   const treatments = pagedResult?.items ?? []
+  const totalCount = pagedResult?.totalCount ?? 0
 
   const deleteMutation = useMutation({
     mutationFn: (ids: string[]) => treatmentsApi.deleteTreatments(userId, { treatmentIds: ids }),
@@ -250,6 +251,8 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
   if (isLoading) return <div style={{ padding: '2rem' }}>{t('list.loading')}</div>
   if (isError) return <div style={{ padding: '2rem', color: 'var(--accent-danger)' }}>{t('list.error')}</div>
 
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+
   return (
     <div className="measure-list-container">
       {editTarget && (
@@ -356,17 +359,21 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
             return (
               <React.Fragment key={tr.id}>
                 <tr
+                  role="button"
+                  tabIndex={0}
                   style={{
                     borderBottom: '1px solid var(--table-border)',
                     cursor: 'pointer',
                     background: selectedIds.has(tr.id) ? 'var(--table-row-selected)' : 'transparent',
                   }}
                   onClick={() => toggleExpand(tr.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(tr.id) } }}
                 >
                   {showCheckbox && (
                     <td style={{ padding: '12px 8px' }} onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
+                        aria-label={t('list.selectRow', { defaultValue: 'Select row' })}
                         checked={selectedIds.has(tr.id)}
                         onChange={() => toggleSelect(tr.id)}
                       />
@@ -505,6 +512,29 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
           )}
         </tbody>
       </table>
+
+      {/* Pagination controls */}
+      <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', alignItems: 'center', marginTop: '1rem' }}>
+        <button
+          className="btn outline"
+          disabled={page === 0}
+          onClick={() => setPage((p) => p - 1)}
+          style={{ padding: '0.3rem 0.75rem' }}
+        >
+          {t('list.pagePrev', { defaultValue: '← Previous' })}
+        </button>
+        <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+          {t('list.pageInfo', { defaultValue: 'Page {{current}} of {{total}}', current: page + 1, total: totalPages })}
+        </span>
+        <button
+          className="btn outline"
+          disabled={(page + 1) * PAGE_SIZE >= totalCount}
+          onClick={() => setPage((p) => p + 1)}
+          style={{ padding: '0.3rem 0.75rem' }}
+        >
+          {t('list.pageNext', { defaultValue: 'Next →' })}
+        </button>
+      </div>
     </div>
   )
 }
