@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { treatmentsApi } from '../../api/treatmentsApi'
 import type { TreatmentResponse, PagedTreatments } from '../../api/treatmentsApi'
@@ -108,6 +108,8 @@ interface ConfirmAction {
   action: () => void
 }
 
+const PAGE_SIZE = 25
+
 export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete, canArchive }) => {
   const queryClient = useQueryClient()
   const { formatDate } = useTimeFormat()
@@ -120,16 +122,24 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
   const [editError, setEditError] = useState<string | null>(null)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+  const [page, setPage] = useState(0)
 
-  const { data: treatments = [], isLoading, isError } = useQuery<TreatmentResponse[]>({
-    queryKey: ['treatments', userId, showArchived],
+  // Reset page when userId changes
+  useEffect(() => {
+    setPage(0)
+  }, [userId])
+
+  const { data: pagedResult, isLoading, isError } = useQuery<PagedTreatments>({
+    queryKey: ['treatments', userId, showArchived, page],
     queryFn: async () => {
       const status = showArchived ? 'ARCHIVED' : 'ACTIVE'
-      const res = await treatmentsApi.listTreatments(userId, status)
-      return (res.data as PagedTreatments).items ?? []
+      const res = await treatmentsApi.listTreatments(userId, status, page, PAGE_SIZE)
+      return res.data as PagedTreatments
     },
     enabled: !!userId,
   })
+
+  const treatments = pagedResult?.items ?? []
 
   const deleteMutation = useMutation({
     mutationFn: (ids: string[]) => treatmentsApi.deleteTreatments(userId, { treatmentIds: ids }),
@@ -198,7 +208,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
   }
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === treatments.length) setSelectedIds(new Set())
+    if (selectedIds.size === treatments.length && treatments.length > 0) setSelectedIds(new Set())
     else setSelectedIds(new Set(treatments.map((tr) => tr.id)))
   }
 
@@ -281,7 +291,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
           <button
             className={`btn outline${showArchived ? ' active-tab' : ''}`}
             style={{ padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}
-            onClick={() => { setShowArchived((p) => !p); setSelectedIds(new Set()) }}
+            onClick={() => { setShowArchived((p) => !p); setSelectedIds(new Set()); setPage(0) }}
           >
             {showArchived ? t('list.showActive', { defaultValue: 'Show Active' }) : t('list.showArchived', { defaultValue: 'Show Archived' })}
           </button>
@@ -329,6 +339,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
               <th style={{ padding: '12px 8px' }}>
                 <input
                   type="checkbox"
+                  aria-label={t('list.selectAll', { defaultValue: 'Select all' })}
                   checked={treatments.length > 0 && selectedIds.size === treatments.length}
                   onChange={toggleSelectAll}
                 />

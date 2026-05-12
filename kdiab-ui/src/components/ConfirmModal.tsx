@@ -61,7 +61,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
     <div
       className="modal-overlay"
       onClick={onCancel}
-      aria-hidden="true"
+      role="presentation"
     >
       <div
         role="dialog"

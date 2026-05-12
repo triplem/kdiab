@@ -17,6 +17,7 @@ import { TreatmentList } from './features/treatments/TreatmentList'
 import { AddTreatmentModal } from './features/treatments/AddTreatmentModal'
 import { ProfileList } from './features/profiles/ProfileList'
 import { ProfileEditor } from './features/profiles/ProfileEditor'
+import { ProfileHistory } from './features/profiles/ProfileHistory'
 import { AdminInsulinManager } from './features/profiles/AdminInsulinManager'
 import { TimelineView } from './features/timeline/TimelineView'
 import { AnalyticsView } from './features/analytics/AnalyticsView'
@@ -28,7 +29,7 @@ import { treatmentsApi } from './api/treatmentsApi'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Profile } from './api/profilesApi'
 
-type Tab = 'measures' | 'treatments' | 'profiles' | 'timeline' | 'analytics' | 'carbs' | 'calc'
+type Tab = 'measures' | 'treatments' | 'profiles' | 'profile-history' | 'timeline' | 'analytics' | 'carbs' | 'calc'
 
 export default function App() {
   const auth = useAuth()
@@ -45,6 +46,7 @@ export default function App() {
 
   // Doctor patient switching
   const [activePatientId, setActivePatientId] = useState<string | null>(null)
+  const [patientGlucoseUnit, setPatientGlucoseUnit] = useState<string>('mg/dL')
 
   // Modal state
   const [showAddMeasure, setShowAddMeasure] = useState(false)
@@ -86,6 +88,13 @@ export default function App() {
   const ownUserId = auth.user?.profile?.sub ?? ''
   const viewingUserId = activePatientId ?? ownUserId
   const isDoctorViewingPatient = isDoctor && activePatientId !== null
+
+  // Reset patient glucose unit when switching patients
+  useEffect(() => {
+    setPatientGlucoseUnit('mg/dL')
+  }, [activePatientId])
+
+  const activeGlucoseUnit = isDoctorViewingPatient ? patientGlucoseUnit : glucoseUnit
 
   const handleSaveMeasure = async (measure: {
     type: string
@@ -185,6 +194,7 @@ export default function App() {
     { key: 'measures', label: t('nav.measures') },
     { key: 'treatments', label: t('nav.treatments') },
     { key: 'profiles', label: t('nav.profiles') },
+    { key: 'profile-history', label: t('nav.profileHistory') },
     { key: 'timeline', label: t('nav.timeline') },
     { key: 'analytics', label: t('nav.analytics') },
     { key: 'carbs', label: t('nav.foodDatabase') },
@@ -198,25 +208,27 @@ export default function App() {
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <div />
-              <button
-                className="primary"
-                onClick={() => setShowAddMeasure(true)}
-                style={{ padding: '0.5rem 1.2rem' }}
-              >
-                + {t('nav.measures')}
-              </button>
+              {!isDoctorViewingPatient && (
+                <button
+                  className="primary"
+                  onClick={() => setShowAddMeasure(true)}
+                  style={{ padding: '0.5rem 1.2rem' }}
+                >
+                  + {t('nav.measures')}
+                </button>
+              )}
             </div>
             <MeasureList
               userId={viewingUserId}
-              glucoseUnit={glucoseUnit}
+              glucoseUnit={activeGlucoseUnit}
               canArchive={isPatient || isAdmin}
-              canDelete={isAdmin || isDoctor}
+              canDelete={isAdmin}
             />
             <AddMeasureModal
               isOpen={showAddMeasure}
               onClose={() => { setShowAddMeasure(false); setMeasureError(null) }}
               onSave={(m) => void handleSaveMeasure(m)}
-              glucoseUnit={glucoseUnit}
+              glucoseUnit={activeGlucoseUnit}
               weightUnit={weightUnit}
               isSaving={measureSaving}
               error={measureError}
@@ -229,18 +241,20 @@ export default function App() {
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <div />
-              <button
-                className="primary"
-                onClick={() => setShowAddTreatment(true)}
-                style={{ padding: '0.5rem 1.2rem' }}
-              >
-                + {t('nav.treatments')}
-              </button>
+              {!isDoctorViewingPatient && (
+                <button
+                  className="primary"
+                  onClick={() => setShowAddTreatment(true)}
+                  style={{ padding: '0.5rem 1.2rem' }}
+                >
+                  + {t('nav.treatments')}
+                </button>
+              )}
             </div>
             <TreatmentList
               userId={viewingUserId}
               canArchive={true}
-              canDelete={isAdmin || isDoctor}
+              canDelete={isAdmin}
             />
             <AddTreatmentModal
               isOpen={showAddTreatment}
@@ -250,6 +264,7 @@ export default function App() {
               isSaving={treatmentSaving}
               error={treatmentError}
               userId={viewingUserId}
+              glucoseUnit={glucoseUnit}
             />
           </>
         )
@@ -272,7 +287,7 @@ export default function App() {
                   onProfileSaved={() => { setShowProfileEditor(false); setEditingProfile(null) }}
                   readOnly={isDoctorViewingPatient}
                   isDoctor={isDoctor}
-                  glucoseUnit={glucoseUnit}
+                  glucoseUnit={activeGlucoseUnit}
                 />
               </>
             ) : (
@@ -291,7 +306,7 @@ export default function App() {
                   userId={viewingUserId}
                   onSelectProfile={(p) => { setEditingProfile(p); setShowProfileEditor(true) }}
                   readOnly={isDoctorViewingPatient}
-                  glucoseUnit={glucoseUnit}
+                  glucoseUnit={activeGlucoseUnit}
                 />
                 {isAdmin && <AdminInsulinManager />}
               </>
@@ -299,13 +314,16 @@ export default function App() {
           </>
         )
 
+      case 'profile-history':
+        return <ProfileHistory userId={viewingUserId} />
+
       case 'timeline':
-        return <TimelineView userId={viewingUserId} glucoseUnit={glucoseUnit} />
+        return <TimelineView userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
 
       case 'analytics':
         return (
           <>
-            <AnalyticsView userId={viewingUserId} glucoseUnit={glucoseUnit} />
+            <AnalyticsView userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
             <ProfilesView userId={viewingUserId} />
           </>
         )
@@ -314,7 +332,7 @@ export default function App() {
         return <FoodDatabase userId={viewingUserId} />
 
       case 'calc':
-        return <DoseCalculator userId={viewingUserId} glucoseUnit={glucoseUnit} />
+        return <DoseCalculator userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
     }
   }
 
@@ -353,6 +371,22 @@ export default function App() {
                 </select>
               </div>
             )}
+            {/* Glucose unit toggle when doctor is viewing a patient */}
+            {isDoctorViewingPatient && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>{t('app.glucoseUnit', { defaultValue: 'Unit:' })}</span>
+                {(['mg/dL', 'mmol/L'] as const).map((unit) => (
+                  <button
+                    key={unit}
+                    className={`btn outline${patientGlucoseUnit === unit ? ' active-tab' : ''}`}
+                    style={{ padding: '0.2rem 0.5rem', fontSize: '0.8rem' }}
+                    onClick={() => setPatientGlucoseUnit(unit)}
+                  >
+                    {unit}
+                  </button>
+                ))}
+              </div>
+            )}
             <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
               {t('app.loggedInAs')} <strong>{auth.user?.profile?.preferred_username as string | undefined}</strong>
             </span>
@@ -372,6 +406,7 @@ export default function App() {
             <button
               key={key}
               className={activeTab === key ? 'active-tab' : ''}
+              aria-current={activeTab === key ? 'page' : undefined}
               onClick={() => setActiveTab(key)}
             >
               {label}

@@ -51,6 +51,7 @@ interface AddTreatmentModalProps {
   error?: string | null
   editMode?: TreatmentEditMode
   userId?: string
+  glucoseUnit?: string
 }
 
 const TREATMENT_TYPES: PatientTreatmentType[] = [
@@ -101,6 +102,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
   error,
   editMode,
   userId,
+  glucoseUnit = 'mg/dL',
 }) => {
   const { locale } = useTimeFormat()
   const { t } = useTranslation()
@@ -167,6 +169,10 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
     setNotes(editMode.notes ?? '')
     const d = editMode.data
     switch (editMode.type) {
+      case 'MEAL':
+        setMealInsulin(String(d.insulin ?? ''))
+        setMealCarbs(String(d.carbs ?? ''))
+        break
       case 'BOLUS':
       case 'CORRECTION_BOLUS':
         setInsulinUnits(String(d.insulin ?? ''))
@@ -337,18 +343,27 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
     e.preventDefault()
     setValidationError(null)
 
-    if (type === 'MEAL' && !isEditMode) {
+    if (type === 'MEAL') {
       const insulin = parseFloat(mealInsulin)
       const carbsVal = parseFloat(mealCarbs)
       if (isNaN(insulin) || insulin <= 0 || isNaN(carbsVal) || carbsVal <= 0) {
         setValidationError(t('treatmentModal.validationError'))
         return
       }
-      onSaveMeal({
-        treatedAt: new Date(treatedAt).toISOString(),
-        insulinUnits: insulin,
-        carbs: carbsVal,
-      })
+      if (isEditMode) {
+        onSave({
+          type: 'MEAL',
+          treatedAt: new Date(treatedAt).toISOString(),
+          data: { insulin, carbs: carbsVal },
+          ...(notes.trim() && { notes: notes.trim() }),
+        })
+      } else {
+        onSaveMeal({
+          treatedAt: new Date(treatedAt).toISOString(),
+          insulinUnits: insulin,
+          carbs: carbsVal,
+        })
+      }
       return
     }
 
@@ -844,7 +859,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
               <span>{t('treatmentModal.hypoReason')}</span>
               <input
                 type="text"
-                placeholder="e.g. glucose below 70 mg/dL"
+                placeholder={glucoseUnit === 'mmol/L' ? 'e.g. glucose below 3.9 mmol/L' : 'e.g. glucose below 70 mg/dL'}
                 value={hypoReason}
                 onChange={(e) => setHypoReason(e.target.value)}
                 style={inputStyle}
@@ -856,7 +871,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose} aria-hidden="true">
+    <div className="modal-overlay" onClick={onClose} role="presentation">
       <div
         role="dialog"
         aria-modal="true"

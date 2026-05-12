@@ -367,7 +367,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
     <div
       className="modal-overlay"
       onClick={onClose}
-      aria-hidden="true"
+      role="presentation"
     >
       <div
         role="dialog"
