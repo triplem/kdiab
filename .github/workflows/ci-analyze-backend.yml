@@ -63,7 +63,7 @@ jobs:
           fi
 
       - name: Build and Test
-        run: cd kdiab-analyze && ./gradlew :check :cyclonedxBom -Pversion=${{ env.VERSION }}
+        run: cd kdiab-analyze && ./gradlew :check :buildFatJar :cyclonedxBom -Pversion=${{ env.VERSION }}
 
       - name: SonarCloud Scan
         if: ${{ env.SONAR_TOKEN != '' }}
