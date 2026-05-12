@@ -35,6 +35,8 @@ jobs:
     name: Build and Test
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,7 +66,7 @@ jobs:
         run: cd kdiab-treatments && ./gradlew :check :cyclonedxBom -Pversion=${{ env.VERSION }}
 
       - name: SonarCloud Scan
-        if: ${{ secrets.SONAR_TOKEN != '' }}
+        if: ${{ env.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarcloud-github-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

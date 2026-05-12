@@ -17,3 +17,19 @@ projects:
       Use conventional commits (feat:, fix:, chore:, docs:, refactor:, test:).
       Link issue numbers in commit messages.
       Write clear commit messages that explain WHY, not just WHAT.
+      Write a plan before implmementing anything
+      Open a new issue for each fix, never have any commit without an issue
+
+reactions:
+  ci-failed:
+    auto: true
+    action: send-to-agent
+    retries: 2
+  changes-requested:
+    auto: true
+    action: send-to-agent
+    escalateAfter: 30m
+  approved-and-green:
+    auto: false # flip to true for auto-merge
+    action: notify
+  
