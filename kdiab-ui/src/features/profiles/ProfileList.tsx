@@ -76,7 +76,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
   const handleAccept = (e: React.MouseEvent, profileId: string) => {
     e.stopPropagation()
     setConfirmAction({
-      title: t('confirm.archiveTitle'),
+      title: t('confirm.acceptTitle'),
       message: t('profileList.confirmAccept'),
       action: () => acceptMutation.mutate(profileId),
     })
@@ -91,7 +91,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
   const handleActivate = (e: React.MouseEvent, profileId: string) => {
     e.stopPropagation()
     setConfirmAction({
-      title: t('confirm.archiveTitle'),
+      title: t('confirm.activateTitle'),
       message: t('profileList.confirmActivate'),
       action: () => activateMutation.mutate(profileId),
     })

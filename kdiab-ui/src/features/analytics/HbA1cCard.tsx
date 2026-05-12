@@ -36,7 +36,12 @@ export function HbA1cCard({ hba1c, meanGlucose, tir, glucoseUnit, warnings }: Pr
       </div>
       {tir.totalCount > 0 && (
         <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-          Based on {tir.totalCount} CGM readings
+          {t('analytics.basedOnReadings', { count: tir.totalCount })}
+        </div>
+      )}
+      {tir.totalCount > 0 && tir.totalCount < 288 && (
+        <div style={{ color: 'var(--accent-warning)', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+          {t('analytics.lowReadingCountWarning')}
         </div>
       )}
       {warnings && warnings.length > 0 && (

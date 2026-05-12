@@ -9,15 +9,17 @@ import { ProfileTimeline } from './ProfileTimeline'
 interface ProfileHistoryProps {
   userId: string
   onSelectProfile?: (profile: Profile) => void
+  glucoseUnit?: string
 }
 
 function ProfileHistoryItem({
-  profile, formatTime, is24Hour, onSelectProfile,
+  profile, formatTime, is24Hour, onSelectProfile, glucoseUnit,
 }: {
   profile: Profile
   formatTime: (t: string) => string
   is24Hour: boolean
   onSelectProfile?: (p: Profile) => void
+  glucoseUnit?: string
 }) {
   const [activeTab, setActiveTab] = useState<'basal' | 'icr' | 'isf'>('basal')
   const { t } = useTranslation()
@@ -71,7 +73,7 @@ function ProfileHistoryItem({
             )}
             {activeTab === 'isf' && (
               profile.isf && profile.isf.length > 0
-                ? <ul>{profile.isf.map((isf, i) => <li key={i}>{formatTime(isf?.startTime || '00:00')} — {isf?.value} {t('history.unitMgdl')}</li>)}</ul>
+                ? <ul>{profile.isf.map((isf, i) => <li key={i}>{formatTime(isf?.startTime || '00:00')} — {isf?.value} {glucoseUnit === 'mmol/L' ? t('history.unitMmol') : t('history.unitMgdl')}</li>)}</ul>
                 : <p>{t('history.noIsf')}</p>
             )}
           </div>
@@ -81,7 +83,7 @@ function ProfileHistoryItem({
   )
 }
 
-export function ProfileHistory({ userId, onSelectProfile }: ProfileHistoryProps) {
+export function ProfileHistory({ userId, onSelectProfile, glucoseUnit }: ProfileHistoryProps) {
   const [history, setHistory] = useState<Profile[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -176,7 +178,7 @@ export function ProfileHistory({ userId, onSelectProfile }: ProfileHistoryProps)
       ) : (
         <ul className="history-list" style={{ listStyle: 'none', padding: 0 }}>
           {history.map(profile => (
-            <ProfileHistoryItem key={profile.id} profile={profile} formatTime={formatTime} is24Hour={is24Hour} onSelectProfile={onSelectProfile} />
+            <ProfileHistoryItem key={profile.id} profile={profile} formatTime={formatTime} is24Hour={is24Hour} onSelectProfile={onSelectProfile} glucoseUnit={glucoseUnit} />
           ))}
         </ul>
       )}

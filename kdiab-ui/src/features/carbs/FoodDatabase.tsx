@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { carbsApi } from '../../api/carbsApi'
 import type { FoodEntryResponse } from '../../api/carbsApi'
+import { ConfirmModal } from '../../components/ConfirmModal'
 
 interface FoodDatabaseProps {
   userId: string
@@ -41,6 +42,7 @@ export const FoodDatabase: React.FC<FoodDatabaseProps> = ({ userId }) => {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<FoodForm>(emptyForm())
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['foods', userId],
@@ -113,9 +115,7 @@ export const FoodDatabase: React.FC<FoodDatabaseProps> = ({ userId }) => {
   }
 
   const handleDelete = (food: FoodEntryResponse) => {
-    if (window.confirm(t('foodDatabase.confirmDelete'))) {
-      deleteMutation.mutate(food.id)
-    }
+    setDeleteConfirmId(food.id)
   }
 
   const startEdit = (food: FoodEntryResponse) => {
@@ -324,6 +324,13 @@ export const FoodDatabase: React.FC<FoodDatabaseProps> = ({ userId }) => {
           </tbody>
         </table>
       )}
+      <ConfirmModal
+        isOpen={deleteConfirmId !== null}
+        title={t('confirm.archiveTitle')}
+        message={t('foodDatabase.confirmDelete')}
+        onConfirm={() => { if (deleteConfirmId) deleteMutation.mutate(deleteConfirmId); setDeleteConfirmId(null) }}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   )
 }

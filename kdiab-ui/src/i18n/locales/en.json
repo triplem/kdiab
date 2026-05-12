@@ -30,7 +30,9 @@
     "confirmLabel": "Confirm",
     "cancelLabel": "Cancel",
     "deleteTitle": "Confirm Delete",
-    "archiveTitle": "Confirm Archive"
+    "archiveTitle": "Confirm Archive",
+    "acceptTitle": "Confirm Accept",
+    "activateTitle": "Confirm Activate"
   },
   "list": {
     "title": "Health Measures",
@@ -209,6 +211,7 @@
     "unitUhr": "U/h",
     "unitGperU": "g/U",
     "unitMgdl": "mg/dL",
+    "unitMmol": "mmol/L",
     "unitMin": "m",
     "listView": "List",
     "timelineView": "Timeline",
@@ -308,7 +311,9 @@
     "tirVeryLow": "Very low",
     "hba1cError": "Could not load HbA1c data",
     "agpError": "Could not load AGP data",
-    "profilesError": "Could not load profiles"
+    "profilesError": "Could not load profiles",
+    "basedOnReadings": "Based on {{count}} CGM readings",
+    "lowReadingCountWarning": "Low reading count — estimate may be unreliable"
   },
   "profile": {
     "id": "Profile ID",
@@ -345,6 +350,14 @@
     "units": "units",
     "warnings": "Warnings",
     "noProfile": "No active profile found. Please activate a profile first.",
-    "error": "Calculation failed. Please try again."
+    "error": "Calculation failed. Please try again.",
+    "trendDoubleUp": "Rising rapidly",
+    "trendSingleUp": "Rising",
+    "trendFortyFiveUp": "Rising slowly",
+    "trendFlat": "Stable",
+    "trendFortyFiveDown": "Falling slowly",
+    "trendSingleDown": "Falling",
+    "trendDoubleDown": "Falling rapidly",
+    "trendNone": "Unknown"
   }
 }

@@ -30,7 +30,9 @@
     "confirmLabel": "Bestätigen",
     "cancelLabel": "Abbrechen",
     "deleteTitle": "Löschen bestätigen",
-    "archiveTitle": "Archivieren bestätigen"
+    "archiveTitle": "Archivieren bestätigen",
+    "acceptTitle": "Annehmen bestätigen",
+    "activateTitle": "Aktivierung bestätigen"
   },
   "list": {
     "title": "Gesundheitsmessungen",
@@ -209,6 +211,7 @@
     "unitUhr": "E/h",
     "unitGperU": "g/E",
     "unitMgdl": "mg/dL",
+    "unitMmol": "mmol/L",
     "unitMin": "m",
     "listView": "Liste",
     "timelineView": "Verlauf",
@@ -308,7 +311,9 @@
     "tirVeryLow": "Sehr niedrig",
     "hba1cError": "HbA1c-Daten konnten nicht geladen werden",
     "agpError": "AGP-Daten konnten nicht geladen werden",
-    "profilesError": "Profile konnten nicht geladen werden"
+    "profilesError": "Profile konnten nicht geladen werden",
+    "basedOnReadings": "Basierend auf {{count}} CGM-Messwerten",
+    "lowReadingCountWarning": "Wenige Messwerte — Schätzung möglicherweise unzuverlässig"
   },
   "profile": {
     "id": "Profil-ID",
@@ -345,6 +350,14 @@
     "units": "Einheiten",
     "warnings": "Warnungen",
     "noProfile": "Kein aktives Profil gefunden. Bitte zuerst ein Profil aktivieren.",
-    "error": "Berechnung fehlgeschlagen. Bitte erneut versuchen."
+    "error": "Berechnung fehlgeschlagen. Bitte erneut versuchen.",
+    "trendDoubleUp": "Steigt schnell",
+    "trendSingleUp": "Steigt",
+    "trendFortyFiveUp": "Steigt langsam",
+    "trendFlat": "Stabil",
+    "trendFortyFiveDown": "Fällt langsam",
+    "trendSingleDown": "Fällt",
+    "trendDoubleDown": "Fällt schnell",
+    "trendNone": "Unbekannt"
   }
 }

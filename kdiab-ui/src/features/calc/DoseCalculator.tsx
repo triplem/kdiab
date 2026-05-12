@@ -9,14 +9,14 @@ interface Props {
 }
 
 const CGM_TRENDS = [
-  'DOUBLE_UP',
-  'SINGLE_UP',
-  'FORTY_FIVE_UP',
-  'FLAT',
-  'FORTY_FIVE_DOWN',
-  'SINGLE_DOWN',
-  'DOUBLE_DOWN',
-  'NONE',
+  { value: 'DOUBLE_UP', labelKey: 'doseCalc.trendDoubleUp' },
+  { value: 'SINGLE_UP', labelKey: 'doseCalc.trendSingleUp' },
+  { value: 'FORTY_FIVE_UP', labelKey: 'doseCalc.trendFortyFiveUp' },
+  { value: 'FLAT', labelKey: 'doseCalc.trendFlat' },
+  { value: 'FORTY_FIVE_DOWN', labelKey: 'doseCalc.trendFortyFiveDown' },
+  { value: 'SINGLE_DOWN', labelKey: 'doseCalc.trendSingleDown' },
+  { value: 'DOUBLE_DOWN', labelKey: 'doseCalc.trendDoubleDown' },
+  { value: 'NONE', labelKey: 'doseCalc.trendNone' },
 ]
 
 export function DoseCalculator({ userId, glucoseUnit }: Props) {
@@ -70,9 +70,9 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
             onChange={(e) => setTrend(e.target.value)}
             style={{ width: '100%', marginTop: '0.25rem' }}
           >
-            {CGM_TRENDS.map((t) => (
-              <option key={t} value={t}>
-                {t}
+            {CGM_TRENDS.map((tr) => (
+              <option key={tr.value} value={tr.value}>
+                {t(tr.labelKey)}
               </option>
             ))}
           </select>
