@@ -255,6 +255,12 @@ components:
           maxItems: 24
           items:
             $ref: '#/components/schemas/AgpHourlyData'
+        totalReadingCount:
+          type: integer
+          description: Total number of CGM readings used across all hourly buckets.
+        sensorWearDays:
+          type: integer
+          description: Number of distinct calendar days (UTC) with at least one CGM reading.
         warnings:
           type: array
           items:

@@ -269,6 +269,36 @@ class AnalyticsServiceTest {
         assertTrue(result.warnings.isEmpty())
     }
 
+    @Test
+    fun `getAgp returns totalReadingCount equal to sum of all hourly counts`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            cgmDto(120.0, "2024-01-15T08:00:00Z"),
+            cgmDto(130.0, "2024-01-15T08:30:00Z"),
+            cgmDto(110.0, "2024-01-15T14:00:00Z"),
+        )
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        assertEquals(3, result.totalReadingCount)
+    }
+
+    @Test
+    fun `getAgp returns sensorWearDays as count of distinct UTC calendar days with readings`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            cgmDto(120.0, "2024-01-14T23:00:00Z"),
+            cgmDto(130.0, "2024-01-15T00:30:00Z"),
+            cgmDto(110.0, "2024-01-15T14:00:00Z"),
+        )
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        assertEquals(2, result.sensorWearDays)
+    }
+
+    @Test
+    fun `getAgp returns zero totalReadingCount and sensorWearDays for empty input`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns emptyList()
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        assertEquals(0, result.totalReadingCount)
+        assertEquals(0, result.sensorWearDays)
+    }
+
     // ── Unit mismatch ────────────────────────────────────────────────────────
 
     @Test

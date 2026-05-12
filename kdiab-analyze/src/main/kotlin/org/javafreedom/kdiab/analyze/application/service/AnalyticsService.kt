@@ -115,6 +115,12 @@ class AnalyticsService(
             byHour[hour].add(mgDl)
         }
 
+        val sensorWearDays = allMeasures.mapNotNull { dto ->
+            if (dto.type != MeasureType.CGM) return@mapNotNull null
+            runCatching { Instant.parse(dto.measuredAt) }.getOrNull()
+                ?.toLocalDateTime(TimeZone.UTC)?.date
+        }.toSet().size
+
         val hourlyData = byHour.mapIndexed { hour, values ->
             if (values.isEmpty()) {
                 AgpHourlyData(hour = hour, p10 = null, p25 = null, median = null, p75 = null, p90 = null, count = 0)
@@ -133,13 +139,19 @@ class AnalyticsService(
         }
 
         val coveredHours = hourlyData.count { it.count > 0 }
+        val totalReadingCount = hourlyData.sumOf { it.count }
         val agpWarnings = buildList {
             if (coveredHours < MIN_COVERED_HOURS) {
                 add("Only $coveredHours of 24 hours have CGM data — AGP pattern may not be representative.")
             }
         }
 
-        return AgpResult(hourlyData = hourlyData, warnings = agpWarnings)
+        return AgpResult(
+            hourlyData = hourlyData,
+            totalReadingCount = totalReadingCount,
+            sensorWearDays = sensorWearDays,
+            warnings = agpWarnings,
+        )
     }
 
     @Suppress("LongParameterList")

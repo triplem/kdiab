@@ -59,7 +59,13 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
       )}
 
       {agpQuery.data && (
-        <AgpChart hourlyData={agpQuery.data.hourlyData} glucoseUnit={glucoseUnit} warnings={agpQuery.data.warnings} />
+        <AgpChart
+          hourlyData={agpQuery.data.hourlyData}
+          glucoseUnit={glucoseUnit}
+          warnings={agpQuery.data.warnings}
+          totalReadingCount={agpQuery.data.totalReadingCount}
+          sensorWearDays={agpQuery.data.sensorWearDays}
+        />
       )}
     </div>
   )

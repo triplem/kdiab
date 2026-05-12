@@ -28,6 +28,8 @@ data class AgpHourlyData(
 
 data class AgpResult(
     val hourlyData: List<AgpHourlyData>,
+    val totalReadingCount: Int = 0,
+    val sensorWearDays: Int = 0,
     val warnings: List<String> = emptyList(),
 )
 

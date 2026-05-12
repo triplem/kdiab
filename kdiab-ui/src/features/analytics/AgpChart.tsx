@@ -16,6 +16,8 @@ interface Props {
   hourlyData: AgpHourlyData[]
   glucoseUnit: string
   warnings?: string[]
+  totalReadingCount?: number
+  sensorWearDays?: number
 }
 
 const MGDL_TO_MMOL = 1 / 18.0
@@ -25,7 +27,7 @@ function convert(val: number, unit: string): number {
   return Math.round(val)
 }
 
-export function AgpChart({ hourlyData, glucoseUnit, warnings }: Props) {
+export function AgpChart({ hourlyData, glucoseUnit, warnings, totalReadingCount, sensorWearDays }: Props) {
   const { t } = useTranslation()
   const yLabel = glucoseUnit === 'mmol/L' ? 'mmol/L' : 'mg/dL'
   const tirLow = convert(70, glucoseUnit)
@@ -66,6 +68,22 @@ export function AgpChart({ hourlyData, glucoseUnit, warnings }: Props) {
           ⓘ
         </span>
       </h3>
+      {(sensorWearDays !== undefined || totalReadingCount !== undefined) && (
+        <p
+          aria-label={t('analytics.agpDataQuality')}
+          style={{ margin: '0 0 0.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}
+        >
+          {sensorWearDays !== undefined && (
+            <span>{t('analytics.agpSensorWearDays', { count: sensorWearDays })}</span>
+          )}
+          {sensorWearDays !== undefined && totalReadingCount !== undefined && (
+            <span style={{ margin: '0 0.4rem' }}>·</span>
+          )}
+          {totalReadingCount !== undefined && (
+            <span>{t('analytics.agpTotalReadings', { count: totalReadingCount })}</span>
+          )}
+        </p>
+      )}
       <ResponsiveContainer width="100%" height={320}>
         <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
           <CartesianGrid strokeDasharray="3 3" />

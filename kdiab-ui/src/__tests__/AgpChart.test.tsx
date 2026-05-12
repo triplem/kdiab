@@ -70,6 +70,39 @@ describe('AgpChart', () => {
     getByRole('alert')
   })
 
+  test('renders sensor wear indicator when sensorWearDays and totalReadingCount are provided', () => {
+    const { getByLabelText } = render(
+      <AgpChart
+        hourlyData={makePopulatedBuckets()}
+        glucoseUnit="mg/dL"
+        sensorWearDays={14}
+        totalReadingCount={4032}
+      />,
+    )
+    const indicator = getByLabelText('AGP data quality')
+    expect(indicator.textContent).toContain('14')
+    expect(indicator.textContent).toContain('4032')
+  })
+
+  test('renders only sensorWearDays when totalReadingCount is absent', () => {
+    const { getByLabelText } = render(
+      <AgpChart
+        hourlyData={makePopulatedBuckets()}
+        glucoseUnit="mg/dL"
+        sensorWearDays={7}
+      />,
+    )
+    const indicator = getByLabelText('AGP data quality')
+    expect(indicator.textContent).toContain('7')
+  })
+
+  test('does not render sensor wear indicator when neither prop is provided', () => {
+    const { queryByLabelText } = render(
+      <AgpChart hourlyData={makePopulatedBuckets()} glucoseUnit="mg/dL" />,
+    )
+    expect(queryByLabelText('AGP data quality')).toBeNull()
+  })
+
   test('renders without warnings when warnings is empty array', () => {
     const { queryByRole } = render(
       <AgpChart hourlyData={makeEmptyBuckets()} glucoseUnit="mg/dL" warnings={[]} />,

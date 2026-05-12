@@ -56,6 +56,8 @@ data class TirBreakdownDto(
 @Serializable
 data class AgpResponseDto(
     val hourlyData: List<AgpHourlyDataDto>,
+    val totalReadingCount: Int = 0,
+    val sensorWearDays: Int = 0,
     val warnings: List<String> = emptyList(),
 )
 
@@ -123,6 +125,8 @@ fun AgpResult.toResponse() = AgpResponseDto(
     hourlyData = hourlyData.map {
         AgpHourlyDataDto(it.hour, it.p10, it.p25, it.median, it.p75, it.p90, it.count)
     },
+    totalReadingCount = totalReadingCount,
+    sensorWearDays = sensorWearDays,
     warnings = warnings,
 )
 

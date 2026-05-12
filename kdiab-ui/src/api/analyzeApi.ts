@@ -47,6 +47,8 @@ export interface AgpHourlyData {
 
 export interface AgpResponse {
   hourlyData: AgpHourlyData[]
+  totalReadingCount?: number
+  sensorWearDays?: number
   warnings?: string[]
 }
 
