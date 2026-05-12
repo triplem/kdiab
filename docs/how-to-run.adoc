@@ -17,11 +17,10 @@ Two build orchestrators are available at the repo root:
 
 * `./gradlew` — the primary orchestrator for build and test; integrates with IDEs and uses
   Gradle's incremental build and build cache.
-* `build.sh` — retained for Docker-specific workflows (`--docker`, `--clean`).
 
 === Gradle (primary)
 
-The root Gradle project is a composite build that includes all four services. Each service
+The root Gradle project is a composite build that includes all seven services. Each service
 remains independently buildable via its own `./gradlew`.
 
 [source,bash]
@@ -37,73 +36,14 @@ Individual subprojects and tasks can be targeted directly from the root:
 ----
 ./gradlew :kdiab-analyze:backend:build
 ./gradlew :kdiab-measures:backend:check
-./gradlew :kdiab-profiles:buildFrontend
 ----
 
-TIP: IntelliJ IDEA — open the root `settings.gradle.kts` to import all four services as modules
+TIP: IntelliJ IDEA — open the root `settings.gradle.kts` to import all seven services as modules
 with full cross-service navigation and refactoring support.
-
-=== build.sh (Docker and clean)
-
-`build.sh` is the monorepo build orchestrator for Docker image builds and full environment resets.
-It logs per-service output to `.build-logs/`.
-
-=== Available Flags
-
-[cols="2,3"]
-|===
-| Flag | Effect
-
-| _(none)_         | Build all backends (`:backend:build`) and all frontends
-| `--check`        | Build + run all tests, Detekt, Kover (80% coverage gate)
-| `--backend-only` | Gradle builds only, skip npm
-| `--frontend-only`| npm builds only, skip Gradle
-| `--docker`       | Build all Docker images (service + liquibase migration images)
-| `--no-parallel`  | Sequential execution — useful when disk / RAM is tight
-|===
-
-Flags are composable:
-
-[source,bash]
-----
-./build.sh                   # build everything, skip tests
-./build.sh --check           # build + full test suite
-./build.sh --check --docker  # test + build Docker images
-./build.sh --no-parallel     # sequential build (saves RAM)
-----
-
-=== What `--docker` Builds
-
-`--docker` calls `docker compose build` (or `podman compose build` when Docker is not available)
-for every image defined in the root `docker-compose.yml` that has a local `build:` context:
-
-[cols="2,2,3"]
-|===
-| Compose service | Image name | Dockerfile
-
-| `liquibase-measures`   | `localhost/kdiab-measures-liquibase:latest`   | `kdiab-measures/backend/Dockerfile.liquibase`
-| `liquibase-profiles`   | `localhost/kdiab-profiles-liquibase:latest`   | `kdiab-profiles/backend/Dockerfile.liquibase`
-| `liquibase-treatments` | `localhost/kdiab-treatments-liquibase:latest` | `kdiab-treatments/backend/Dockerfile.liquibase`
-| `measures-backend`     | `localhost/kdiab-measures-backend:latest`     | `kdiab-measures/backend/Dockerfile`
-| `measures-frontend`    | `localhost/kdiab-measures-frontend:latest`    | `kdiab-measures/frontend/Dockerfile`
-| `profiles-backend`     | `localhost/kdiab-profiles-backend:latest`     | `kdiab-profiles/backend/Dockerfile`
-| `profiles-frontend`    | `localhost/kdiab-profiles-frontend:latest`    | `kdiab-profiles/frontend/Dockerfile`
-| `treatments-backend`   | `localhost/kdiab-treatments-backend:latest`   | `kdiab-treatments/backend/Dockerfile`
-| `treatments-frontend`  | `localhost/kdiab-treatments-frontend:latest`  | `kdiab-treatments/frontend/Dockerfile`
-| `bff-backend`          | `localhost/kdiab-analyze-backend:latest`          | `kdiab-analyze/backend/Dockerfile`
-| `bff-frontend`         | `localhost/kdiab-analyze-frontend:latest`         | `kdiab-analyze/frontend/Dockerfile`
-|===
-
-Externally pulled images (`postgres`, `keycloak`, `pgadmin`) are not rebuilt by this flag.
-
-NOTE: `--parallel` is only passed to `docker compose build`. `podman compose` manages concurrency
-internally and does not accept that flag.
-
-Build logs land in `.build-logs/docker images.log` on failure.
 
 == Running the Full Platform
 
-The root `docker-compose.yml` starts the entire platform: all four services, Keycloak, PostgreSQL,
+The root `docker-compose.yml` starts the entire platform: all seven services, Keycloak, PostgreSQL,
 pgAdmin, Liquibase migrations, and a seed-data job.
 
 === Container Lifecycle
@@ -111,7 +51,7 @@ pgAdmin, Liquibase migrations, and a seed-data job.
 [source,bash]
 ----
 # First run — build images then create and start containers
-./build.sh --docker
+./gradlew dockerBuild
 podman compose up -d          # -d runs detached (background)
 
 # Subsequent runs — start already-created containers
@@ -218,11 +158,13 @@ cd kdiab-<service>
 
 === Frontend (React / TypeScript)
 
+All frontends are in the unified `kdiab-ui/` SPA at the monorepo root.
+
 [source,bash]
 ----
-cd kdiab-<service>/frontend
+cd kdiab-ui
 npm install
-npm run dev          # dev server on port 3000, proxies /api to backend on 8080
+npm run dev          # dev server on http://localhost:3005
 ----
 
 == Running Tests
@@ -231,8 +173,7 @@ npm run dev          # dev server on port 3000, proxies /api to backend on 8080
 
 [source,bash]
 ----
-./gradlew check        # preferred: tests + Detekt + Kover + frontend lint/test, all services
-./build.sh --check     # alternative: same scope via shell orchestrator
+./gradlew check        # tests + Detekt + Kover + frontend lint/test, all services
 ----
 
 === Single Service
@@ -248,7 +189,7 @@ cd kdiab-<service>
 
 [source,bash]
 ----
-cd kdiab-<service>/frontend
+cd kdiab-ui
 npm run test                         # Vitest unit tests
-npx playwright test                  # E2E tests (requires running app)
+npm run test:e2e                     # Playwright E2E tests (requires running app)
 ----

@@ -11,10 +11,11 @@ This file provides service-specific guidance. Common commands, architecture patt
 ```
 ├── api/              # OpenAPI spec (openapi.yaml)
 ├── backend/          # Ktor (Kotlin) server application
-├── frontend/         # React/TypeScript SPA (Vite)
 ├── docs/             # AsciiDoc architecture docs and ADRs
 └── config/           # Detekt config and Keycloak realm JSON
 ```
+
+# Frontend: see kdiab-ui/ at the monorepo root
 
 ## Backend Package Structure
 Root package: `org.javafreedom.kdiab.profiles`
