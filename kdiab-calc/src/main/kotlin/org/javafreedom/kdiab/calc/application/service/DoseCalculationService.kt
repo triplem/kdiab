@@ -115,10 +115,13 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
         return (match.low + match.high) / 2.0
     }
 
-    private fun parseSegmentTime(time: String): LocalTime {
-        val parts = time.split(":")
-        return LocalTime(parts[0].toInt(), parts[1].toInt())
-    }
+    private fun parseSegmentTime(time: String): LocalTime =
+        runCatching {
+            val parts = time.split(":")
+            LocalTime(parts[0].toInt(), parts[1].toInt())
+        }.getOrElse {
+            throw BusinessValidationException("Invalid segment time format: '$time' — expected HH:mm")
+        }
 
     private fun trendAdjustment(trend: CgmTrend) = when (trend) {
         CgmTrend.DOUBLE_UP -> TREND_DOUBLE_ADJUSTMENT

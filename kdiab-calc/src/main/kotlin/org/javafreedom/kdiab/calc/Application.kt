@@ -9,6 +9,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.swagger.*
+import io.ktor.server.resources.Resources
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
@@ -58,6 +59,7 @@ fun Application.module(
     }
 
     install(ContentNegotiation) { json(json) }
+    install(Resources)
 
     val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
         ?.getString()?.split(",")?.map { it.trim() }
