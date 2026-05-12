@@ -120,10 +120,14 @@ fun Application.module(
             }
             install(io.ktor.client.plugins.HttpRequestRetry) {
                 maxRetries = retryMaxRetries
-                retryIf { _, response -> response.status.value >= HTTP_SERVER_ERROR_STATUS }
+                retryIf { request, response ->
+                    request.method == io.ktor.http.HttpMethod.Get &&
+                        response.status.value >= HTTP_SERVER_ERROR_STATUS
+                }
                 retryOnExceptionIf { _, cause ->
                     cause is java.net.SocketTimeoutException ||
-                        cause is io.ktor.client.plugins.HttpRequestTimeoutException
+                        cause is io.ktor.client.plugins.HttpRequestTimeoutException ||
+                        cause is java.net.ConnectException
                 }
                 exponentialDelay(base = 2.0, maxDelayMs = retryMaxDelayMs)
             }

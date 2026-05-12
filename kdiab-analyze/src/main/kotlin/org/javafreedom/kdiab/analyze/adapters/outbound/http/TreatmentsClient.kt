@@ -1,6 +1,7 @@
 package org.javafreedom.kdiab.analyze.adapters.outbound.http
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.DefaultRequest
@@ -15,11 +16,16 @@ import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 private val logger = KotlinLogging.logger {}
 
 private const val PAGE_SIZE = 200
+private const val MAX_TREATMENTS = 100_000
 
 class TreatmentsClient(
-    private val httpClientEngine: HttpClientEngine,
+    httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
 ) {
+    private val httpClient = HttpClient(httpClientEngine) {
+        install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+    }
+
     suspend fun getTreatments(
         userId: String,
         authorization: String,
@@ -30,7 +36,7 @@ class TreatmentsClient(
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",
-            httpClientEngine = httpClientEngine,
+            httpClientEngine = httpClient.engine,
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
@@ -40,9 +46,10 @@ class TreatmentsClient(
         val result = mutableListOf<TreatmentResponse>()
         var page = 0
         var totalCount = Long.MAX_VALUE
+        var done = false
         val totalStart = System.currentTimeMillis()
 
-        while (result.size < totalCount) {
+        while (result.size < totalCount && !done) {
             val pageStart = System.currentTimeMillis()
             val httpResponse = api.listTreatments(
                 userId = userId,
@@ -71,8 +78,13 @@ class TreatmentsClient(
             val paged = httpResponse.body()
             totalCount = paged.totalCount
             result.addAll(paged.items)
-            page++
-            if (paged.items.isEmpty()) break
+            if (result.size >= MAX_TREATMENTS) {
+                logger.warn { "MAX_TREATMENTS limit reached — truncating at $MAX_TREATMENTS for userId=$userId" }
+                done = true
+            } else {
+                page++
+                done = paged.items.isEmpty()
+            }
         }
 
         val totalMs = System.currentTimeMillis() - totalStart

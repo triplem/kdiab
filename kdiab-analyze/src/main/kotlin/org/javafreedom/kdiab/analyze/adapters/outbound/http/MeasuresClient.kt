@@ -1,6 +1,7 @@
 package org.javafreedom.kdiab.analyze.adapters.outbound.http
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.DefaultRequest
@@ -15,12 +16,16 @@ import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 private val logger = KotlinLogging.logger {}
 
 private const val PAGE_SIZE = 200    // upstream maximum (see api/openapi.yaml size.maximum)
-private const val MAX_MEASURES = 50_000 // ~120 days of CGM at 5-min intervals
+private const val MAX_MEASURES = 100_000
 
 class MeasuresClient(
-    private val httpClientEngine: HttpClientEngine,
+    httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
 ) {
+    private val httpClient = HttpClient(httpClientEngine) {
+        install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+    }
+
     suspend fun getMeasures(
         userId: String,
         authorization: String,
@@ -31,7 +36,7 @@ class MeasuresClient(
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",
-            httpClientEngine = httpClientEngine,
+            httpClientEngine = httpClient.engine,
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
@@ -41,12 +46,10 @@ class MeasuresClient(
         val result = mutableListOf<MeasureResponse>()
         var page = 0
         var totalCount = Long.MAX_VALUE
+        var done = false
         val totalStart = System.currentTimeMillis()
 
-        while (result.size < totalCount) {
-            check(result.size < MAX_MEASURES) {
-                "Too many measures for user $userId ($totalCount total). Narrow the timeframe."
-            }
+        while (result.size < totalCount && !done) {
             val pageStart = System.currentTimeMillis()
             val httpResponse = api.listMeasures(
                 userId = userId,
@@ -74,8 +77,13 @@ class MeasuresClient(
             val paged = httpResponse.body()
             totalCount = paged.totalCount
             result.addAll(paged.items)
-            page++
-            if (paged.items.isEmpty()) break   // guard against a zero-item last page
+            if (result.size >= MAX_MEASURES) {
+                logger.warn { "MAX_MEASURES limit reached — truncating at $MAX_MEASURES for userId=$userId" }
+                done = true
+            } else {
+                page++
+                done = paged.items.isEmpty()   // guard against a zero-item last page
+            }
         }
 
         val totalMs = System.currentTimeMillis() - totalStart
