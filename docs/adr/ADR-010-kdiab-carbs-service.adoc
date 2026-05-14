@@ -1,0 +1,134 @@
+= ADR-010: kdiab-carbs Dedicated Food and Carbohydrate Service
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-14
+* *Deciders*: triplem
+
+== Context
+
+Carbohydrate data in a T1D management platform has two distinct concerns:
+
+1. *Food catalog*: a database of food items with their carbohydrate content per 100 g (or per
+   serving). Entries are created once and reused across many meals. They may be shared across
+   users or user-private. Updates are infrequent and driven by curation, not by clinical events.
+
+2. *Carb entries*: a log of carbohydrates actually consumed at a given time, linked to a food
+   item and quantity. Entries are immutable after recording and form part of the patient's
+   treatment history.
+
+The original design placed carb entries inside `kdiab-treatments` alongside bolus, basal, and
+correction events. This created several problems:
+
+* *Domain leakage*: `kdiab-treatments` models clinical treatment events (insulin delivery,
+  corrections). Carbohydrate consumption is input to dosing decisions, not a treatment action.
+  Mixing them inflated the treatment model with food catalog concepts.
+* *Access patterns*: the food catalog is queried for autocomplete and browsing (read-heavy,
+  paginated, searchable by name). Treatment entries are appended and retrieved by time range
+  (append-only, time-series). A single service cannot optimise indexes for both patterns.
+* *Ownership and lifecycle*: a food item in the catalog has an independent lifecycle — it can
+  be created, updated, or soft-deleted without affecting recorded carb entries that reference it.
+  Embedding the catalog in `kdiab-treatments` would require either tight coupling or denormalising
+  food names into every treatment row.
+* *Growth path*: the food catalog is a candidate for enrichment with glycaemic index, macros, and
+  integration with external food databases (USDA, OpenFoodFacts). This growth should not force
+  changes to the treatment service's schema or API.
+
+== Decision
+
+Create `kdiab-carbs` as a dedicated microservice that owns both the food catalog and carb
+entry tracking. `kdiab-treatments` no longer stores carb data; when a meal bolus is recorded,
+`kdiab-treatments` stores the bolus event and `kdiab-carbs` stores the corresponding carb entry.
+
+=== Domain model
+
+[cols="2,3"]
+|===
+| Entity | Description
+
+| `FoodItem`   | A food or ingredient entry: name, carbs per 100 g, optional serving size, userId (null = shared)
+| `CarbEntry`  | A recorded consumption event: userId, timestamp, foodItemId, quantityGrams, carbsGrams (computed)
+|===
+
+=== API surface
+
+[source]
+----
+GET    /api/v1/food-items          List food items (paginated, searchable)
+POST   /api/v1/food-items          Create a food item
+GET    /api/v1/food-items/{id}     Get a food item by ID
+PUT    /api/v1/food-items/{id}     Update a food item
+DELETE /api/v1/food-items/{id}     Soft-delete a food item
+
+GET    /api/v1/users/{userId}/carb-entries       List carb entries (by time range)
+POST   /api/v1/users/{userId}/carb-entries       Record a carb entry
+GET    /api/v1/users/{userId}/carb-entries/{id}  Get a carb entry by ID
+DELETE /api/v1/users/{userId}/carb-entries/{id}  Delete a carb entry
+----
+
+=== Service coordinates
+
+* Port: `8085`
+* Audience: `carbs` (JWT audience claim required for auth)
+* Database: `kdiab-carbs` PostgreSQL database
+* OpenAPI spec: `kdiab-carbs/api/openapi.yaml`
+
+=== Integration with kdiab-analyze
+
+The `kdiab-analyze` BFF aggregates carb data for the analytics dashboard (daily carb totals,
+carb-to-dose ratio). It calls `kdiab-carbs` via its HTTP client alongside `kdiab-measures`,
+`kdiab-treatments`, and `kdiab-profiles`. The `kdiab-analyze-frontend` Keycloak client was
+updated with a `carbs` audience mapper so the forwarded JWT is accepted by `kdiab-carbs`.
+
+== Consequences
+
+=== Positive
+
+* `kdiab-treatments` models only clinical treatment events; its domain is clean and focused.
+* The food catalog can evolve independently — new fields, external integrations, and search
+  enhancements do not affect the treatment service.
+* Separate indexes optimised for each access pattern: full-text search on `FoodItem.name`;
+  B-tree on `CarbEntry.userId, timestamp` for time-range queries.
+* Soft-delete on food items preserves referential integrity: historic carb entries continue to
+  reference deleted food items without cascading side-effects.
+
+=== Negative
+
+* Recording a meal bolus now requires two writes: one to `kdiab-treatments` (bolus event) and
+  one to `kdiab-carbs` (carb entry). The frontend is responsible for both calls; there is no
+  distributed transaction. A partial failure (bolus written, carb entry not written, or vice
+  versa) must be handled by the client with a retry.
+* The `kdiab-analyze` BFF makes one additional HTTP call per analytics request to aggregate
+  carb data from `kdiab-carbs`.
+* An additional Liquibase container (`liquibase-carbs`) and a separate PostgreSQL database
+  (`kdiab-carbs`) are required in `docker-compose.yml`.
+
+=== Neutral
+
+* `kdiab-carbs` uses the same Kotlin + Ktor + Exposed ORM + Liquibase + hexagonal architecture
+  as `kdiab-measures`, `kdiab-profiles`, and `kdiab-treatments`.
+* `kdiab-carbs` depends on `kdiab-common` for shared domain types and Ktor plugins.
+
+== Alternatives Considered
+
+=== Embed carb data in kdiab-treatments (status quo)
+
+Store carb entries alongside bolus and correction events in `kdiab-treatments`. *Rejected*:
+conflates two different domain concepts (clinical treatment events vs. food intake records),
+creates mixed access patterns within one database, and blocks independent evolution of the
+food catalog.
+
+=== Embed food catalog in kdiab-measures
+
+Add food items as a new measurement type in `kdiab-measures`. *Rejected*: food items are not
+health measurements. They are a reference dataset used as input to dosing decisions. Placing
+them in a measurements service would be a category error.
+
+=== Use kdiab-treatments for carb entries and a separate catalog service
+
+Keep carb entries in `kdiab-treatments` and extract only the food catalog to a new service.
+*Rejected*: the carb entries themselves have a different lifecycle and access pattern from
+treatment events and benefit from being co-located with the food catalog they reference.
+Splitting across two services while keeping entries in `kdiab-treatments` would recreate the
+access-pattern mismatch and add a cross-service foreign key.

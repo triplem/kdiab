@@ -1,0 +1,120 @@
+= ADR-009: kdiab-calc Stateless Dose Calculator Service
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-14
+* *Deciders*: triplem
+
+== Context
+
+T1D patients on insulin pump therapy must calculate bolus doses before meals and for glucose
+corrections. This calculation depends on several inputs:
+
+* Current CGM glucose reading and trend (slope over the last two readings)
+* Active basal profile: insulin-to-carb ratio (ICR), insulin sensitivity factor (ISF),
+  and target glucose range — all of which may vary by time-of-day
+* Carbohydrate amount to be consumed (meal bolus)
+* Active insulin on board (IOB) — not tracked in the initial platform version
+
+Early in development, dose calculation was performed client-side in the `kdiab-ui` React
+frontend. This created several problems:
+
+* *No audit trail*: the calculation logic and inputs are invisible to the server; there is no
+  record of what recommendation was generated or on what basis.
+* *No safety validation*: the server cannot reject an obviously unsafe dose (e.g. a bolus that
+  would push glucose below a safe threshold) because it never sees the recommendation.
+* *Logic duplication risk*: if a native mobile app were added alongside `kdiab-ui`, the
+  calculation logic would have to be duplicated in a third codebase.
+* *Versioning*: the calculation algorithm embedded in the frontend updates only when the user
+  refreshes the app; a server-side service allows algorithm updates without client releases.
+
+== Decision
+
+Create `kdiab-calc` as a dedicated stateless microservice for bolus dose recommendations.
+The service follows the same Kotlin + Ktor + hexagonal architecture as all other kdiab services
+but has *no database*. All inputs are passed in the request body; all state lives in upstream
+services.
+
+=== Request model
+
+A single `POST /api/v1/dose-recommendation` endpoint accepts:
+
+* `userId` — resolved from JWT; used to fetch the active basal profile from `kdiab-profiles`
+* `glucoseMgDl` — current CGM reading in mg/dL
+* `glucoseTrendMgDlPerMin` — rate of change (positive = rising, negative = falling)
+* `carbsGrams` — planned carbohydrate intake (0 for a correction-only bolus)
+* `targetGlucoseMgDl` (optional) — overrides the profile default target
+
+=== Calculation algorithm
+
+1. Fetch the active profile from `kdiab-profiles` (forwarding the user JWT).
+2. Resolve the time-of-day slot to obtain ICR and ISF.
+3. Meal bolus = `carbsGrams / ICR`
+4. Correction bolus = `(currentGlucose - targetGlucose) / ISF`
+5. Trend adjustment = `glucoseTrendMgDlPerMin × trendCorrectionFactor` (configurable constant)
+6. Total recommended dose = meal bolus + correction bolus + trend adjustment, floored at 0.
+
+=== Stateless design
+
+`kdiab-calc` holds no database. Every request is self-contained: the profile fetch is the only
+outbound call, and it is made synchronously within the request. There is no session state,
+no queue, and no batch processing.
+
+=== Audit trail
+
+The frontend records accepted dose recommendations as treatment events in `kdiab-treatments`
+(bolus type) after the user confirms. `kdiab-calc` does not write to any database itself;
+the audit trail is a downstream concern for `kdiab-treatments`.
+
+=== Service coordinates
+
+* Port: `8086`
+* Audience: `calc` (JWT audience claim required for auth)
+* OpenAPI spec: `kdiab-calc/api/openapi.yaml`
+
+== Consequences
+
+=== Positive
+
+* Dose calculation logic lives in one place — changes to the algorithm (e.g. IOB support,
+  updated correction factors) require a single service update.
+* The server can validate that a recommended dose is within safe bounds before returning it,
+  enabling a consistent safety layer regardless of client type.
+* Stateless design means horizontal scaling is trivial: no session affinity, no shared cache.
+* A future native mobile app (iOS, Android) can consume the same endpoint without duplicating
+  the calculation logic.
+
+=== Negative
+
+* Every dose recommendation request incurs an outbound HTTP call to `kdiab-profiles` to fetch
+  the active basal profile. Network latency adds to response time.
+* `kdiab-calc` inherits a runtime dependency on `kdiab-profiles` being available. If
+  `kdiab-profiles` is down, dose recommendations are unavailable.
+
+=== Neutral
+
+* `kdiab-calc` uses `kdiab-common` for `Role`, `UserPrincipal`, and the standard Ktor plugins
+  (security, logging, status pages) — consistent with all other services.
+* No Liquibase container is needed for `kdiab-calc` in `docker-compose.yml` because there is no
+  database schema to migrate.
+
+== Alternatives Considered
+
+=== Client-side calculation (status quo)
+
+Keep dose calculation in the React frontend. *Rejected*: no audit trail, no server-side safety
+validation, and logic must be duplicated in every future client.
+
+=== Embed calculation in kdiab-analyze
+
+Add a dose recommendation endpoint to the existing `kdiab-analyze` BFF. *Rejected*: `kdiab-analyze`
+is a read-only aggregator (analytics dashboard). Adding write-path recommendation logic would
+violate its single responsibility and complicate its OpenAPI contract.
+
+=== Embed calculation in kdiab-treatments
+
+Treat a dose recommendation as a draft treatment and store it in `kdiab-treatments`.
+*Rejected*: dose recommendations are advisory, not treatment records. Storing advisory outputs
+in the treatment log would pollute the audit trail with unconfirmed recommendations and
+conflate two distinct domain concepts.

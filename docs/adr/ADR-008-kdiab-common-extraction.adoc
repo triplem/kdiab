@@ -1,0 +1,118 @@
+= ADR-008: kdiab-common Shared Library Extraction
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-14
+* *Deciders*: triplem
+
+== Context
+
+As the kdiab monorepo grew from four to seven services, the same Kotlin types and Ktor plugins
+were duplicated across every service:
+
+* `Role` enum (`PATIENT`, `DOCTOR`, `ADMIN`) — present verbatim in every service's
+  `domain/model/` package.
+* `DomainExceptions` hierarchy (`AuthenticationException`, `AuthorizationException`,
+  `ResourceNotFoundException`, `BusinessValidationException`, `ConflictException`) — each service
+  maintained its own copy with the same class names and semantics.
+* `UserPrincipal` data class — extracted from JWT `sub` and `realm_access` claims; duplicated
+  in every service that performs access control.
+* Ktor plugin implementations — `configureSecurity` (JWT/JWKS validation), `configureLogging`
+  (X-Correlation-ID via MDC), and `configureStatusPages` (domain exception → HTTP status mapping)
+  were copied service-by-service and diverged slightly in each.
+
+With seven services, any bug fix or behavioural change to shared logic required the same edit
+in seven places. A divergence between service copies of `StatusPages` (e.g. one service mapping
+`ConflictException` to 409 while another mapped it to 400) would produce inconsistent API
+behaviour across the platform.
+
+== Decision
+
+Extract all shared Kotlin types and Ktor plugin code into a dedicated library module:
+`kdiab-common`. The library is published as a Gradle composite build inclusion consumed by all
+other services via `includeBuild("../kdiab-common")` in their `settings.gradle.kts`.
+
+=== Extracted components
+
+[cols="2,3"]
+|===
+| Component | Package
+
+| `Role`                    | `io.kdiab.common.domain.model`
+| `DomainExceptions`        | `io.kdiab.common.domain.exception`
+| `UserPrincipal`           | `io.kdiab.common.domain.security`
+| `configureSecurity`       | `io.kdiab.common.plugins`
+| `configureLogging`        | `io.kdiab.common.plugins`
+| `configureStatusPages`    | `io.kdiab.common.plugins`
+| `ErrorResponse`           | `io.kdiab.common.plugins`
+|===
+
+=== Dependency model
+
+`kdiab-common` is a plain Kotlin library (`kotlin("jvm")` plugin only). It depends on Ktor
+server libraries (auth-jwt, status-pages, call-id, call-logging) but has *no* dependency on
+any persistence layer or service-specific code. This keeps the library lightweight and avoids
+circular dependencies.
+
+Services declare the dependency as:
+
+[source,kotlin]
+----
+dependencies {
+    implementation("io.kdiab:kdiab-common")
+}
+----
+
+=== kdiab-analyze exception
+
+`kdiab-analyze` is a stateless BFF that forwards JWTs upstream. It uses `UserPrincipal` and
+`configureSecurity`, but does not require `configureStatusPages` for domain exceptions thrown
+by upstream services. It still depends on `kdiab-common` for shared types.
+
+== Consequences
+
+=== Positive
+
+* A single source of truth for `Role`, `DomainExceptions`, and `UserPrincipal` — fixes propagate
+  to all services in one commit.
+* Consistent HTTP status mapping across all services: `StatusPages` behaves identically
+  everywhere.
+* Reduced per-service boilerplate: new services only need to call `configureSecurity()`,
+  `configureLogging()`, and `configureStatusPages()` rather than re-implementing them.
+* `kdiab-common` is independently testable with unit tests that cover the shared logic once.
+
+=== Negative
+
+* All services now have a compile-time dependency on `kdiab-common`. A breaking change in
+  `kdiab-common` requires rebuilding and redeploying all services.
+* The composite build approach means `kdiab-common` must always be present on the local
+  filesystem relative to consuming services. CI must check out the full monorepo.
+
+=== Neutral
+
+* `kdiab-common` has no database, no HTTP server, and no OpenAPI spec. It is purely a shared
+  library and does not run as a standalone service.
+* The `kdiab-calc` and `kdiab-carbs` services, added after this decision, were built from the
+  start against `kdiab-common` rather than introducing new duplicates.
+
+== Alternatives Considered
+
+=== Copy-paste per service (status quo)
+
+Continue duplicating shared types in each service. *Rejected*: with seven services the
+maintenance burden is unsustainable and divergence is inevitable. A single bug fix would require
+seven identical commits.
+
+=== Separate Git repository published to a package registry
+
+Publish `kdiab-common` as a Maven artifact to a registry (GitHub Packages, Maven Central).
+*Rejected*: adds release coordination overhead. Every change to shared code requires a version
+bump, a publish step, and a dependency upgrade in all seven service `build.gradle.kts` files.
+The composite build approach provides the same sharing with no publish step.
+
+=== Gradle multi-project build (single root project)
+
+Collapse all services into one Gradle multi-project build with a shared `buildSrc` or
+`convention-plugins`. *Rejected*: see ADR-003 — services must remain independently buildable.
+Composite builds preserve service autonomy while still enabling sharing via `includeBuild`.
