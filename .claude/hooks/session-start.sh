@@ -92,6 +92,35 @@ CONTEXT+="\nApply all rules from .claude/rules/ automatically. "
 CONTEXT+="Use the retry loop (Ralph Principle) before escalating to human. "
 [ -n "$STORY_ID" ] && CONTEXT+="The current story is #${STORY_ID} — load its details from the issue tracker before starting work."
 
+# --- Write session_start audit entry ---
+SESSION_ID=$(echo "$INPUT" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print(d.get('session_id', 'unknown'))
+" 2>/dev/null || echo "unknown")
+
+AUDIT_FILE="${PROJECT_DIR}/audit/agent-log.jsonl"
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || \
+  python3 -c "from datetime import datetime,timezone; print(datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))")
+
+AUDIT_ENTRY=$(python3 -c "
+import json, sys
+print(json.dumps({
+    'ts': sys.argv[1],
+    'agent': 'System',
+    'session_id': sys.argv[2],
+    'action': 'session_start',
+    'branch': sys.argv[3],
+    'story_id': sys.argv[4],
+    'phase': sys.argv[5]
+}, ensure_ascii=False))
+" "$TIMESTAMP" "$SESSION_ID" "$BRANCH" "${STORY_ID:-}" "${PHASE:-}" 2>/dev/null)
+
+if [ -n "$AUDIT_ENTRY" ] && [ -n "$AUDIT_FILE" ]; then
+    mkdir -p "$(dirname "$AUDIT_FILE")"
+    echo "$AUDIT_ENTRY" >> "$AUDIT_FILE"
+fi
+
 python3 -c "
 import json, sys
 context = sys.argv[1]
