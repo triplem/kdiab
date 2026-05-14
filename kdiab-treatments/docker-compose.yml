@@ -5,10 +5,13 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: ${POSTGRES_DB:-kdiab-treatments}
+      # Per-service role password — passed to 01-init-role.sh at first startup.
+      TREATMENTS_DB_PASSWORD: ${TREATMENTS_DB_PASSWORD:-kdiab_treatments_devpassword}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./config/postgres/01-init-role.sh:/docker-entrypoint-initdb.d/01-init-role.sh:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-kdiab-treatments}"]
       interval: 10s
@@ -50,8 +53,8 @@ services:
       dockerfile: Dockerfile
     environment:
       JDBC_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-kdiab-treatments}
-      DB_USER: ${POSTGRES_USER:-postgres}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      DB_USER: kdiab_treatments
+      DB_PASSWORD: ${TREATMENTS_DB_PASSWORD:-kdiab_treatments_devpassword}
       JWT_DOMAIN: http://localhost:8081/realms/kdiab-treatments
       JWKS_URL: http://keycloak:8080/realms/kdiab-treatments/protocol/openid-connect/certs
       JWT_AUDIENCE: treatment
