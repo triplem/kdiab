@@ -41,7 +41,7 @@ private data class PagedMeasureResponse(
 
 private val logger = KotlinLogging.logger {}
 
-private fun parseUuid(value: String): Uuid =
+internal fun parseUuid(value: String): Uuid =
     runCatching { Uuid.parse(value) }.getOrElse {
         throw BusinessValidationException("Invalid UUID format: $value")
     }

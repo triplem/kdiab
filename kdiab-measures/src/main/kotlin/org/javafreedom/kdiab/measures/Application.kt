@@ -17,11 +17,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.javafreedom.kdiab.measures.adapters.inbound.web.auditRoutes
+import org.javafreedom.kdiab.measures.adapters.inbound.web.hba1cEntryRoutes
 import org.javafreedom.kdiab.measures.adapters.inbound.web.measureRoutes
+import org.javafreedom.kdiab.measures.application.service.HbA1cEntryService
 import org.javafreedom.kdiab.measures.application.service.MeasureService
 import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.measures.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedAuditLogRepository
+import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedHbA1cEntryRepository
 import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.plugins.statuspages.*
@@ -39,6 +42,7 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 fun Application.module(
     measureService: MeasureService = MeasureService(ExposedMeasureRepository()),
     auditLogRepository: AuditLogRepository = ExposedAuditLogRepository(),
+    hbA1cEntryService: HbA1cEntryService = HbA1cEntryService(ExposedHbA1cEntryRepository()),
     initDatabase: Boolean = true
 ) {
     configureLogging()
@@ -111,6 +115,7 @@ fun Application.module(
         route("/api/v1") {
             measureRoutes(measureService, auditLogRepository)
             auditRoutes(auditLogRepository)
+            hba1cEntryRoutes(hbA1cEntryService)
         }
 
         if (swaggerEnabled) {

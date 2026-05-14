@@ -224,7 +224,9 @@ kover {
                     "org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository*",
                     "org.javafreedom.kdiab.measures.infrastructure.persistence.MeasuresTable*",
                     "org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedAuditLogRepository*",
-                    "org.javafreedom.kdiab.measures.infrastructure.persistence.AuditLogsTable*"
+                    "org.javafreedom.kdiab.measures.infrastructure.persistence.AuditLogsTable*",
+                    "org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedHbA1cEntryRepository*",
+                    "org.javafreedom.kdiab.measures.infrastructure.persistence.HbA1cEntriesTable*"
                 )
                 packages(
                     "org.javafreedom.kdiab.measures.api"
