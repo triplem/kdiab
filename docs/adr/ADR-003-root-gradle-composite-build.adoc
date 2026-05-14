@@ -26,6 +26,9 @@ Each service already used Gradle 9.4.1 with `settings.gradle.kts`, a version cat
 (`gradle/libs.versions.toml`), and `gradle.properties`. All four services are structurally
 independent Gradle builds.
 
+NOTE: Version catalog management was subsequently centralised. See the
+<<_update_shared_version_catalog,Update: Shared Version Catalog>> section below.
+
 == Decision
 
 Add a root-level Gradle project that composes all four services using Gradle's
@@ -127,8 +130,62 @@ Would require all services to share one version catalog and one `pluginManagemen
 Rejected because services evolved independently with separate catalogs and may diverge further.
 Composite builds preserve full service autonomy.
 
+NOTE: Dependency version alignment was subsequently achieved without collapsing into a
+multi-project build — see the <<_update_shared_version_catalog,Update: Shared Version Catalog>>
+section.
+
 === Taskfile / Makefile
 
 Cross-platform task runners (Taskfile, Just, Make) could orchestrate builds but provide no IDE
 integration and no incremental build caching. Rejected in favour of Gradle, which is already
 present in every service.
+
+[#_update_shared_version_catalog]
+== Update: Shared Version Catalog (2026-05-14)
+
+After the monorepo expanded from four to seven services (`kdiab-carbs`, `kdiab-calc`, and
+`kdiab-common` were added), it became impractical to maintain separate `gradle/libs.versions.toml`
+files in each service directory. Dependency versions diverged between services and required
+repetitive, error-prone bumps across multiple files.
+
+=== Change
+
+A single shared version catalog was introduced at the monorepo root:
+
+----
+gradle/libs.versions.toml
+----
+
+This file is the single source of truth for all library and plugin versions across all services
+in the composite build. Each service's `settings.gradle.kts` references it via Gradle's
+`dependencyResolutionManagement` block:
+
+[source,kotlin]
+----
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
+        }
+    }
+}
+----
+
+The root `gradle/libs.versions.toml` manages versions for the full Kotlin/Ktor/Exposed stack
+shared by all services, including: `kotlin`, `ktor`, `exposed`, `kotlinx-datetime`,
+`kotlinx-serialization`, `kotlinx-coroutines`, `logback`, `kotlin-logging`, `hikaricp`,
+`postgresql`, `liquibase`, `mockk`, `kotest`, `h2`, `detekt`, `kover`, `cyclonedx`, and
+`openapi-generator`.
+
+=== Impact on composite build
+
+Services retain their own `settings.gradle.kts` and `build.gradle.kts` — they remain
+independently buildable. The shared catalog is an additive configuration that replaces
+per-service catalog files without changing the composite build structure described above.
+
+=== Impact on "Alternatives Considered"
+
+The rejection of the Gradle multi-project build approach (requiring a shared catalog and
+`pluginManagement`) remains valid: services are still independent Gradle builds. The shared
+catalog achieves version alignment without sacrificing build autonomy — composite builds allow
+catalog sharing without requiring a single root `settings.gradle.kts` to own all subprojects.

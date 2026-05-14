@@ -3,7 +3,7 @@
 :icons: font
 
 All ADRs for the kdiab platform are consolidated here.
-Platform-wide ADRs are numbered 001–009; service ADRs use a three-digit prefix
+Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
 (1xx = tooling, 2xx = domain, 3xx = infrastructure) scoped to their service.
 
 == Platform ADRs
@@ -15,6 +15,9 @@ Platform-wide ADRs are numbered 001–009; service ADRs use a three-digit prefix
 * link:ADR-005-api-first-openapi-codegen.html[ADR-005 API-First Design with OpenAPI Code Generation]
 * link:ADR-006-unified-kdiab-ui-frontend.html[ADR-006 Unified kdiab-ui Frontend SPA]
 * link:ADR-007-single-stage-dockerfile.html[ADR-007 Single-Stage Dockerfile with Pre-Built JAR]
+* link:ADR-008-kdiab-common-extraction.html[ADR-008 kdiab-common Shared Library Extraction]
+* link:ADR-009-kdiab-calc-service.html[ADR-009 kdiab-calc Stateless Dose Calculator Service]
+* link:ADR-010-kdiab-carbs-service.html[ADR-010 kdiab-carbs Dedicated Food and Carbohydrate Service]
 
 == kdiab-measures ADRs
 
