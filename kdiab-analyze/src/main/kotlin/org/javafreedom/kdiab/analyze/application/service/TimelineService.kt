@@ -9,7 +9,7 @@ import org.javafreedom.kdiab.analyze.domain.model.TimelineMeasure
 import org.javafreedom.kdiab.analyze.domain.model.TimelineTreatment
 import kotlinx.coroutines.async
 import kotlinx.coroutines.supervisorScope
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 class TimelineService(
