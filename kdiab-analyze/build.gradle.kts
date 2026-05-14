@@ -55,6 +55,8 @@ dependencies {
     // Logging
     implementation(libs.kotlin.logging)
     implementation(libs.logback.classic)
+    implementation(libs.logback.json.classic)
+    implementation(libs.logback.jackson)
 
     // Tests
     testImplementation(kotlin("test-junit5"))
