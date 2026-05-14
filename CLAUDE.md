@@ -229,6 +229,22 @@ Each user story gets **one feature branch**. Multiple agents use **separate work
 
 ---
 
+## Branch Naming Convention
+
+```
+<type>/<issue-number>-<short-description>
+```
+
+Types: `feature`, `fix`, `bug`, `chore`, `docs`, `refactor`
+
+Examples:
+- `feature/42-user-authentication`
+- `fix/101-null-pointer-on-login`
+
+Each user story gets **one feature branch**. Multiple agents use **separate worktrees** on the same branch.
+
+---
+
 ## Commit Conventions
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/) (Angular preset for semantic-release):
