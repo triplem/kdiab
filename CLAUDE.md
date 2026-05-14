@@ -496,6 +496,7 @@ All rules live in `.claude/rules/`. They are automatically applied.
 - `dotnet.md` — .NET / C# patterns
 - `logging.md` — Structured logging across all stacks
 - `openapi.md` — OpenAPI spec discipline
+- `agent-context.md` — Single root CLAUDE.md convention; PostToolUse hook audit logging pattern
 
 ## Skills Index
 
