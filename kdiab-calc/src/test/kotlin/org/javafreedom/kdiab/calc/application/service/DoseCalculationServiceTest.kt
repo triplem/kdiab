@@ -147,4 +147,96 @@ class DoseCalculationServiceTest {
             service.calculateDose("user-123", request, "Bearer token", "corr-id")
         }
     }
+
+    @Test
+    fun `calculateDose selects correct segment for time of day`() = runTest {
+        // Profile with different ISF/ICR per time-of-day segment:
+        //   00:00 – 07:59: ISF 60, ICR 20, target 100–120
+        //   08:00 – 23:59: ISF 40, ICR 12, target 110–130
+        val multiSegmentProfile = testProfile.copy(
+            isf = listOf(
+                IsfSegment(startTime = "00:00", `value` = 60.0),
+                IsfSegment(startTime = "08:00", `value` = 40.0),
+            ),
+            icr = listOf(
+                IcrSegment(startTime = "00:00", `value` = 20.0),
+                IcrSegment(startTime = "08:00", `value` = 12.0),
+            ),
+            targets = listOf(
+                TargetSegment(startTime = "00:00", low = 100.0, high = 120.0),
+                TargetSegment(startTime = "08:00", low = 110.0, high = 130.0),
+            ),
+        )
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns multiSegmentProfile
+
+        // Request pinned to 14:00 UTC — falls in the 08:00 segment (ISF 40, ICR 12, target 120)
+        val request = DoseRequest(
+            currentBg = 180.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 24.0,
+            useProfileTime = "2026-01-01T14:00:00Z",
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        // correction = (180 - 120) / 40 = 1.5
+        assertEquals(1.5, result.correctionDose)
+        // carb = 24 / 12 = 2.0
+        assertEquals(2.0, result.carbDose)
+        // ISF and ICR from the 08:00 segment must be reflected in the breakdown
+        assertEquals(40.0, result.breakdown.isf)
+        assertEquals(12.0, result.breakdown.icr)
+        assertEquals(120.0, result.breakdown.targetBgMgDl)
+    }
+
+    @Test
+    fun `calculateDose uses last segment when request time is before all segment start times`() = runTest {
+        // Only segment starts at 06:00; a request at 02:00 has no segment with startTime <= refTime,
+        // so the service must fall back to segments.last() (the 06:00 segment).
+        val lateStartProfile = testProfile.copy(
+            isf = listOf(IsfSegment(startTime = "06:00", `value` = 45.0)),
+            icr = listOf(IcrSegment(startTime = "06:00", `value` = 10.0)),
+            targets = listOf(TargetSegment(startTime = "06:00", low = 90.0, high = 110.0)),
+        )
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns lateStartProfile
+
+        // Request pinned to 02:00 UTC — before the single segment at 06:00
+        val request = DoseRequest(
+            currentBg = 190.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+            useProfileTime = "2026-01-01T02:00:00Z",
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        // Falls back to last() == 06:00 segment; ISF 45, target midpoint 100
+        // correction = (190 - 100) / 45 = 2.0
+        assertEquals(2.0, result.correctionDose)
+        assertEquals(45.0, result.breakdown.isf)
+    }
+
+    @Test
+    fun `calculateDose applies high-dose warning when total recommended exceeds threshold`() = runTest {
+        // Force a very high dose: BG = 1100 mg/dL, ISF = 50, target = 110 => correction = (1100-110)/50 = 19.8
+        // Add carbs = 30, ICR = 1 => carbDose = 30.0; total = 49.8 which is > 20 (HIGH_DOSE_THRESHOLD)
+        val lowIcrProfile = testProfile.copy(
+            icr = listOf(IcrSegment(startTime = "00:00", `value` = 1.0)),
+        )
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns lowIcrProfile
+
+        val request = DoseRequest(
+            currentBg = 1100.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 30.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertTrue(result.totalRecommended > 20.0)
+        assertTrue(result.warnings.any { it.contains("unusually high") })
+    }
 }
