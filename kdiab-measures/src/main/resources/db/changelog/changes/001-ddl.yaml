@@ -136,3 +136,57 @@ databaseChangeLog:
               - column:
                   name: measured_at
                   descending: true
+  - changeSet:
+      id: 20260514-001
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: hba1c_entries
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: measured_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: value_percent
+                  type: decimal(5,2)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: source
+                  type: varchar(20)
+                  defaultValue: 'LAB'
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notes
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_hba1c_user_measured
+            tableName: hba1c_entries
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: measured_at
+                  descending: true
