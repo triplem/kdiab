@@ -1,6 +1,7 @@
 package org.javafreedom.kdiab.analyze.domain.model
 
 data class TirBreakdown(
+    val veryLowCount: Int = 0,
     val belowCount: Int = 0,
     val inRangeCount: Int = 0,
     val aboveCount: Int = 0,
