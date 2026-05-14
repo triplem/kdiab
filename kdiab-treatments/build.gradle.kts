@@ -44,6 +44,8 @@ dependencies {
     // Logging
     implementation(libs.kotlin.logging)
     implementation(libs.logback.classic)
+    implementation(libs.logback.json.classic)
+    implementation(libs.logback.jackson)
 
     // Database (Exposed + Postgres)
     implementation(libs.exposed.core)
