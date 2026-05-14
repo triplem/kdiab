@@ -2,7 +2,7 @@
 
 package org.javafreedom.kdiab.analyze.domain.model
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.json.JsonObject
 import kotlin.uuid.Uuid
 

@@ -6,7 +6,7 @@ import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
