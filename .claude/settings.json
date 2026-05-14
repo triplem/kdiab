@@ -1,0 +1,133 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${PROJECT_ROOT}"]
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(glab *)",
+      "Bash(gradle *)",
+      "Bash(./gradlew *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(mvn *)",
+      "Bash(dotnet *)",
+      "Bash(ng *)",
+      "Bash(ktlint *)",
+      "Bash(spectral *)",
+      "Bash(semgrep *)",
+      "Bash(find * -name *)",
+      "Bash(grep *)",
+      "Bash(cat audit/*)",
+      "Bash(tee audit/*)",
+      "mcp__github__*",
+      "mcp__gitlab__*",
+      "mcp__filesystem__*"
+    ],
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(git push --force origin main)",
+      "Bash(git push --force origin master)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.sh",
+            "timeout": 15,
+            "statusMessage": "Loading project context..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/safety-bash.sh",
+            "timeout": 5,
+            "statusMessage": "Safety check..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "if": "Bash(git commit *)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/commit-guard.sh",
+            "timeout": 10,
+            "statusMessage": "Checking commit message..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit-secrets.sh",
+            "timeout": 10,
+            "statusMessage": "Scanning for secrets..."
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/post-edit-openapi.sh",
+            "timeout": 20,
+            "statusMessage": "Linting OpenAPI spec..."
+          }
+        ]
+      }
+    ],
+    "FileChanged": [
+      {
+        "matcher": "\\.env$|\\.env\\.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/file-changed-env.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-audit.sh",
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "ISSUE_TRACKER": "github",
+    "APPROVAL_LABEL": "approved",
+    "COVERAGE_THRESHOLD": "80",
+    "DEFAULT_BRANCH": "main",
+    "AUDIT_LOG": "audit/agent-log.jsonl",
+    "HUMAN_LOG": "audit/human-decisions.jsonl"
+  }
+}

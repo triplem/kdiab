@@ -3,6 +3,8 @@
 This file provides guidance to Claude Code (claude.ai/code) for all services in this monorepo.
 Service-specific details are in each service's own `CLAUDE.md`.
 
+All agent work is logged to `audit/` for traceability.
+
 ## Project Overview
 
 **kdiab** is a T1D (Type 1 Diabetes) management platform — a monorepo of seven components:
@@ -279,29 +281,109 @@ git merge kdiab-def
 git worktree prune
 ```
 
-## Session Completion
+## Branch Naming Convention
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+```
+<type>/<issue-number>-<short-description>
+```
 
-**MANDATORY WORKFLOW:**
+Types: `feature`, `fix`, `bug`, `chore`, `docs`, `refactor`
 
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd dolt push
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+Examples:
+- `feature/42-user-authentication`
+- `fix/101-null-pointer-on-login`
 
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-<!-- END BEADS INTEGRATION -->
+Each user story gets **one feature branch**. Multiple agents use **separate worktrees** on the same branch.
+
+---
+
+## Commit Conventions
+
+Follow [Conventional Commits](https://www.conventionalcommits.org/) (Angular preset for semantic-release):
+
+```
+<type>(<scope>): <short summary>
+
+[optional body]
+
+[optional footer: BREAKING CHANGE, Closes #n]
+```
+
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+
+---
+
+## Quality Gates (mandatory before any PR)
+
+- [ ] All tests pass
+- [ ] Unit test coverage ≥ 80%
+- [ ] Linting passes (language-specific tool)
+- [ ] SAST scan passes (no HIGH/CRITICAL findings unmitigated)
+- [ ] OpenAPI spec valid (if API changes exist)
+- [ ] No `TODO` / `FIXME` left in changed files (unless tracked as an issue)
+
+---
+
+## Audit Logging
+
+Every agent action is appended to `audit/agent-log.jsonl`:
+
+```json
+{"ts":"2026-05-14T10:00:00Z","agent":"RequirementsAgent","action":"challenge","target":"epic-001","verdict":"REVISE","reason":"missing non-functional requirements"}
+```
+
+Human decisions are logged to `audit/human-decisions.jsonl`.
+
+## Rules Index
+
+All rules live in `.claude/rules/`. They are automatically applied.
+
+- `commit-conventions.md` — Conventional Commits
+- `branching-strategy.md` — Branch naming & merge strategy
+- `quality-gates.md` — Mandatory checks before PR
+- `test-pyramid.md` — Unit / Integration / E2E / Contract ratios
+- `solid-principles.md` — SOLID + Clean Code
+- `api-design.md` — OpenAPI / REST best practices
+- `security.md` — SAST, OWASP, secret hygiene
+- `kotlin-style.md` — Kotlin idioms, detekt rules, Gradle & Maven
+- `java-style.md` — Java 21+ idioms, Checkstyle/SpotBugs/PMD, Gradle & Maven
+- `typescript-style.md` — TypeScript strict mode, ESLint
+- `spring-boot.md` — Spring Boot patterns
+- `react.md` — React patterns & hooks discipline
+- `angular.md` — Angular patterns
+- `dotnet.md` — .NET / C# patterns
+- `logging.md` — Structured logging across all stacks
+- `openapi.md` — OpenAPI spec discipline
+
+## Skills Index
+
+All skills live in `.claude/skills/`. Invoke with `/skill-name`.
+
+### SDLC Workflow Skills
+- `/gather-requirements` — elicit, challenge, and document requirements
+- `/write-epics` — decompose requirements doc into epics
+- `/write-stories` — decompose epic into user stories
+- `/implement` — implement a story on a feature branch/worktree
+- `/write-tests` — write tests for an implementation
+- `/create-pr` — open a guided PR
+- `/release` — tag, changelog, publish
+- `/create-adr` — propose and document an architecture decision
+- `/challenge` — peer-review another agent's output
+
+### Code Pattern Skills
+- `/kotlin-patterns` — Kotlin idioms, coroutines, data classes
+- `/java-patterns` — Java 21+ records, sealed classes, pattern matching, virtual threads
+- `/typescript-patterns` — TS strict patterns, generics, utility types
+- `/spring-boot-patterns` — controllers, services, repositories, configuration (Kotlin & Java)
+- `/react-patterns` — hooks, context, component design
+- `/angular-patterns` — modules, services, RxJS / signals
+- `/dotnet-patterns` — C# patterns, DI, middleware
+- `/openapi-patterns` — spec-first API design
+- `/logging-kotlin` — structured logging with kotlin-logging / logback
+- `/logging-java` — structured logging with SLF4J / @Slf4j / logback
+- `/logging-typescript` — structured logging with pino / winston
+
+### Meta Skills
+- `/audit` — review and summarise the audit log
+- `/learn` — extract a reusable rule from a completed story
+- `/domain-model` — build/update the project domain model
