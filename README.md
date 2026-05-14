@@ -1,5 +1,9 @@
 # kdiab
 
+> [!WARNING]
+> **Demo project — not for production use.**
+> This project was built as a proof of concept to explore the possibilities of AI-assisted software development using [Claude Code](https://claude.ai/code). It is not validated, audited, or certified for any medical or clinical purpose. **Do not use this software to manage insulin dosing, glucose monitoring, or any other aspect of diabetes care in a real-world setting.** No warranty is provided. Use at your own risk.
+
 A Type 1 Diabetes (T1D) management platform — a monorepo of seven components.
 
 | Component | Description |
