@@ -38,7 +38,7 @@ jobs:
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -99,14 +99,14 @@ jobs:
           outputs: type=docker,dest=/tmp/backend-image.tar
 
       - name: Upload Docker Image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: profiles-backend-image
           path: /tmp/backend-image.tar
           retention-days: 7
 
       - name: Upload SBOM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: profiles-backend-bom
           path: kdiab-profiles/build/reports/cyclonedx/bom.json
