@@ -213,19 +213,20 @@ All use password `password`:
 - **kdiab-treatments**: 3 bolus+carbs pairs/day/user + occasional correction boluses for sarah
 - **kdiab-profiles**: one ARCHIVED + one ACTIVE profile for sarah, one ACTIVE profile for mike
 
-## Branch Naming Convention
+## Issue Tracking
 
+This project uses **GitHub Issues** for all task tracking.
+
+```bash
+gh issue list                        # List open issues
+gh issue view <number>               # View issue details
+gh issue create --title "..." --body "..."  # Create an issue
+gh issue close <number>              # Close an issue
+gh pr create                         # Open a pull request
+gh pr list                           # List open PRs
 ```
-<type>/<issue-number>-<short-description>
-```
 
-Types: `feature`, `fix`, `bug`, `chore`, `docs`, `refactor`
-
-Examples:
-- `feature/42-user-authentication`
-- `fix/101-null-pointer-on-login`
-
-Each user story gets **one feature branch**. Multiple agents use **separate worktrees** on the same branch.
+Create an issue before writing code. Reference it in commit messages with `Closes #N` or `Refs #N`.
 
 ---
 

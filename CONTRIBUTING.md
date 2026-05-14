@@ -22,16 +22,17 @@ cd kdiab-ui && npm run dev    # frontend dev server with HMR
 
 ## Issue Tracking
 
-This project uses **beads** (`bd`) for issue tracking:
+This project uses **GitHub Issues** for tracking:
 
 ```bash
-bd ready                        # find available work
-bd show <id>                    # review issue details
-bd update <id> --claim          # claim before starting
-bd close <id>                   # close when done
+gh issue list                        # find available work
+gh issue view <number>               # review issue details
+gh issue create --title "..." --body "..."  # create an issue
+gh issue close <number>              # close when done
+gh pr create                         # open a pull request
 ```
 
-Create an issue before writing code. Close it when the work is merged.
+Create an issue before writing code. Reference it in commit messages with `Closes #N`. Close it when the work is merged.
 
 ## Branching Strategy
 
