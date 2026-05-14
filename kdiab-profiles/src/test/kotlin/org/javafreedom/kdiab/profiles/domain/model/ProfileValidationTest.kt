@@ -63,6 +63,36 @@ class ProfileValidationTest {
         assertFailsWith<BusinessValidationException> { profile.validate() }
     }
 
+    @Test
+    fun `should fail when total daily basal exceeds 150 U per day`() {
+        // 24 hours * 7 U/h = 168 U/day — exceeds the 150 U/day clinical safety limit
+        val profile = createValidProfile().copy(
+            basal = listOf(BasalSegment(LocalTime(0, 0), 7.0))
+        )
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
+    @Test
+    fun `should pass validation when total daily basal is exactly 150 U per day`() {
+        // 24 hours * 6.25 U/h = 150.0 U/day — exactly at the boundary, must pass
+        val profile = createValidProfile().copy(
+            basal = listOf(BasalSegment(LocalTime(0, 0), 6.25))
+        )
+        profile.validate() // must not throw
+    }
+
+    @Test
+    fun `should fail when multi-segment basal sums to more than 150 U per day`() {
+        // 12 h * 10 U/h + 12 h * 3 U/h = 120 + 36 = 156 U/day — exceeds limit
+        val profile = createValidProfile().copy(
+            basal = listOf(
+                BasalSegment(LocalTime(0, 0), 10.0),
+                BasalSegment(LocalTime(12, 0), 3.0)
+            )
+        )
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
     private fun createValidProfile(): Profile {
         return Profile(
             userId = Uuid.random(),
