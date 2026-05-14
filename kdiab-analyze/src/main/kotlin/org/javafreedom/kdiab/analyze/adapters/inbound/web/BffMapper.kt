@@ -46,6 +46,7 @@ data class Hba1cResponseDto(
 
 @Serializable
 data class TirBreakdownDto(
+    val veryLowCount: Int,
     val belowCount: Int,
     val inRangeCount: Int,
     val aboveCount: Int,
@@ -117,7 +118,7 @@ fun Hba1cResult.toResponse() = Hba1cResponseDto(
     hba1c = hba1c,
     meanGlucose = meanGlucose,
     readingCount = readingCount,
-    tir = TirBreakdownDto(tir.belowCount, tir.inRangeCount, tir.aboveCount, tir.highCount, tir.totalCount),
+    tir = TirBreakdownDto(tir.veryLowCount, tir.belowCount, tir.inRangeCount, tir.aboveCount, tir.highCount, tir.totalCount),
     warnings = warnings,
 )
 

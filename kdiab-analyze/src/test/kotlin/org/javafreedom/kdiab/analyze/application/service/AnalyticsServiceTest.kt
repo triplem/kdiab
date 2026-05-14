@@ -115,17 +115,31 @@ class AnalyticsServiceTest {
     @Test
     fun `getHba1c classifies TIR zones correctly`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
-            cgmDto(50.0),   // below  (<70)
-            cgmDto(100.0),  // target (70-180)
-            cgmDto(200.0),  // above  (180-250)
-            cgmDto(300.0),  // high   (>250)
+            cgmDto(40.0),   // very low  (<54, Level 2 hypoglycaemia)
+            cgmDto(60.0),   // below     (54-70, Level 1 hypoglycaemia)
+            cgmDto(100.0),  // target    (70-180)
+            cgmDto(200.0),  // above     (180-250)
+            cgmDto(300.0),  // high      (>250)
         )
         val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
+        assertEquals(1, result.tir.veryLowCount)
         assertEquals(1, result.tir.belowCount)
         assertEquals(1, result.tir.inRangeCount)
         assertEquals(1, result.tir.aboveCount)
         assertEquals(1, result.tir.highCount)
-        assertEquals(4, result.tir.totalCount)
+        assertEquals(5, result.tir.totalCount)
+    }
+
+    @Test
+    fun `getHba1c classifies readings below 54 as veryLow not below`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            cgmDto(30.0),  // very low (<54, Level 2 hypoglycaemia)
+            cgmDto(53.9),  // very low (<54, just below threshold)
+        )
+        val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
+        assertEquals(2, result.tir.veryLowCount)
+        assertEquals(0, result.tir.belowCount)
+        assertEquals(2, result.tir.totalCount)
     }
 
     @Test

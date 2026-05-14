@@ -228,11 +228,16 @@ components:
 
     TirBreakdown:
       type: object
-      required: [belowCount, inRangeCount, aboveCount, highCount, totalCount]
+      required: [veryLowCount, belowCount, inRangeCount, aboveCount, highCount, totalCount]
       properties:
+        veryLowCount:
+          type: integer
+          description: >
+            Readings below 54 mg/dL (Level 2 hypoglycaemia — severe).
+            International Consensus on TIR (Battelino et al. 2019).
         belowCount:
           type: integer
-          description: Readings below 70 mg/dL (hypoglycaemia)
+          description: Readings 54–70 mg/dL (Level 1 hypoglycaemia)
         inRangeCount:
           type: integer
           description: Readings 70–180 mg/dL (target range)

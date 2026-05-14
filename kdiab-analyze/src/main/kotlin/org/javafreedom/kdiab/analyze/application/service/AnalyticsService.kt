@@ -18,7 +18,9 @@ private const val DCCT_DIVISOR = 28.7
 private const val MMOL_TO_MGDL = 18.0
 
 // TIR thresholds in mg/dL — ADA/EASD consensus targets for T1D (ADA Standards of Care 2023)
-private const val TIR_LOW = 70.0       // below: hypoglycaemia
+// International Consensus on TIR (Battelino et al. 2019, doi:10.2337/dci19-0028)
+private const val TIR_VERY_LOW = 54.0  // below: Level 2 hypoglycaemia (severe)
+private const val TIR_LOW = 70.0       // below: Level 1 hypoglycaemia
 private const val TIR_HIGH = 180.0     // above: hyperglycaemia
 private const val TIR_VERY_HIGH = 250.0 // high: severe hyperglycaemia
 
@@ -178,12 +180,14 @@ class AnalyticsService(
     }
 
     private fun computeTir(readings: List<Double>, tirLow: Double = TIR_LOW, tirHigh: Double = TIR_HIGH): TirBreakdown {
+        var veryLow = 0
         var below = 0
         var inRange = 0
         var above = 0
         var high = 0
         readings.forEach { v ->
             when {
+                v < TIR_VERY_LOW -> veryLow++
                 v < tirLow -> below++
                 v <= tirHigh -> inRange++
                 v <= TIR_VERY_HIGH -> above++
@@ -191,6 +195,7 @@ class AnalyticsService(
             }
         }
         return TirBreakdown(
+            veryLowCount = veryLow,
             belowCount = below,
             inRangeCount = inRange,
             aboveCount = above,
