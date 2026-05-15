@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>MaxLineLength:CircuitBreaker.kt$CircuitBreaker$logger.warn { "circuit_breaker service=$name failures=$count threshold=$failureThreshold reason=${cause.message}" }</ID>
+    <ID>ReturnCount:NightscoutMapper.kt$fun MeasureResponse.toNightscoutEntry(): NightscoutEntry?</ID>
+    <ID>ReturnCount:NightscoutMapper.kt$fun TreatmentResponse.toNightscoutTreatment(): NightscoutTreatment?</ID>
+    <ID>TooGenericExceptionCaught:CircuitBreaker.kt$CircuitBreaker$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

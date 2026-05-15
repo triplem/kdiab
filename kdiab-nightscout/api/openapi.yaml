@@ -1,0 +1,340 @@
+openapi: "3.0.3"
+info:
+  title: kdiab Nightscout Adapter API
+  version: "1.0.0"
+  description: >
+    Nightscout-compatible read API that adapts kdiab CGM and treatment data to the
+    Nightscout API format. Responses are compatible with Nightscout API v1 so that
+    standard Nightscout client applications can consume kdiab data.
+    Authentication uses Bearer JWT (same as all other kdiab services).
+servers:
+  - url: http://localhost:8087
+    description: Local development
+tags:
+  - name: Entries
+    description: CGM and BGM glucose entries in Nightscout format
+  - name: Treatments
+    description: Treatment events in Nightscout format
+  - name: Status
+    description: Service status
+
+paths:
+  /api/v1/entries.json:
+    get:
+      operationId: listEntries
+      summary: List glucose entries
+      description: >
+        Returns CGM and BGM glucose readings in Nightscout sgv/mbg format,
+        sorted newest first. The `from` and `to` query parameters are ISO-8601
+        timestamps. The `count` parameter limits the number of returned entries.
+      tags:
+        - Entries
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: Start of time range (ISO-8601 UTC, e.g. 2024-01-01T00:00:00Z)
+          schema:
+            type: string
+            format: date-time
+            example: "2024-01-01T00:00:00Z"
+        - name: to
+          in: query
+          required: false
+          description: End of time range (ISO-8601 UTC, e.g. 2024-01-02T00:00:00Z)
+          schema:
+            type: string
+            format: date-time
+            example: "2024-01-02T00:00:00Z"
+        - name: count
+          in: query
+          required: false
+          description: Maximum number of entries to return (default 288)
+          schema:
+            type: integer
+            format: int32
+            default: 288
+            minimum: 1
+            maximum: 50000
+            example: 288
+      responses:
+        "200":
+          description: List of Nightscout-format glucose entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NightscoutEntry"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Circuit breaker open — upstream temporarily blocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/treatments.json:
+    get:
+      operationId: listTreatments
+      summary: List treatment events
+      description: >
+        Returns treatment events (bolus, carbs, basal, etc.) in Nightscout format,
+        sorted newest first. Supports the same `from`, `to`, and `count` parameters
+        as the entries endpoint.
+      tags:
+        - Treatments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: Start of time range (ISO-8601 UTC)
+          schema:
+            type: string
+            format: date-time
+            example: "2024-01-01T00:00:00Z"
+        - name: to
+          in: query
+          required: false
+          description: End of time range (ISO-8601 UTC)
+          schema:
+            type: string
+            format: date-time
+            example: "2024-01-02T00:00:00Z"
+        - name: count
+          in: query
+          required: false
+          description: Maximum number of treatments to return (default 288)
+          schema:
+            type: integer
+            format: int32
+            default: 288
+            minimum: 1
+            maximum: 50000
+            example: 288
+      responses:
+        "200":
+          description: List of Nightscout-format treatment events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NightscoutTreatment"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: Circuit breaker open — upstream temporarily blocked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/v1/status.json:
+    get:
+      operationId: getStatus
+      summary: Get service status
+      description: Returns the service status, current server time, and API availability. No authentication required.
+      tags:
+        - Status
+      security: []
+      responses:
+        "200":
+          description: Service status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NightscoutStatus"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: kdiab JWT issued by Keycloak. Requires 'nightscout' audience.
+
+  schemas:
+    NightscoutEntry:
+      type: object
+      required:
+        - type
+        - date
+        - dateString
+        - _id
+        - mills
+      properties:
+        type:
+          type: string
+          description: Entry type — 'sgv' for CGM, 'mbg' for BGM
+          example: sgv
+        sgv:
+          type: integer
+          format: int32
+          description: Sensor glucose value in mg/dL
+          example: 140
+        date:
+          type: integer
+          format: int64
+          description: Unix timestamp in milliseconds
+          example: 1704067200000
+        dateString:
+          type: string
+          description: ISO-8601 UTC timestamp string
+          example: "2024-01-01T00:00:00Z"
+        trend:
+          type: integer
+          format: int32
+          description: Numeric trend direction (1=DoubleDown … 7=DoubleUp)
+          example: 4
+        direction:
+          type: string
+          description: Text trend direction
+          example: Flat
+        _id:
+          type: string
+          description: Unique entry ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        mills:
+          type: integer
+          format: int64
+          description: Unix timestamp in milliseconds (alias for date)
+          example: 1704067200000
+        noise:
+          type: integer
+          format: int32
+          description: Signal noise level (0 = none)
+          example: 0
+        device:
+          type: string
+          description: Source device identifier
+          example: kdiab
+
+    NightscoutTreatment:
+      type: object
+      required:
+        - _id
+        - eventType
+        - created_at
+        - mills
+      properties:
+        _id:
+          type: string
+          description: Unique treatment ID
+          example: "550e8400-e29b-41d4-a716-446655440001"
+        eventType:
+          type: string
+          description: Nightscout event type (e.g. Bolus, Carbs, Temp Basal)
+          example: Bolus
+        created_at:
+          type: string
+          description: ISO-8601 UTC creation timestamp
+          example: "2024-01-01T08:00:00Z"
+        timestamp:
+          type: string
+          description: ISO-8601 UTC treatment timestamp
+          example: "2024-01-01T08:00:00Z"
+        insulin:
+          type: number
+          format: double
+          description: Insulin amount in units (bolus treatments)
+          example: 2.5
+        carbs:
+          type: number
+          format: double
+          description: Carbohydrate amount in grams
+          example: 45.0
+        absorptionTime:
+          type: integer
+          format: int32
+          description: Carb absorption time in minutes
+          example: 120
+        notes:
+          type: string
+          description: Free-text notes
+          example: "Post-meal correction"
+        enteredBy:
+          type: string
+          description: Data source identifier
+          example: kdiab
+        utcOffset:
+          type: integer
+          format: int32
+          description: UTC offset in minutes
+          example: 0
+        mills:
+          type: integer
+          format: int64
+          description: Unix timestamp in milliseconds
+          example: 1704096000000
+
+    NightscoutStatus:
+      type: object
+      required:
+        - status
+        - apiEnabled
+        - serverTime
+        - serverTimeEpoch
+      properties:
+        status:
+          type: string
+          description: Service health status
+          example: ok
+        apiEnabled:
+          type: boolean
+          description: Whether the API is enabled
+          example: true
+        serverTime:
+          type: string
+          description: Current server time (ISO-8601)
+          example: "2024-01-01T00:00:00Z"
+        serverTimeEpoch:
+          type: integer
+          format: int64
+          description: Current server time as Unix milliseconds
+          example: 1704067200000
+        version:
+          type: string
+          description: Nightscout API version compatibility string
+          example: "15.0.0"
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+          description: HTTP status code
+          example: 401
+        message:
+          type: string
+          description: Human-readable error description
+          example: "Unauthorized"
