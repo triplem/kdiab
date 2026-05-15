@@ -59,7 +59,7 @@ For each story:
 
 ### 5 — Push to tracker
 
-Create issues linked to epic `$epic_id`. Label: `story,pending-approval`.
+Create issues linked to epic `$epic_id`. Always add `--assignee "@me"` to every `gh issue create` call (see `github-issue-management.md`). Label: `story,pending-approval`.
 
 ### 6 — Poll for approval
 

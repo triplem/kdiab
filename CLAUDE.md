@@ -497,7 +497,7 @@ All rules live in `.claude/rules/`. They are automatically applied.
 - `logging.md` — Structured logging across all stacks
 - `openapi.md` — OpenAPI spec discipline
 - `agent-context.md` — Single root CLAUDE.md convention; PostToolUse hook audit logging pattern
-- `github-issue-management.md` — Native sub-issues via GraphQL `addSubIssue`; epic documentation checklist (ADR, reference, ops guide, user guide)
+- `github-issue-management.md` — Native sub-issues via GraphQL `addSubIssue`; epic documentation checklist (ADR, reference, ops guide, user guide); always assign issues to `@me`
 
 ## Skills Index
 
@@ -506,10 +506,11 @@ All skills live in `.claude/skills/`. Invoke with `/skill-name`.
 ### SDLC Workflow Skills
 - `/gather-requirements` — elicit, challenge, and document requirements
 - `/write-epics` — decompose requirements doc into epics
-- `/write-stories` — decompose epic into user stories
+- `/write-stories` — decompose epic into user stories (assigns all issues to `@me`)
 - `/implement` — implement a story on a feature branch/worktree
 - `/write-tests` — write tests for an implementation
 - `/create-pr` — open a guided PR
+- `/pr-reviewer` — review a GitHub PR against all project rules; classifies findings by BLOCKER/MAJOR/MINOR and optionally posts review comment
 - `/release` — tag, changelog, publish
 - `/create-adr` — propose and document an architecture decision
 - `/challenge` — peer-review another agent's output
