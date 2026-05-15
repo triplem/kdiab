@@ -6,12 +6,18 @@ import kotlin.uuid.Uuid
 
 private const val GRAMS_PER_100G = 100.0
 
+enum class FoodEntryStatus {
+    ACTIVE,
+    ARCHIVED
+}
+
 data class FoodEntry(
     val id: Uuid,
     val userId: Uuid,
     val name: String,
     val portionGrams: Double,
     val carbsPer100g: Double,
+    val status: FoodEntryStatus = FoodEntryStatus.ACTIVE,
     val createdAt: Instant,
     val updatedAt: Instant,
 ) {

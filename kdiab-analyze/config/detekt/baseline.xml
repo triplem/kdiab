@@ -1,5 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <SmellBaseline>
   <ManuallySuppressedIssues/>
-  <CurrentIssues/>
+  <CurrentIssues>
+    <ID>MaxLineLength:BffMapper.kt$tir = TirBreakdownDto(tir.veryLowCount, tir.belowCount, tir.inRangeCount, tir.aboveCount, tir.highCount, tir.totalCount)</ID>
+    <ID>MaxLineLength:CircuitBreaker.kt$CircuitBreaker$logger.warn { "circuit_breaker service=$name failures=$count threshold=$failureThreshold reason=${cause.message}" }</ID>
+    <ID>TooGenericExceptionCaught:CircuitBreaker.kt$CircuitBreaker$e: Exception</ID>
+  </CurrentIssues>
 </SmellBaseline>

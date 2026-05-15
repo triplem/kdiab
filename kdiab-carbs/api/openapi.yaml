@@ -14,6 +14,7 @@ paths:
   /users/{userId}/foods:
     get:
       summary: List food entries for a user (paginated)
+      description: Returns a paginated list of ACTIVE food entries for the given user, optionally filtered by name.
       operationId: listFoods
       parameters:
         - name: userId
@@ -56,6 +57,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
     post:
       summary: Create a food entry
+      description: Creates a new food entry in the user's personal food database with ACTIVE status.
       operationId: createFoodEntry
       parameters:
         - name: userId
@@ -84,9 +86,42 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /users/{userId}/foods/{foodId}/archive:
+    post:
+      summary: Archive a food entry
+      description: Transitions a food entry from ACTIVE to ARCHIVED status. Archived entries are excluded from list results by default.
+      operationId: archiveFoodEntry
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: foodId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Archived food entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoodEntryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /users/{userId}/foods/{foodId}:
     put:
       summary: Update a food entry
+      description: Replaces name, portion size, and carb content of an existing food entry. Only ACTIVE entries can be updated.
       operationId: updateFoodEntry
       parameters:
         - name: userId
@@ -124,6 +159,7 @@ paths:
           $ref: '#/components/responses/NotFound'
     delete:
       summary: Delete a food entry
+      description: Permanently deletes a food entry. Restricted to DOCTOR and ADMIN roles; patients should use the archive endpoint instead.
       operationId: deleteFoodEntry
       parameters:
         - name: userId
@@ -156,9 +192,15 @@ components:
       bearerFormat: JWT
 
   schemas:
+    FoodEntryStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - ARCHIVED
+
     FoodEntryResponse:
       type: object
-      required: [id, userId, name, portionGrams, carbsPer100g, carbsForPortion, createdAt, updatedAt]
+      required: [id, userId, name, portionGrams, carbsPer100g, carbsForPortion, status, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -177,6 +219,8 @@ components:
         carbsForPortion:
           type: number
           description: Computed carbs for typical portion
+        status:
+          $ref: '#/components/schemas/FoodEntryStatus'
         createdAt:
           type: string
           format: date-time

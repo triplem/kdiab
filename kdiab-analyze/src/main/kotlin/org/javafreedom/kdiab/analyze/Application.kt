@@ -23,12 +23,14 @@ import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.plugins.statuspages.*
+import org.javafreedom.kdiab.analyze.adapters.outbound.http.CircuitBreakerOpenException
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import org.javafreedom.kdiab.analyze.plugins.configureMetrics
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
 import org.javafreedom.kdiab.common.plugins.configureLogging
 import org.javafreedom.kdiab.common.plugins.configureSecurity
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
+import org.javafreedom.kdiab.common.plugins.configureTracing
 
 private val logger = KotlinLogging.logger {}
 
@@ -48,10 +50,16 @@ fun Application.module(
     profilesService: ProfilesService? = null,
     profilesClient: ProfilesClient? = null,
 ) {
+    configureTracing()
     configureLogging()
     configureMetrics()
     configureSecurity()
     configureStatusPages {
+        exception<CircuitBreakerOpenException> { call, cause ->
+            logger.warn { "circuit_breaker service=${cause.service} state=OPEN returning 503" }
+            val status = HttpStatusCode.ServiceUnavailable
+            call.respond(status, ErrorResponse(status.value, "Service temporarily unavailable: ${cause.service}"))
+        }
         exception<UpstreamException> { call, cause ->
             logger.error(cause) { "Upstream service error: ${cause.service}" }
             val status = HttpStatusCode.BadGateway

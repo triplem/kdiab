@@ -10,10 +10,17 @@ servers:
 security:
   - bearerAuth: []
 
+tags:
+  - name: Measures
+    description: Health measurement management
+  - name: HbA1c
+    description: HbA1c lab-entry management
+
 paths:
   /users/{userId}/measures:
     get:
       summary: List active measures for a user (paginated)
+      description: Returns a paginated list of health measurements for the given user, filtered by status (default ACTIVE).
       operationId: listMeasures
       parameters:
         - name: userId
@@ -72,6 +79,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
     post:
       summary: Create a new measure
+      description: Records a new health measurement for the user with ACTIVE status.
       operationId: createMeasure
       parameters:
         - name: userId
@@ -103,6 +111,7 @@ paths:
   /users/{userId}/measures/{measureId}:
     put:
       summary: Update a measure
+      description: Updates the timestamp and data payload of an existing measure. The measure type cannot be changed.
       operationId: updateMeasure
       parameters:
         - name: userId
@@ -220,6 +229,7 @@ paths:
   /users/{userId}/hba1c:
     get:
       summary: List HbA1c entries for a user
+      description: Returns all lab-measured or CGM-estimated HbA1c entries for the given user, optionally filtered by date range.
       operationId: listHba1cEntries
       tags:
         - HbA1c
@@ -265,6 +275,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
     post:
       summary: Create a manual lab HbA1c entry
+      description: Records a manually entered lab HbA1c result or a CGM-estimated value for the given user.
       operationId: createHba1cEntry
       tags:
         - HbA1c
@@ -428,9 +439,112 @@ components:
             format: uuid
 
     MeasurePayload:
+      description: JSON payload whose structure depends on the measure type. Use the sibling `type` field as the discriminator.
+      oneOf:
+        - $ref: '#/components/schemas/CgmData'
+        - $ref: '#/components/schemas/BgmData'
+        - $ref: '#/components/schemas/BloodPressureData'
+        - $ref: '#/components/schemas/WeightData'
+        - $ref: '#/components/schemas/PulseData'
+        - $ref: '#/components/schemas/BgCheckData'
+        - $ref: '#/components/schemas/KetoneCheckData'
+
+    CgmData:
       type: object
-      description: Flexible JSON payload whose structure depends on the measure type
-      additionalProperties: true
+      description: Continuous Glucose Monitor reading
+      required: [value]
+      properties:
+        value:
+          type: number
+          format: double
+          description: Glucose reading in mg/dL
+          example: 120
+        trend:
+          type: string
+          description: CGM directional trend arrow
+          enum: [DoubleUp, SingleUp, FortyFiveUp, Flat, FortyFiveDown, SingleDown, DoubleDown, None]
+          example: Flat
+
+    BgmData:
+      type: object
+      description: Blood Glucose Meter reading
+      required: [value]
+      properties:
+        value:
+          type: number
+          format: double
+          description: Blood glucose in mg/dL
+          example: 110
+
+    BloodPressureData:
+      type: object
+      description: Blood pressure measurement
+      required: [systolic, diastolic]
+      properties:
+        systolic:
+          type: number
+          format: double
+          description: Systolic pressure in mmHg
+          example: 120
+        diastolic:
+          type: number
+          format: double
+          description: Diastolic pressure in mmHg
+          example: 80
+
+    WeightData:
+      type: object
+      description: Body weight measurement
+      required: [value]
+      properties:
+        value:
+          type: number
+          format: double
+          description: Weight value
+          example: 75.5
+        unit:
+          type: string
+          description: Weight unit
+          enum: [kg, lbs]
+          example: kg
+
+    PulseData:
+      type: object
+      description: Heart rate measurement
+      required: [value]
+      properties:
+        value:
+          type: number
+          format: double
+          description: Heart rate in beats per minute
+          example: 72
+
+    BgCheckData:
+      type: object
+      description: Manual blood glucose check
+      required: [value]
+      properties:
+        value:
+          type: number
+          format: double
+          description: Blood glucose in mg/dL
+          example: 100
+
+    KetoneCheckData:
+      type: object
+      description: Blood or urine ketone measurement
+      required: [value]
+      properties:
+        value:
+          type: number
+          format: double
+          description: Ketone level in mmol/L
+          example: 1.5
+        method:
+          type: string
+          description: Measurement method
+          enum: [blood, urine]
+          example: blood
 
     MeasureType:
       type: string

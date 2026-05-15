@@ -3,7 +3,9 @@ package org.javafreedom.kdiab.common.plugins
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.plugins.callid.callId
 import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import kotlinx.serialization.SerializationException
 import org.javafreedom.kdiab.common.domain.exception.AuthenticationException
@@ -19,12 +21,26 @@ fun Application.configureStatusPages(
 ) {
     install(StatusPages) {
         exception<AuthenticationException> { call, cause ->
-            logger.warn(cause) { "Authentication failure" }
+            logger.warn {
+                "security_event=AUTHENTICATION_FAILURE " +
+                "path=${call.request.path()} " +
+                "method=${call.request.httpMethod.value} " +
+                "remote=${call.request.local.remoteHost} " +
+                "correlationId=${call.callId ?: "-"} " +
+                "reason=${cause.message}"
+            }
             val status = HttpStatusCode.Unauthorized
             call.respond(status, ErrorResponse(status.value, cause.message ?: "Unauthorized"))
         }
         exception<AuthorizationException> { call, cause ->
-            logger.warn(cause) { "Authorization failure" }
+            logger.warn {
+                "security_event=AUTHORIZATION_FAILURE " +
+                "path=${call.request.path()} " +
+                "method=${call.request.httpMethod.value} " +
+                "remote=${call.request.local.remoteHost} " +
+                "correlationId=${call.callId ?: "-"} " +
+                "reason=${cause.message}"
+            }
             val status = HttpStatusCode.Forbidden
             call.respond(status, ErrorResponse(status.value, cause.message ?: "Forbidden"))
         }

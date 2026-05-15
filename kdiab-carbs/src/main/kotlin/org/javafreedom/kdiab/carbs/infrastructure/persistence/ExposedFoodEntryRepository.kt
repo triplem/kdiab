@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.carbs.domain.model.FoodEntry
+import org.javafreedom.kdiab.carbs.domain.model.FoodEntryStatus
 import org.javafreedom.kdiab.carbs.domain.repository.FoodEntryRepository
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.*
@@ -22,6 +23,7 @@ object FoodEntriesTable : Table("food_entries") {
     val name = varchar("name", 200)
     val portionGrams = double("portion_grams")
     val carbsPer100g = double("carbs_per_100g")
+    val status = varchar("status", 20).default("ACTIVE")
     val createdAt = timestamp("created_at")
     val updatedAt = timestamp("updated_at")
 
@@ -41,7 +43,9 @@ class ExposedFoodEntryRepository(
         suspendTransaction {
             FoodEntriesTable.selectAll()
                 .where {
-                    var condition: Op<Boolean> = FoodEntriesTable.userId eq userId
+                    var condition: Op<Boolean> =
+                        (FoodEntriesTable.userId eq userId) and
+                        (FoodEntriesTable.status eq FoodEntryStatus.ACTIVE.name)
                     if (!nameFilter.isNullOrBlank()) {
                         condition = condition and
                             (FoodEntriesTable.name.lowerCase() like "%${nameFilter.lowercase()}%")
@@ -60,7 +64,9 @@ class ExposedFoodEntryRepository(
             suspendTransaction {
                 FoodEntriesTable.selectAll()
                     .where {
-                        var condition: Op<Boolean> = FoodEntriesTable.userId eq userId
+                        var condition: Op<Boolean> =
+                            (FoodEntriesTable.userId eq userId) and
+                            (FoodEntriesTable.status eq FoodEntryStatus.ACTIVE.name)
                         if (!nameFilter.isNullOrBlank()) {
                             condition = condition and
                                 (FoodEntriesTable.name.lowerCase() like "%${nameFilter.lowercase()}%")
@@ -91,10 +97,32 @@ class ExposedFoodEntryRepository(
                 it[FoodEntriesTable.name] = entry.name
                 it[FoodEntriesTable.portionGrams] = entry.portionGrams
                 it[FoodEntriesTable.carbsPer100g] = entry.carbsPer100g
+                it[FoodEntriesTable.status] = entry.status.name
                 it[FoodEntriesTable.createdAt] = java.time.Instant.ofEpochMilli(entry.createdAt.toEpochMilliseconds())
                 it[FoodEntriesTable.updatedAt] = java.time.Instant.ofEpochMilli(entry.updatedAt.toEpochMilliseconds())
             }
             entry
+        }
+    }
+
+    override suspend fun archive(id: Uuid, userId: Uuid): FoodEntry = withContext(ioDispatcher) {
+        suspendTransaction {
+            val now = java.time.Instant.now()
+            FoodEntriesTable.update({
+                (FoodEntriesTable.id eq id) and
+                (FoodEntriesTable.userId eq userId)
+            }) {
+                it[FoodEntriesTable.status] = FoodEntryStatus.ARCHIVED.name
+                it[FoodEntriesTable.updatedAt] = now
+            }
+            FoodEntriesTable.selectAll()
+                .where {
+                    (FoodEntriesTable.id eq id) and
+                    (FoodEntriesTable.userId eq userId)
+                }
+                .singleOrNull()
+                ?.toFoodEntry()
+                ?: throw ResourceNotFoundException("Food entry not found: $id")
         }
     }
 
@@ -143,6 +171,8 @@ class ExposedFoodEntryRepository(
         name = this[FoodEntriesTable.name],
         portionGrams = this[FoodEntriesTable.portionGrams],
         carbsPer100g = this[FoodEntriesTable.carbsPer100g],
+        status = runCatching { FoodEntryStatus.valueOf(this[FoodEntriesTable.status]) }
+            .getOrDefault(FoodEntryStatus.ACTIVE),
         createdAt = Instant.fromEpochMilliseconds(this[FoodEntriesTable.createdAt].toEpochMilli()),
         updatedAt = Instant.fromEpochMilliseconds(this[FoodEntriesTable.updatedAt].toEpochMilli()),
     )

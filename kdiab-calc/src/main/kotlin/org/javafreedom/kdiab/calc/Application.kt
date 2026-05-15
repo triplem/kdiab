@@ -24,6 +24,7 @@ import org.javafreedom.kdiab.common.plugins.ErrorResponse
 import org.javafreedom.kdiab.common.plugins.configureLogging
 import org.javafreedom.kdiab.common.plugins.configureSecurity
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
+import org.javafreedom.kdiab.common.plugins.configureTracing
 
 private val logger = KotlinLogging.logger {}
 
@@ -40,6 +41,7 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 fun Application.module(
     doseCalculationService: DoseCalculationService? = null,
 ) {
+    configureTracing()
     configureLogging()
     configureMetrics()
     configureSecurity()

@@ -13,10 +13,15 @@ servers:
 security:
   - bearerAuth: []
 
+tags:
+  - name: Treatments
+    description: Treatment event management
+
 paths:
   /users/{userId}/treatments:
     get:
       summary: List all treatments for a user
+      description: Returns a paginated list of treatment events for the given user, optionally filtered by type, status, and date range.
       operationId: listTreatments
       parameters:
         - name: userId
@@ -85,6 +90,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
     post:
       summary: Create a new treatment record
+      description: Records a new treatment event (bolus, carbs, basal, etc.) for the given user with ACTIVE status.
       operationId: createTreatment
       parameters:
         - name: userId
@@ -116,6 +122,7 @@ paths:
   /users/{userId}/treatments/{treatmentId}:
     put:
       summary: Update a treatment
+      description: Updates the timestamp, data payload, and optional notes of an existing treatment record. The treatment type cannot be changed.
       operationId: updateTreatment
       parameters:
         - name: userId
@@ -373,26 +380,233 @@ components:
             format: uuid
 
     TreatmentPayload:
+      description: JSON payload whose structure depends on the treatment type. Use the sibling `type` field as the discriminator. All `duration` fields are in minutes.
+      oneOf:
+        - $ref: '#/components/schemas/BolusData'
+        - $ref: '#/components/schemas/BasalData'
+        - $ref: '#/components/schemas/CarbsData'
+        - $ref: '#/components/schemas/CorrectionBolusData'
+        - $ref: '#/components/schemas/ComboBolusData'
+        - $ref: '#/components/schemas/TempBasalData'
+        - $ref: '#/components/schemas/ExerciseData'
+        - $ref: '#/components/schemas/NoteData'
+        - $ref: '#/components/schemas/PumpSuspendData'
+        - $ref: '#/components/schemas/SiteChangeData'
+        - $ref: '#/components/schemas/SensorInsertData'
+        - $ref: '#/components/schemas/InsulinChangeData'
+        - $ref: '#/components/schemas/ActivityData'
+        - $ref: '#/components/schemas/HypoTreatmentData'
+
+    BolusData:
       type: object
-      description: |
-        Flexible JSON payload whose structure depends on the treatment type.
-        Follows Nightscout treatment conventions where applicable.
-        All `duration` fields are in **minutes**.
-        - BOLUS: `{"insulin": 2.5, "insulinType": "NovoRapid"}`
-        - BASAL: `{"insulin": 10.0, "insulinType": "Lantus", "duration": 1440}`
-        - CARBS: `{"carbs": 45, "absorptionTime": 3}`
-        - CORRECTION_BOLUS: `{"insulin": 1.0}`
-        - COMBO_BOLUS: `{"insulin": 3.0, "splitNow": 50, "splitExt": 50, "duration": 120}`
-        - TEMP_BASAL: `{"rate": 0.5, "duration": 30, "absolute": true}`
-        - EXERCISE: `{"duration": 60, "intensity": "moderate"}`
-        - NOTE: `{"text": "felt low before dinner"}`
-        - PUMP_SUSPEND: `{"duration": 30, "reason": "exercise"}`
-        - SITE_CHANGE: `{"location": "left abdomen"}`
-        - SENSOR_INSERT: `{"sensor": "Dexcom G7"}`
-        - INSULIN_CHANGE: `{"insulinType": "NovoRapid"}`
-        - ACTIVITY: `{"name": "running", "duration": 45, "intensity": "moderate"}`
-        - HYPO_TREATMENT: `{"carbs": 15, "reason": "glucose below 70"}`
-      additionalProperties: true
+      description: Rapid-acting insulin dose (BOLUS)
+      required: [insulin]
+      properties:
+        insulin:
+          type: number
+          format: double
+          description: Insulin dose in units
+          example: 2.5
+        insulinType:
+          type: string
+          description: Brand/type of insulin used
+          example: NovoRapid
+
+    BasalData:
+      type: object
+      description: Long-acting basal insulin dose (BASAL)
+      required: [insulin]
+      properties:
+        insulin:
+          type: number
+          format: double
+          description: Insulin dose in units
+          example: 10.0
+        insulinType:
+          type: string
+          description: Brand/type of insulin used
+          example: Lantus
+        duration:
+          type: number
+          format: double
+          description: Duration in minutes
+          example: 1440
+
+    CarbsData:
+      type: object
+      description: Carbohydrate intake only (CARBS)
+      required: [carbs]
+      properties:
+        carbs:
+          type: number
+          format: double
+          description: Carbohydrate amount in grams
+          example: 45
+        absorptionTime:
+          type: number
+          format: double
+          description: Estimated absorption time in hours
+          example: 3
+
+    CorrectionBolusData:
+      type: object
+      description: Correction insulin dose (CORRECTION_BOLUS)
+      required: [insulin]
+      properties:
+        insulin:
+          type: number
+          format: double
+          description: Insulin dose in units
+          example: 1.0
+
+    ComboBolusData:
+      type: object
+      description: Split bolus — part immediate, part extended (COMBO_BOLUS)
+      required: [insulin, splitNow, splitExt, duration]
+      properties:
+        insulin:
+          type: number
+          format: double
+          description: Total insulin dose in units
+          example: 3.0
+        splitNow:
+          type: number
+          format: double
+          description: Percentage delivered immediately
+          example: 50
+        splitExt:
+          type: number
+          format: double
+          description: Percentage delivered over the extended period
+          example: 50
+        duration:
+          type: number
+          format: double
+          description: Extended delivery duration in minutes
+          example: 120
+
+    TempBasalData:
+      type: object
+      description: Temporary basal rate change (TEMP_BASAL)
+      required: [rate, duration]
+      properties:
+        rate:
+          type: number
+          format: double
+          description: Basal rate in U/hr
+          example: 0.5
+        duration:
+          type: number
+          format: double
+          description: Duration in minutes
+          example: 30
+        absolute:
+          type: boolean
+          description: True = absolute rate, false = percentage of scheduled rate
+          example: true
+
+    ExerciseData:
+      type: object
+      description: Physical activity event (EXERCISE)
+      required: [duration]
+      properties:
+        duration:
+          type: number
+          format: double
+          description: Duration in minutes
+          example: 60
+        intensity:
+          type: string
+          description: Exercise intensity level
+          enum: [low, moderate, high]
+          example: moderate
+
+    NoteData:
+      type: object
+      description: Free-text note (NOTE)
+      required: [text]
+      properties:
+        text:
+          type: string
+          description: Note content
+          example: felt low before dinner
+
+    PumpSuspendData:
+      type: object
+      description: Insulin pump suspended (PUMP_SUSPEND)
+      required: [duration]
+      properties:
+        duration:
+          type: number
+          format: double
+          description: Suspension duration in minutes
+          example: 30
+        reason:
+          type: string
+          description: Reason for suspension
+          example: exercise
+
+    SiteChangeData:
+      type: object
+      description: Infusion site/cannula replacement (SITE_CHANGE)
+      properties:
+        location:
+          type: string
+          description: Insertion site location
+          example: left abdomen
+
+    SensorInsertData:
+      type: object
+      description: CGM sensor insertion (SENSOR_INSERT)
+      properties:
+        sensor:
+          type: string
+          description: CGM sensor model/brand
+          example: Dexcom G7
+
+    InsulinChangeData:
+      type: object
+      description: Insulin cartridge or pen replacement (INSULIN_CHANGE)
+      properties:
+        insulinType:
+          type: string
+          description: New insulin type loaded
+          example: NovoRapid
+
+    ActivityData:
+      type: object
+      description: Named physical activity with intensity (ACTIVITY)
+      required: [name, duration]
+      properties:
+        name:
+          type: string
+          description: Activity name
+          example: running
+        duration:
+          type: number
+          format: double
+          description: Duration in minutes
+          example: 45
+        intensity:
+          type: string
+          description: Activity intensity level
+          enum: [low, moderate, high]
+          example: moderate
+
+    HypoTreatmentData:
+      type: object
+      description: Emergency fast-acting carbohydrate intake for hypoglycaemia (HYPO_TREATMENT)
+      required: [carbs]
+      properties:
+        carbs:
+          type: number
+          format: double
+          description: Fast-acting carbohydrate amount in grams
+          example: 15
+        reason:
+          type: string
+          description: Context for the hypo treatment
+          example: glucose below 70
 
     TreatmentType:
       type: string

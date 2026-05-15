@@ -3,6 +3,8 @@ package org.javafreedom.kdiab.analyze.adapters.outbound.http
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.engine.*
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.request.header
@@ -17,13 +19,24 @@ private val logger = KotlinLogging.logger {}
 
 private const val PAGE_SIZE = 200
 private const val MAX_TREATMENTS = 100_000
+private const val CONNECT_TIMEOUT_MS = 5_000L
+private const val REQUEST_TIMEOUT_MS = 30_000L
 
 class TreatmentsClient(
     httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
+    val circuitBreaker: CircuitBreaker = CircuitBreaker(name = "treatments"),
 ) {
     private val httpClient = HttpClient(httpClientEngine) {
         install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        install(HttpTimeout) {
+            connectTimeoutMillis = CONNECT_TIMEOUT_MS
+            requestTimeoutMillis = REQUEST_TIMEOUT_MS
+        }
+        install(HttpRequestRetry) {
+            retryOnServerErrors(maxRetries = 3)
+            exponentialDelay()
+        }
     }
 
     suspend fun getTreatments(
@@ -51,15 +64,17 @@ class TreatmentsClient(
 
         while (result.size < totalCount && !done) {
             val pageStart = System.currentTimeMillis()
-            val httpResponse = api.listTreatments(
-                userId = userId,
-                type = null,
-                from = from,
-                to = to,
-                status = null,
-                page = page,
-                size = PAGE_SIZE,
-            )
+            val httpResponse = circuitBreaker.execute {
+                api.listTreatments(
+                    userId = userId,
+                    type = null,
+                    from = from,
+                    to = to,
+                    status = null,
+                    page = page,
+                    size = PAGE_SIZE,
+                )
+            }
             val pageMs = System.currentTimeMillis() - pageStart
             if (!httpResponse.success) {
                 val requestUrl = httpResponse.response.request.url.toString()

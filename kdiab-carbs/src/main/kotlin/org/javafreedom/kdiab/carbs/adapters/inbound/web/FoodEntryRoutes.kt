@@ -9,6 +9,7 @@ import io.ktor.server.request.*
 import io.ktor.server.resources.*
 import io.ktor.server.resources.post
 import io.ktor.server.resources.put
+import io.ktor.server.resources.delete
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
@@ -68,6 +69,7 @@ fun Route.foodEntryRoutes(service: FoodEntryService) {
     authenticate("auth-jwt") {
         listFoods(service)
         createFoodEntry(service)
+        archiveFoodEntry(service)
         updateFoodEntry(service)
         deleteFoodEntry(service)
     }
@@ -105,6 +107,19 @@ private fun Route.createFoodEntry(service: FoodEntryService) {
         val saved = service.createEntry(entry)
         logger.info { "Created food entry ${saved.id} for user $targetUserId" }
         call.respond(HttpStatusCode.Created, saved.toApi())
+    }
+}
+
+private fun Route.archiveFoodEntry(service: FoodEntryService) {
+    post<Paths.archiveFoodEntry> { params ->
+        val principal = call.principal<UserPrincipal>()
+        val targetUserId = parseUuid(params.userId)
+        val foodId = parseUuid(params.foodId)
+        checkWriteAccess(principal, targetUserId)
+
+        val archived = service.archiveEntry(foodId, targetUserId)
+        logger.info { "Archived food entry $foodId for user $targetUserId" }
+        call.respond(HttpStatusCode.OK, archived.toApi())
     }
 }
 

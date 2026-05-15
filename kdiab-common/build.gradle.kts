@@ -19,6 +19,10 @@ dependencies {
     implementation(libs.ktor.server.call.logging)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlin.logging)
+    implementation(libs.opentelemetry.api)
+    implementation(libs.opentelemetry.sdk)
+    implementation(libs.opentelemetry.autoconfigure)
+    implementation(libs.opentelemetry.exporter.otlp)
 }
 
 kotlin {

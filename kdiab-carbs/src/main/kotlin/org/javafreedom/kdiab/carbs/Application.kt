@@ -27,6 +27,7 @@ import org.javafreedom.kdiab.common.plugins.ErrorResponse
 import org.javafreedom.kdiab.common.plugins.configureLogging
 import org.javafreedom.kdiab.common.plugins.configureSecurity
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
+import org.javafreedom.kdiab.common.plugins.configureTracing
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 
 private val logger = KotlinLogging.logger {}
@@ -37,6 +38,7 @@ fun Application.module(
     foodEntryService: FoodEntryService = FoodEntryService(ExposedFoodEntryRepository()),
     initDatabase: Boolean = true
 ) {
+    configureTracing()
     configureLogging()
     configureMetrics()
     configureSecurity()

@@ -1,0 +1,6 @@
+extends: ["spectral:oas"]
+rules:
+  # info-contact is good practice but not enforced in this project yet
+  info-contact: off
+  # operation-tags are not required by this project's generators
+  operation-tags: off

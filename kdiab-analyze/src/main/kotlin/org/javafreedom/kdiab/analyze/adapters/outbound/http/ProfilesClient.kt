@@ -3,6 +3,8 @@ package org.javafreedom.kdiab.analyze.adapters.outbound.http
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.engine.*
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.request.header
@@ -16,13 +18,24 @@ import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 private val logger = KotlinLogging.logger {}
 
 private const val DEFAULT_PAGE_SIZE = 50
+private const val CONNECT_TIMEOUT_MS = 5_000L
+private const val REQUEST_TIMEOUT_MS = 30_000L
 
 class ProfilesClient(
     httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
+    val circuitBreaker: CircuitBreaker = CircuitBreaker(name = "profiles"),
 ) {
     private val httpClient = HttpClient(httpClientEngine) {
         install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        install(HttpTimeout) {
+            connectTimeoutMillis = CONNECT_TIMEOUT_MS
+            requestTimeoutMillis = REQUEST_TIMEOUT_MS
+        }
+        install(HttpRequestRetry) {
+            retryOnServerErrors(maxRetries = 3)
+            exponentialDelay()
+        }
     }
 
     suspend fun getProfiles(userId: String, authorization: String, correlationId: String): List<Profile> {
@@ -42,12 +55,14 @@ class ProfilesClient(
 
         while (true) {
             val pageStart = System.currentTimeMillis()
-            val httpResponse = api.listProfiles(
-                userId = userId,
-                page = page,
-                size = DEFAULT_PAGE_SIZE,
-                status = listOf("ACTIVE", "ARCHIVED"),
-            )
+            val httpResponse = circuitBreaker.execute {
+                api.listProfiles(
+                    userId = userId,
+                    page = page,
+                    size = DEFAULT_PAGE_SIZE,
+                    status = listOf("ACTIVE", "ARCHIVED"),
+                )
+            }
             val pageMs = System.currentTimeMillis() - pageStart
             if (!httpResponse.success) {
                 val requestUrl = httpResponse.response.request.url.toString()

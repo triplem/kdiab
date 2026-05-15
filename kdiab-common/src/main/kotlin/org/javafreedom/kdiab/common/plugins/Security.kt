@@ -4,14 +4,22 @@ package org.javafreedom.kdiab.common.plugins
 import com.auth0.jwk.JwkProviderBuilder
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import io.github.oshai.kotlinlogging.KotlinLogging
+import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
+import io.ktor.server.plugins.callid.callId
+import io.ktor.server.request.*
+import io.ktor.server.response.*
 import java.net.URI
 import java.util.concurrent.TimeUnit
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.common.domain.exception.AuthenticationException
 import org.javafreedom.kdiab.common.domain.model.Role
+import org.javafreedom.kdiab.common.plugins.ErrorResponse
+
+private val securityLogger = KotlinLogging.logger {}
 
 private const val JWK_CACHE_MAX_SIZE = 10L
 private const val JWK_CACHE_EXPIRES_IN = 24L
@@ -83,6 +91,17 @@ fun Application.configureSecurity() {
                 }
             }
             validate { credential -> buildPrincipal(credential, jwtAudience) }
+            challenge { _, _ ->
+                securityLogger.warn {
+                    "security_event=TOKEN_REJECTED " +
+                    "path=${call.request.path()} " +
+                    "method=${call.request.httpMethod.value} " +
+                    "remote=${call.request.local.remoteHost} " +
+                    "correlationId=${call.callId ?: "-"}"
+                }
+                val status = HttpStatusCode.Unauthorized
+                call.respond(status, ErrorResponse(status.value, "Token is not valid or has expired"))
+            }
         }
     }
 }

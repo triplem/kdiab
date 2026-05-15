@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/db.changelog-root.yaml
+  - changeSet:
+      id: 002
+      author: javafreedom
+      changes:
+        - addColumn:
+            tableName: food_entries
+            columns:
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: ACTIVE
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_food_entries_user_id_status
+            tableName: food_entries
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: status

@@ -10,5 +10,6 @@ interface FoodEntryRepository {
     suspend fun findById(id: Uuid, userId: Uuid): FoodEntry?
     suspend fun save(entry: FoodEntry): FoodEntry
     suspend fun update(id: Uuid, userId: Uuid, name: String, portionGrams: Double, carbsPer100g: Double): FoodEntry
+    suspend fun archive(id: Uuid, userId: Uuid): FoodEntry
     suspend fun delete(id: Uuid, userId: Uuid)
 }

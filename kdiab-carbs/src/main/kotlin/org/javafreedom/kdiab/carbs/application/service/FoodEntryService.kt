@@ -25,5 +25,7 @@ class FoodEntryService(private val repo: FoodEntryRepository) {
     ): FoodEntry =
         repo.update(id, userId, name, portionGrams, carbsPer100g)
 
+    suspend fun archiveEntry(id: Uuid, userId: Uuid): FoodEntry = repo.archive(id, userId)
+
     suspend fun deleteEntry(id: Uuid, userId: Uuid) = repo.delete(id, userId)
 }
