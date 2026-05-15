@@ -497,6 +497,7 @@ All rules live in `.claude/rules/`. They are automatically applied.
 - `logging.md` — Structured logging across all stacks
 - `openapi.md` — OpenAPI spec discipline
 - `agent-context.md` — Single root CLAUDE.md convention; PostToolUse hook audit logging pattern
+- `github-issue-management.md` — Native sub-issues via GraphQL `addSubIssue`; epic documentation checklist (ADR, reference, ops guide, user guide)
 
 ## Skills Index
 
