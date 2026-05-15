@@ -11,6 +11,12 @@
 --   - BGM checks (3-5 per day)
 --   - Bolus + carbs treatment pairs (3 per day)
 --   - One active pump basal profile
+--   - DEVICE_STATUS treatments (pump snapshot every 5 min for 30 days)
+--   - user_settings row (timezone, language, units, alarm thresholds)
+--
+-- Doctor–patient assignments (kdiab-users):
+--   dr_house   (33333333-...) DOCTOR → sarah
+--   dr_cameron (44444444-...) DOCTOR → mike
 -- =============================================================================
 
 \c "kdiab-measures"
@@ -329,6 +335,56 @@ BEGIN
           jsonb_build_object('name', 'Schwimmen', 'duration', 45, 'intensity', 'high'), 'Abendtraining');
 END $$;
 
+-- ── Device Status (pump snapshots every 5 minutes for 30 days) ───────────────
+-- Reservoir drains from ~300 U to ~0 U over 3 days, then refills (site change).
+-- Battery drains from 100% to ~20% over 7 days, then recharges.
+
+DO $$
+DECLARE
+  sarah_id uuid := '11111111-1111-1111-1111-111111111111';
+  mike_id  uuid := '22222222-2222-2222-2222-222222222222';
+  ts       timestamptz;
+  minutes  int;
+  reservoir_sarah double precision;
+  reservoir_mike  double precision;
+  battery_sarah   int;
+  battery_mike    int;
+BEGIN
+  FOR minutes IN 0..8639 LOOP
+    ts := NOW() - (8639 - minutes) * INTERVAL '5 minutes';
+
+    reservoir_sarah := GREATEST(0, 300 - ((minutes % 864) * 300.0 / 864));
+    battery_sarah   := 100 - ((minutes % 2016) * 80 / 2016);
+
+    reservoir_mike  := GREATEST(0, 280 - ((minutes % 864) * 280.0 / 864));
+    battery_mike    := 100 - (((minutes + 500) % 2016) * 80 / 2016);
+
+    INSERT INTO treatments(id, user_id, treated_at, type, data)
+    VALUES (
+      gen_random_uuid(), sarah_id, ts, 'DEVICE_STATUS',
+      jsonb_build_object(
+        'device', 'AAPS 3.2.0',
+        'pumpName', 'Dana RS',
+        'reservoirUnits', ROUND(reservoir_sarah::numeric, 1),
+        'batteryLevel', battery_sarah,
+        'pumpConnected', true
+      )
+    );
+
+    INSERT INTO treatments(id, user_id, treated_at, type, data)
+    VALUES (
+      gen_random_uuid(), mike_id, ts, 'DEVICE_STATUS',
+      jsonb_build_object(
+        'device', 'xDrip+ 2024.01.15',
+        'pumpName', 'Omnipod 5',
+        'reservoirUnits', ROUND(reservoir_mike::numeric, 1),
+        'batteryLevel', battery_mike,
+        'pumpConnected', true
+      )
+    );
+  END LOOP;
+END $$;
+
 -- ── Profiles ──────────────────────────────────────────────────────────────────
 
 \c "kdiab-profiles"
@@ -413,3 +469,50 @@ VALUES (
   NOW() - INTERVAL '45 days'
 )
 ON CONFLICT (profile_id) DO NOTHING;
+
+-- =============================================================================
+-- kdiab-users seed data
+--
+-- user_settings: one row per user (sarah mg/dL, mike mmol/L, matching measures)
+-- doctor_patient: dr_house→sarah, dr_cameron→mike (mirrors Keycloak assignments)
+-- =============================================================================
+
+\c "kdiab-users"
+
+-- ── User Settings ─────────────────────────────────────────────────────────────
+INSERT INTO user_settings(user_id, timezone, language, time_format, glucose_unit, weight_unit,
+                          alarm_urgent_high, alarm_high, alarm_low, alarm_urgent_low,
+                          created_at, updated_at)
+VALUES
+  -- sarah: mg/dL, European defaults, German locale
+  ('11111111-1111-1111-1111-111111111111', 'Europe/Berlin', 'de', 24, 'mg/dL', 'kg',
+   250, 180, 70, 54,
+   NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days'),
+  -- mike: mmol/L, US defaults, English locale
+  ('22222222-2222-2222-2222-222222222222', 'America/New_York', 'en', 12, 'mmol/L', 'lb',
+   13, 10, 3.9, 3,
+   NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days'),
+  -- dr_house
+  ('33333333-3333-3333-3333-333333333333', 'America/New_York', 'en', 12, 'mg/dL', 'lb',
+   NULL, NULL, NULL, NULL,
+   NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days'),
+  -- dr_cameron
+  ('44444444-4444-4444-4444-444444444444', 'America/New_York', 'en', 12, 'mg/dL', 'lb',
+   NULL, NULL, NULL, NULL,
+   NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days'),
+  -- admin
+  ('55555555-5555-5555-5555-555555555555', 'UTC', 'en', 24, 'mg/dL', 'kg',
+   NULL, NULL, NULL, NULL,
+   NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days')
+ON CONFLICT (user_id) DO NOTHING;
+
+-- ── Doctor–Patient Assignments ────────────────────────────────────────────────
+INSERT INTO doctor_patient(doctor_id, patient_id, created_at)
+VALUES
+  -- dr_house is assigned to sarah
+  ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111',
+   NOW() - INTERVAL '90 days'),
+  -- dr_cameron is assigned to mike
+  ('44444444-4444-4444-4444-444444444444', '22222222-2222-2222-2222-222222222222',
+   NOW() - INTERVAL '90 days')
+ON CONFLICT (doctor_id, patient_id) DO NOTHING;
