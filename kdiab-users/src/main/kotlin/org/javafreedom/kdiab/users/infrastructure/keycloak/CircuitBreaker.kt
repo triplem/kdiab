@@ -14,6 +14,7 @@ class CircuitBreaker(
     val name: String,
     private val failureThreshold: Int = 5,
     private val resetTimeoutMs: Long = 30_000L,
+    private val isInfrastructureFailure: (Exception) -> Boolean = { true },
 ) {
     private enum class State { CLOSED, OPEN, HALF_OPEN }
 
@@ -43,7 +44,7 @@ class CircuitBreaker(
         } catch (e: KeycloakCircuitBreakerOpenException) {
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            onFailure(e)
+            if (isInfrastructureFailure(e)) onFailure(e)
             throw e
         }
     }

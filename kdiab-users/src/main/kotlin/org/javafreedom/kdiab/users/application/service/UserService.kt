@@ -6,7 +6,6 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
-import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.users.domain.model.User
@@ -15,6 +14,7 @@ import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakCredential
+import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakRole
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakUser
 import org.javafreedom.kdiab.users.infrastructure.keycloak.toKeycloakName
 
@@ -33,7 +33,8 @@ class UserService(
             settings.copy(
                 glucoseUnit = principal.glucoseUnit,
                 weightUnit = principal.weightUnit,
-            )
+            ),
+            principal.roles,
         )
     }
 
@@ -56,8 +57,10 @@ class UserService(
             alarmUrgentLow = patch.alarmUrgentLow ?: existing.alarmUrgentLow,
             updatedAt = now,
         )
-        settingsRepo.save(updated)
 
+        // KC write first: JWT claims are the source of truth for glucose/weight units.
+        // If KC fails, DB is untouched (consistent). If KC succeeds but DB fails, the
+        // discrepancy resolves itself on the next successful settings save.
         val jwtBackedUpdates = buildMap {
             if (patch.glucoseUnit != null && patch.glucoseUnit != existing.glucoseUnit) {
                 put("glucose_unit", listOf(patch.glucoseUnit))
@@ -70,17 +73,25 @@ class UserService(
             logger.info { "user_settings jwt_backed_update userId=${principal.userId} fields=${jwtBackedUpdates.keys}" }
             keycloak.updateUserAttributes(principal.userId, jwtBackedUpdates)
         }
+
+        settingsRepo.save(updated)
         return updated
     }
 
     suspend fun listUsers(principal: UserPrincipal, search: String?, page: Int, size: Int): List<User> {
         requireAdmin(principal)
         val kcUsers = keycloak.listUsers(search, first = page * size, max = size)
-        return kcUsers.map { kcUser ->
-            val userId = kcUser.id?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: return@map null
+        return kcUsers.mapNotNull { kcUser ->
+            val userId = kcUser.id?.let {
+                runCatching { Uuid.parse(it) }.getOrElse {
+                    logger.warn { "listUsers skipping user with unparseable id='${kcUser.id}'" }
+                    null
+                }
+            } ?: return@mapNotNull null
+            val roles = keycloak.getUserRoles(userId).toDomainRoles()
             val settings = settingsRepo.findByUserId(userId)
-            kcUser.toDomain(settings)
-        }.filterNotNull()
+            kcUser.toDomain(settings, roles)
+        }
     }
 
     suspend fun createUser(
@@ -107,7 +118,15 @@ class UserService(
         keycloak.assignRoles(newUserId, listOf(roleRep))
         val now = Clock.System.now()
         val settings = defaultSettings(newUserId, now)
-        settingsRepo.save(settings)
+        try {
+            settingsRepo.save(settings)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            logger.error(e) { "admin_create_user db_fail rolling_back userId=$newUserId" }
+            runCatching { keycloak.deleteUser(newUserId) }.onFailure { re ->
+                logger.error(re) { "admin_create_user rollback_failed userId=$newUserId" }
+            }
+            throw e
+        }
         logger.info { "admin_create_user admin=${principal.userId} newUser=$newUserId role=${role.name}" }
         return User(
             userId = newUserId, email = email, displayName = displayName,
@@ -118,8 +137,9 @@ class UserService(
     suspend fun getUser(principal: UserPrincipal, targetUserId: Uuid): User {
         if (!principal.canAccess(targetUserId)) throw AuthorizationException("Access denied")
         val kcUser = keycloak.getUser(targetUserId)
+        val roles = keycloak.getUserRoles(targetUserId).toDomainRoles()
         val settings = settingsRepo.findByUserId(targetUserId)
-        return kcUser.toDomain(settings)
+        return kcUser.toDomain(settings, roles)
     }
 
     suspend fun updateUser(
@@ -135,15 +155,19 @@ class UserService(
             val lastName = displayName.substringAfter(" ", "").ifBlank { null }
             keycloak.updateUser(targetUserId, existing.copy(firstName = firstName, lastName = lastName))
         }
+        val updatedRoles: Set<Role>
         if (role != null) {
             val currentRoles = keycloak.getUserRoles(targetUserId)
             if (currentRoles.isNotEmpty()) keycloak.removeRoles(targetUserId, currentRoles)
             val newRole = keycloak.getRealmRole(role.toKeycloakName())
             keycloak.assignRoles(targetUserId, listOf(newRole))
+            updatedRoles = setOf(role)
+        } else {
+            updatedRoles = keycloak.getUserRoles(targetUserId).toDomainRoles()
         }
         val updated = keycloak.getUser(targetUserId)
         val settings = settingsRepo.findByUserId(targetUserId)
-        return updated.toDomain(settings)
+        return updated.toDomain(settings, updatedRoles)
     }
 
     suspend fun deleteUser(principal: UserPrincipal, targetUserId: Uuid) {
@@ -177,11 +201,11 @@ data class SettingsPatch(
     val alarmUrgentLow: Int? = null,
 )
 
-private fun KeycloakUser.toDomain(settings: UserSettings?): User {
+private fun KeycloakUser.toDomain(settings: UserSettings?, roles: Set<Role>): User {
     val userId = Uuid.parse(requireNotNull(id) { "Keycloak user missing id" })
     val displayName = listOfNotNull(firstName, lastName).joinToString(" ").ifBlank { username ?: email.orEmpty() }
-    val roles = attributes?.get("roles")?.mapNotNull {
-        runCatching { Role.valueOf(it) }.getOrNull()
-    }?.toSet() ?: emptySet()
     return User(userId = userId, email = email.orEmpty(), displayName = displayName, roles = roles, settings = settings)
 }
+
+private fun List<KeycloakRole>.toDomainRoles(): Set<Role> =
+    mapNotNull { kcRole -> Role.entries.firstOrNull { it.toKeycloakName() == kcRole.name } }.toSet()

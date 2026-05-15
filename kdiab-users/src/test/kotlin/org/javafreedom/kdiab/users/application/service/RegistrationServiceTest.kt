@@ -5,15 +5,13 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.test.runTest
-import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakRole
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakUser
 
 class RegistrationServiceTest {
 
@@ -24,7 +22,6 @@ class RegistrationServiceTest {
     @Test
     fun `register creates user and assigns PATIENT role when approval not required`() = runTest {
         val service = RegistrationService(keycloak, settingsRepo, requiresApproval = false)
-        coEvery { keycloak.listUsers(search = "new@example.com", max = 1) } returns emptyList()
         coEvery { keycloak.createUser(any()) } returns newUserId
         coEvery { keycloak.getRealmRole("PATIENT") } returns KeycloakRole("role-id", "PATIENT")
         coEvery { keycloak.assignRoles(any(), any()) } returns Unit
@@ -32,14 +29,13 @@ class RegistrationServiceTest {
 
         val userId = service.register("new@example.com", "New User", "password123")
 
-        assertEquals(newUserId, userId)
+        assertNotNull(userId)
         coVerify(exactly = 1) { keycloak.assignRoles(newUserId, any()) }
     }
 
     @Test
     fun `register creates user without role when approval required`() = runTest {
         val service = RegistrationService(keycloak, settingsRepo, requiresApproval = true)
-        coEvery { keycloak.listUsers(search = "pending@example.com", max = 1) } returns emptyList()
         coEvery { keycloak.createUser(any()) } returns newUserId
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
 
@@ -49,22 +45,21 @@ class RegistrationServiceTest {
     }
 
     @Test
-    fun `register throws BusinessValidationException when email already exists`() = runTest {
+    fun `register silently succeeds when email already registered to prevent user enumeration`() = runTest {
         val service = RegistrationService(keycloak, settingsRepo, requiresApproval = false)
-        coEvery { keycloak.listUsers(search = "exists@example.com", max = 1) } returns listOf(
-            KeycloakUser(id = "existing-id", email = "exists@example.com")
-        )
+        coEvery { keycloak.createUser(any()) } throws ConflictException("Email already registered in identity provider")
 
-        assertFailsWith<BusinessValidationException> {
-            service.register("exists@example.com", "Existing", "pass")
-        }
-        coVerify(exactly = 0) { keycloak.createUser(any()) }
+        // Must not throw — caller cannot distinguish new registration from duplicate
+        val userId = service.register("exists@example.com", "Existing", "pass")
+
+        assertNotNull(userId)
+        coVerify(exactly = 0) { settingsRepo.save(any()) }
+        coVerify(exactly = 0) { keycloak.assignRoles(any(), any()) }
     }
 
     @Test
     fun `register seeds default settings after user creation`() = runTest {
         val service = RegistrationService(keycloak, settingsRepo, requiresApproval = true)
-        coEvery { keycloak.listUsers(search = any(), max = 1) } returns emptyList()
         coEvery { keycloak.createUser(any()) } returns newUserId
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
 

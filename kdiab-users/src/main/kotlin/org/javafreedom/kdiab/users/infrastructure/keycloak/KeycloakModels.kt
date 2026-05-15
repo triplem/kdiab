@@ -1,3 +1,5 @@
+// Models aligned with Keycloak 22.0 REST API spec (api/keycloak-admin.json).
+// Field names are camelCase as returned by the KC Admin API; no @SerialName needed.
 package org.javafreedom.kdiab.users.infrastructure.keycloak
 
 import kotlinx.serialization.Serializable

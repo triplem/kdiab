@@ -17,6 +17,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
 
@@ -53,6 +54,7 @@ class KeycloakAdminClient(
         "keycloak-admin",
         DEFAULT_FAILURE_THRESHOLD,
         DEFAULT_RESET_TIMEOUT_MS,
+        isInfrastructureFailure = { e -> e !is ResourceNotFoundException && e !is ConflictException },
     )
 
     private suspend fun token(): String = tokenMutex.withLock {
@@ -117,6 +119,9 @@ class KeycloakAdminClient(
                 header(HttpHeaders.Authorization, auth)
                 contentType(ContentType.Application.Json)
                 setBody(user)
+            }
+            if (response.status == HttpStatusCode.Conflict) {
+                throw ConflictException("Email already registered in identity provider")
             }
             check(response.status == HttpStatusCode.Created) { "createUser failed: ${response.status}" }
             val location = response.headers[HttpHeaders.Location]

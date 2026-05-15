@@ -7,8 +7,10 @@ import kotlinx.coroutines.withContext
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.users.domain.model.DoctorPatientRelation
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 
@@ -45,12 +47,16 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
 
     override suspend fun save(relation: DoctorPatientRelation): DoctorPatientRelation =
         withContext(Dispatchers.IO) {
-            transaction {
-                DoctorPatientTable.insert {
-                    it[doctorId] = relation.doctorId.toString()
-                    it[patientId] = relation.patientId.toString()
-                    it[createdAt] = relation.createdAt.toString()
+            try {
+                transaction {
+                    DoctorPatientTable.insert {
+                        it[doctorId] = relation.doctorId.toString()
+                        it[patientId] = relation.patientId.toString()
+                        it[createdAt] = relation.createdAt.toString()
+                    }
                 }
+            } catch (e: ExposedSQLException) {
+                throw ConflictException("Doctor-patient relation already exists", e)
             }
             relation
         }

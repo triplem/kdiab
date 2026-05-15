@@ -105,6 +105,7 @@ class UserServiceTest {
     @Test
     fun `listUsers calls keycloak for admin`() = runTest {
         coEvery { keycloak.listUsers(any(), any(), any()) } returns listOf(kcUser())
+        coEvery { keycloak.getUserRoles(userId) } returns emptyList()
         coEvery { settingsRepo.findByUserId(any()) } returns null
         val results = service.listUsers(adminPrincipal(), null, 0, 20)
         assertEquals(1, results.size)
@@ -150,6 +151,7 @@ class UserServiceTest {
     @Test
     fun `getUser allows self access`() = runTest {
         coEvery { keycloak.getUser(userId) } returns kcUser()
+        coEvery { keycloak.getUserRoles(userId) } returns listOf(KeycloakRole("r-id", "PATIENT"))
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
         val user = service.getUser(patientPrincipal(), userId)
         assertEquals(userId, user.userId)
