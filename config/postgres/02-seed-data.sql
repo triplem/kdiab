@@ -399,7 +399,7 @@ INSERT INTO insulins(id, name) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Sarah — archived profile from 60 days ago, active profile from 30 days ago
-INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments)
+INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
 VALUES (
   'aaaa0001-0000-0000-0000-000000000001',
   '11111111-1111-1111-1111-111111111111',
@@ -409,7 +409,8 @@ VALUES (
   240,
   'Europe/Berlin',
   NOW() - INTERVAL '65 days',
-  '{"basal":[{"startTime":"00:00","value":0.85},{"startTime":"06:00","value":1.10},{"startTime":"12:00","value":0.90},{"startTime":"18:00","value":1.00}],"icr":[],"isf":[],"targets":[]}'
+  '{"basal":[{"startTime":"00:00","value":0.85},{"startTime":"06:00","value":1.10},{"startTime":"12:00","value":0.90},{"startTime":"18:00","value":1.00}],"icr":[],"isf":[],"targets":[]}',
+  20.0
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -422,7 +423,7 @@ VALUES (
 )
 ON CONFLICT (profile_id) DO NOTHING;
 
-INSERT INTO profiles(id, user_id, previous_profile_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments)
+INSERT INTO profiles(id, user_id, previous_profile_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
 VALUES (
   'aaaa0002-0000-0000-0000-000000000002',
   '11111111-1111-1111-1111-111111111111',
@@ -433,7 +434,8 @@ VALUES (
   240,
   'Europe/Berlin',
   NOW() - INTERVAL '31 days',
-  '{"basal":[{"startTime":"00:00","value":0.90},{"startTime":"06:00","value":1.20},{"startTime":"10:00","value":1.00},{"startTime":"18:00","value":1.05},{"startTime":"22:00","value":0.80}],"icr":[],"isf":[],"targets":[]}'
+  '{"basal":[{"startTime":"00:00","value":0.90},{"startTime":"06:00","value":1.20},{"startTime":"10:00","value":1.00},{"startTime":"18:00","value":1.05},{"startTime":"22:00","value":0.80}],"icr":[],"isf":[],"targets":[]}',
+  20.0
 )
 ON CONFLICT (id) DO NOTHING;
 
@@ -447,7 +449,7 @@ VALUES (
 ON CONFLICT (profile_id) DO NOTHING;
 
 -- Mike — one active profile
-INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments)
+INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
 VALUES (
   'bbbb0001-0000-0000-0000-000000000001',
   '22222222-2222-2222-2222-222222222222',
@@ -457,7 +459,8 @@ VALUES (
   210,
   'America/New_York',
   NOW() - INTERVAL '45 days',
-  '{"basal":[{"startTime":"00:00","value":0.70},{"startTime":"06:00","value":0.95},{"startTime":"12:00","value":0.75},{"startTime":"20:00","value":0.65}],"icr":[],"isf":[],"targets":[]}'
+  '{"basal":[{"startTime":"00:00","value":0.70},{"startTime":"06:00","value":0.95},{"startTime":"12:00","value":0.75},{"startTime":"20:00","value":0.65}],"icr":[],"isf":[],"targets":[]}',
+  25.0
 )
 ON CONFLICT (id) DO NOTHING;
 

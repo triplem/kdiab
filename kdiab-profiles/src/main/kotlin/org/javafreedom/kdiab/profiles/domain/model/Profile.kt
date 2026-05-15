@@ -37,6 +37,7 @@ data class Profile(
         val rejectionReason: String? = null,
         val analysisLow: Double? = null,
         val analysisHigh: Double? = null,
+        val carbAbsorptionRateGPerHour: Double? = null,
         val basal: List<BasalSegment>,
         val icr: List<IcrSegment>,
         val isf: List<IsfSegment>,
