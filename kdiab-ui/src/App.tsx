@@ -66,6 +66,8 @@ export default function App() {
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null)
   const [showProfileEditor, setShowProfileEditor] = useState(false)
 
+  const [loginError, setLoginError] = useState<string | null>(null)
+
   useEffect(() => {
     if (auth.user?.access_token) {
       const token = auth.user.access_token
@@ -187,13 +189,27 @@ export default function App() {
     if (showRegistration) {
       return <RegistrationForm onBack={() => setShowRegistration(false)} />
     }
+    const oidcError = auth.error?.message ?? loginError
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <h1>{t('app.title')}</h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>{t('app.welcome')}</p>
-        <button className="primary" onClick={() => void auth.signinRedirect()}>
+        <button
+          className="primary"
+          onClick={() => {
+            setLoginError(null)
+            auth.signinRedirect().catch((err: unknown) => {
+              setLoginError(err instanceof Error ? err.message : t('app.loginError'))
+            })
+          }}
+        >
           {t('app.login')}
         </button>
+        {oidcError && (
+          <p style={{ color: 'var(--color-error, #c0392b)', marginTop: '1rem', fontSize: '0.875rem' }}>
+            {t('app.loginError')}: {oidcError}
+          </p>
+        )}
         {(import.meta.env as Record<string, string>)['VITE_SELF_REGISTRATION_ENABLED'] === 'true' && (
           <p style={{ marginTop: '1rem' }}>
             <button className="btn outline" onClick={() => setShowRegistration(true)}>

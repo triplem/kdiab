@@ -26,6 +26,7 @@
     "register": "Create an account",
     "loggedInAs": "Logged in as",
     "logout": "Log out",
+    "loginError": "Login failed",
     "somethingWentWrong": "Something went wrong.",
     "viewingPatient": "Viewing patient:",
     "myOwnData": "My own data"
