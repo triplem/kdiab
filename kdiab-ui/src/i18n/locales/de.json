@@ -26,6 +26,7 @@
     "register": "Konto erstellen",
     "loggedInAs": "Angemeldet als",
     "logout": "Abmelden",
+    "loginError": "Anmeldung fehlgeschlagen",
     "somethingWentWrong": "Beim Rendern ist ein Fehler aufgetreten.",
     "viewingPatient": "Patient wird angezeigt:",
     "myOwnData": "Eigene Daten"
