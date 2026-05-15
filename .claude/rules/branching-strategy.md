@@ -7,7 +7,30 @@
 | `main` | Production-ready code | Protected: require PR, CI green, squash merge only |
 | `develop` | Integration branch (optional, for large teams) | Protected: require PR, CI green |
 
+**Direct commits to `main` are blocked by a git hook — this is enforced, not just a convention.**
 Never commit directly to `main` or `develop`.
+
+## Creating a Feature Branch
+
+Always create a branch before staging any commits. Use the project script:
+
+```bash
+./.claude/scripts/create-branch.sh <type> <issue-number> <short-description>
+# Example:
+./.claude/scripts/create-branch.sh docs 321 pr-reviewer-skill
+```
+
+The script validates the type, slugifies the description, checks out `main`, pulls latest, and creates the branch in one step.
+
+If the script fails due to unstaged changes (error: `cannot pull with rebase: You have unstaged changes`), create the branch manually without pulling:
+
+```bash
+git checkout -b <type>/<issue-number>-<short-description>
+# then stage and commit normally
+git push -u origin <branch>
+```
+
+Do **not** attempt to commit on `main` and then move the commit — always create the branch first.
 
 ## Feature Branches
 
