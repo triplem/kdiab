@@ -11,9 +11,9 @@ for arg in "$@"; do
 done
 
 if $REMOVE_VOLUMES; then
-  podman compose down -v
+  podman compose --env-file .env.example down -v
 else
-  podman compose down
+  podman compose --env-file .env.example down
 fi
 
 podman rmi -f $(podman images | grep none | tr -s ' ' | cut -d ' ' -f 3)
