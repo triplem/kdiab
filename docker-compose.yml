@@ -230,6 +230,7 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3005
       OTEL_SERVICE_NAME: kdiab-carbs
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
     ports:
       - "8085:8085"
@@ -307,6 +308,7 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3005
       OTEL_SERVICE_NAME: kdiab-measures
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
     ports:
       - "8080:8080"
@@ -353,6 +355,7 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3005
       OTEL_SERVICE_NAME: kdiab-profiles
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
     ports:
       - "8082:8080"
@@ -397,6 +400,7 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3005
       OTEL_SERVICE_NAME: kdiab-treatments
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
     ports:
       - "8083:8080"
@@ -441,6 +445,7 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3005
       OTEL_SERVICE_NAME: kdiab-calc
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
     ports:
       - "8086:8086"
@@ -487,6 +492,7 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3005
       OTEL_SERVICE_NAME: kdiab-analyze
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
     ports:
       - "8084:8080"
@@ -534,6 +540,7 @@ services:
       CORS_ALLOWED_ORIGINS: http://localhost:3005
       OTEL_SERVICE_NAME: kdiab-nightscout
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
     ports:
       - "8087:8087"
@@ -583,6 +590,7 @@ services:
       DB_PASSWORD: ${USERS_DB_PASSWORD}
       OTEL_SERVICE_NAME: kdiab-users
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
       OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
       KEYCLOAK_ADMIN_URL: http://keycloak:8080
       KEYCLOAK_REALM: kdiab
