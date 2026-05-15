@@ -24,18 +24,23 @@ import { AnalyticsView } from './features/analytics/AnalyticsView'
 import { ProfilesView } from './features/analytics/ProfilesView'
 import { FoodDatabase } from './features/carbs/FoodDatabase'
 import { DoseCalculator } from './features/calc/DoseCalculator'
+import { UserSettings } from './features/users/UserSettings'
+import { AdminUserList } from './features/users/AdminUserList'
+import { AdminDoctorPatients } from './features/users/AdminDoctorPatients'
+import { RegistrationForm } from './features/users/RegistrationForm'
 import { measuresApi } from './api/measuresApi'
 import { treatmentsApi } from './api/treatmentsApi'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Profile } from './api/profilesApi'
 
-type Tab = 'measures' | 'treatments' | 'profiles' | 'profile-history' | 'timeline' | 'analytics' | 'carbs' | 'calc'
+type Tab = 'measures' | 'treatments' | 'profiles' | 'profile-history' | 'timeline' | 'analytics' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors'
 
 export default function App() {
   const auth = useAuth()
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<Tab>('measures')
+  const [showRegistration, setShowRegistration] = useState(false)
 
   // Auth-derived state
   const [roles, setRoles] = useState<string[]>([])
@@ -179,6 +184,9 @@ export default function App() {
   }
 
   if (!auth.isAuthenticated) {
+    if (showRegistration) {
+      return <RegistrationForm onBack={() => setShowRegistration(false)} />
+    }
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <h1>{t('app.title')}</h1>
@@ -186,11 +194,18 @@ export default function App() {
         <button className="primary" onClick={() => void auth.signinRedirect()}>
           {t('app.login')}
         </button>
+        {(import.meta.env as Record<string, string>)['VITE_SELF_REGISTRATION_ENABLED'] === 'true' && (
+          <p style={{ marginTop: '1rem' }}>
+            <button className="btn outline" onClick={() => setShowRegistration(true)}>
+              {t('app.register')}
+            </button>
+          </p>
+        )}
       </div>
     )
   }
 
-  const tabs: { key: Tab; label: string }[] = [
+  const tabs: { key: Tab; label: string; adminOnly?: boolean }[] = [
     { key: 'measures', label: t('nav.measures') },
     { key: 'treatments', label: t('nav.treatments') },
     { key: 'profiles', label: t('nav.profiles') },
@@ -199,6 +214,9 @@ export default function App() {
     { key: 'analytics', label: t('nav.analytics') },
     { key: 'carbs', label: t('nav.foodDatabase') },
     { key: 'calc', label: t('nav.doseCalculator') },
+    { key: 'settings', label: t('nav.settings') },
+    { key: 'admin-users', label: t('nav.adminUsers'), adminOnly: true },
+    { key: 'admin-doctors', label: t('nav.adminDoctors'), adminOnly: true },
   ]
 
   const renderTabContent = () => {
@@ -333,6 +351,15 @@ export default function App() {
 
       case 'calc':
         return <DoseCalculator userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
+
+      case 'settings':
+        return <UserSettings />
+
+      case 'admin-users':
+        return isAdmin ? <AdminUserList /> : null
+
+      case 'admin-doctors':
+        return isAdmin ? <AdminDoctorPatients /> : null
     }
   }
 
@@ -402,7 +429,7 @@ export default function App() {
         </header>
 
         <nav className="tab-nav" aria-label="Main navigation">
-          {tabs.map(({ key, label }) => (
+          {tabs.filter((tab) => !tab.adminOnly || isAdmin).map(({ key, label }) => (
             <button
               key={key}
               className={activeTab === key ? 'active-tab' : ''}
