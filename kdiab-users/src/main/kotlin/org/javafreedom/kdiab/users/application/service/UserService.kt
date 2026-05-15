@@ -1,4 +1,3 @@
-@file:Suppress("UnreachableCode")
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.users.application.service
 
