@@ -508,6 +508,7 @@ All skills live in `.claude/skills/`. Invoke with `/skill-name`.
 - `/write-epics` — decompose requirements doc into epics
 - `/write-stories` — decompose epic into user stories (assigns all issues to `@me`)
 - `/implement` — implement a story on a feature branch/worktree
+- `/implement-epic` — implement all stories under an epic in dependency order; discovers sub-issues, builds execution waves, delegates each story to `/implement`
 - `/write-tests` — write tests for an implementation
 - `/create-pr` — open a guided PR
 - `/pr-reviewer` — review a GitHub PR against all project rules; classifies findings by BLOCKER/MAJOR/MINOR and optionally posts review comment
