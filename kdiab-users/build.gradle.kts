@@ -80,6 +80,8 @@ testing {
 
             dependencies {
                 implementation(project())
+                implementation(libs.h2)
+                implementation(libs.liquibase.core)
             }
 
             targets {

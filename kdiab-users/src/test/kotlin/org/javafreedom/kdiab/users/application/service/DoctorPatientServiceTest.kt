@@ -11,11 +11,14 @@ import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.test.runTest
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.users.domain.model.DoctorPatientRelation
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
+import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakRole
 
 class DoctorPatientServiceTest {
 
@@ -33,14 +36,14 @@ class DoctorPatientServiceTest {
 
     @Test
     fun `listPatients allows admin`() = runTest {
-        coEvery { repo.findByDoctorId(doctorId) } returns emptyList()
+        coEvery { repo.findByDoctorId(doctorId, any(), any()) } returns emptyList()
         val result = service.listPatients(adminPrincipal(), doctorId)
         assertEquals(0, result.size)
     }
 
     @Test
     fun `listPatients allows the doctor themselves`() = runTest {
-        coEvery { repo.findByDoctorId(doctorId) } returns emptyList()
+        coEvery { repo.findByDoctorId(doctorId, any(), any()) } returns emptyList()
         val result = service.listPatients(doctorPrincipal(), doctorId)
         assertEquals(0, result.size)
     }
@@ -61,6 +64,8 @@ class DoctorPatientServiceTest {
 
     @Test
     fun `assignPatient saves relation and syncs Keycloak`() = runTest {
+        coEvery { keycloak.getUserRoles(doctorId) } returns listOf(KeycloakRole("d", "DOCTOR"))
+        coEvery { keycloak.getUserRoles(patientId) } returns listOf(KeycloakRole("p", "PATIENT"))
         coEvery { repo.save(any()) } answers { firstArg() }
         coEvery { repo.findAllPatientIdsByDoctorId(doctorId) } returns listOf(patientId)
         coEvery { keycloak.updateUserAttributes(any(), any()) } returns Unit
@@ -73,6 +78,39 @@ class DoctorPatientServiceTest {
     }
 
     @Test
+    fun `assignPatient throws BusinessValidationException when doctor lacks DOCTOR role`() = runTest {
+        coEvery { keycloak.getUserRoles(doctorId) } returns listOf(KeycloakRole("p", "PATIENT"))
+        coEvery { keycloak.getUserRoles(patientId) } returns listOf(KeycloakRole("p", "PATIENT"))
+        assertFailsWith<BusinessValidationException> {
+            service.assignPatient(adminPrincipal(), doctorId, patientId)
+        }
+    }
+
+    @Test
+    fun `assignPatient throws BusinessValidationException when patient lacks PATIENT role`() = runTest {
+        coEvery { keycloak.getUserRoles(doctorId) } returns listOf(KeycloakRole("d", "DOCTOR"))
+        coEvery { keycloak.getUserRoles(patientId) } returns listOf(KeycloakRole("d", "DOCTOR"))
+        assertFailsWith<BusinessValidationException> {
+            service.assignPatient(adminPrincipal(), doctorId, patientId)
+        }
+    }
+
+    @Test
+    fun `assignPatient rolls back DB row when KC sync fails`() = runTest {
+        coEvery { keycloak.getUserRoles(doctorId) } returns listOf(KeycloakRole("d", "DOCTOR"))
+        coEvery { keycloak.getUserRoles(patientId) } returns listOf(KeycloakRole("p", "PATIENT"))
+        coEvery { repo.save(any()) } answers { firstArg() }
+        coEvery { repo.findAllPatientIdsByDoctorId(doctorId) } returns listOf(patientId)
+        coEvery { keycloak.updateUserAttributes(any(), any()) } throws RuntimeException("KC unavailable")
+        coEvery { repo.delete(doctorId, patientId) } returns true
+
+        assertFailsWith<RuntimeException> {
+            service.assignPatient(adminPrincipal(), doctorId, patientId)
+        }
+        coVerify(exactly = 1) { repo.delete(doctorId, patientId) }
+    }
+
+    @Test
     fun `removePatient requires admin`() = runTest {
         assertFailsWith<AuthorizationException> {
             service.removePatient(doctorPrincipal(), doctorId, patientId)
@@ -81,7 +119,7 @@ class DoctorPatientServiceTest {
 
     @Test
     fun `removePatient deletes relation and syncs Keycloak`() = runTest {
-        coEvery { repo.delete(doctorId, patientId) } returns Unit
+        coEvery { repo.delete(doctorId, patientId) } returns true
         coEvery { repo.findAllPatientIdsByDoctorId(doctorId) } returns emptyList()
         coEvery { keycloak.updateUserAttributes(any(), any()) } returns Unit
 
@@ -89,5 +127,13 @@ class DoctorPatientServiceTest {
 
         coVerify(exactly = 1) { repo.delete(doctorId, patientId) }
         coVerify(exactly = 1) { keycloak.updateUserAttributes(doctorId, mapOf("allowed_patients" to emptyList())) }
+    }
+
+    @Test
+    fun `removePatient throws ResourceNotFoundException when relation does not exist`() = runTest {
+        coEvery { repo.delete(doctorId, patientId) } returns false
+        assertFailsWith<ResourceNotFoundException> {
+            service.removePatient(adminPrincipal(), doctorId, patientId)
+        }
     }
 }

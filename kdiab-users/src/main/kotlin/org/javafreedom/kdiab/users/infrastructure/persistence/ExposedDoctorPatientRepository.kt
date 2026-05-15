@@ -16,22 +16,24 @@ import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 
 object DoctorPatientTable : Table("doctor_patient") {
     private const val UUID_LEN = 36
-    private const val INSTANT_LEN = 50
+    private const val ISO_INSTANT_LEN = 50
 
     val doctorId = varchar("doctor_id", UUID_LEN)
     val patientId = varchar("patient_id", UUID_LEN)
-    val createdAt = varchar("created_at", INSTANT_LEN)
+    val createdAt = varchar("created_at", ISO_INSTANT_LEN)
 
     override val primaryKey = PrimaryKey(doctorId, patientId)
 }
 
 class ExposedDoctorPatientRepository : DoctorPatientRepository {
 
-    override suspend fun findByDoctorId(doctorId: Uuid): List<DoctorPatientRelation> =
+    override suspend fun findByDoctorId(doctorId: Uuid, limit: Int, offset: Long): List<DoctorPatientRelation> =
         withContext(Dispatchers.IO) {
             transaction {
                 DoctorPatientTable.selectAll()
                     .where { DoctorPatientTable.doctorId eq doctorId.toString() }
+                    .orderBy(DoctorPatientTable.createdAt to SortOrder.ASC)
+                    .limit(limit).offset(offset)
                     .map { row ->
                         DoctorPatientRelation(
                             doctorId = doctorId,
@@ -61,14 +63,14 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
             relation
         }
 
-    override suspend fun delete(doctorId: Uuid, patientId: Uuid): Unit =
+    override suspend fun delete(doctorId: Uuid, patientId: Uuid): Boolean =
         withContext(Dispatchers.IO) {
             transaction {
                 DoctorPatientTable.deleteWhere {
                     (DoctorPatientTable.doctorId eq doctorId.toString()) and
                     (DoctorPatientTable.patientId eq patientId.toString())
                 }
-            }
+            } > 0
         }
 
     override suspend fun deleteByUserId(userId: Uuid): Unit =

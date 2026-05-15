@@ -11,12 +11,16 @@ import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
 
+private const val DEFAULT_PAGE_SIZE = 20
+
 fun Route.doctorPatientRoutes(doctorPatientService: DoctorPatientService) {
     authenticate("auth-jwt") {
         get("/users/{doctorId}/patients") {
             val principal = call.principal<UserPrincipal>()!!
             val doctorId = parseUuid(call.parameters["doctorId"]!!)
-            val relations = doctorPatientService.listPatients(principal, doctorId)
+            val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 0
+            val size = call.request.queryParameters["size"]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+            val relations = doctorPatientService.listPatients(principal, doctorId, page, size)
             call.respond(relations.map { it.toResponse() })
         }
 

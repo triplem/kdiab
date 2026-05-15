@@ -129,6 +129,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /users/{userId}:
     get:
@@ -205,11 +207,24 @@ paths:
     get:
       operationId: listPatients
       summary: List patients assigned to a doctor (admin or the doctor)
-      description: Returns all doctor–patient relations for the given doctor. Admins may query any doctor; the doctor themselves may query their own list.
+      description: Returns doctor–patient relations for the given doctor, ordered by createdAt ascending. Admins may query any doctor; the doctor themselves may query their own list.
       tags: [DoctorPatient]
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/doctorId"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Zero-based page number
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Page size (max 100)
       responses:
         "200":
           description: List of doctor–patient relations
@@ -251,6 +266,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /users/{doctorId}/patients/{patientId}:
     delete:
@@ -282,7 +299,14 @@ paths:
     post:
       operationId: register
       summary: Self-register (public, feature-flagged — returns 404 when disabled)
-      description: Creates a new user account. Returns 404 when SELF_REGISTRATION_ENABLED is false. When SELF_REGISTRATION_REQUIRES_APPROVAL is true, the account is created with no roles and must be approved by an admin before the user can log in.
+      description: >
+        Creates a new user account. Returns 404 when SELF_REGISTRATION_ENABLED is false.
+        When SELF_REGISTRATION_REQUIRES_APPROVAL is true, the account is created with no
+        roles and must be approved by an admin before the user can log in.
+
+        Duplicate email addresses are intentionally absorbed: if the email is already
+        registered, the response is identical to a successful registration (201). This
+        prevents user enumeration via differing response codes or bodies.
       tags: [Registration]
       security: []
       requestBody:
@@ -355,6 +379,12 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
     BadRequest:
       description: Invalid request body or parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Resource already exists or state conflict
       content:
         application/json:
           schema:

@@ -13,15 +13,19 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
 
 private val logger = KotlinLogging.logger {}
+
+private val PROTECTED_KC_ATTRIBUTES = setOf("roles")
 
 private const val DEFAULT_FAILURE_THRESHOLD = 5
 private const val DEFAULT_RESET_TIMEOUT_MS = 30_000L
@@ -46,6 +50,7 @@ class KeycloakAdminClient(
         install(ContentNegotiation) { json(json) }
     }
 
+    private val closed = AtomicBoolean(false)
     private val tokenMutex = Mutex()
     private var cachedToken: String? = null
     private var tokenExpiresAt: Long = 0L
@@ -60,7 +65,7 @@ class KeycloakAdminClient(
     private suspend fun token(): String = tokenMutex.withLock {
         val now = System.currentTimeMillis() / MILLIS_PER_SECOND
         val existing = cachedToken
-        if (existing != null && now < tokenExpiresAt - TOKEN_EXPIRY_BUFFER_SECONDS) {
+        if (existing != null && now < tokenExpiresAt) {
             return@withLock existing
         }
         logger.debug { "keycloak_admin action=token_refresh" }
@@ -75,7 +80,16 @@ class KeycloakAdminClient(
         check(response.status.isSuccess()) { "Keycloak token request failed: ${response.status}" }
         val tokenResponse = response.body<TokenResponse>()
         cachedToken = tokenResponse.accessToken
-        tokenExpiresAt = now + tokenResponse.expiresIn
+        // If KC issues a token shorter than the buffer, cache without subtracting the buffer
+        // to avoid an immediately-expired cache entry that triggers a token fetch on every request.
+        tokenExpiresAt = if (tokenResponse.expiresIn > TOKEN_EXPIRY_BUFFER_SECONDS) {
+            now + tokenResponse.expiresIn - TOKEN_EXPIRY_BUFFER_SECONDS
+        } else {
+            val ttl = tokenResponse.expiresIn
+            val buf = TOKEN_EXPIRY_BUFFER_SECONDS
+            logger.warn { "keycloak_admin short_lived_token expiresIn=${ttl}s buffer=${buf}s" }
+            now + tokenResponse.expiresIn
+        }
         tokenResponse.accessToken
     }
 
@@ -155,6 +169,10 @@ class KeycloakAdminClient(
     }
 
     suspend fun updateUserAttributes(userId: Uuid, attributes: Map<String, List<String>>) {
+        val protected = attributes.keys.intersect(PROTECTED_KC_ATTRIBUTES)
+        if (protected.isNotEmpty()) {
+            throw BusinessValidationException("Cannot modify protected KC attributes: $protected")
+        }
         val existing = getUser(userId)
         val merged = (existing.attributes ?: emptyMap()) + attributes
         updateUser(userId, existing.copy(attributes = merged))
@@ -209,7 +227,9 @@ class KeycloakAdminClient(
         }
     }
 
-    fun close() = httpClient.close()
+    fun close() {
+        if (closed.compareAndSet(false, true)) httpClient.close()
+    }
 }
 
 fun Role.toKeycloakName(): String = when (this) {
