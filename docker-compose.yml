@@ -34,7 +34,7 @@ services:
 
   postgres:
     container_name: kdiab-postgres
-    image: postgres:15.18@sha256:eb37f58646a901dc7727cf448cae36daaefaba79de33b5058dab79aa4c04aefb
+    image: docker.io/library/postgres:15.18@sha256:eb37f58646a901dc7727cf448cae36daaefaba79de33b5058dab79aa4c04aefb
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -182,6 +182,11 @@ services:
         condition: service_healthy
     networks:
       - shared
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
   carbs-backend:
     container_name: kdiab-carbs-backend
@@ -210,7 +215,7 @@ services:
       retries: 10
       start_period: 30s
     depends_on:
-      liquibase-carbs:
+      pg-seed:
         condition: service_completed_successfully
       keycloak:
         condition: service_started
@@ -232,7 +237,7 @@ services:
   # Runs after all Liquibase migrations to insert seed data
   pg-seed:
     container_name: kdiab-pg-seed
-    image: postgres:15.18@sha256:eb37f58646a901dc7727cf448cae36daaefaba79de33b5058dab79aa4c04aefb
+    image: docker.io/library/postgres:15.18@sha256:eb37f58646a901dc7727cf448cae36daaefaba79de33b5058dab79aa4c04aefb
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     volumes:
