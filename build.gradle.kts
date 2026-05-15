@@ -9,7 +9,7 @@ val buildFrontend by tasks.registering(Exec::class) {
 // ── Backend aggregate (no frontend) ───────────────────────────────────────────
 val buildBackends by tasks.registering {
     group = "build"
-    description = "Builds all seven service backends via Gradle (no frontend)."
+    description = "Builds all eight service backends via Gradle (no frontend)."
     dependsOn(
         gradle.includedBuild("kdiab-measures").task(":buildAll"),
         gradle.includedBuild("kdiab-profiles").task(":buildAll"),
@@ -18,6 +18,7 @@ val buildBackends by tasks.registering {
         gradle.includedBuild("kdiab-carbs").task(":buildAll"),
         gradle.includedBuild("kdiab-calc").task(":buildAll"),
         gradle.includedBuild("kdiab-nightscout").task(":buildAll"),
+        gradle.includedBuild("kdiab-users").task(":buildAll"),
     )
 }
 
@@ -40,6 +41,7 @@ tasks.register("check") {
         gradle.includedBuild("kdiab-carbs").task(":checkAll"),
         gradle.includedBuild("kdiab-calc").task(":checkAll"),
         gradle.includedBuild("kdiab-nightscout").task(":checkAll"),
+        gradle.includedBuild("kdiab-users").task(":checkAll"),
     )
 }
 
@@ -55,6 +57,7 @@ tasks.register("clean") {
         gradle.includedBuild("kdiab-carbs").task(":cleanAll"),
         gradle.includedBuild("kdiab-calc").task(":cleanAll"),
         gradle.includedBuild("kdiab-nightscout").task(":cleanAll"),
+        gradle.includedBuild("kdiab-users").task(":cleanAll"),
     )
 }
 
@@ -68,7 +71,7 @@ tasks.register<Exec>("dockerBuild") {
         "bash", "-c",
         "podman compose build liquibase-measures liquibase-profiles " +
         "liquibase-treatments liquibase-carbs measures-backend profiles-backend treatments-backend " +
-        "carbs-backend calc-backend analyze-backend nightscout-backend kdiab-ui"
+        "carbs-backend calc-backend analyze-backend nightscout-backend users-backend kdiab-ui"
     )
 }
 

@@ -533,6 +533,56 @@ services:
           memory: 128M
           cpus: '0.25'
 
+  users-backend:
+    container_name: kdiab-users-backend
+    image: localhost/kdiab-users-backend:latest
+    build:
+      context: ./kdiab-users
+      dockerfile: Dockerfile
+    environment:
+      PORT: 8088
+      JWT_DOMAIN: http://localhost:8081/realms/kdiab
+      JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
+      JWT_AUDIENCE: users
+      JWT_REALM: kdiab
+      CORS_ALLOWED_ORIGINS: http://localhost:3005
+      JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-users
+      DB_USER: ${POSTGRES_USER:-kdiab}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-kdiab}
+      KEYCLOAK_ADMIN_URL: http://keycloak:8080
+      KEYCLOAK_REALM: kdiab
+      KEYCLOAK_ADMIN_CLIENT_ID: kdiab-users-service
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_USERS_CLIENT_SECRET:-users-service-secret}
+      SELF_REGISTRATION_ENABLED: false
+      SELF_REGISTRATION_REQUIRES_APPROVAL: false
+    ports:
+      - "8088:8088"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8088/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      shared:
+      kdiab-ui-net:
+        aliases:
+          - users-backend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+
   kdiab-ui:
     container_name: kdiab-ui
     image: localhost/kdiab-ui:latest

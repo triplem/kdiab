@@ -6,13 +6,25 @@
   "registrationAllowed": false,
   "loginTheme": "kdiab",
   "internationalizationEnabled": true,
-  "supportedLocales": ["en", "de"],
+  "supportedLocales": [
+    "en",
+    "de"
+  ],
   "defaultLocale": "en",
   "roles": {
     "realm": [
-      { "name": "PATIENT", "description": "Patient Role" },
-      { "name": "DOCTOR",  "description": "Doctor Role"  },
-      { "name": "ADMIN",   "description": "Administrator Role" }
+      {
+        "name": "PATIENT",
+        "description": "Patient Role"
+      },
+      {
+        "name": "DOCTOR",
+        "description": "Doctor Role"
+      },
+      {
+        "name": "ADMIN",
+        "description": "Administrator Role"
+      }
     ]
   },
   "users": [
@@ -23,11 +35,23 @@
       "emailVerified": true,
       "firstName": "Sarah",
       "lastName": "Patient",
-      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
-      "realmRoles": ["PATIENT"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "PATIENT"
+      ],
       "attributes": {
-        "glucose_unit": ["mg/dL"],
-        "weight_unit": ["kg"]
+        "glucose_unit": [
+          "mg/dL"
+        ],
+        "weight_unit": [
+          "kg"
+        ]
       }
     },
     {
@@ -37,11 +61,23 @@
       "emailVerified": true,
       "firstName": "Mike",
       "lastName": "Patient",
-      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
-      "realmRoles": ["PATIENT"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "PATIENT"
+      ],
       "attributes": {
-        "glucose_unit": ["mmol/L"],
-        "weight_unit": ["lbs"]
+        "glucose_unit": [
+          "mmol/L"
+        ],
+        "weight_unit": [
+          "lbs"
+        ]
       }
     },
     {
@@ -51,11 +87,23 @@
       "emailVerified": true,
       "firstName": "Gregory",
       "lastName": "House",
-      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
-      "realmRoles": ["DOCTOR"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "DOCTOR"
+      ],
       "attributes": {
-        "allowed_patients": ["11111111-1111-1111-1111-111111111111"],
-        "allowed_patient_usernames": ["sarah"]
+        "allowed_patients": [
+          "11111111-1111-1111-1111-111111111111"
+        ],
+        "allowed_patient_usernames": [
+          "sarah"
+        ]
       }
     },
     {
@@ -65,11 +113,23 @@
       "emailVerified": true,
       "firstName": "Allison",
       "lastName": "Cameron",
-      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
-      "realmRoles": ["DOCTOR"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "DOCTOR"
+      ],
       "attributes": {
-        "allowed_patients": ["22222222-2222-2222-2222-222222222222"],
-        "allowed_patient_usernames": ["mike"]
+        "allowed_patients": [
+          "22222222-2222-2222-2222-222222222222"
+        ],
+        "allowed_patient_usernames": [
+          "mike"
+        ]
       }
     },
     {
@@ -79,8 +139,16 @@
       "emailVerified": true,
       "firstName": "Super",
       "lastName": "Admin",
-      "credentials": [{ "type": "password", "value": "password", "temporary": false }],
-      "realmRoles": ["ADMIN"]
+      "credentials": [
+        {
+          "type": "password",
+          "value": "password",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ]
     }
   ],
   "clients": [
@@ -88,9 +156,19 @@
       "clientId": "kdiab-measures-frontend",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:*"],
-      "webOrigins": ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004"],
-      "attributes": {"pkce.code.challenge.method": "S256"},
+      "redirectUris": [
+        "http://localhost:*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+        "http://localhost:3004"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
       "protocolMappers": [
         {
           "name": "roles",
@@ -177,9 +255,19 @@
       "clientId": "kdiab-profiles-frontend",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:*"],
-      "webOrigins": ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004"],
-      "attributes": {"pkce.code.challenge.method": "S256"},
+      "redirectUris": [
+        "http://localhost:*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+        "http://localhost:3004"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
       "protocolMappers": [
         {
           "name": "roles",
@@ -266,9 +354,19 @@
       "clientId": "kdiab-treatments-frontend",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:*"],
-      "webOrigins": ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004"],
-      "attributes": {"pkce.code.challenge.method": "S256"},
+      "redirectUris": [
+        "http://localhost:*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+        "http://localhost:3004"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
       "protocolMappers": [
         {
           "name": "roles",
@@ -355,8 +453,13 @@
       "clientId": "kdiab-ui",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:*"],
-      "webOrigins": ["http://localhost:3000", "http://localhost:3005"],
+      "redirectUris": [
+        "http://localhost:*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3005"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:3000 http://localhost:3005"
@@ -470,6 +573,16 @@
             "id.token.claim": "true",
             "userinfo.token.claim": "false"
           }
+        },
+        {
+          "name": "audience-users",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "users",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
         }
       ]
     },
@@ -477,9 +590,19 @@
       "clientId": "kdiab-analyze-frontend",
       "enabled": true,
       "publicClient": true,
-      "redirectUris": ["http://localhost:*"],
-      "webOrigins": ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:3004"],
-      "attributes": {"pkce.code.challenge.method": "S256"},
+      "redirectUris": [
+        "http://localhost:*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+        "http://localhost:3004"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
       "protocolMappers": [
         {
           "name": "roles",
@@ -562,7 +685,7 @@
             "access.token.claim": "true"
           }
         },
-                {
+        {
           "name": "carbs-audience",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-audience-mapper",
@@ -619,8 +742,36 @@
             "id.token.claim": "true",
             "userinfo.token.claim": "false"
           }
+        },
+        {
+          "name": "audience-users",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "users",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
         }
       ]
+    },
+    {
+      "clientId": "kdiab-users-service",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "users-service-secret",
+      "serviceAccountClientRoles": {
+        "realm-management": [
+          "manage-users",
+          "view-users",
+          "query-users",
+          "query-realms"
+        ]
+      }
     }
   ]
 }

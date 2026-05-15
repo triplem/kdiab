@@ -1,0 +1,543 @@
+openapi: "3.1.0"
+info:
+  title: "kdiab-users API"
+  version: "1.0.0"
+  description: "User lifecycle, settings, and doctor–patient relationship management for the kdiab platform."
+  contact:
+    name: "kdiab team"
+servers:
+  - url: "http://localhost:8088/api/v1"
+    description: Local development
+tags:
+  - name: Self
+    description: Self-service endpoints — authenticated user managing their own data
+  - name: Admin
+    description: Admin-only user management
+  - name: DoctorPatient
+    description: Doctor–patient relationship management
+  - name: Registration
+    description: Self-registration (feature-flagged)
+
+paths:
+  /users/me:
+    get:
+      operationId: getMe
+      summary: Get own profile and settings
+      description: Returns the authenticated user's Keycloak profile merged with their stored settings. Seeds default settings if none exist yet.
+      tags: [Self]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: Own user profile with settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/me/settings:
+    patch:
+      operationId: patchMySettings
+      summary: Update own settings
+      description: Partially updates the authenticated user's settings. Changes to glucoseUnit or weightUnit are written back to Keycloak and take effect on the next login; a jwtBackedNote is included in the response when this occurs.
+      tags: [Self]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchSettingsRequest"
+      responses:
+        "200":
+          description: Updated settings. If glucoseUnit or weightUnit changed, jwtBackedNote is set.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSettingsResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users:
+    get:
+      operationId: listUsers
+      summary: List all users (admin only)
+      description: Returns a paginated list of all Keycloak users with their stored settings. Supports search by name or email.
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Filter by name or email
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+      responses:
+        "200":
+          description: Paginated user list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    post:
+      operationId: createUser
+      summary: Create a user (admin only)
+      description: Creates a new user in Keycloak with the given role and seeds default settings in the database. The user can log in immediately.
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+      responses:
+        "201":
+          description: User created
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /users/{userId}:
+    get:
+      operationId: getUser
+      summary: Get user profile (admin or self)
+      description: Returns the Keycloak profile and stored settings for the given user. Admins may request any user; non-admins may only request their own userId.
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    patch:
+      operationId: updateUser
+      summary: Update user attributes and roles (admin only)
+      description: Updates displayName and/or role for the given user. Role changes are applied in Keycloak; the user's next token will reflect the new role.
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      operationId: deleteUser
+      summary: Delete user (admin only)
+      description: Permanently removes the user from Keycloak, purges their settings row, and removes all doctor–patient relations they appear in.
+      tags: [Admin]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "204":
+          description: User deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /users/{doctorId}/patients:
+    get:
+      operationId: listPatients
+      summary: List patients assigned to a doctor (admin or the doctor)
+      description: Returns all doctor–patient relations for the given doctor. Admins may query any doctor; the doctor themselves may query their own list.
+      tags: [DoctorPatient]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/doctorId"
+      responses:
+        "200":
+          description: List of doctor–patient relations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DoctorPatientResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+    post:
+      operationId: assignPatient
+      summary: Assign a patient to a doctor (admin only)
+      description: Creates a doctor–patient relation and synchronously writes the updated allowed_patients list back to the doctor's Keycloak attributes. The change takes effect in the doctor's next JWT.
+      tags: [DoctorPatient]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/doctorId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignPatientRequest"
+      responses:
+        "201":
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoctorPatientResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /users/{doctorId}/patients/{patientId}:
+    delete:
+      operationId: removePatient
+      summary: Remove doctor–patient assignment (admin only)
+      description: Removes the doctor–patient relation and synchronously updates the doctor's allowed_patients Keycloak attribute. The change takes effect in the doctor's next JWT.
+      tags: [DoctorPatient]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/doctorId"
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the patient
+      responses:
+        "204":
+          description: Assignment removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /register:
+    post:
+      operationId: register
+      summary: Self-register (public, feature-flagged — returns 404 when disabled)
+      description: Creates a new user account. Returns 404 when SELF_REGISTRATION_ENABLED is false. When SELF_REGISTRATION_REQUIRES_APPROVAL is true, the account is created with no roles and must be approved by an admin before the user can log in.
+      tags: [Registration]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Registration accepted
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: Registration is disabled on this server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        example: "11111111-1111-1111-1111-111111111111"
+      description: UUID of the target user
+    doctorId:
+      name: doctorId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        example: "dddddddd-dddd-dddd-dddd-dddddddddddd"
+      description: UUID of the doctor
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid JWT
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    BadRequest:
+      description: Invalid request body or parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    UserResponse:
+      type: object
+      required: [userId, email, displayName, roles]
+      properties:
+        userId:
+          type: string
+          format: uuid
+          example: "11111111-1111-1111-1111-111111111111"
+        email:
+          type: string
+          example: "sarah@example.com"
+        displayName:
+          type: string
+          example: "Sarah Johnson"
+        roles:
+          type: array
+          items:
+            type: string
+          example: ["PATIENT"]
+        settings:
+          $ref: "#/components/schemas/UserSettingsResponse"
+
+    UserSettingsResponse:
+      type: object
+      required: [timezone, language, timeFormat, glucoseUnit, weightUnit, updatedAt]
+      properties:
+        timezone:
+          type: string
+          example: "Europe/Berlin"
+        language:
+          type: string
+          example: "de"
+        timeFormat:
+          type: integer
+          enum: [12, 24]
+          example: 24
+        glucoseUnit:
+          type: string
+          enum: ["mg/dL", "mmol/L"]
+          example: "mg/dL"
+        weightUnit:
+          type: string
+          enum: ["kg", "lbs"]
+          example: "kg"
+        alarmUrgentHigh:
+          type: integer
+          nullable: true
+          example: 260
+        alarmHigh:
+          type: integer
+          nullable: true
+          example: 200
+        alarmLow:
+          type: integer
+          nullable: true
+          example: 75
+        alarmUrgentLow:
+          type: integer
+          nullable: true
+          example: 55
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-06-01T10:00:00Z"
+        jwtBackedNote:
+          type: string
+          nullable: true
+          description: Present when glucoseUnit or weightUnit was changed; instructs user to re-login
+          example: "Glucose unit and weight unit changes take effect on your next login."
+
+    PatchSettingsRequest:
+      type: object
+      properties:
+        timezone:
+          type: string
+          example: "Europe/Berlin"
+        language:
+          type: string
+          example: "de"
+        timeFormat:
+          type: integer
+          enum: [12, 24]
+        glucoseUnit:
+          type: string
+          enum: ["mg/dL", "mmol/L"]
+        weightUnit:
+          type: string
+          enum: ["kg", "lbs"]
+        alarmUrgentHigh:
+          type: integer
+        alarmHigh:
+          type: integer
+        alarmLow:
+          type: integer
+        alarmUrgentLow:
+          type: integer
+
+    CreateUserRequest:
+      type: object
+      required: [email, displayName, password, role]
+      properties:
+        email:
+          type: string
+          example: "new@example.com"
+        displayName:
+          type: string
+          example: "New User"
+        password:
+          type: string
+          example: "SecurePass123!"
+        role:
+          type: string
+          enum: [PATIENT, DOCTOR, ADMIN]
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [PATIENT, DOCTOR, ADMIN]
+
+    RegisterRequest:
+      type: object
+      required: [email, displayName, password]
+      properties:
+        email:
+          type: string
+          example: "new@example.com"
+        displayName:
+          type: string
+          example: "New Patient"
+        password:
+          type: string
+          example: "SecurePass123!"
+
+    RegisterResponse:
+      type: object
+      required: [userId, message]
+      properties:
+        userId:
+          type: string
+          format: uuid
+        message:
+          type: string
+
+    DoctorPatientResponse:
+      type: object
+      required: [doctorId, patientId, createdAt]
+      properties:
+        doctorId:
+          type: string
+          format: uuid
+        patientId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    AssignPatientRequest:
+      type: object
+      required: [patientId]
+      properties:
+        patientId:
+          type: string
+          format: uuid
+          example: "b0b0b0b0-b0b0-4b00-ab00-b0b0b0b0b0b0"
+
+    ErrorResponse:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          type: integer
+          example: 403
+        message:
+          type: string
+          example: "Admin role required"
