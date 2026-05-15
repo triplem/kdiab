@@ -37,6 +37,18 @@ Do this immediately after creating the child issues — not as a separate step l
 
 ---
 
+## Issue Assignment
+
+Always assign every issue to the current user (`@me`) at creation time. Unassigned issues fall through the backlog silently.
+
+```bash
+gh issue create --title "..." --body "..." --assignee "@me"
+```
+
+When creating a batch of stories for an epic, pass `--assignee "@me"` on every `gh issue create` call. If you are creating issues on behalf of another team member, use their GitHub username instead of `@me`.
+
+---
+
 ## Epic Documentation Checklist
 
 Every epic **must** include documentation stories alongside the implementation stories. Add a `**documentation**` subsection in the epic's User Stories checklist.
