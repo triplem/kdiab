@@ -16,5 +16,11 @@ else
   podman compose --env-file .env.example down
 fi
 
-podman rmi -f $(podman images | grep none | tr -s ' ' | cut -d ' ' -f 3)
-podman rmi -f $(podman images | grep localhost | tr -s ' ' | cut -d ' ' -f 3)
+# Remove locally-built images only (localhost/ prefix).
+# Never touch images from external registries (quay.io, docker.io).
+podman images --format '{{.ID}} {{.Repository}}' \
+  | awk '$2 ~ /^localhost\// {print $1}' \
+  | xargs -r podman rmi -f
+
+# Remove dangling images (untagged build leftovers).
+podman images --filter dangling=true -q | xargs -r podman rmi -f
