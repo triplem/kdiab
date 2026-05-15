@@ -581,6 +581,9 @@ services:
       JDBC_URL: jdbc:postgresql://postgres:5432/kdiab-users
       DB_USER: kdiab_users
       DB_PASSWORD: ${USERS_DB_PASSWORD}
+      OTEL_SERVICE_NAME: kdiab-users
+      OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
       KEYCLOAK_ADMIN_URL: http://keycloak:8080
       KEYCLOAK_REALM: kdiab
       KEYCLOAK_ADMIN_CLIENT_ID: kdiab-users-service
