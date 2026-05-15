@@ -1,0 +1,106 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/db.changelog-root.yaml
+  - changeSet:
+      id: 001
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: user_settings
+            columns:
+              - column:
+                  name: user_id
+                  type: varchar(36)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: timezone
+                  type: varchar(64)
+                  defaultValue: UTC
+                  constraints:
+                    nullable: false
+              - column:
+                  name: language
+                  type: varchar(8)
+                  defaultValue: en
+                  constraints:
+                    nullable: false
+              - column:
+                  name: time_format
+                  type: int
+                  defaultValueNumeric: 24
+                  constraints:
+                    nullable: false
+              - column:
+                  name: glucose_unit
+                  type: varchar(16)
+                  defaultValue: "mg/dL"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: weight_unit
+                  type: varchar(8)
+                  defaultValue: kg
+                  constraints:
+                    nullable: false
+              - column:
+                  name: alarm_urgent_high
+                  type: int
+              - column:
+                  name: alarm_high
+                  type: int
+              - column:
+                  name: alarm_low
+                  type: int
+              - column:
+                  name: alarm_urgent_low
+                  type: int
+              - column:
+                  name: created_at
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 002
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: doctor_patient
+            columns:
+              - column:
+                  name: doctor_id
+                  type: varchar(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: patient_id
+                  type: varchar(36)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+        - addPrimaryKey:
+            tableName: doctor_patient
+            columnNames: doctor_id, patient_id
+            constraintName: pk_doctor_patient
+        - createIndex:
+            tableName: doctor_patient
+            indexName: idx_doctor_patient_doctor
+            columns:
+              - column:
+                  name: doctor_id
+        - createIndex:
+            tableName: doctor_patient
+            indexName: idx_doctor_patient_patient
+            columns:
+              - column:
+                  name: patient_id

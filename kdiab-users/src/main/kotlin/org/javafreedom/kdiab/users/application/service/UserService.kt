@@ -1,0 +1,188 @@
+@file:Suppress("UnreachableCode")
+@file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+package org.javafreedom.kdiab.users.application.service
+
+import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.time.Clock
+import kotlin.time.Instant
+import kotlin.uuid.Uuid
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
+import org.javafreedom.kdiab.common.domain.model.Role
+import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.users.domain.model.User
+import org.javafreedom.kdiab.users.domain.model.UserSettings
+import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
+import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
+import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
+import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakCredential
+import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakUser
+import org.javafreedom.kdiab.users.infrastructure.keycloak.toKeycloakName
+
+private val logger = KotlinLogging.logger {}
+
+class UserService(
+    private val keycloak: KeycloakAdminClient,
+    private val settingsRepo: UserSettingsRepository,
+    private val doctorPatientRepo: DoctorPatientRepository,
+) {
+    suspend fun getMe(principal: UserPrincipal): User {
+        val kcUser = keycloak.getUser(principal.userId)
+        val settings = settingsRepo.findByUserId(principal.userId)
+            ?: defaultSettings(principal.userId).also { settingsRepo.save(it) }
+        return kcUser.toDomain(
+            settings.copy(
+                glucoseUnit = principal.glucoseUnit,
+                weightUnit = principal.weightUnit,
+            )
+        )
+    }
+
+    suspend fun updateMySettings(
+        principal: UserPrincipal,
+        patch: SettingsPatch,
+    ): UserSettings {
+        val existing = settingsRepo.findByUserId(principal.userId)
+            ?: defaultSettings(principal.userId)
+        val now = Clock.System.now()
+        val updated = existing.copy(
+            timezone = patch.timezone ?: existing.timezone,
+            language = patch.language ?: existing.language,
+            timeFormat = patch.timeFormat ?: existing.timeFormat,
+            glucoseUnit = patch.glucoseUnit ?: existing.glucoseUnit,
+            weightUnit = patch.weightUnit ?: existing.weightUnit,
+            alarmUrgentHigh = patch.alarmUrgentHigh ?: existing.alarmUrgentHigh,
+            alarmHigh = patch.alarmHigh ?: existing.alarmHigh,
+            alarmLow = patch.alarmLow ?: existing.alarmLow,
+            alarmUrgentLow = patch.alarmUrgentLow ?: existing.alarmUrgentLow,
+            updatedAt = now,
+        )
+        settingsRepo.save(updated)
+
+        val jwtBackedUpdates = buildMap {
+            if (patch.glucoseUnit != null && patch.glucoseUnit != existing.glucoseUnit) {
+                put("glucose_unit", listOf(patch.glucoseUnit))
+            }
+            if (patch.weightUnit != null && patch.weightUnit != existing.weightUnit) {
+                put("weight_unit", listOf(patch.weightUnit))
+            }
+        }
+        if (jwtBackedUpdates.isNotEmpty()) {
+            logger.info { "user_settings jwt_backed_update userId=${principal.userId} fields=${jwtBackedUpdates.keys}" }
+            keycloak.updateUserAttributes(principal.userId, jwtBackedUpdates)
+        }
+        return updated
+    }
+
+    suspend fun listUsers(principal: UserPrincipal, search: String?, page: Int, size: Int): List<User> {
+        requireAdmin(principal)
+        val kcUsers = keycloak.listUsers(search, first = page * size, max = size)
+        return kcUsers.map { kcUser ->
+            val userId = kcUser.id?.let { runCatching { Uuid.parse(it) }.getOrNull() } ?: return@map null
+            val settings = settingsRepo.findByUserId(userId)
+            kcUser.toDomain(settings)
+        }.filterNotNull()
+    }
+
+    suspend fun createUser(
+        principal: UserPrincipal,
+        email: String,
+        displayName: String,
+        password: String,
+        role: Role,
+    ): User {
+        requireAdmin(principal)
+        val firstName = displayName.substringBefore(" ").ifBlank { displayName }
+        val lastName = displayName.substringAfter(" ", "").ifBlank { null }
+        val kcUser = KeycloakUser(
+            username = email,
+            email = email,
+            firstName = firstName,
+            lastName = lastName,
+            enabled = true,
+            emailVerified = true,
+            credentials = listOf(KeycloakCredential(value = password, temporary = false)),
+        )
+        val newUserId = keycloak.createUser(kcUser)
+        val roleRep = keycloak.getRealmRole(role.toKeycloakName())
+        keycloak.assignRoles(newUserId, listOf(roleRep))
+        val now = Clock.System.now()
+        val settings = defaultSettings(newUserId, now)
+        settingsRepo.save(settings)
+        logger.info { "admin_create_user admin=${principal.userId} newUser=$newUserId role=${role.name}" }
+        return User(
+            userId = newUserId, email = email, displayName = displayName,
+            roles = setOf(role), settings = settings,
+        )
+    }
+
+    suspend fun getUser(principal: UserPrincipal, targetUserId: Uuid): User {
+        if (!principal.canAccess(targetUserId)) throw AuthorizationException("Access denied")
+        val kcUser = keycloak.getUser(targetUserId)
+        val settings = settingsRepo.findByUserId(targetUserId)
+        return kcUser.toDomain(settings)
+    }
+
+    suspend fun updateUser(
+        principal: UserPrincipal,
+        targetUserId: Uuid,
+        displayName: String?,
+        role: Role?,
+    ): User {
+        requireAdmin(principal)
+        val existing = keycloak.getUser(targetUserId)
+        if (displayName != null) {
+            val firstName = displayName.substringBefore(" ").ifBlank { displayName }
+            val lastName = displayName.substringAfter(" ", "").ifBlank { null }
+            keycloak.updateUser(targetUserId, existing.copy(firstName = firstName, lastName = lastName))
+        }
+        if (role != null) {
+            val currentRoles = keycloak.getUserRoles(targetUserId)
+            if (currentRoles.isNotEmpty()) keycloak.removeRoles(targetUserId, currentRoles)
+            val newRole = keycloak.getRealmRole(role.toKeycloakName())
+            keycloak.assignRoles(targetUserId, listOf(newRole))
+        }
+        val updated = keycloak.getUser(targetUserId)
+        val settings = settingsRepo.findByUserId(targetUserId)
+        return updated.toDomain(settings)
+    }
+
+    suspend fun deleteUser(principal: UserPrincipal, targetUserId: Uuid) {
+        requireAdmin(principal)
+        keycloak.deleteUser(targetUserId)
+        settingsRepo.delete(targetUserId)
+        doctorPatientRepo.deleteByUserId(targetUserId)
+        logger.info { "admin_delete_user admin=${principal.userId} deletedUser=$targetUserId" }
+    }
+
+    private fun requireAdmin(principal: UserPrincipal) {
+        if (!principal.isAdmin()) throw AuthorizationException("Admin role required")
+    }
+
+    private fun defaultSettings(userId: Uuid, now: Instant = Clock.System.now()) = UserSettings(
+        userId = userId,
+        createdAt = now,
+        updatedAt = now,
+    )
+}
+
+data class SettingsPatch(
+    val timezone: String? = null,
+    val language: String? = null,
+    val timeFormat: Int? = null,
+    val glucoseUnit: String? = null,
+    val weightUnit: String? = null,
+    val alarmUrgentHigh: Int? = null,
+    val alarmHigh: Int? = null,
+    val alarmLow: Int? = null,
+    val alarmUrgentLow: Int? = null,
+)
+
+private fun KeycloakUser.toDomain(settings: UserSettings?): User {
+    val userId = Uuid.parse(requireNotNull(id) { "Keycloak user missing id" })
+    val displayName = listOfNotNull(firstName, lastName).joinToString(" ").ifBlank { username ?: email.orEmpty() }
+    val roles = attributes?.get("roles")?.mapNotNull {
+        runCatching { Role.valueOf(it) }.getOrNull()
+    }?.toSet() ?: emptySet()
+    return User(userId = userId, email = email.orEmpty(), displayName = displayName, roles = roles, settings = settings)
+}

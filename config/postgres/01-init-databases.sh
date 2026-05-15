@@ -8,6 +8,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
     CREATE DATABASE "kdiab-profiles";
     CREATE DATABASE "kdiab-treatments";
     CREATE DATABASE "kdiab-carbs";
+    CREATE DATABASE "kdiab-users";
 EOSQL
 
 # Create a dedicated least-privilege role for each service database.
@@ -45,4 +46,12 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "kdiab-carbs" <<-EO
     GRANT USAGE ON SCHEMA public TO kdiab_carbs;
     GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO kdiab_carbs;
     ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO kdiab_carbs;
+EOSQL
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "kdiab-users" <<-EOSQL
+    CREATE USER kdiab_users WITH PASSWORD '${USERS_DB_PASSWORD}';
+    GRANT CONNECT ON DATABASE "kdiab-users" TO kdiab_users;
+    GRANT USAGE ON SCHEMA public TO kdiab_users;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO kdiab_users;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO kdiab_users;
 EOSQL

@@ -1,0 +1,187 @@
+= kdiab-users User & Admin Guide
+:author: kdiab team
+:toc: left
+:toclevels: 3
+
+== Overview
+
+The kdiab-users service manages user accounts, personal settings, and doctor–patient relationships in the kdiab platform. This guide covers both the self-service actions available to all users and the administration actions available to the ADMIN role.
+
+== Roles
+
+|===
+| Role | Description
+
+| `PATIENT` | Standard patient user. Can read and update their own settings. Can view their own profile.
+| `DOCTOR` | Clinician user. Can read and update their own settings. Can list their own assigned patients.
+| `ADMIN` | Platform administrator. Full access to all users, settings, and doctor–patient assignments.
+|===
+
+== Self-Service (All Users)
+
+=== View Your Profile
+
+`GET /api/v1/users/me`
+
+Returns your profile from Keycloak (email, display name, roles) merged with your stored settings (timezone, alarm thresholds, etc.).
+
+=== Update Your Settings
+
+`PATCH /api/v1/users/me/settings`
+
+Partially updates your settings. All fields are optional — only send the fields you want to change.
+
+```json
+{
+  "timezone": "Europe/Berlin",
+  "language": "de",
+  "timeFormat": 24,
+  "glucoseUnit": "mmol/L",
+  "weightUnit": "kg",
+  "alarmUrgentHigh": 250,
+  "alarmHigh": 180,
+  "alarmLow": 70,
+  "alarmUrgentLow": 55
+}
+```
+
+==== JWT-Backed Settings
+
+`glucoseUnit` and `weightUnit` are stored in your authentication token (JWT). Changing them takes effect immediately in the settings response, but **your glucose and weight values will continue to be displayed in the old unit until you log out and log back in**.
+
+When either of these settings is changed, the response includes a `jwtBackedNote` field:
+
+```json
+{
+  "glucoseUnit": "mmol/L",
+  "jwtBackedNote": "Glucose unit and weight unit changes take effect on your next login."
+}
+```
+
+Log out and log back in to apply the change.
+
+== Administration (ADMIN Role)
+
+=== List All Users
+
+`GET /api/v1/users`
+
+Returns all users. Supports pagination and search:
+
+* `?search=sarah` — filter by name or email
+* `?page=0&size=20` — paginate results (default page size 20, max 100)
+
+=== Get a Specific User
+
+`GET /api/v1/users/{userId}`
+
+Returns the profile and settings for any user. Non-admin users can only request their own userId.
+
+=== Create a User
+
+`POST /api/v1/users`
+
+Creates a new user account and seeds their default settings. The user can log in immediately.
+
+```json
+{
+  "email": "new.patient@example.com",
+  "displayName": "New Patient",
+  "password": "SecurePass123!",
+  "role": "PATIENT"
+}
+```
+
+Roles: `PATIENT`, `DOCTOR`, `ADMIN`
+
+=== Update a User
+
+`PATCH /api/v1/users/{userId}`
+
+Changes a user's display name and/or role.
+
+```json
+{
+  "displayName": "Updated Name",
+  "role": "DOCTOR"
+}
+```
+
+Role changes take effect in the user's next JWT.
+
+=== Delete a User
+
+`DELETE /api/v1/users/{userId}`
+
+Permanently removes the user from Keycloak, deletes their settings, and removes all doctor–patient assignments they appear in. **This action cannot be undone.**
+
+== Doctor–Patient Relationships (ADMIN)
+
+=== List a Doctor's Patients
+
+`GET /api/v1/users/{doctorId}/patients`
+
+Returns all patients assigned to the given doctor. The doctor themselves can also call this endpoint.
+
+=== Assign a Patient to a Doctor
+
+`POST /api/v1/users/{doctorId}/patients`
+
+```json
+{
+  "patientId": "b0b0b0b0-b0b0-4b00-ab00-b0b0b0b0b0b0"
+}
+```
+
+The doctor's `allowed_patients` claim is updated in Keycloak immediately. The change takes effect in the doctor's next JWT.
+
+=== Remove a Patient from a Doctor
+
+`DELETE /api/v1/users/{doctorId}/patients/{patientId}`
+
+Removes the assignment. The change takes effect in the doctor's next JWT.
+
+== Self-Registration (When Enabled)
+
+If your platform administrator has enabled self-registration, you can create your own account:
+
+`POST /api/v1/register`
+
+```json
+{
+  "email": "me@example.com",
+  "displayName": "My Name",
+  "password": "SecurePass123!"
+}
+```
+
+=== With Approval Required
+
+If your platform requires approval, your account will be created but you will not be able to access data until an administrator approves your account by assigning you the `PATIENT` role. The registration response will indicate this:
+
+```json
+{
+  "userId": "...",
+  "message": "Registration successful. Your account is pending approval by an administrator."
+}
+```
+
+== Default Settings
+
+When a new user account is created (by admin or self-registration), the following default settings are applied:
+
+|===
+| Setting | Default
+
+| Timezone | `UTC`
+| Language | `en`
+| Time format | `24`-hour
+| Glucose unit | `mg/dL`
+| Weight unit | `kg`
+| Alarm: Urgent High | 260 mg/dL
+| Alarm: High | 200 mg/dL
+| Alarm: Low | 75 mg/dL
+| Alarm: Urgent Low | 55 mg/dL
+|===
+
+These defaults follow standard clinical thresholds from the AGP consensus report. Patients and doctors can adjust thresholds via the settings endpoint.

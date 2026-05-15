@@ -1,0 +1,151 @@
+= kdiab-users Operations Guide
+:author: kdiab team
+:toc: left
+:toclevels: 3
+
+== Overview
+
+`kdiab-users` is the user lifecycle, settings, and doctor–patient relationship service for the kdiab platform. It runs on port 8088 and requires PostgreSQL and Keycloak.
+
+== Configuration
+
+All configuration is provided via environment variables (override the defaults in `application.conf`).
+
+=== Required Variables
+
+|===
+| Variable | Description | Example
+
+| `JWKS_URL` | Keycloak JWKS endpoint for JWT verification | `http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs`
+| `JWT_DOMAIN` | JWT issuer domain | `http://localhost:8081/realms/kdiab`
+| `JWT_AUDIENCE` | Expected `aud` claim in JWTs | `users`
+| `DB_URL` | PostgreSQL JDBC URL | `jdbc:postgresql://postgres:5432/kdiab-users`
+| `DB_USERNAME` | PostgreSQL username | `kdiab_users`
+| `DB_PASSWORD` | PostgreSQL password | _(from secrets manager)_
+| `KEYCLOAK_ADMIN_URL` | Keycloak Admin REST base URL | `http://keycloak:8080`
+| `KEYCLOAK_ADMIN_REALM` | Realm containing users | `kdiab`
+| `KEYCLOAK_ADMIN_CLIENT_ID` | Service account client ID | `kdiab-users-service`
+| `KEYCLOAK_ADMIN_CLIENT_SECRET` | Service account client secret | _(from secrets manager)_
+|===
+
+=== Optional Variables
+
+|===
+| Variable | Default | Description
+
+| `PORT` | `8088` | HTTP listen port
+| `SELF_REGISTRATION_ENABLED` | `false` | Mount the `POST /register` endpoint
+| `SELF_REGISTRATION_REQUIRES_APPROVAL` | `false` | Require admin approval before account is usable
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3005` | Comma-separated allowed CORS origins
+|===
+
+== Keycloak Service Account
+
+The service requires a Keycloak confidential client with service accounts enabled and the following realm-management roles:
+
+* `manage-users` — create, update, delete users
+* `view-users` — list and get users
+* `query-users` — search users
+* `query-realms` — list realms
+
+The client is pre-configured in `config/keycloak-realm.json` as `kdiab-users-service`.
+
+To rotate the secret, update it in Keycloak and set the new value in `KEYCLOAK_ADMIN_CLIENT_SECRET`. The service will automatically obtain a new token on the next request.
+
+== Health Endpoints
+
+|===
+| Path | Description
+
+| `GET /healthz` | Liveness — returns 200 if the process is up
+| `GET /readyz` | Readiness — returns 200 if the DB connection is available (runs `SELECT 1`)
+|===
+
+Use `/readyz` as the Kubernetes readiness probe and `/healthz` as the liveness probe.
+
+== Database
+
+The service uses PostgreSQL with Liquibase migrations applied at startup. The schema is minimal:
+
+* `user_settings` — per-user display preferences (PK: `user_id`)
+* `doctor_patient` — doctor–patient assignments (composite PK: `doctor_id`, `patient_id`)
+
+Migrations are in `src/main/resources/db/changelog/`.
+
+== Circuit Breaker
+
+All Keycloak Admin API calls go through a circuit breaker (`CircuitBreaker.kt`):
+
+* **Threshold**: 5 consecutive failures → OPEN
+* **Reset timeout**: 30 seconds → HALF_OPEN (next call is a probe)
+* **Open state response**: HTTP 503 with `KeycloakUnavailable` error code
+
+Monitor the circuit breaker state via structured logs. Look for `circuitBreaker=OPEN` entries.
+
+== Structured Logging
+
+All logs are emitted as JSON to stdout. Key fields:
+
+* `level`, `timestamp`, `message`
+* `correlationId` — from `X-Correlation-ID` request header (or generated if absent)
+* `userId` — set in service method logs
+
+Log level is controlled at runtime via Logback. Default: `INFO`.
+
+== Metrics
+
+Prometheus metrics are exposed at `GET /metrics`. Key metrics:
+
+* `ktor_http_server_requests_total` — request count by method, path, status
+* `ktor_http_server_request_duration_seconds` — latency histogram
+
+== Common Operations
+
+=== Creating a User (Admin)
+
+```bash
+curl -X POST http://localhost:8088/api/v1/users \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"new@example.com","displayName":"New User","password":"Secure123!","role":"PATIENT"}'
+```
+
+=== Assigning a Doctor to a Patient
+
+```bash
+curl -X POST http://localhost:8088/api/v1/users/$DOCTOR_ID/patients \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"patientId":"$PATIENT_ID"}'
+```
+
+The doctor's `allowed_patients` Keycloak attribute is updated synchronously. The change takes effect in the doctor's next JWT.
+
+=== Enabling Self-Registration
+
+Set `SELF_REGISTRATION_ENABLED=true` and redeploy. Optionally set `SELF_REGISTRATION_REQUIRES_APPROVAL=true` for approval-gated registration.
+
+== Troubleshooting
+
+=== Keycloak Admin calls failing (503)
+
+Check:
+
+1. `KEYCLOAK_ADMIN_URL`, `KEYCLOAK_ADMIN_CLIENT_ID`, `KEYCLOAK_ADMIN_CLIENT_SECRET` are correct.
+2. The service account has `manage-users`, `view-users`, `query-users` roles in realm-management.
+3. The circuit breaker state in logs (`circuitBreaker=OPEN`).
+
+=== Doctor's allowed_patients not updating in JWT
+
+The `allowed_patients` attribute is written to Keycloak synchronously on every assign/remove call. If the doctor's JWT still shows old data:
+
+1. Confirm the `updateUserAttributes` call succeeded (check logs for `keycloak.updateUserAttributes`).
+2. The doctor must obtain a new JWT (re-login or token refresh).
+
+=== Database migration fails on startup
+
+Check the Liquibase changelog in `src/main/resources/db/changelog/`. If a migration was applied partially, the `DATABASECHANGELOGLOCK` table may need manual clearing:
+
+```sql
+DELETE FROM DATABASECHANGELOGLOCK;
+```

@@ -1,0 +1,58 @@
+= ADR-001: Split User Settings Between Keycloak and Database
+:author: kdiab team
+:date: 2026-05-15
+:status: Accepted
+
+== Context
+
+The kdiab platform needs to store per-user settings such as preferred glucose unit, weight unit, timezone, language, display preferences, and alarm thresholds. These settings have different propagation semantics:
+
+* **Glucose unit** and **weight unit** affect how data is *rendered in the JWT* — the `glucose_unit` and `weight_unit` claims are embedded in the access token and read by downstream services (kdiab-analyze, kdiab-measures) to interpret CGM values. Changing them requires a new token to take effect.
+* **Timezone**, **language**, **time format**, and **alarm thresholds** are display-only preferences consumed by the frontend. They can change immediately without a new token.
+
+Storing all settings in the database would mean downstream services can't read glucose/weight unit without an extra API call on every request. Storing everything in Keycloak user attributes would couple the settings lifecycle to the auth provider and bypass the normal REST data path.
+
+== Decision
+
+Split settings storage by propagation semantics:
+
+|===
+| Setting | Store In | Effect
+
+| `glucoseUnit` | Keycloak user attributes (`glucose_unit`) | Appears in JWT; takes effect on next login
+| `weightUnit` | Keycloak user attributes (`weight_unit`) | Appears in JWT; takes effect on next login
+| `allowedPatients` | Keycloak user attributes (`allowed_patients`) | Appears in JWT; updated on doctor–patient relation changes
+| `timezone` | PostgreSQL `user_settings` table | Immediate effect, read via API
+| `language` | PostgreSQL `user_settings` table | Immediate effect, read via API
+| `timeFormat` | PostgreSQL `user_settings` table | Immediate effect, read via API
+| `alarmUrgentHigh` | PostgreSQL `user_settings` table | Immediate effect, read via API
+| `alarmHigh` | PostgreSQL `user_settings` table | Immediate effect, read via API
+| `alarmLow` | PostgreSQL `user_settings` table | Immediate effect, read via API
+| `alarmUrgentLow` | PostgreSQL `user_settings` table | Immediate effect, read via API
+|===
+
+When a `PATCH /users/me/settings` request changes `glucoseUnit` or `weightUnit`, the service:
+
+1. Updates the PostgreSQL row (so `GET /users/me/settings` reflects the new value immediately).
+2. Calls the Keycloak Admin API to write the updated attribute back.
+3. Returns a `jwtBackedNote` field in the response body instructing the user to re-login.
+
+== Consequences
+
+*Positive:*
+
+* JWT claims for glucose/weight unit are always current after login — no extra API calls needed by downstream services.
+* Timezone/language/alarm settings take effect immediately without re-authentication.
+* Single source of truth per setting type: Keycloak owns auth-relevant settings; the database owns display preferences.
+
+*Negative:*
+
+* Glucose unit and weight unit changes require a re-login to take effect in the JWT. The `jwtBackedNote` in the response communicates this to the frontend.
+* Two stores must be kept in sync. If the Keycloak write fails after the DB write, the JWT will be stale until the next manual update. The circuit breaker limits blast radius of Keycloak outages.
+* Integration tests must mock or bypass both the DB and the Keycloak Admin API.
+
+== Alternatives Considered
+
+* **All settings in Keycloak**: Rejected — Keycloak user attributes are not designed for rich structured data; every settings read would hit Keycloak rather than a PostgreSQL query; no schema validation.
+* **All settings in PostgreSQL**: Rejected — downstream services would need to call kdiab-users on every request to resolve glucose/weight unit, adding latency and a coupling point.
+* **Settings microservice with event sourcing**: Rejected — over-engineered for the current scale; the two-store split is simple and sufficient.

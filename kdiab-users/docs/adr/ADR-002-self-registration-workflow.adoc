@@ -1,0 +1,56 @@
+= ADR-002: Feature-Flagged Self-Registration with Optional Approval
+:author: kdiab team
+:date: 2026-05-15
+:status: Accepted
+
+== Context
+
+Clinical deployments of kdiab are admin-managed: an administrator creates accounts for patients and doctors. However, some deployments (research cohorts, open clinics) need to allow patients to register themselves without admin involvement.
+
+Two sub-requirements emerge:
+
+1. **Self-registration can be disabled** — the default for clinical deployments where all accounts are provisioned by admins.
+2. **Self-registration can require approval** — for deployments where self-registered accounts must be reviewed before the user can log in and access data.
+
+The implementation must not affect admin-managed flows and must not expose the registration endpoint when self-registration is disabled.
+
+== Decision
+
+Implement self-registration as a feature flag controlled by two environment variables:
+
+|===
+| Variable | Default | Meaning
+
+| `SELF_REGISTRATION_ENABLED` | `false` | When `false`, the `POST /register` route is not mounted; all requests return 404.
+| `SELF_REGISTRATION_REQUIRES_APPROVAL` | `false` | When `true`, newly registered users are created in Keycloak with no realm roles. They cannot log in usefully until an admin assigns the `PATIENT` role via `PATCH /users/{userId}`.
+|===
+
+The registration flow:
+
+1. Client sends `POST /register` with `email`, `displayName`, `password`.
+2. Service checks Keycloak for an existing user with that email. Returns 400 `BusinessValidationException` if found.
+3. Creates a Keycloak user.
+4. If `requiresApproval=false`: assigns the `PATIENT` realm role.
+5. Seeds default `UserSettings` in PostgreSQL.
+6. Returns 201 with `userId` and a `message` indicating whether approval is required.
+
+The registration endpoint carries `security: []` in the OpenAPI spec — it is intentionally public and unauthenticated.
+
+== Consequences
+
+*Positive:*
+
+* Clinical deployments get zero attack surface — the route literally does not exist at runtime.
+* The approval flow naturally prevents access without code changes: users without any role receive 403 on all protected endpoints.
+* Feature flags are per-instance; a single build supports both deployment models.
+
+*Negative:*
+
+* Approval-pending users exist in Keycloak but cannot log in. An admin UX to list and approve pending users must be built separately (tracked in a future story).
+* The "role as approval gate" pattern means a user with no roles gets a confusing 403 rather than a "pending approval" message. The frontend must detect this and display an appropriate message based on the registration response.
+
+== Alternatives Considered
+
+* **Separate registration service**: Rejected — too much infrastructure for a simple feature flag.
+* **Keycloak's built-in self-registration**: Rejected — it does not support the required approval workflow and does not seed the `UserSettings` row.
+* **Soft-disable via 404 response only (route always mounted)**: Rejected — mounting an unauthenticated route even when disabled creates an unnecessary attack surface.
