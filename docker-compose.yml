@@ -635,6 +635,8 @@ services:
       args:
         VITE_OIDC_AUTHORITY: http://localhost:8081/realms/kdiab
         VITE_OIDC_CLIENT_ID: kdiab-ui
+    environment:
+      KEYCLOAK_URL: http://localhost:8081
     ports:
       - "3005:8080"
     depends_on:
