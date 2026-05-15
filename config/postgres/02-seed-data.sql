@@ -339,51 +339,37 @@ END $$;
 -- Reservoir drains from ~300 U to ~0 U over 3 days, then refills (site change).
 -- Battery drains from 100% to ~20% over 7 days, then recharges.
 
-DO $$
-DECLARE
-  sarah_id uuid := '11111111-1111-1111-1111-111111111111';
-  mike_id  uuid := '22222222-2222-2222-2222-222222222222';
-  ts       timestamptz;
-  minutes  int;
-  reservoir_sarah double precision;
-  reservoir_mike  double precision;
-  battery_sarah   int;
-  battery_mike    int;
-BEGIN
-  FOR minutes IN 0..8639 LOOP
-    ts := NOW() - (8639 - minutes) * INTERVAL '5 minutes';
+-- Sarah: AAPS / Dana RS
+INSERT INTO treatments(id, user_id, treated_at, type, data)
+SELECT
+  gen_random_uuid(),
+  '11111111-1111-1111-1111-111111111111',
+  NOW() - (8639 - s) * INTERVAL '5 minutes',
+  'DEVICE_STATUS',
+  jsonb_build_object(
+    'device',         'AAPS 3.2.0',
+    'pumpName',       'Dana RS',
+    'reservoirUnits', ROUND(GREATEST(0::numeric, 300 - ((s % 864) * 300.0 / 864)), 1),
+    'batteryLevel',   100 - ((s % 2016) * 80 / 2016),
+    'pumpConnected',  true
+  )
+FROM generate_series(0, 8639) AS s;
 
-    reservoir_sarah := GREATEST(0, 300 - ((minutes % 864) * 300.0 / 864));
-    battery_sarah   := 100 - ((minutes % 2016) * 80 / 2016);
-
-    reservoir_mike  := GREATEST(0, 280 - ((minutes % 864) * 280.0 / 864));
-    battery_mike    := 100 - (((minutes + 500) % 2016) * 80 / 2016);
-
-    INSERT INTO treatments(id, user_id, treated_at, type, data)
-    VALUES (
-      gen_random_uuid(), sarah_id, ts, 'DEVICE_STATUS',
-      jsonb_build_object(
-        'device', 'AAPS 3.2.0',
-        'pumpName', 'Dana RS',
-        'reservoirUnits', ROUND(reservoir_sarah::numeric, 1),
-        'batteryLevel', battery_sarah,
-        'pumpConnected', true
-      )
-    );
-
-    INSERT INTO treatments(id, user_id, treated_at, type, data)
-    VALUES (
-      gen_random_uuid(), mike_id, ts, 'DEVICE_STATUS',
-      jsonb_build_object(
-        'device', 'xDrip+ 2024.01.15',
-        'pumpName', 'Omnipod 5',
-        'reservoirUnits', ROUND(reservoir_mike::numeric, 1),
-        'batteryLevel', battery_mike,
-        'pumpConnected', true
-      )
-    );
-  END LOOP;
-END $$;
+-- Mike: xDrip+ / Omnipod 5
+INSERT INTO treatments(id, user_id, treated_at, type, data)
+SELECT
+  gen_random_uuid(),
+  '22222222-2222-2222-2222-222222222222',
+  NOW() - (8639 - s) * INTERVAL '5 minutes',
+  'DEVICE_STATUS',
+  jsonb_build_object(
+    'device',         'xDrip+ 2024.01.15',
+    'pumpName',       'Omnipod 5',
+    'reservoirUnits', ROUND(GREATEST(0::numeric, 280 - ((s % 864) * 280.0 / 864)), 1),
+    'batteryLevel',   100 - (((s + 500) % 2016) * 80 / 2016),
+    'pumpConnected',  true
+  )
+FROM generate_series(0, 8639) AS s;
 
 -- ── Profiles ──────────────────────────────────────────────────────────────────
 

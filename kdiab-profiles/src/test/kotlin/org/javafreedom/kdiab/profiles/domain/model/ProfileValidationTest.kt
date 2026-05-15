@@ -93,6 +93,37 @@ class ProfileValidationTest {
         assertFailsWith<BusinessValidationException> { profile.validate() }
     }
 
+    @Test
+    fun `should fail when carbAbsorptionRateGPerHour is zero`() {
+        val profile = createValidProfile().copy(carbAbsorptionRateGPerHour = 0.0)
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
+    @Test
+    fun `should fail when carbAbsorptionRateGPerHour is negative`() {
+        val profile = createValidProfile().copy(carbAbsorptionRateGPerHour = -5.0)
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
+    @Test
+    fun `should fail when carbAbsorptionRateGPerHour exceeds maximum`() {
+        val profile = createValidProfile().copy(carbAbsorptionRateGPerHour = 101.0)
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
+    @Test
+    fun `should pass validation when carbAbsorptionRateGPerHour is within bounds`() {
+        listOf(1.0, 20.0, 40.0, 100.0).forEach { rate ->
+            createValidProfile().copy(carbAbsorptionRateGPerHour = rate).validate()
+        }
+    }
+
+    @Test
+    fun `should pass validation when carbAbsorptionRateGPerHour is null`() {
+        val profile = createValidProfile().copy(carbAbsorptionRateGPerHour = null)
+        profile.validate()
+    }
+
     private fun createValidProfile(): Profile {
         return Profile(
             userId = Uuid.random(),

@@ -108,6 +108,44 @@ class TreatmentMapperTest {
         }
     }
 
+    @Test
+    fun `toDomain maps DEVICE_STATUS treatment with device status payload`() {
+        val payload = buildJsonObject {
+            put("device", "AAPS 3.2.0")
+            put("pumpName", "Dana RS")
+            put("reservoirUnits", 142.5)
+            put("batteryLevel", 87)
+            put("pumpConnected", true)
+        }
+        val request = CreateTreatmentRequest(
+            treatedAt = "2024-01-01T10:00:00Z",
+            type = ApiType.DEVICE_STATUS,
+            data = payload
+        )
+        val domain = request.toDomain(userId)
+
+        assertEquals(TreatmentType.DEVICE_STATUS, domain.type)
+        assertEquals("AAPS 3.2.0", (domain.data["device"] as JsonPrimitive).content)
+        assertEquals("Dana RS", (domain.data["pumpName"] as JsonPrimitive).content)
+        assertEquals(142.5, (domain.data["reservoirUnits"] as JsonPrimitive).double, 0.001)
+        assertEquals(87, (domain.data["batteryLevel"] as JsonPrimitive).content.toInt())
+    }
+
+    @Test
+    fun `toApi maps DEVICE_STATUS treatment back to api type`() {
+        val payload = buildJsonObject {
+            put("device", "xDrip+ 2024.01.15")
+            put("pumpName", "Omnipod 5")
+            put("reservoirUnits", 200.0)
+            put("batteryLevel", 95)
+            put("pumpConnected", true)
+        }
+        val api = testDomainTreatment(type = TreatmentType.DEVICE_STATUS).copy(data = payload).toApi()
+
+        assertEquals(ApiType.DEVICE_STATUS, api.type)
+        assertEquals("xDrip+ 2024.01.15", (api.data["device"] as JsonPrimitive).content)
+    }
+
     // ── normalizePayload ──────────────────────────────────────────────────────
 
     @Test
