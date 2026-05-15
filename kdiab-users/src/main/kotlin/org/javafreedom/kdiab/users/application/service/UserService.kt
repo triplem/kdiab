@@ -5,6 +5,9 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
@@ -81,16 +84,22 @@ class UserService(
     suspend fun listUsers(principal: UserPrincipal, search: String?, page: Int, size: Int): List<User> {
         requireAdmin(principal)
         val kcUsers = keycloak.listUsers(search, first = page * size, max = size)
-        return kcUsers.mapNotNull { kcUser ->
-            val userId = kcUser.id?.let {
-                runCatching { Uuid.parse(it) }.getOrElse {
+        val validUsers = kcUsers.mapNotNull { kcUser ->
+            kcUser.id?.let {
+                runCatching { Uuid.parse(it) to kcUser }.getOrElse {
                     logger.warn { "listUsers skipping user with unparseable id='${kcUser.id}'" }
                     null
                 }
-            } ?: return@mapNotNull null
-            val roles = keycloak.getUserRoles(userId).toDomainRoles()
-            val settings = settingsRepo.findByUserId(userId)
-            kcUser.toDomain(settings, roles)
+            }
+        }
+        return coroutineScope {
+            validUsers.map { (userId, kcUser) ->
+                async {
+                    val roles = keycloak.getUserRoles(userId).toDomainRoles()
+                    val settings = settingsRepo.findByUserId(userId)
+                    kcUser.toDomain(settings, roles)
+                }
+            }.awaitAll()
         }
     }
 
@@ -102,8 +111,7 @@ class UserService(
         role: Role,
     ): User {
         requireAdmin(principal)
-        val firstName = displayName.substringBefore(" ").ifBlank { displayName }
-        val lastName = displayName.substringAfter(" ", "").ifBlank { null }
+        val (firstName, lastName) = splitDisplayName(displayName)
         val kcUser = KeycloakUser(
             username = email,
             email = email,
@@ -151,8 +159,7 @@ class UserService(
         requireAdmin(principal)
         val existing = keycloak.getUser(targetUserId)
         if (displayName != null) {
-            val firstName = displayName.substringBefore(" ").ifBlank { displayName }
-            val lastName = displayName.substringAfter(" ", "").ifBlank { null }
+            val (firstName, lastName) = splitDisplayName(displayName)
             keycloak.updateUser(targetUserId, existing.copy(firstName = firstName, lastName = lastName))
         }
         val updatedRoles: Set<Role>

@@ -50,3 +50,4 @@ Desktop.ini
 .env
 .env.local
 secrets.properties
+.claude/worktrees/

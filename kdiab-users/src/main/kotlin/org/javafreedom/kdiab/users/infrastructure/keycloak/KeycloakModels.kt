@@ -22,10 +22,17 @@ data class KeycloakCredential(
     val type: String = "password",
     val value: String,
     val temporary: Boolean = false,
-)
+) {
+    override fun toString() = "KeycloakCredential(type=$type, value=***, temporary=$temporary)"
+}
 
+// KC 22 role-mapping POST accepts {id, name} but some versions also require composite/clientRole/containerId.
+// Preserving all fields from the GET response ensures the POST payload is always complete.
 @Serializable
 data class KeycloakRole(
     val id: String,
     val name: String,
+    val composite: Boolean? = null,
+    val clientRole: Boolean? = null,
+    val containerId: String? = null,
 )

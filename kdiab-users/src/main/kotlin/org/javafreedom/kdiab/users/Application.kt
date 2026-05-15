@@ -33,11 +33,30 @@ import org.javafreedom.kdiab.users.plugins.configureMetrics
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
+// Keys that have no safe fallback default and must be provided at startup.
+private val REQUIRED_CONFIG_KEYS = listOf(
+    "keycloakAdmin.clientSecret",
+    "storage.jdbcUrl",
+    "storage.username",
+    "storage.password",
+)
+
+internal fun validateConfig(config: io.ktor.server.config.ApplicationConfig) {
+    val missing = REQUIRED_CONFIG_KEYS.filter {
+        config.propertyOrNull(it)?.getString().isNullOrBlank()
+    }
+    check(missing.isEmpty()) {
+        "Missing required configuration keys: ${missing.joinToString(", ")}. " +
+            "Set these via environment variables or application.conf."
+    }
+}
+
 @Suppress("LongMethod")
 fun Application.module(
     keycloakAdminClient: KeycloakAdminClient? = null,
     initDatabase: Boolean = true,
 ) {
+    validateConfig(environment.config)
     configureTracing()
     configureLogging()
     configureMetrics()
@@ -59,11 +78,7 @@ fun Application.module(
         ?.getString()?.split(",")?.map { it.trim() }
         ?: listOf("http://localhost:3000")
     install(CORS) {
-        corsOrigins.forEach { origin ->
-            val scheme = if (origin.startsWith("https://")) "https" else "http"
-            val host = origin.removePrefix("https://").removePrefix("http://")
-            allowHost(host, schemes = listOf(scheme))
-        }
+        allowOrigins { it in corsOrigins }
         allowHeader(HttpHeaders.ContentType)
         allowHeader(HttpHeaders.Authorization)
         allowMethod(HttpMethod.Get)
@@ -72,10 +87,15 @@ fun Application.module(
         allowMethod(HttpMethod.Patch)
         allowMethod(HttpMethod.Delete)
     }
+    val httpsEnabled = environment.config.propertyOrNull("server.httpsEnabled")
+        ?.getString()?.toBoolean() ?: false
     install(DefaultHeaders) {
         header("X-Content-Type-Options", "nosniff")
         header("X-Frame-Options", "DENY")
-        header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        // HSTS is only meaningful over HTTPS; sending it on plain HTTP confuses intermediaries.
+        if (httpsEnabled) {
+            header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+        }
     }
 
     if (initDatabase) {

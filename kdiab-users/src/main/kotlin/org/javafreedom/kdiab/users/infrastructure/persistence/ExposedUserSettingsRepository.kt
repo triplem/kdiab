@@ -17,7 +17,7 @@ object UserSettingsTable : Table("user_settings") {
     private const val TIMEZONE_LEN = 64
     private const val LANG_LEN = 8
     private const val UNIT_LEN = 16
-    private const val INSTANT_LEN = 50
+    private const val ISO_INSTANT_LEN = 50
     private const val DEFAULT_TIME_FORMAT = 24
 
     val userId = varchar("user_id", UUID_LEN)
@@ -25,13 +25,13 @@ object UserSettingsTable : Table("user_settings") {
     val language = varchar("language", LANG_LEN).default("en")
     val timeFormat = integer("time_format").default(DEFAULT_TIME_FORMAT)
     val glucoseUnit = varchar("glucose_unit", UNIT_LEN).default("mg/dL")
-    val weightUnit = varchar("weight_unit", LANG_LEN).default("kg")
+    val weightUnit = varchar("weight_unit", UNIT_LEN).default("kg")
     val alarmUrgentHigh = integer("alarm_urgent_high").nullable()
     val alarmHigh = integer("alarm_high").nullable()
     val alarmLow = integer("alarm_low").nullable()
     val alarmUrgentLow = integer("alarm_urgent_low").nullable()
-    val createdAt = varchar("created_at", INSTANT_LEN)
-    val updatedAt = varchar("updated_at", INSTANT_LEN)
+    val createdAt = varchar("created_at", ISO_INSTANT_LEN)
+    val updatedAt = varchar("updated_at", ISO_INSTANT_LEN)
 
     override val primaryKey = PrimaryKey(userId)
 }

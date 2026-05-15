@@ -25,8 +25,7 @@ class RegistrationService(
         displayName: String,
         password: String,
     ): Uuid {
-        val firstName = displayName.substringBefore(" ").ifBlank { displayName }
-        val lastName = displayName.substringAfter(" ", "").ifBlank { null }
+        val (firstName, lastName) = splitDisplayName(displayName)
         val kcUser = KeycloakUser(
             username = email,
             email = email,
