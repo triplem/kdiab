@@ -2,15 +2,8 @@ package org.javafreedom.kdiab.users.infrastructure.persistence
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.config.ApplicationConfig
-import liquibase.Liquibase
-import liquibase.database.DatabaseFactory as LiquibaseDatabaseFactory
-import liquibase.database.jvm.JdbcConnection
-import liquibase.resource.ClassLoaderResourceAccessor
 import org.jetbrains.exposed.v1.jdbc.Database
-
-private val logger = KotlinLogging.logger {}
 
 object DatabaseFactory {
     private const val CONNECTION_TIMEOUT_MS = 30_000L
@@ -42,15 +35,6 @@ object DatabaseFactory {
             this.leakDetectionThreshold = LEAK_DETECTION_THRESHOLD_MS
             validate()
         }
-
-        logger.info { "Running Liquibase migrations on $jdbcUrl" }
-        java.sql.DriverManager.getConnection(jdbcUrl, username, password).use { conn ->
-            val lbDatabase = LiquibaseDatabaseFactory.getInstance()
-                .findCorrectDatabaseImplementation(JdbcConnection(conn))
-            Liquibase("db/changelog/db.changelog-root.yaml", ClassLoaderResourceAccessor(), lbDatabase)
-                .update("")
-        }
-        logger.info { "Liquibase migrations completed" }
 
         val dataSource = HikariDataSource(hikariConfig)
         Database.connect(dataSource)

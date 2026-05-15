@@ -189,6 +189,30 @@ services:
           memory: 256M
           cpus: '0.5'
 
+  liquibase-users:
+    container_name: kdiab-users-liquibase
+    image: localhost/kdiab-users-liquibase:latest
+    build:
+      context: ./kdiab-users
+      dockerfile: Dockerfile.liquibase
+    command: >
+      --url=jdbc:postgresql://postgres:5432/kdiab-users
+      --username=${POSTGRES_USER:-postgres}
+      --password=${POSTGRES_PASSWORD}
+      --searchPath=/liquibase
+      --changeLogFile=db/changelog/db.changelog-root.yaml
+      update
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - shared
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+
   carbs-backend:
     container_name: kdiab-carbs-backend
     image: localhost/kdiab-carbs-backend:latest
@@ -253,6 +277,8 @@ services:
       liquibase-treatments:
         condition: service_completed_successfully
       liquibase-carbs:
+        condition: service_completed_successfully
+      liquibase-users:
         condition: service_completed_successfully
     networks:
       - shared
@@ -570,8 +596,8 @@ services:
       retries: 10
       start_period: 30s
     depends_on:
-      postgres:
-        condition: service_healthy
+      pg-seed:
+        condition: service_completed_successfully
       keycloak:
         condition: service_started
     networks:
