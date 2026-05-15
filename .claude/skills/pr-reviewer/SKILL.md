@@ -10,9 +10,9 @@ allowed-tools: Read Bash(gh *) Bash(git *) Bash(cat .claude/rules/*) Bash(grep -
 
 !`gh pr view $pr_number --json number,title,body,headRefName,baseRefName,files,additions,deletions 2>/dev/null || echo "PR $pr_number not found"`
 
-!`gh pr diff $pr_number 2>/dev/null | head -2000`
+!`gh pr diff $pr_number 2>/dev/null | head -5000`
 
-!`cat .claude/rules/*.md 2>/dev/null | head -500`
+!`cat .claude/rules/*.md 2>/dev/null | head -5000`
 
 ## Instructions
 

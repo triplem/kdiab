@@ -22,10 +22,13 @@ Always create a branch before staging any commits. Use the project script:
 
 The script validates the type, slugifies the description, checks out `main`, pulls latest, and creates the branch in one step.
 
-If the script fails due to unstaged changes (error: `cannot pull with rebase: You have unstaged changes`), create the branch manually without pulling:
+If the script fails due to unstaged changes (error: `cannot pull with rebase: You have unstaged changes`), stash first, pull, then branch:
 
 ```bash
+git stash
+git pull origin main
 git checkout -b <type>/<issue-number>-<short-description>
+git stash pop
 # then stage and commit normally
 git push -u origin <branch>
 ```
