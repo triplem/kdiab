@@ -37,6 +37,7 @@ data class Profile(
         val rejectionReason: String? = null,
         val analysisLow: Double? = null,
         val analysisHigh: Double? = null,
+        val carbAbsorptionRateGPerHour: Double? = null,
         val basal: List<BasalSegment>,
         val icr: List<IcrSegment>,
         val isf: List<IsfSegment>,
@@ -76,6 +77,13 @@ data class Profile(
         }
         if (targets.any { it.low < 0 || it.high < 0 || it.low > it.high }) {
             throw BusinessValidationException("Target values are invalid or low exceeds high")
+        }
+        carbAbsorptionRateGPerHour?.let {
+            if (it < MIN_CARB_ABSORPTION_RATE || it > MAX_CARB_ABSORPTION_RATE) {
+                throw BusinessValidationException(
+                    "Carb absorption rate must be between $MIN_CARB_ABSORPTION_RATE and $MAX_CARB_ABSORPTION_RATE g/hr"
+                )
+            }
         }
     }
 
@@ -146,6 +154,8 @@ data class Profile(
         const val MGDL_LOWER_BOUND = 20.0
         const val MIN_ISF_MGDL = 10.0
         const val MAX_ISF_MGDL = 200.0
+        const val MIN_CARB_ABSORPTION_RATE = 1.0
+        const val MAX_CARB_ABSORPTION_RATE = 100.0
     }
 }
 

@@ -20,6 +20,7 @@ enum class TreatmentType {
     INSULIN_CHANGE,
     ACTIVITY,
     HYPO_TREATMENT,
+    DEVICE_STATUS,
 }
 
 enum class TreatmentStatus {

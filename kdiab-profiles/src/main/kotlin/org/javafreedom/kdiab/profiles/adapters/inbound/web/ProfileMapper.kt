@@ -30,6 +30,7 @@ fun CreateProfileRequest.toDomain(
         createdBy = createdBy,
         analysisLow = this.analysisLow,
         analysisHigh = this.analysisHigh,
+        carbAbsorptionRateGPerHour = this.carbAbsorptionRateGPerHour,
         basal = this.basal?.map {
             org.javafreedom.kdiab.profiles.domain.model.BasalSegment(
                 kotlinx.datetime.LocalTime.parse(it.startTime),
@@ -72,6 +73,7 @@ fun Profile.toDomain(): DomainProfile {
         createdAt = this.createdAt?.let { Instant.parse(it) } ?: Clock.System.now(),
         analysisLow = this.analysisLow,
         analysisHigh = this.analysisHigh,
+        carbAbsorptionRateGPerHour = this.carbAbsorptionRateGPerHour,
         basal = this.basal?.map {
             org.javafreedom.kdiab.profiles.domain.model.BasalSegment(
                 kotlinx.datetime.LocalTime.parse(it.startTime),
@@ -120,6 +122,7 @@ fun DomainProfile.toApi(): Profile {
         rejectionReason = this.rejectionReason,
         analysisLow = this.analysisLow,
         analysisHigh = this.analysisHigh,
+        carbAbsorptionRateGPerHour = this.carbAbsorptionRateGPerHour,
         basal = this.basal.map { BasalSegment(it.startTime.toString(), it.value) },
         icr = this.icr.map { IcrSegment(it.startTime.toString(), it.value) },
         isf = this.isf.map { IsfSegment(it.startTime.toString(), it.value) },

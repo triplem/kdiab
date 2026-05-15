@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-add-carb-absorption-rate
+      author: kdiab
+      changes:
+        - addColumn:
+            tableName: profiles
+            columns:
+              - column:
+                  name: carb_absorption_rate_g_per_hour
+                  type: DOUBLE
+                  constraints:
+                    nullable: true

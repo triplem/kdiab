@@ -11,6 +11,7 @@ paths:
   /insulins:
     get:
       summary: Get all insulins
+      description: Returns all insulin types available for selection when creating or updating a profile.
       operationId: getInsulins
       responses:
         '200':
@@ -23,6 +24,7 @@ paths:
                   $ref: '#/components/schemas/Insulin'
     post:
       summary: Create a new insulin
+      description: Adds a new insulin type to the shared catalogue. Requires ADMIN role.
       operationId: createInsulin
       requestBody:
         required: true
@@ -65,6 +67,7 @@ paths:
   /insulins/{id}:
     put:
       summary: Update a specific insulin
+      description: Renames an existing insulin type. Requires ADMIN role.
       operationId: updateInsulin
       parameters:
         - name: id
@@ -123,6 +126,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete a specific insulin
+      description: Permanently removes an insulin type from the catalogue. Requires ADMIN role.
       operationId: deleteInsulin
       parameters:
         - name: id
@@ -156,6 +160,7 @@ paths:
   /users/{userId}/profiles:
     get:
       summary: List all profiles for a user
+      description: Returns a paginated list of profiles for the given user, optionally filtered by status. Accessible by the user themselves, their assigned doctors, and admins.
       operationId: listProfiles
       parameters:
         - name: userId
@@ -200,6 +205,7 @@ paths:
                 $ref: '#/components/schemas/PagedProfilesResponse'
     post:
       summary: Create a new profile
+      description: Creates a new profile in DRAFT status. A doctor may create a PROPOSED profile for a patient by supplying a proposalReason.
       operationId: createProfile
       parameters:
         - name: userId
@@ -242,6 +248,7 @@ paths:
 
     delete:
       summary: Delete all profiles for a user
+      description: Permanently removes all profiles for a user. Restricted to ADMIN role. Use with caution — this is irreversible.
       operationId: deleteProfiles
       parameters:
         - name: userId
@@ -259,6 +266,7 @@ paths:
   /users/{userId}/profiles/history:
     get:
       summary: Get profile history for a user
+      description: Returns all profiles (active and archived) that were valid within the given time range, ordered by validFrom descending. Used to reconstruct which profile was active at any point in time.
       operationId: getProfileHistory
       parameters:
         - name: userId
@@ -292,6 +300,7 @@ paths:
   /users/{userId}/profiles/{profileId}:
     get:
       summary: Get a specific profile by ID
+      description: Returns the full details of a single profile, including all basal, ICR, ISF, and target segments.
       operationId: getProfile
       parameters:
         - name: userId
@@ -457,6 +466,7 @@ paths:
   /users/{userId}/profiles/{profileId}/{segmentType}/{startTime}:
     delete:
       summary: Delete a specific segment from a profile
+      description: Removes a single time segment (basal, ICR, ISF, or target) from a profile by its start time. Triggers copy-on-write if the profile is ACTIVE.
       operationId: deleteSegment
       parameters:
         - name: userId
@@ -594,6 +604,16 @@ components:
           format: double
           nullable: true
           description: Upper TIR threshold for analytics (mg/dL). Defaults to 180.0 when null.
+        carbAbsorptionRateGPerHour:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Default carb absorption rate in grams per hour, used for carbs-on-board (COB) calculation
+            when a treatment does not specify an explicit absorptionTime.
+            Typical values: 10 g/hr (slow/high-fat meal), 20 g/hr (mixed meal), 40 g/hr (fast-acting
+            carbs / juice). Defaults to 20.0 when null.
+          example: 20.0
         basal:
           type: array
           items:
@@ -641,6 +661,14 @@ components:
           format: double
           nullable: true
           description: Upper TIR threshold for analytics (mg/dL). Defaults to 180.0 when null.
+        carbAbsorptionRateGPerHour:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            Default carb absorption rate in grams per hour. Used for COB calculation when a treatment
+            does not specify an explicit absorptionTime. Defaults to 20.0 when null.
+          example: 20.0
         basal:
           type: array
           items:

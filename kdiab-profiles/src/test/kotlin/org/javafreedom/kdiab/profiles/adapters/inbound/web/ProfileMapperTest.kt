@@ -82,6 +82,49 @@ class ProfileMapperTest {
         }
 
         @Test
+        fun `toDomain should pass through carbAbsorptionRateGPerHour from CreateProfileRequest`() {
+                val userId = Uuid.random()
+                val request = CreateProfileRequest(
+                        name = "Test", insulinType = "Fiasp", durationOfAction = 180,
+                        carbAbsorptionRateGPerHour = 25.0
+                )
+                val domain = request.toDomain(userId)
+                assertEquals(25.0, domain.carbAbsorptionRateGPerHour)
+        }
+
+        @Test
+        fun `toDomain should preserve null carbAbsorptionRateGPerHour`() {
+                val domain = CreateProfileRequest(
+                        name = "Test", insulinType = "Fiasp", durationOfAction = 180
+                ).toDomain(Uuid.random())
+                assertEquals(null, domain.carbAbsorptionRateGPerHour)
+        }
+
+        @Test
+        fun `toApi should pass through carbAbsorptionRateGPerHour from domain`() {
+                val domain = DomainProfile(
+                        id = Uuid.random(), userId = Uuid.random(),
+                        name = "Test", insulinType = "Fiasp", durationOfAction = 180,
+                        status = ProfileStatus.DRAFT, createdAt = Clock.System.now(),
+                        carbAbsorptionRateGPerHour = 20.0,
+                        basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList()
+                )
+                assertEquals(20.0, domain.toApi().carbAbsorptionRateGPerHour)
+        }
+
+        @Test
+        fun `Profile toDomain should pass through carbAbsorptionRateGPerHour from api model`() {
+                val apiProfile = org.javafreedom.kdiab.profiles.api.models.Profile(
+                        id = Uuid.random().toString(), userId = Uuid.random().toString(),
+                        name = "Test", insulinType = "Fiasp", durationOfAction = 180,
+                        status = org.javafreedom.kdiab.profiles.api.models.Profile.Status.DRAFT,
+                        carbAbsorptionRateGPerHour = 30.0,
+                        basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList()
+                )
+                assertEquals(30.0, apiProfile.toDomain().carbAbsorptionRateGPerHour)
+        }
+
+        @Test
         fun `toApi should include segments and previousProfileId`() {
                 val id = Uuid.random()
                 val previousId = Uuid.random()

@@ -56,6 +56,7 @@ object Profiles : Table("profiles") {
     val rejectionReason = text("rejection_reason").nullable()
     val analysisLow = double("analysis_low").nullable()
     val analysisHigh = double("analysis_high").nullable()
+    val carbAbsorptionRateGPerHour = double("carb_absorption_rate_g_per_hour").nullable()
     val segments = jsonb<ProfileSegments>("segments", Json.Default)
 
     override val primaryKey = PrimaryKey(id)
@@ -328,6 +329,7 @@ class ExposedProfileRepository(
             it[rejectionReason] = profile.rejectionReason
             it[analysisLow] = profile.analysisLow
             it[analysisHigh] = profile.analysisHigh
+            it[carbAbsorptionRateGPerHour] = profile.carbAbsorptionRateGPerHour
             it[segments] = ProfileSegments(
                 basal = profile.basal,
                 icr = profile.icr,
@@ -363,6 +365,7 @@ class ExposedProfileRepository(
             it[rejectionReason] = profile.rejectionReason
             it[analysisLow] = profile.analysisLow
             it[analysisHigh] = profile.analysisHigh
+            it[carbAbsorptionRateGPerHour] = profile.carbAbsorptionRateGPerHour
             it[segments] = ProfileSegments(
                 basal = profile.basal,
                 icr = profile.icr,
@@ -425,6 +428,7 @@ class ExposedProfileRepository(
             rejectionReason = row[Profiles.rejectionReason],
             analysisLow = row[Profiles.analysisLow],
             analysisHigh = row[Profiles.analysisHigh],
+            carbAbsorptionRateGPerHour = row[Profiles.carbAbsorptionRateGPerHour],
             basal = pSectors.basal,
             icr = pSectors.icr,
             isf = pSectors.isf,

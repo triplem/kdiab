@@ -396,6 +396,7 @@ components:
         - $ref: '#/components/schemas/InsulinChangeData'
         - $ref: '#/components/schemas/ActivityData'
         - $ref: '#/components/schemas/HypoTreatmentData'
+        - $ref: '#/components/schemas/DeviceStatusData'
 
     BolusData:
       type: object
@@ -608,6 +609,36 @@ components:
           description: Context for the hypo treatment
           example: glucose below 70
 
+    DeviceStatusData:
+      type: object
+      description: Pump and uploader device status snapshot (DEVICE_STATUS). Sent periodically by APS clients (AAPS, xDrip+, Juggluco) to report pump reservoir, battery, and client identity.
+      required: [device]
+      properties:
+        device:
+          type: string
+          description: Name and version of the uploading client application
+          example: "AAPS 3.2.0"
+        pumpName:
+          type: string
+          description: Pump model identifier as reported by the client
+          example: "Dana RS"
+        reservoirUnits:
+          type: number
+          format: double
+          description: Insulin units remaining in the pump reservoir
+          example: 142.5
+        batteryLevel:
+          type: integer
+          format: int32
+          description: Pump battery level as a percentage (0–100)
+          minimum: 0
+          maximum: 100
+          example: 87
+        pumpConnected:
+          type: boolean
+          description: Whether the pump was connected at the time of the status report
+          example: true
+
     TreatmentType:
       type: string
       description: |
@@ -627,6 +658,7 @@ components:
         - INSULIN_CHANGE: Insulin cartridge/pen replacement ("Insulin Change")
         - ACTIVITY: Physical activity log with name, duration (minutes), and intensity level (low/moderate/high)
         - HYPO_TREATMENT: Emergency fast-acting carbohydrate intake to correct hypoglycaemia (juice, dextrose)
+        - DEVICE_STATUS: Pump and uploader status snapshot (reservoir units, battery level, client name)
       enum:
         - BOLUS
         - BASAL
@@ -642,6 +674,7 @@ components:
         - INSULIN_CHANGE
         - ACTIVITY
         - HYPO_TREATMENT
+        - DEVICE_STATUS
 
     ErrorResponse:
       type: object
