@@ -34,7 +34,7 @@ services:
 
   postgres:
     container_name: kdiab-postgres
-    image: docker.io/library/postgres:15.18@sha256:eb37f58646a901dc7727cf448cae36daaefaba79de33b5058dab79aa4c04aefb
+    image: docker.io/library/postgres:15.18@sha256:aba1c9eb4194ee600e1bd492aa7ad37b51d544eaeaeb2e2dee3a65a333cd174e
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -237,7 +237,7 @@ services:
   # Runs after all Liquibase migrations to insert seed data
   pg-seed:
     container_name: kdiab-pg-seed
-    image: docker.io/library/postgres:15.18@sha256:eb37f58646a901dc7727cf448cae36daaefaba79de33b5058dab79aa4c04aefb
+    image: docker.io/library/postgres:15.18@sha256:aba1c9eb4194ee600e1bd492aa7ad37b51d544eaeaeb2e2dee3a65a333cd174e
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD}
     volumes:
