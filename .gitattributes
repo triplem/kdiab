@@ -1,0 +1,2 @@
+# audit log is append-only — union merge prevents conflicts on stash pop / branch merge
+audit/agent-log.jsonl merge=union
