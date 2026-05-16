@@ -21,11 +21,13 @@ import org.javafreedom.kdiab.treatments.api.models.CreateTreatmentRequest
 import org.javafreedom.kdiab.treatments.api.models.BulkTreatmentRequest
 import org.javafreedom.kdiab.treatments.api.models.TreatmentResponse
 import org.javafreedom.kdiab.treatments.api.models.UpdateTreatmentRequest
+import org.javafreedom.kdiab.treatments.application.service.DeviceStatusService
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
+import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
 import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 
 private const val DEFAULT_PAGE_SIZE = 50
@@ -46,10 +48,14 @@ private fun parseUuid(value: String): Uuid =
         throw BusinessValidationException("Invalid UUID format: $value")
     }
 
-fun Route.treatmentRoutes(treatmentService: TreatmentService, auditLogRepository: AuditLogRepository) {
+fun Route.treatmentRoutes(
+    treatmentService: TreatmentService,
+    deviceStatusService: DeviceStatusService,
+    auditLogRepository: AuditLogRepository,
+) {
     authenticate("auth-jwt") {
         listTreatments(treatmentService, auditLogRepository)
-        createTreatment(treatmentService, auditLogRepository)
+        createTreatment(treatmentService, deviceStatusService, auditLogRepository)
         updateTreatment(treatmentService, auditLogRepository)
         archiveTreatments(treatmentService, auditLogRepository)
         unarchiveTreatments(treatmentService, auditLogRepository)
@@ -98,7 +104,11 @@ private fun Route.listTreatments(treatmentService: TreatmentService, auditLogRep
     }
 }
 
-private fun Route.createTreatment(treatmentService: TreatmentService, auditLogRepository: AuditLogRepository) {
+private fun Route.createTreatment(
+    treatmentService: TreatmentService,
+    deviceStatusService: DeviceStatusService,
+    auditLogRepository: AuditLogRepository,
+) {
     post<Paths.createTreatment> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
@@ -106,6 +116,18 @@ private fun Route.createTreatment(treatmentService: TreatmentService, auditLogRe
         auditIfDoctor(call, principal, targetUserId, "treatments.create", auditLogRepository)
 
         val request = call.receive<CreateTreatmentRequest>()
+
+        if (request.type.name == TreatmentType.DEVICE_STATUS.name) {
+            val treatedAt = runCatching { kotlin.time.Instant.parse(request.treatedAt) }.getOrElse {
+                throw BusinessValidationException("Invalid treatedAt timestamp: '${request.treatedAt}'")
+            }
+            val data = kotlinx.serialization.json.Json.parseToJsonElement(request.`data`.toString()).jsonObject
+            val saved = deviceStatusService.saveDeviceStatus(targetUserId, treatedAt, data)
+            logger.info { "Stored device status ${saved.id} for user $targetUserId" }
+            call.respond(HttpStatusCode.Created)
+            return@post
+        }
+
         val treatment = request.toDomain(targetUserId)
         val saved = treatmentService.addTreatment(treatment)
         logger.info { "Created treatment ${saved.id} for user $targetUserId" }

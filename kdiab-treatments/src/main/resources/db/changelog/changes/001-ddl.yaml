@@ -142,3 +142,72 @@ databaseChangeLog:
               - column:
                   name: treated_at
                   descending: true
+  - changeSet:
+      id: 003
+      author: javafreedom
+      changes:
+        - createTable:
+            tableName: device_status
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recorded_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+                  constraints:
+                    nullable: false
+              - column:
+                  name: device
+                  type: varchar(200)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: pump_name
+                  type: varchar(200)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: reservoir_units
+                  type: float8
+                  constraints:
+                    nullable: true
+              - column:
+                  name: battery_level
+                  type: integer
+                  constraints:
+                    nullable: true
+              - column:
+                  name: pump_connected
+                  type: boolean
+                  constraints:
+                    nullable: true
+        - createIndex:
+            indexName: idx_device_status_user_id
+            tableName: device_status
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            indexName: idx_device_status_user_recorded_at
+            tableName: device_status
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: recorded_at
+                  descending: true

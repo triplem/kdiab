@@ -16,6 +16,8 @@ security:
 tags:
   - name: Treatments
     description: Treatment event management
+  - name: DeviceStatus
+    description: APS pump and uploader device status telemetry
 
 paths:
   /users/{userId}/treatments:
@@ -210,6 +212,34 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}/device-status/latest:
+    get:
+      summary: Get the latest device status for a user
+      description: Returns the most recently recorded pump and uploader device status snapshot for the given user. Returns 404 if no status has been recorded yet.
+      operationId: getLatestDeviceStatus
+      tags:
+        - DeviceStatus
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Latest device status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /users/{userId}/treatments/delete:
     post:
@@ -614,6 +644,55 @@ components:
       description: Pump and uploader device status snapshot (DEVICE_STATUS). Sent periodically by APS clients (AAPS, xDrip+, Juggluco) to report pump reservoir, battery, and client identity.
       required: [device]
       properties:
+        device:
+          type: string
+          description: Name and version of the uploading client application
+          example: "AAPS 3.2.0"
+        pumpName:
+          type: string
+          description: Pump model identifier as reported by the client
+          example: "Dana RS"
+        reservoirUnits:
+          type: number
+          format: double
+          description: Insulin units remaining in the pump reservoir
+          example: 142.5
+        batteryLevel:
+          type: integer
+          format: int32
+          description: Pump battery level as a percentage (0–100)
+          minimum: 0
+          maximum: 100
+          example: 87
+        pumpConnected:
+          type: boolean
+          description: Whether the pump was connected at the time of the status report
+          example: true
+
+    DeviceStatusResponse:
+      type: object
+      description: Most recent pump and uploader device status snapshot for a user
+      required:
+        - id
+        - userId
+        - recordedAt
+        - device
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the device status record
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        userId:
+          type: string
+          format: uuid
+          description: User the status belongs to
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        recordedAt:
+          type: string
+          format: date-time
+          description: When the status was recorded by the APS client
+          example: "2026-05-16T10:00:00Z"
         device:
           type: string
           description: Name and version of the uploading client application

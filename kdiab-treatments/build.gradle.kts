@@ -224,7 +224,9 @@ kover {
                     "org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedTreatmentRepository*",
                     "org.javafreedom.kdiab.treatments.infrastructure.persistence.TreatmentsTable*",
                     "org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedAuditLogRepository*",
-                    "org.javafreedom.kdiab.treatments.infrastructure.persistence.AuditLogsTable*"
+                    "org.javafreedom.kdiab.treatments.infrastructure.persistence.AuditLogsTable*",
+                    "org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedDeviceStatusRepository*",
+                    "org.javafreedom.kdiab.treatments.infrastructure.persistence.DeviceStatusTable*"
                 )
                 packages(
                     "org.javafreedom.kdiab.treatments.api"

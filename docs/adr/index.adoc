@@ -19,6 +19,7 @@ Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
 * link:ADR-009-kdiab-calc-service.html[ADR-009 kdiab-calc Stateless Dose Calculator Service]
 * link:ADR-010-kdiab-carbs-service.html[ADR-010 kdiab-carbs Dedicated Food and Carbohydrate Service]
 * link:ADR-011-cgm-trend-frontend-aggregation.html[ADR-011 Frontend-only CGM Daily Trend Aggregation]
+* link:ADR-012-device-status-separation.html[ADR-012 DEVICE_STATUS Separation into Dedicated Table]
 
 == kdiab-measures ADRs
 
