@@ -39,13 +39,41 @@ Do this immediately after creating the child issues — not as a separate step l
 
 ## Issue Assignment
 
-Always assign every issue to the current user (`@me`) at creation time. Unassigned issues fall through the backlog silently.
+**Do not assign issues at creation time.** Assign the issue to the developer (`@me` or a specific username) only when work on the issue actively begins.
 
 ```bash
-gh issue create --title "..." --body "..." --assignee "@me"
+# At creation — no assignee
+gh issue create --title "..." --body "..."
+
+# When starting work — add assignee and In Progress label
+gh issue edit <number> --add-assignee "@me"
+gh issue edit <number> --add-label "In Progress"
 ```
 
-When creating a batch of stories for an epic, pass `--assignee "@me"` on every `gh issue create` call. If you are creating issues on behalf of another team member, use their GitHub username instead of `@me`.
+Unassigned issues in the backlog are expected and normal. Assignment signals active work, not ownership.
+
+---
+
+## In Progress Label
+
+Apply the **"In Progress"** label to an issue when a branch is created and work begins. Remove it when the issue is closed (merged or won't-fix).
+
+```bash
+# Start work
+gh issue edit <number> --add-label "In Progress"
+gh issue edit <number> --add-assignee "@me"
+
+# On close (label is usually removed automatically by GitHub on close,
+# but explicitly remove if needed)
+gh issue edit <number> --remove-label "In Progress"
+```
+
+The label must exist in the repo before it can be applied:
+```bash
+gh api repos/triplem/kdiab/labels -X POST \
+  -f name="In Progress" -f color="0075ca" \
+  -f description="Work has started on this issue"
+```
 
 ---
 

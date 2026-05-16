@@ -529,6 +529,20 @@ All skills live in `.claude/skills/`. Invoke with `/skill-name`.
 - `/logging-java` — structured logging with SLF4J / @Slf4j / logback
 - `/logging-typescript` — structured logging with pino / winston
 
+### Specialist Review Skills
+- `/doctor-t1d-review` — T1D specialist endocrinologist: clinical correctness, safety, medical workflow
+- `/patient-t1d-review` — T1D patient with pump + CGM: usability, real-world fit, trust
+- `/security-review` — Security specialist: OWASP Top 10, auth, secrets, injection
+- `/qa-review` — QA/QS engineer: test coverage, acceptance criteria, edge cases, regression risk
+- `/architect-review` — Software architect: hexagonal layers, SOLID, coupling, API design
+- `/devops-review` — DevSecOps engineer: container hygiene, env config, CI/CD, supply chain
+- `/ux-review` — UI/UX + accessibility: WCAG AA, ease of use, interaction design
+- `/requirements-review` — Requirements engineer: completeness, testability, consistency, NFRs
+- `/performance-review` — Performance engineer: query efficiency, bundle size, response times
+- `/operations-review` — SRE/operations: observability, graceful degradation, runbooks
+- `/technical-writer-review` — Technical writer: documentation clarity, in-app help text, audience fit
+- `/challenge-all` — Run all 11 specialist perspectives against a single target; consolidated ACCEPT/REVISE/REJECT verdict
+
 ### Meta Skills
 - `/audit` — review and summarise the audit log
 - `/learn` — extract a reusable rule from a completed story
