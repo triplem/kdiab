@@ -399,7 +399,12 @@
     "trendFortyFiveDown": "Fällt langsam",
     "trendSingleDown": "Fällt",
     "trendDoubleDown": "Fällt schnell",
-    "trendNone": "Unbekannt"
+    "trendNone": "Unbekannt",
+    "errorNoProfile": "Kein aktives Profil gefunden. Bitte zuerst ein Profil aktivieren.",
+    "errorNoIsf": "Das aktive Profil enthält keine ISF-Segmente. Bitte das Profil ergänzen.",
+    "errorNoIcr": "Das aktive Profil enthält keine ICR-Segmente. Bitte das Profil ergänzen.",
+    "errorNoTarget": "Das aktive Profil enthält keine Zielbereich-Segmente. Bitte das Profil ergänzen.",
+    "errorGeneric": "Berechnung fehlgeschlagen: {{detail}}"
   },
   "settings": {
     "title": "Einstellungen",
