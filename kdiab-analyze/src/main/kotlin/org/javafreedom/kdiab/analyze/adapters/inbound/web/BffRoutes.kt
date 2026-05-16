@@ -145,7 +145,7 @@ private fun extractContext(call: ApplicationCall, rawUserId: String): RequestCon
         throw AuthorizationException("Access Not Authorized")
     }
     val required = listOf("measure", "profile", "treatment")
-    val missing = required.filter { it !in principal!!.audiences }
+    val missing = required.filter { it !in principal.audiences }
     if (missing.isNotEmpty()) {
         throw AuthorizationException(
             "JWT is missing required upstream audiences: ${missing.joinToString(", ")}. " +
@@ -155,14 +155,14 @@ private fun extractContext(call: ApplicationCall, rawUserId: String): RequestCon
     val authorization = call.request.headers[HttpHeaders.Authorization]
         ?: throw AuthorizationException("Missing Authorization header")
     val correlationId = call.callId ?: ""
-    return RequestContext(principal!!, targetUserId, authorization, correlationId)
+    return RequestContext(principal, targetUserId, authorization, correlationId)
 }
 
 private fun validateDateRange(from: String, to: String): Pair<String, String> {
-    val fromInstant = runCatching { kotlinx.datetime.Instant.parse(from) }.getOrElse {
+    val fromInstant = runCatching { kotlin.time.Instant.parse(from) }.getOrElse {
         throw BusinessValidationException("Invalid 'from' date: must be ISO-8601 (e.g. 2024-01-01T00:00:00Z)")
     }
-    val toInstant = runCatching { kotlinx.datetime.Instant.parse(to) }.getOrElse {
+    val toInstant = runCatching { kotlin.time.Instant.parse(to) }.getOrElse {
         throw BusinessValidationException("Invalid 'to' date: must be ISO-8601 (e.g. 2024-01-31T23:59:59Z)")
     }
     if (fromInstant >= toInstant) {

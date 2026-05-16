@@ -271,6 +271,11 @@ val generateProfilesModels by tasks.registering(GenerateTask::class) {
 
 tasks.compileKotlin {
     dependsOn(tasks.named("openApiGenerate"), generateMeasuresModels, generateTreatmentsModels, generateProfilesModels)
+    // Generated OpenAPI sources produce deprecation warnings we cannot suppress inline;
+    // hand-written code is covered by detekt which is the primary quality gate.
+    compilerOptions {
+        suppressWarnings.set(true)
+    }
 }
 
 tasks.named<ProcessResources>("processResources") {
