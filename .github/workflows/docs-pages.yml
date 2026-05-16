@@ -41,7 +41,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Install AsciiDoctor
-        run: gem install asciidoctor
+        run: sudo gem install asciidoctor
 
       - name: Build measures docs
         run: cd kdiab-measures && ./gradlew asciidoctor --no-configuration-cache
