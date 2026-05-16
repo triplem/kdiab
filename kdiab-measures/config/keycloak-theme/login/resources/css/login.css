@@ -50,7 +50,7 @@ html, body {
     border-radius: 20px;
     padding: 2.5rem 2rem;
     width: 100%;
-    max-width: 420px;
+    max-width: 480px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
@@ -211,8 +211,11 @@ html, body {
     text-decoration: underline;
 }
 
-/* Submit button */
+/* Submit button — applies to both <button> and <input type="submit"> */
 .kc-submit-btn {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
     width: 100%;
     padding: 0.8rem 1rem;
     background: var(--accent-primary);
@@ -222,9 +225,12 @@ html, body {
     font-family: inherit;
     font-size: 1rem;
     font-weight: 600;
+    line-height: 1.5;
+    text-align: center;
     cursor: pointer;
     transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
     margin-top: 0.25rem;
+    box-sizing: border-box;
 }
 
 .kc-submit-btn:hover {

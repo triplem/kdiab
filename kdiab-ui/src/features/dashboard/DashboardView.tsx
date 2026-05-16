@@ -233,11 +233,11 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     .sort((a, b) => new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime())
 
   const latestCgm = recentCgm[0]
-  const latestSgv = typeof latestCgm?.data['sgv'] === 'number' ? latestCgm.data['sgv'] : null
+  const latestSgv = typeof latestCgm?.data['value'] === 'number' ? latestCgm.data['value'] : null
   const latestTrend = latestCgm?.data['trend']
 
   // Δ: difference from previous reading
-  const prevSgv = typeof recentCgm[1]?.data['sgv'] === 'number' ? recentCgm[1].data['sgv'] as number : null
+  const prevSgv = typeof recentCgm[1]?.data['value'] === 'number' ? recentCgm[1].data['value'] as number : null
   const delta = latestSgv !== null && prevSgv !== null ? toDisplay(latestSgv - prevSgv, glucoseUnit) : null
 
   // Δ15: difference from reading closest to 15 min ago (±10 min tolerance)
@@ -248,7 +248,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     return diff < bestDiff ? r : best
   }, null)
   const within10min = reading15 && Math.abs(new Date(reading15.measuredAt).getTime() - target15ms) <= 10 * 60 * 1000
-  const sgv15 = within10min && typeof reading15?.data['sgv'] === 'number' ? reading15.data['sgv'] as number : null
+  const sgv15 = within10min && typeof reading15?.data['value'] === 'number' ? reading15.data['value'] as number : null
   const delta15 = latestSgv !== null && sgv15 !== null ? toDisplay(latestSgv - sgv15, glucoseUnit) : null
 
   const minutesAgo = latestCgm
@@ -275,8 +275,8 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
   const tirHigh = toDisplay(180, glucoseUnit)
 
   const cgmPoints = (windowTimeline?.measures ?? [])
-    .filter(m => m.type === 'CGM' && typeof m.data['sgv'] === 'number')
-    .map(m => ({ time: new Date(m.measuredAt).getTime(), sgv: toDisplay(m.data['sgv'] as number, glucoseUnit) }))
+    .filter(m => m.type === 'CGM' && typeof m.data['value'] === 'number')
+    .map(m => ({ time: new Date(m.measuredAt).getTime(), sgv: toDisplay(m.data['value'] as number, glucoseUnit) }))
 
   // Treatment markers: position on chart at the bottom of TIR range
   const treatmentMarkers = (windowTimeline?.treatments ?? [])
