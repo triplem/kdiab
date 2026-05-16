@@ -3,6 +3,21 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-hook-form'],
+          query: ['@tanstack/react-query'],
+          charts: ['recharts'],
+          oidc: ['oidc-client-ts', 'react-oidc-context'],
+          i18n: ['i18next', 'react-i18next'],
+          zod: ['zod', '@hookform/resolvers'],
+          axios: ['axios'],
+        },
+      },
+    },
+  },
   server: {
     port: 3000,
     proxy: {

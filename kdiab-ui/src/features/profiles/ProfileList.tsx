@@ -34,7 +34,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
     queryKey: ['profiles', userId],
     queryFn: async () => {
       const response = await profilesApi.listProfiles(userId)
-      return response.data
+      return response.data.items
     },
     enabled: !!userId,
   })

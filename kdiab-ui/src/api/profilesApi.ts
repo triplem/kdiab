@@ -39,9 +39,16 @@ export interface Insulin {
   name: string
 }
 
+export interface PagedProfiles {
+  items: Profile[]
+  page: number
+  size: number
+  totalCount: number
+}
+
 export const profilesApi = {
   listProfiles: (userId: string) =>
-    axiosInstance.get<Profile[]>(`${BASE}/users/${userId}/profiles`),
+    axiosInstance.get<PagedProfiles>(`${BASE}/users/${userId}/profiles`),
   createProfile: (userId: string, body: Record<string, unknown>) =>
     axiosInstance.post<Profile>(`${BASE}/users/${userId}/profiles`, body),
   updateProfile: (userId: string, profileId: string, body: Record<string, unknown>) =>
