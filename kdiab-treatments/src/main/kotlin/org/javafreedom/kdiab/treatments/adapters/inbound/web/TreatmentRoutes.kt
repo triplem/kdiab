@@ -23,7 +23,6 @@ import org.javafreedom.kdiab.treatments.api.models.TreatmentResponse
 import org.javafreedom.kdiab.treatments.api.models.UpdateTreatmentRequest
 import org.javafreedom.kdiab.treatments.application.service.DeviceStatusService
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
-import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
@@ -42,11 +41,6 @@ private data class PagedTreatmentResponse(
 )
 
 private val logger = KotlinLogging.logger {}
-
-private fun parseUuid(value: String): Uuid =
-    runCatching { Uuid.parse(value) }.getOrElse {
-        throw BusinessValidationException("Invalid UUID format: $value")
-    }
 
 fun Route.treatmentRoutes(
     treatmentService: TreatmentService,
@@ -200,17 +194,3 @@ private fun Route.deleteTreatments(treatmentService: TreatmentService, auditLogR
     }
 }
 
-// ── Access control helpers ────────────────────────────────────────────────────
-
-/** Grants access when the principal is the target user, an admin, or a doctor assigned to that patient. */
-private fun checkAccess(principal: UserPrincipal?, targetUserId: Uuid) {
-    if (principal == null || !principal.canAccess(targetUserId)) {
-        logger.warn {
-            "Access denied: principalId=${principal?.userId} " +
-            "roles=${principal?.roles} " +
-            "allowedPatients=${principal?.allowedPatients} " +
-            "targetUserId=$targetUserId"
-        }
-        throw AuthorizationException("Access Not Authorized")
-    }
-}
