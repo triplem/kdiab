@@ -15,7 +15,6 @@ import {
   Tooltip,
   ReferenceLine,
   ResponsiveContainer,
-  Scatter,
 } from 'recharts'
 
 interface Props {
@@ -468,24 +467,27 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                 connectNulls={true}
               />
               {bgmPoints.length > 0 && (
-                <Scatter
-                  name="BGM"
+                <Line
                   dataKey="bgm"
+                  name="bgm"
+                  stroke="none"
+                  strokeWidth={0}
+                  dot={{ fill: '#ef4444', stroke: '#fff', strokeWidth: 1.5, r: 5 }}
+                  activeDot={{ fill: '#ef4444', stroke: '#fff', strokeWidth: 1.5, r: 7 }}
                   isAnimationActive={false}
-                  fill="#ef4444"
-                  stroke="#fff"
-                  strokeWidth={1.5}
-                  r={5}
-                  cursor="pointer"
+                  connectNulls={false}
                 />
               )}
               {treatmentMarkers.length > 0 && (
-                <Scatter
-                  name="Treatment"
+                <Line
                   dataKey="marker"
-                  shape={TreatmentDot}
+                  name="marker"
+                  stroke="none"
+                  strokeWidth={0}
+                  dot={(props: object) => <TreatmentDot {...props} />}
+                  activeDot={false}
                   isAnimationActive={false}
-                  cursor="pointer"
+                  connectNulls={false}
                 />
               )}
             </ComposedChart>
