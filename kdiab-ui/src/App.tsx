@@ -14,7 +14,6 @@ import { PatientBanner } from './components/PatientBanner'
 import { MeasureList } from './features/measures/MeasureList'
 import { AddMeasureModal } from './features/measures/AddMeasureModal'
 import { TreatmentList } from './features/treatments/TreatmentList'
-import { DeviceStatusWidget } from './features/treatments/DeviceStatusWidget'
 import { AddTreatmentModal } from './features/treatments/AddTreatmentModal'
 import { ProfileList } from './features/profiles/ProfileList'
 import { ProfileEditor } from './features/profiles/ProfileEditor'
@@ -285,7 +284,6 @@ export default function App() {
                 </button>
               )}
             </div>
-            <DeviceStatusWidget userId={viewingUserId} />
             <TreatmentList
               userId={viewingUserId}
               canArchive={true}

@@ -6,6 +6,7 @@ import { HbA1cCard } from './HbA1cCard'
 import { TimeInRangeBar } from './TimeInRangeBar'
 import { AgpChart } from './AgpChart'
 import { ProfilesView } from './ProfilesView'
+import { DeviceStatusWidget } from '../treatments/DeviceStatusWidget'
 
 type Window = '1W' | '2W' | '1M' | '90D'
 
@@ -57,6 +58,9 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
 
   return (
     <div>
+      {/* Device status — always at top regardless of window */}
+      <DeviceStatusWidget userId={userId} />
+
       {/* Shared window filter */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{t('timeframe.label')}:</span>
