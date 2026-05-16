@@ -19,6 +19,7 @@ import { ProfileList } from './features/profiles/ProfileList'
 import { ProfileEditor } from './features/profiles/ProfileEditor'
 import { ProfileHistory } from './features/profiles/ProfileHistory'
 import { AdminInsulinManager } from './features/profiles/AdminInsulinManager'
+import { DashboardView } from './features/dashboard/DashboardView'
 import { TimelineView } from './features/timeline/TimelineView'
 import { AnalyticsView } from './features/analytics/AnalyticsView'
 import { FoodDatabase } from './features/carbs/FoodDatabase'
@@ -32,13 +33,13 @@ import { treatmentsApi } from './api/treatmentsApi'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Profile } from './api/profilesApi'
 
-type Tab = 'measures' | 'treatments' | 'profiles' | 'profile-history' | 'timeline' | 'analytics' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors'
+type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'profile-history' | 'timeline' | 'analytics' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors'
 
 export default function App() {
   const auth = useAuth()
   const { t } = useTranslation()
   const queryClient = useQueryClient()
-  const [activeTab, setActiveTab] = useState<Tab>('measures')
+  const [activeTab, setActiveTab] = useState<Tab>('dashboard')
   const [showRegistration, setShowRegistration] = useState(false)
 
   // Auth-derived state
@@ -221,6 +222,7 @@ export default function App() {
   }
 
   const tabs: { key: Tab; label: string; adminOnly?: boolean }[] = [
+    { key: 'dashboard', label: t('nav.dashboard') },
     { key: 'measures', label: t('nav.measures') },
     { key: 'treatments', label: t('nav.treatments') },
     { key: 'profiles', label: t('nav.profiles') },
@@ -236,6 +238,9 @@ export default function App() {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'dashboard':
+        return <DashboardView userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
+
       case 'measures':
         return (
           <>
