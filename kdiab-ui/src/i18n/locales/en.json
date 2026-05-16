@@ -32,6 +32,7 @@
     "myOwnData": "My own data"
   },
   "nav": {
+    "dashboard": "Dashboard",
     "measures": "Measures",
     "treatments": "Treatments",
     "profiles": "Profiles",
