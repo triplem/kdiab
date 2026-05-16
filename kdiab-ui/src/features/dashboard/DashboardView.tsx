@@ -152,9 +152,9 @@ function StatTile({ label, value, sub, color }: StatTileProps) {
 }
 
 // Treatment marker shape for Recharts Scatter
-function TreatmentDot(props: { cx?: number; cy?: number; payload?: { type: string; label: string } }) {
+function TreatmentDot(props: { cx?: number; cy?: number; payload?: { treatmentType: string; label: string } }) {
   const { cx = 0, cy = 0, payload } = props
-  const type = payload?.type ?? ''
+  const type = payload?.treatmentType ?? ''
   const label = payload?.label ?? ''
   let color = '#6366f1'
   let shape = '▼'
@@ -276,9 +276,15 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
 
   const cgmPoints = (windowTimeline?.measures ?? [])
     .filter(m => m.type === 'CGM' && typeof m.data['value'] === 'number')
-    .map(m => ({ time: new Date(m.measuredAt).getTime(), sgv: toDisplay(m.data['value'] as number, glucoseUnit) }))
+    .map(m => ({
+      time: new Date(m.measuredAt).getTime(),
+      sgv: toDisplay(m.data['value'] as number, glucoseUnit),
+      marker: null as number | null,
+      treatmentType: null as string | null,
+      label: null as string | null,
+    }))
 
-  // Treatment markers: position on chart at the bottom of TIR range
+  // Treatment markers: merge into same point shape as cgmPoints, at bottom of TIR range
   const treatmentMarkers = (windowTimeline?.treatments ?? [])
     .filter(t => ['BOLUS', 'CORRECTION_BOLUS', 'CARBS', 'MEAL', 'SITE_CHANGE', 'SENSOR_INSERT', 'INSULIN_CHANGE'].includes(t.type))
     .map(t => {
@@ -289,11 +295,15 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         label = `${Math.round(t.data['carbs'] as number)}g`
       return {
         time: new Date(t.treatedAt).getTime(),
+        sgv: null as number | null,
         marker: tirLow * 0.85,
-        type: t.type,
+        treatmentType: t.type,
         label,
       }
     })
+
+  // Combined dataset for ComposedChart root — enables tooltip cursor to find points
+  const chartData = [...cgmPoints, ...treatmentMarkers].sort((a, b) => a.time - b.time)
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -394,7 +404,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         {isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
         {cgmPoints.length > 0 && (
           <ResponsiveContainer width="100%" height={220}>
-            <ComposedChart margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="time"
@@ -411,26 +421,33 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
               />
               <Tooltip
                 labelFormatter={(ms: number) => formatTime(new Date(ms).toISOString())}
-                formatter={(v: number, name: string) => [`${v} ${name === 'sgv' ? yLabel : ''}`, name === 'sgv' ? 'CGM' : name]}
+                formatter={(v: unknown, name: string, entry: { payload?: { treatmentType?: string; label?: string } }) => {
+                  if (name === 'sgv' && typeof v === 'number') return [`${v} ${yLabel}`, 'CGM']
+                  if (name === 'marker') {
+                    const ttype = entry.payload?.treatmentType ?? ''
+                    const lbl = entry.payload?.label ?? ''
+                    return [lbl || ttype, ttype]
+                  }
+                  return [`${String(v)}`, name]
+                }}
                 contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
                 wrapperStyle={{ outline: 'none' }}
               />
               <ReferenceLine y={tirLow} stroke="#ef4444" strokeDasharray="4 4" />
               <ReferenceLine y={tirHigh} stroke="#f59e0b" strokeDasharray="4 4" />
               <Line
-                data={cgmPoints}
                 type="monotone"
                 dataKey="sgv"
                 stroke="var(--chart-median)"
                 dot={false}
                 strokeWidth={2}
                 isAnimationActive={false}
+                connectNulls={false}
               />
               {treatmentMarkers.length > 0 && (
                 <Scatter
-                  data={treatmentMarkers}
                   dataKey="marker"
-                  shape={<TreatmentDot />}
+                  shape={TreatmentDot}
                   isAnimationActive={false}
                 />
               )}
