@@ -6,6 +6,7 @@ import { TimeframePicker, type Timeframe, defaultTimeframe } from '../timeframe/
 import { HbA1cCard } from './HbA1cCard'
 import { TimeInRangeBar } from './TimeInRangeBar'
 import { AgpChart } from './AgpChart'
+import { CgmTrendGraph } from './CgmTrendGraph'
 
 interface Props {
   userId: string
@@ -67,6 +68,8 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
           sensorWearDays={agpQuery.data.sensorWearDays}
         />
       )}
+
+      <CgmTrendGraph userId={userId} glucoseUnit={glucoseUnit} />
     </div>
   )
 }
