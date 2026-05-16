@@ -1215,5 +1215,7 @@
 {"ts": "2026-05-16T20:43:28Z", "agent": "Claude", "session_id": "4ea8db9d-6d38-498c-883f-04de332721d1", "action": "edit", "detail": "/home/triplem/projects/kdiab-bkp/kdiab-ui/src/features/calc/DoseCalculator.tsx"}
 {"ts": "2026-05-16T20:43:37Z", "agent": "Claude", "session_id": "4ea8db9d-6d38-498c-883f-04de332721d1", "action": "bash", "detail": "cd /home/triplem/projects/kdiab-bkp/kdiab-ui && npm run type-check 2>&1 | tail -30"}
 {"ts": "2026-05-16T20:43:39Z", "agent": "Claude", "session_id": "4ea8db9d-6d38-498c-883f-04de332721d1", "action": "bash", "detail": "npx tsc --noEmit 2>&1 | tail -40"}
-{"ts": "2026-05-16T21:11:10Z", "agent": "Claude", "session_id": "test-session-abc", "action": "bash", "detail": "git status"}
-{"ts": "2026-05-16T21:11:24Z", "agent": "System", "session_id": "test-session-abc", "action": "session_stop", "branch": "main", "last_commit": "8d74fbc Merge pull request #465 from triplem/fix/458-clean-frontend-task", "actions_this_session": 1}
+{"ts": "2026-05-16T21:06:04Z", "agent": "Claude", "session_id": "4ea8db9d-6d38-498c-883f-04de332721d1", "action": "bash", "detail": "git checkout main && git checkout -- audit/agent-log.jsonl && git pull 2>&1"}
+{"ts": "2026-05-16T21:06:06Z", "agent": "Claude", "session_id": "4ea8db9d-6d38-498c-883f-04de332721d1", "action": "bash", "detail": "git log --oneline -6 2>&1"}
+{"ts": "2026-05-16T21:06:11Z", "agent": "System", "session_id": "4ea8db9d-6d38-498c-883f-04de332721d1", "action": "session_stop", "branch": "main", "last_commit": "8d74fbc Merge pull request #465 from triplem/fix/458-clean-frontend-task", "actions_this_session": 650}
+{"ts": "2026-05-16T21:07:36Z", "agent": "System", "session_id": "4ea8db9d-6d38-498c-883f-04de332721d1", "action": "session_stop", "branch": "main", "last_commit": "8d74fbc Merge pull request #465 from triplem/fix/458-clean-frontend-task", "actions_this_session": 651}

@@ -5,13 +5,17 @@
 
 INPUT=$(cat)
 PROJECT_DIR="${CLAUDE_PROJECT_DIR:-$(pwd)}"
-AUDIT_FILE="${PROJECT_DIR}/audit/agent-log.jsonl"
 
 SESSION_ID=$(echo "$INPUT" | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
 print(d.get('session_id', 'unknown'))
 " 2>/dev/null || echo "unknown")
+
+# Write to a per-session file outside the repo to avoid git branch conflicts.
+# The stop hook consolidates all session files into audit/agent-log.jsonl on main.
+SESSION_DIR="${HOME}/.claude/kdiab-sessions"
+AUDIT_FILE="${SESSION_DIR}/${SESSION_ID}.jsonl"
 
 TOOL_NAME=$(echo "$INPUT" | python3 -c "
 import sys, json

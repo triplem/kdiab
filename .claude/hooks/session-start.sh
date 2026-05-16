@@ -99,7 +99,9 @@ d = json.load(sys.stdin)
 print(d.get('session_id', 'unknown'))
 " 2>/dev/null || echo "unknown")
 
-AUDIT_FILE="${PROJECT_DIR}/audit/agent-log.jsonl"
+# Write to per-session temp file outside the repo — stop hook consolidates to main.
+SESSION_DIR="${HOME}/.claude/kdiab-sessions"
+AUDIT_FILE="${SESSION_DIR}/${SESSION_ID}.jsonl"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || \
   python3 -c "from datetime import datetime,timezone; print(datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))")
 
@@ -116,8 +118,8 @@ print(json.dumps({
 }, ensure_ascii=False))
 " "$TIMESTAMP" "$SESSION_ID" "$BRANCH" "${STORY_ID:-}" "${PHASE:-}" 2>/dev/null)
 
-if [ -n "$AUDIT_ENTRY" ] && [ -n "$AUDIT_FILE" ]; then
-    mkdir -p "$(dirname "$AUDIT_FILE")"
+if [ -n "$AUDIT_ENTRY" ]; then
+    mkdir -p "$SESSION_DIR"
     echo "$AUDIT_ENTRY" >> "$AUDIT_FILE"
 fi
 
