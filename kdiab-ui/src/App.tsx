@@ -20,7 +20,6 @@ import { ProfileEditor } from './features/profiles/ProfileEditor'
 import { ProfileHistory } from './features/profiles/ProfileHistory'
 import { AdminInsulinManager } from './features/profiles/AdminInsulinManager'
 import { DashboardView } from './features/dashboard/DashboardView'
-import { TimelineView } from './features/timeline/TimelineView'
 import { AnalyticsView } from './features/analytics/AnalyticsView'
 import { FoodDatabase } from './features/carbs/FoodDatabase'
 import { DoseCalculator } from './features/calc/DoseCalculator'
@@ -33,7 +32,7 @@ import { treatmentsApi } from './api/treatmentsApi'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Profile } from './api/profilesApi'
 
-type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'profile-history' | 'timeline' | 'analytics' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors'
+type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'profile-history' | 'analytics' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors'
 
 export default function App() {
   const auth = useAuth()
@@ -227,7 +226,6 @@ export default function App() {
     { key: 'treatments', label: t('nav.treatments') },
     { key: 'profiles', label: t('nav.profiles') },
     { key: 'profile-history', label: t('nav.profileHistory') },
-    { key: 'timeline', label: t('nav.timeline') },
     { key: 'analytics', label: t('nav.analytics') },
     { key: 'carbs', label: t('nav.foodDatabase') },
     { key: 'calc', label: t('nav.doseCalculator') },
@@ -354,9 +352,6 @@ export default function App() {
 
       case 'profile-history':
         return <ProfileHistory userId={viewingUserId} />
-
-      case 'timeline':
-        return <TimelineView userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
 
       case 'analytics':
         return <AnalyticsView userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
