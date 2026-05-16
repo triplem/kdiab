@@ -40,6 +40,7 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
   const [correction, setCorrection] = useState('0')
   const [cgmAgeMin, setCgmAgeMin] = useState<number | null>(null)
   const [logSuccess, setLogSuccess] = useState(false)
+  const [calcError, setCalcError] = useState<string | null>(null)
 
   // Fetch the latest CGM reading to pre-fill BG and trend
   const { data: cgmData } = useQuery({
@@ -83,16 +84,48 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
       setResult(response.data)
       setCorrection('0')
       setLogSuccess(false)
+      setCalcError(null)
+    },
+    onError: (err: unknown) => {
+      const detail: string =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? ''
+      if (detail.includes('no ISF')) setCalcError(t('doseCalc.errorNoIsf'))
+      else if (detail.includes('no ICR')) setCalcError(t('doseCalc.errorNoIcr'))
+      else if (detail.includes('no target')) setCalcError(t('doseCalc.errorNoTarget'))
+      else if (detail.includes('No active profile')) setCalcError(t('doseCalc.errorNoProfile'))
+      else setCalcError(t('doseCalc.errorGeneric', { detail: detail || 'unknown' }))
     },
   })
 
   const logMutation = useMutation({
-    mutationFn: (dose: number) =>
-      treatmentsApi.createTreatment(userId, {
+    mutationFn: async (dose: number) => {
+      const at = nowIso()
+      const carbs = parseFloat(carbsGrams) || 0
+      await treatmentsApi.createTreatment(userId, {
         type: 'BOLUS',
-        treatedAt: nowIso(),
-        data: { insulin: dose },
-      }),
+        treatedAt: at,
+        data: {
+          insulin: dose,
+          calculatedDose: result?.totalRecommended,
+          carbDose: result?.carbDose,
+          correctionDose: result?.correctionDose,
+          trendAdjustment: result?.trendAdjustment,
+          icr: result?.breakdown?.icr,
+          isf: result?.breakdown?.isf,
+          targetBgMgDl: result?.breakdown?.targetBgMgDl,
+          currentBgMgDl: result?.breakdown?.currentBgMgDl,
+          trend: result?.breakdown?.trend,
+          carbsGrams: carbs,
+        },
+      })
+      if (carbs > 0) {
+        await treatmentsApi.createTreatment(userId, {
+          type: 'CARBS',
+          treatedAt: at,
+          data: { carbs },
+        })
+      }
+    },
     onSuccess: () => {
       setLogSuccess(true)
     },
@@ -187,8 +220,8 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
         </button>
       </form>
 
-      {calcMutation.isError && (
-        <p style={{ color: 'var(--color-danger)', marginTop: '1rem' }}>{t('doseCalc.error')}</p>
+      {calcError && (
+        <p style={{ color: 'var(--accent-danger)', marginTop: '1rem' }}>{calcError}</p>
       )}
 
       {result && (

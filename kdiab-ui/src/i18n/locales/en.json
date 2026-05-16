@@ -399,7 +399,12 @@
     "trendFortyFiveDown": "Falling slowly",
     "trendSingleDown": "Falling",
     "trendDoubleDown": "Falling rapidly",
-    "trendNone": "Unknown"
+    "trendNone": "Unknown",
+    "errorNoProfile": "No active profile found. Please activate a profile first.",
+    "errorNoIsf": "The active profile has no ISF segments. Please update your profile.",
+    "errorNoIcr": "The active profile has no ICR segments. Please update your profile.",
+    "errorNoTarget": "The active profile has no target range segments. Please update your profile.",
+    "errorGeneric": "Calculation failed: {{detail}}"
   },
   "settings": {
     "title": "Settings",
