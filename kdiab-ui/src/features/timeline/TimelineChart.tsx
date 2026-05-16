@@ -154,9 +154,9 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
     }))
     .filter(d => d.bgmValue !== undefined)
 
-  // Group all treatments by timestamp → one diamond marker per unique ts on the CGM line
+  // Group clinical treatments by timestamp — DEVICE_STATUS excluded (telemetry, not events)
   const byTs = new Map<number, TreatmentEntry[]>()
-  for (const tr of treatments) {
+  for (const tr of treatments.filter((t) => t.type !== 'DEVICE_STATUS')) {
     const ts = new Date(tr.treatedAt).getTime()
     const bucket = byTs.get(ts) ?? []
     bucket.push({ type: tr.type, notes: tr.notes, treatmentData: tr.data })
