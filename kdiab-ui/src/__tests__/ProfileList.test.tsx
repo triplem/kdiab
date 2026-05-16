@@ -65,7 +65,7 @@ describe('ProfileList', () => {
 
   test('shows active profile section when ACTIVE profile exists', async () => {
     const activeProfile = makeProfile({ id: 'p-active', name: 'My Active Plan', status: 'ACTIVE' })
-    mockedListProfiles.mockResolvedValueOnce({ data: [activeProfile] } as never)
+    mockedListProfiles.mockResolvedValueOnce({ data: { items: [activeProfile], page: 0, size: 20, totalCount: 1 } } as never)
 
     renderWithQuery(<ProfileList userId="user-1" />)
 
@@ -82,7 +82,7 @@ describe('ProfileList', () => {
       name: 'Doctor Recommendation',
       status: 'PROPOSED',
     })
-    mockedListProfiles.mockResolvedValueOnce({ data: [proposedProfile] } as never)
+    mockedListProfiles.mockResolvedValueOnce({ data: { items: [proposedProfile], page: 0, size: 20, totalCount: 1 } } as never)
 
     renderWithQuery(<ProfileList userId="user-1" />)
 
@@ -97,7 +97,7 @@ describe('ProfileList', () => {
   })
 
   test('shows no profiles message when list is empty', async () => {
-    mockedListProfiles.mockResolvedValueOnce({ data: [] } as never)
+    mockedListProfiles.mockResolvedValueOnce({ data: { items: [], page: 0, size: 20, totalCount: 0 } } as never)
 
     renderWithQuery(<ProfileList userId="user-1" />)
 
