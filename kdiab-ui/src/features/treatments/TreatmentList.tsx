@@ -139,7 +139,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
     enabled: !!userId,
   })
 
-  const treatments = (pagedResult?.items ?? []).filter((tr) => tr.type !== 'DEVICE_STATUS')
+  const treatments = pagedResult?.items ?? []
   const totalCount = pagedResult?.totalCount ?? 0
 
   const deleteMutation = useMutation({

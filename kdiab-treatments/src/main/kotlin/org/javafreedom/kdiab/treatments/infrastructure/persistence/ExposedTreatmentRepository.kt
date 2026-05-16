@@ -66,7 +66,8 @@ class ExposedTreatmentRepository(
                 TreatmentsTable.selectAll()
                     .where {
                         var condition = (TreatmentsTable.userId eq userId) and
-                            (TreatmentsTable.status eq status.name)
+                            (TreatmentsTable.status eq status.name) and
+                            (TreatmentsTable.type neq TreatmentType.DEVICE_STATUS.name)
                         if (from != null) {
                             condition = condition and (TreatmentsTable.treatedAt greaterEq
                                 java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
@@ -94,7 +95,8 @@ class ExposedTreatmentRepository(
             TreatmentsTable.selectAll()
                 .where {
                     var condition = (TreatmentsTable.userId eq userId) and
-                        (TreatmentsTable.status eq status.name)
+                        (TreatmentsTable.status eq status.name) and
+                        (TreatmentsTable.type neq TreatmentType.DEVICE_STATUS.name)
                     if (from != null) {
                         condition = condition and (TreatmentsTable.treatedAt greaterEq
                             java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))

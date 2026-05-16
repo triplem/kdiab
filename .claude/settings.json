@@ -31,6 +31,8 @@
       "Bash(grep *)",
       "Bash(cat audit/*)",
       "Bash(tee audit/*)",
+      "Bash(kotlin-language-server *)",
+      "Bash(typescript-language-server *)",
       "mcp__github__*",
       "mcp__gitlab__*",
       "mcp__filesystem__*"

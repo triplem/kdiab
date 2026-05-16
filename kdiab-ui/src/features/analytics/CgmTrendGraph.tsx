@@ -186,7 +186,7 @@ export function CgmTrendGraph({ userId, glucoseUnit }: Props) {
               tickFormatter={formatLabel}
             />
             <YAxis label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 10 }} />
-            <Tooltip content={(props) => <TrendTooltip {...props} glucoseUnit={glucoseUnit} />} />
+            <Tooltip content={(props) => <TrendTooltip {...(props as TrendTooltipProps)} glucoseUnit={glucoseUnit} />} />
 
             <ReferenceArea y1={tirLow} y2={tirHigh} fill="rgba(16, 185, 129, 0.07)" />
             <ReferenceLine y={tirLow} stroke="var(--accent-danger)" strokeDasharray="4 4" label={{ value: String(tirLow), fill: 'var(--accent-danger)', fontSize: 11 }} />

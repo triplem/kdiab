@@ -1,0 +1,55 @@
+= ADR-012: DEVICE_STATUS separation into a dedicated table
+:date: 2026-05-16
+:status: Accepted
+:deciders: triplem
+
+== Context
+
+APS clients (AAPS, xDrip+, Juggluco) periodically POST device telemetry — pump reservoir level, battery percentage, pump connectivity, and client identity — to the `/treatments` endpoint using `type = DEVICE_STATUS`. This follows the Nightscout protocol, which uses a single `/treatments` endpoint for all event types.
+
+Storing DEVICE_STATUS in the `treatments` table created three problems:
+
+. *Pagination skew*: At 5-minute intervals, a 30-day window produces 8,640 DEVICE_STATUS rows per user — dwarfing clinical treatment records (typically 150–300 rows). The paginated list endpoint returned almost entirely telemetry unless callers filtered by type.
+. *Client-side workarounds*: The frontend `TreatmentList` and `TimelineChart` components had to filter `type !== 'DEVICE_STATUS'` on every render to hide telemetry from the UI.
+. *Wrong abstraction*: Device telemetry is not a treatment event. It has no clinical meaning, no archive lifecycle, no notes field, and should not appear in clinical timelines.
+
+== Decision
+
+`DEVICE_STATUS` telemetry is moved to a dedicated `device_status` table in kdiab-treatments.
+
+The changes are:
+
+. *New table*: `device_status` with typed columns (`device`, `pump_name`, `reservoir_units`, `battery_level`, `pump_connected`, `recorded_at`) — no JSONB payload, no `status` column.
+. *Backward-compatible POST*: `POST /users/{userId}/treatments` with `type = DEVICE_STATUS` is silently redirected at the route level to `DeviceStatusService.saveDeviceStatus()`. AAPS and xDrip+ require no configuration change.
+. *Filtered list*: `GET /users/{userId}/treatments` now excludes `DEVICE_STATUS` at the repository layer (`WHERE type != 'DEVICE_STATUS'`). The pagination count is also filtered.
+. *New endpoint*: `GET /users/{userId}/device-status/latest` returns the single most recent `DeviceStatusResponse` (or 404 if none exists).
+. *Frontend*: `DeviceStatusWidget` calls the new endpoint directly; client-side filters removed from `TreatmentList` and `TimelineChart`.
+
+== Consequences
+
+=== Positive
+
+* `GET /treatments` returns only clinical events — pagination is accurate and UI code is free of filter hacks.
+* The `DeviceStatusWidget` fetches exactly one row instead of scanning a page of 50 mixed entries.
+* Telemetry is stored with typed columns, enabling efficient range queries and future analytics (reservoir drain rate, battery trends).
+* kdiab-analyze `/timeline` automatically benefits — it fetches treatments and measures; since treatments no longer include DEVICE_STATUS, no BFF changes are required.
+
+=== Constraints and Failure Modes
+
+* *Backward compatibility*: The POST redirect is transparent to APS clients. Any client that filters its own response by `type === 'DEVICE_STATUS'` in the 201 body will see an empty body (204-style), not the saved object. This is acceptable — APS clients do not inspect the creation response.
+* *Historical data*: Existing DEVICE_STATUS rows in the `treatments` table (from before this migration) are not migrated. They remain silently excluded from list queries by the `WHERE type != 'DEVICE_STATUS'` filter. A manual migration script can be written later if historical telemetry is needed.
+* *No archive lifecycle*: `device_status` entries are never archived or soft-deleted. If retention pruning is needed later, a TTL job or a `DELETE WHERE recorded_at < NOW() - INTERVAL '90 days'` scheduled task should be added.
+
+== Alternatives Considered
+
+=== Keep DEVICE_STATUS in treatments; add a `?excludeTypes` query parameter
+
+*Rejected*: All callers would need to pass `excludeTypes=DEVICE_STATUS` to get a clean list. This is a leaky abstraction — callers must know about internal telemetry types. It also does not fix the pagination count skew.
+
+=== Filter DEVICE_STATUS at the BFF (kdiab-analyze)
+
+*Rejected*: The BFF already forwards the raw treatments list to build the timeline. Filtering in the BFF would mean the treatments service still returns 8,640 telemetry rows per window, wasting network bandwidth and BFF memory. The filter must be at the source.
+
+=== Separate kdiab-device-status microservice
+
+*Rejected*: The device telemetry domain is small (one entity, one query). A new service would add operational overhead (new Docker container, new Liquibase init container, new nginx proxy, new Keycloak audience mapper) without proportional benefit. The `kdiab-treatments` service is the natural home since AAPS POSTs to `/treatments`.

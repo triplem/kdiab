@@ -17,11 +17,14 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.javafreedom.kdiab.treatments.adapters.inbound.web.auditRoutes
+import org.javafreedom.kdiab.treatments.adapters.inbound.web.deviceStatusRoutes
 import org.javafreedom.kdiab.treatments.adapters.inbound.web.treatmentRoutes
+import org.javafreedom.kdiab.treatments.application.service.DeviceStatusService
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedAuditLogRepository
+import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedDeviceStatusRepository
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedTreatmentRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.plugins.statuspages.*
@@ -39,6 +42,7 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 fun Application.module(
     treatmentService: TreatmentService = TreatmentService(ExposedTreatmentRepository()),
+    deviceStatusService: DeviceStatusService = DeviceStatusService(ExposedDeviceStatusRepository()),
     auditLogRepository: AuditLogRepository = ExposedAuditLogRepository(),
     initDatabase: Boolean = true
 ) {
@@ -111,7 +115,8 @@ fun Application.module(
         }
 
         route("/api/v1") {
-            treatmentRoutes(treatmentService, auditLogRepository)
+            treatmentRoutes(treatmentService, deviceStatusService, auditLogRepository)
+            deviceStatusRoutes(deviceStatusService)
             auditRoutes(auditLogRepository)
         }
 

@@ -20,7 +20,20 @@ export interface PagedTreatments {
   totalCount: number
 }
 
+export interface DeviceStatusResponse {
+  id: string
+  userId: string
+  recordedAt: string
+  device: string
+  pumpName?: string
+  reservoirUnits?: number
+  batteryLevel?: number
+  pumpConnected?: boolean
+}
+
 export const treatmentsApi = {
+  getLatestDeviceStatus: (userId: string) =>
+    axiosInstance.get<DeviceStatusResponse>(`${BASE}/users/${userId}/device-status/latest`),
   listTreatments: (userId: string, status?: string, page?: number, size?: number) =>
     axiosInstance.get<PagedTreatments>(`${BASE}/users/${userId}/treatments`, {
       params: { ...(status ? { status } : {}), ...(page != null ? { page } : {}), ...(size != null ? { size } : {}) },
