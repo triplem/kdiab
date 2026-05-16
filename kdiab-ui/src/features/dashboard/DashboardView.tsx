@@ -142,9 +142,11 @@ function StatTile({ label, value, sub, color }: StatTileProps) {
   )
 }
 
-// Treatment marker shape for Recharts Scatter
-function TreatmentDot(props: { cx?: number; cy?: number; payload?: { treatmentType: string; label: string } }) {
-  const { cx = 0, cy = 0, payload } = props
+// Treatment marker shape for Recharts Scatter — must spread event props so Recharts tooltip fires
+function TreatmentDot(props: Record<string, unknown>) {
+  const cx = (props['cx'] as number) ?? 0
+  const cy = (props['cy'] as number) ?? 0
+  const payload = props['payload'] as { treatmentType?: string; label?: string } | undefined
   const type = payload?.treatmentType ?? ''
   const label = payload?.label ?? ''
   let color = '#6366f1'
@@ -155,10 +157,15 @@ function TreatmentDot(props: { cx?: number; cy?: number; payload?: { treatmentTy
   else if (type === 'SENSOR_INSERT') { color = '#8b5cf6'; shape = '◆' }
   else if (type === 'INSULIN_CHANGE') { color = '#ec4899'; shape = '◈' }
 
+  // Spread Recharts-injected event handlers so the shared Tooltip fires on hover
+  const eventProps: Record<string, unknown> = {}
+  for (const key of Object.keys(props)) {
+    if (key.startsWith('on')) eventProps[key] = props[key]
+  }
+
   return (
-    <g>
-      {/* transparent hit area so hover/tooltip works */}
-      <circle cx={cx} cy={cy} r={12} fill="transparent" />
+    <g {...eventProps} style={{ cursor: 'pointer' }}>
+      <circle cx={cx} cy={cy} r={14} fill="transparent" pointerEvents="all" />
       <text x={cx} y={cy - 4} textAnchor="middle" fill={color} fontSize={12}>{shape}</text>
       {label && <text x={cx} y={cy + 14} textAnchor="middle" fill={color} fontSize={9}>{label}</text>}
     </g>
@@ -278,6 +285,19 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     .map(m => ({
       time: new Date(m.measuredAt).getTime(),
       sgv: toDisplay(m.data['value'] as number, glucoseUnit),
+      bgm: null as number | null,
+      marker: null as number | null,
+      treatmentType: null as string | null,
+      label: null as string | null,
+    }))
+
+  // BGM readings shown as distinct dots above the treatment marker row
+  const bgmPoints = (windowTimeline?.measures ?? [])
+    .filter(m => m.type === 'BGM' && typeof m.data['value'] === 'number')
+    .map(m => ({
+      time: new Date(m.measuredAt).getTime(),
+      sgv: null as number | null,
+      bgm: toDisplay(m.data['value'] as number, glucoseUnit),
       marker: null as number | null,
       treatmentType: null as string | null,
       label: null as string | null,
@@ -295,6 +315,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
       return {
         time: new Date(t.treatedAt).getTime(),
         sgv: null as number | null,
+        bgm: null as number | null,
         marker: tirLow * 0.85,
         treatmentType: t.type,
         label,
@@ -302,7 +323,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     })
 
   // Combined dataset for ComposedChart root — enables tooltip cursor to find points
-  const chartData = [...cgmPoints, ...treatmentMarkers].sort((a, b) => a.time - b.time)
+  const chartData = [...cgmPoints, ...bgmPoints, ...treatmentMarkers].sort((a, b) => a.time - b.time)
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -422,6 +443,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                 labelFormatter={(ms: number) => formatTime(new Date(ms).toISOString())}
                 formatter={(v: unknown, name: string, entry: { payload?: { treatmentType?: string; label?: string } }) => {
                   if (name === 'sgv' && typeof v === 'number') return [`${v} ${yLabel}`, 'CGM']
+                  if (name === 'bgm' && typeof v === 'number') return [`${v} ${yLabel}`, 'BGM']
                   if (name === 'marker') {
                     const ttype = entry.payload?.treatmentType ?? ''
                     const lbl = entry.payload?.label ?? ''
@@ -443,8 +465,21 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                 isAnimationActive={false}
                 connectNulls={true}
               />
+              {bgmPoints.length > 0 && (
+                <Scatter
+                  name="BGM"
+                  dataKey="bgm"
+                  isAnimationActive={false}
+                  fill="#ef4444"
+                  stroke="#fff"
+                  strokeWidth={1.5}
+                  r={5}
+                  cursor="pointer"
+                />
+              )}
               {treatmentMarkers.length > 0 && (
                 <Scatter
+                  name="Treatment"
                   dataKey="marker"
                   shape={TreatmentDot}
                   isAnimationActive={false}
@@ -461,6 +496,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         )}
         {/* Legend */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+          <span><span style={{ color: '#ef4444' }}>●</span> {t('dashboard.legendBgm', { defaultValue: 'BGM' })}</span>
           <span><span style={{ color: '#3b82f6' }}>▲</span> {t('dashboard.legendBolus', { defaultValue: 'Bolus' })}</span>
           <span><span style={{ color: '#f59e0b' }}>●</span> {t('dashboard.legendCarbs', { defaultValue: 'Carbs' })}</span>
           <span><span style={{ color: '#10b981' }}>⊕</span> {t('dashboard.legendSiteChange', { defaultValue: 'Site change' })}</span>
