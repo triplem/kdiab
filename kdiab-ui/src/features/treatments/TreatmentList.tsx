@@ -98,7 +98,7 @@ const renderDataSummary = (tr: TreatmentResponse): string => {
     case 'INSULIN_CHANGE':
       return d.insulinType ? String(d.insulinType) : 'Insulin change'
     default:
-      return JSON.stringify(d)
+      return tr.type
   }
 }
 
@@ -139,7 +139,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
     enabled: !!userId,
   })
 
-  const treatments = pagedResult?.items ?? []
+  const treatments = (pagedResult?.items ?? []).filter((tr) => tr.type !== 'DEVICE_STATUS')
   const totalCount = pagedResult?.totalCount ?? 0
 
   const deleteMutation = useMutation({
