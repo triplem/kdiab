@@ -146,6 +146,7 @@ html, body {
     font-family: inherit;
     font-size: 0.95rem;
     outline: none;
+    color-scheme: dark;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -157,6 +158,15 @@ html, body {
 .kc-input::placeholder {
     color: rgba(148, 163, 184, 0.5);
 }
+.kc-input:-webkit-autofill,
+.kc-input:-webkit-autofill:hover,
+.kc-input:-webkit-autofill:focus,
+.kc-input:-webkit-autofill:active {
+    -webkit-text-fill-color: var(--text-primary);
+    -webkit-box-shadow: 0 0 0px 1000px rgba(15, 23, 42, 0.6) inset;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
 
 .kc-input-error {
     border-color: rgba(239, 68, 68, 0.6) !important;
