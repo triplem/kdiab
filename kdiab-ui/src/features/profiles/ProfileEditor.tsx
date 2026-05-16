@@ -245,7 +245,7 @@ export function ProfileEditor({
 
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['profiles', userId],
-    queryFn: () => profilesApi.listProfiles(userId).then((res) => res.data),
+    queryFn: () => profilesApi.listProfiles(userId).then((res) => res.data.items),
     enabled: !!initialProfile,
   })
 

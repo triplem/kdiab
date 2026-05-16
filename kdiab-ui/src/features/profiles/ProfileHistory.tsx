@@ -113,7 +113,7 @@ export function ProfileHistory({ userId, onSelectProfile, glucoseUnit }: Profile
         const historyRes = await profilesApi.getProfileHistory(userId, from, to)
         try {
           const profilesRes = await profilesApi.listProfiles(userId)
-          const activeProfile = profilesRes.data.find(p => p.status === 'ACTIVE')
+          const activeProfile = profilesRes.data.items.find(p => p.status === 'ACTIVE')
           if (activeProfile && !historyRes.data.find(p => p.id === activeProfile.id)) {
             setHistory([activeProfile, ...historyRes.data])
           } else {
