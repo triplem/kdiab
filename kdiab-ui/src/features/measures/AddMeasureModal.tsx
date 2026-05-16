@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
 
 type MeasureType = 'BGM' | 'CGM' | 'BLOOD_PRESSURE' | 'WEIGHT' | 'PULSE' | 'BG_CHECK' | 'KETONE_CHECK'
@@ -76,7 +75,6 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
   error,
   editMode,
 }) => {
-  useTimeFormat()
   const { t } = useTranslation()
   const firstInputRef = useRef<HTMLSelectElement>(null)
   const [type, setType] = useState<MeasureType>('BGM')

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { profilesApi } from '../../api/profilesApi'
 import type { Profile } from '../../api/profilesApi'
@@ -99,8 +99,8 @@ export function ProfileHistory({ userId, onSelectProfile, glucoseUnit }: Profile
   })
 
   // Fetch all-time history (10 years back to cover everything)
-  const tenYearsAgo = new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000).toISOString()
-  const nowIso = new Date().toISOString()
+  const tenYearsAgo = useMemo(() => new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000).toISOString(), [])
+  const nowIso = useMemo(() => new Date().toISOString(), [])
   const { data: historyData, isLoading: historyLoading, isError: historyError } = useQuery({
     queryKey: ['profile-history', userId],
     queryFn: () => profilesApi.getProfileHistory(userId, tenYearsAgo, nowIso).then(r => r.data),
