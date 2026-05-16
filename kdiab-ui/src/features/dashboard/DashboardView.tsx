@@ -466,26 +466,30 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                 isAnimationActive={false}
                 connectNulls={true}
               />
-              <Line
-                dataKey="bgm"
-                name="bgm"
-                stroke="none"
-                strokeWidth={0}
-                dot={{ fill: '#ef4444', stroke: '#fff', strokeWidth: 1.5, r: 5 }}
-                activeDot={{ fill: '#ef4444', stroke: '#fff', strokeWidth: 1.5, r: 7 }}
-                isAnimationActive={false}
-                connectNulls={false}
-              />
-              <Line
-                dataKey="marker"
-                name="marker"
-                stroke="none"
-                strokeWidth={0}
-                dot={(props: object) => <TreatmentDot {...props} />}
-                activeDot={false}
-                isAnimationActive={false}
-                connectNulls={false}
-              />
+              {bgmPoints.length > 0 && (
+                <Line
+                  dataKey="bgm"
+                  name="bgm"
+                  stroke="none"
+                  strokeWidth={0}
+                  dot={{ fill: '#ef4444', stroke: '#fff', strokeWidth: 1.5, r: 5 }}
+                  activeDot={{ fill: '#ef4444', stroke: '#fff', strokeWidth: 1.5, r: 7 }}
+                  isAnimationActive={false}
+                  connectNulls={false}
+                />
+              )}
+              {treatmentMarkers.length > 0 && (
+                <Line
+                  dataKey="marker"
+                  name="marker"
+                  stroke="none"
+                  strokeWidth={0}
+                  dot={(props: object) => <TreatmentDot {...props} />}
+                  activeDot={false}
+                  isAnimationActive={false}
+                  connectNulls={false}
+                />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         )}
