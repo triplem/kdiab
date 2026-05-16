@@ -7,23 +7,27 @@ import { ProfilesTable } from './ProfilesTable'
 
 interface Props {
   userId: string
+  from?: string
+  to?: string
 }
 
-export function ProfilesView({ userId }: Props) {
+export function ProfilesView({ userId, from: fromProp, to: toProp }: Props) {
   const { t } = useTranslation()
   const [timeframe, setTimeframe] = useState<Timeframe>(defaultTimeframe())
 
+  const from = fromProp ?? timeframe.from
+  const to = toProp ?? timeframe.to
   const enabled = !!userId
 
   const profilesQuery = useQuery({
-    queryKey: ['profiles-active', userId, timeframe.from, timeframe.to],
-    queryFn: () => analyzeApi.getActiveProfiles(userId, timeframe.from, timeframe.to).then(r => r.data),
+    queryKey: ['profiles-active', userId, from, to],
+    queryFn: () => analyzeApi.getActiveProfiles(userId, from, to).then(r => r.data),
     enabled,
   })
 
   return (
     <div>
-      <TimeframePicker value={timeframe} onChange={setTimeframe} />
+      {fromProp == null && <TimeframePicker value={timeframe} onChange={setTimeframe} />}
 
       {profilesQuery.isLoading && (
         <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>
