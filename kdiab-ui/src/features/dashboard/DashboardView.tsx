@@ -142,11 +142,13 @@ function StatTile({ label, value, sub, color }: StatTileProps) {
   )
 }
 
-// Treatment marker shape for Recharts Scatter — must spread event props so Recharts tooltip fires
-function TreatmentDot(props: Record<string, unknown>) {
-  const cx = (props['cx'] as number) ?? 0
-  const cy = (props['cy'] as number) ?? 0
-  const payload = props['payload'] as { treatmentType?: string; label?: string } | undefined
+// Treatment marker shape for Recharts Scatter — must spread event props so Recharts tooltip fires.
+// Parameter is `unknown` to satisfy ScatterCustomizedShape contravariance; cast internally.
+function TreatmentDot(props: unknown) {
+  const p = props as Record<string, unknown>
+  const cx = (p['cx'] as number) ?? 0
+  const cy = (p['cy'] as number) ?? 0
+  const payload = p['payload'] as { treatmentType?: string; label?: string } | undefined
   const type = payload?.treatmentType ?? ''
   const label = payload?.label ?? ''
   let color = '#6366f1'
@@ -159,8 +161,8 @@ function TreatmentDot(props: Record<string, unknown>) {
 
   // Spread Recharts-injected event handlers so the shared Tooltip fires on hover
   const eventProps: Record<string, unknown> = {}
-  for (const key of Object.keys(props)) {
-    if (key.startsWith('on')) eventProps[key] = props[key]
+  for (const key of Object.keys(p)) {
+    if (key.startsWith('on')) eventProps[key] = p[key]
   }
 
   return (
