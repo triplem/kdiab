@@ -241,6 +241,32 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
+  /users/{userId}/device-age:
+    get:
+      summary: Get device age timestamps for a user
+      description: Returns the most recent timestamp for each device-related treatment type (catheter/cannula change, insulin reservoir change, CGM sensor insertion). Null if a treatment of that type has never been recorded.
+      operationId: getDeviceAge
+      tags:
+        - Treatments
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Device age timestamps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceAgeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
   /users/{userId}/treatments/delete:
     post:
       summary: Permanently delete treatments
@@ -668,6 +694,29 @@ components:
           type: boolean
           description: Whether the pump was connected at the time of the status report
           example: true
+
+    DeviceAgeResponse:
+      type: object
+      description: Most recent timestamp for each device-related treatment type. Null if that treatment type has never been recorded for the user.
+      properties:
+        catheterChangedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the infusion site/cannula was last replaced (SITE_CHANGE)
+          example: "2026-05-14T10:30:00Z"
+        reservoirChangedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the insulin cartridge was last replaced (INSULIN_CHANGE)
+          example: "2026-05-13T08:00:00Z"
+        sensorInsertedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the CGM sensor was last inserted (SENSOR_INSERT)
+          example: "2026-05-12T18:00:00Z"
 
     DeviceStatusResponse:
       type: object

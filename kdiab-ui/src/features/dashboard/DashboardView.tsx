@@ -4,6 +4,7 @@ import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useState, useMemo } from 'react'
 import { analyzeApi } from '../../api/analyzeApi'
 import { profilesApi } from '../../api/profilesApi'
+import { treatmentsApi } from '../../api/treatmentsApi'
 import { DeviceStatusWidget } from '../treatments/DeviceStatusWidget'
 import {
   ComposedChart,
@@ -112,16 +113,6 @@ function currentBasalRate(basal: Array<{ startTime: string; value: number }> | u
     if (h * 60 + m <= nowMin) rate = seg.value
   }
   return rate ?? sorted[sorted.length - 1]?.value ?? null
-}
-
-// Find most recent treatment of given types
-function lastTreatmentDate(
-  treatments: Array<{ treatedAt: string; type: string }>,
-  ...types: string[]
-): string | undefined {
-  return treatments
-    .filter(t => types.includes(t.type))
-    .sort((a, b) => new Date(b.treatedAt).getTime() - new Date(a.treatedAt).getTime())[0]?.treatedAt
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -261,12 +252,18 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
   const cob = calcCOB(recentTimeline?.treatments ?? [])
   const basalRate = currentBasalRate(activeProfile?.basal)
 
-  // ── Device ages ─────────────────────────────────────────────────────────────
+  // ── Device ages (fetched from server — no time-window limit) ───────────────
 
-  const allTreatments = recentTimeline?.treatments ?? []
-  const catheterDate = lastTreatmentDate(allTreatments, 'SITE_CHANGE')
-  const reservoirDate = lastTreatmentDate(allTreatments, 'INSULIN_CHANGE')
-  const sensorDate = lastTreatmentDate(allTreatments, 'SENSOR_INSERT')
+  const { data: deviceAge } = useQuery({
+    queryKey: ['device-age', userId],
+    queryFn: () => treatmentsApi.getDeviceAge(userId).then(r => r.data),
+    enabled: !!userId,
+    staleTime: 10 * 60 * 1000,
+  })
+
+  const catheterDate = deviceAge?.catheterChangedAt ?? undefined
+  const reservoirDate = deviceAge?.reservoirChangedAt ?? undefined
+  const sensorDate = deviceAge?.sensorInsertedAt ?? undefined
 
   // ── Chart data ──────────────────────────────────────────────────────────────
 

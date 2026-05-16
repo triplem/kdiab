@@ -31,9 +31,17 @@ export interface DeviceStatusResponse {
   pumpConnected?: boolean
 }
 
+export interface DeviceAgeResponse {
+  catheterChangedAt: string | null
+  reservoirChangedAt: string | null
+  sensorInsertedAt: string | null
+}
+
 export const treatmentsApi = {
   getLatestDeviceStatus: (userId: string) =>
     axiosInstance.get<DeviceStatusResponse>(`${BASE}/users/${userId}/device-status/latest`),
+  getDeviceAge: (userId: string) =>
+    axiosInstance.get<DeviceAgeResponse>(`${BASE}/users/${userId}/device-age`),
   listTreatments: (userId: string, status?: string, page?: number, size?: number) =>
     axiosInstance.get<PagedTreatments>(`${BASE}/users/${userId}/treatments`, {
       params: { ...(status ? { status } : {}), ...(page != null ? { page } : {}), ...(size != null ? { size } : {}) },
