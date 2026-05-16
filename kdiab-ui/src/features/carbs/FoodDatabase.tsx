@@ -24,8 +24,6 @@ const inputStyle: React.CSSProperties = {
   fontSize: '0.9rem',
   width: '100%',
   boxSizing: 'border-box',
-  background: 'var(--bg-input, #fff)',
-  color: 'var(--text-primary)',
 }
 
 const cellInputStyle: React.CSSProperties = {
