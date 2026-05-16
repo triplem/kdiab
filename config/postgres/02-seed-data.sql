@@ -391,7 +391,7 @@ VALUES (
   240,
   'Europe/Berlin',
   NOW() - INTERVAL '65 days',
-  '{"basal":[{"startTime":"00:00","value":0.85},{"startTime":"06:00","value":1.10},{"startTime":"12:00","value":0.90},{"startTime":"18:00","value":1.00}],"icr":[],"isf":[],"targets":[]}',
+  '{"basal":[{"startTime":"00:00","value":0.85},{"startTime":"06:00","value":1.10},{"startTime":"12:00","value":0.90},{"startTime":"18:00","value":1.00}],"icr":[{"startTime":"00:00","value":10.0},{"startTime":"12:00","value":12.0}],"isf":[{"startTime":"00:00","value":50.0},{"startTime":"14:00","value":45.0}],"targets":[{"startTime":"00:00","low":80.0,"high":120.0}]}',
   20.0
 )
 ON CONFLICT (id) DO NOTHING;
@@ -416,7 +416,7 @@ VALUES (
   240,
   'Europe/Berlin',
   NOW() - INTERVAL '31 days',
-  '{"basal":[{"startTime":"00:00","value":0.90},{"startTime":"06:00","value":1.20},{"startTime":"10:00","value":1.00},{"startTime":"18:00","value":1.05},{"startTime":"22:00","value":0.80}],"icr":[],"isf":[],"targets":[]}',
+  '{"basal":[{"startTime":"00:00","value":0.90},{"startTime":"06:00","value":1.20},{"startTime":"10:00","value":1.00},{"startTime":"18:00","value":1.05},{"startTime":"22:00","value":0.80}],"icr":[{"startTime":"00:00","value":10.0},{"startTime":"12:00","value":12.0}],"isf":[{"startTime":"00:00","value":50.0},{"startTime":"14:00","value":45.0}],"targets":[{"startTime":"00:00","low":80.0,"high":120.0}]}',
   20.0
 )
 ON CONFLICT (id) DO NOTHING;
@@ -441,7 +441,7 @@ VALUES (
   210,
   'America/New_York',
   NOW() - INTERVAL '45 days',
-  '{"basal":[{"startTime":"00:00","value":0.70},{"startTime":"06:00","value":0.95},{"startTime":"12:00","value":0.75},{"startTime":"20:00","value":0.65}],"icr":[],"isf":[],"targets":[]}',
+  '{"basal":[{"startTime":"00:00","value":0.70},{"startTime":"06:00","value":0.95},{"startTime":"12:00","value":0.75},{"startTime":"20:00","value":0.65}],"icr":[{"startTime":"00:00","value":12.0},{"startTime":"12:00","value":15.0}],"isf":[{"startTime":"00:00","value":45.0},{"startTime":"14:00","value":40.0}],"targets":[{"startTime":"00:00","low":80.0,"high":120.0}]}',
   25.0
 )
 ON CONFLICT (id) DO NOTHING;

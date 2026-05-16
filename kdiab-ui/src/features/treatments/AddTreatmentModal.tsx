@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
 import { carbsApi } from '../../api/carbsApi'
 import type { FoodEntryResponse } from '../../api/carbsApi'
@@ -87,10 +86,17 @@ const labelStyle: React.CSSProperties = {
   gap: '4px',
 }
 
-function nowRounded(): string {
+function nowDate(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function nowTime(): string {
   const d = new Date()
-  d.setSeconds(0, 0)
-  return d.toISOString().slice(0, 16)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function combineDatetime(date: string, time: string): string {
+  return new Date(`${date}T${time}:00`).toISOString()
 }
 
 export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
@@ -104,11 +110,11 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
   userId,
   glucoseUnit = 'mg/dL',
 }) => {
-  const { locale } = useTimeFormat()
   const { t } = useTranslation()
   const firstInputRef = useRef<HTMLSelectElement>(null)
   const [type, setType] = useState<PatientTreatmentType>('MEAL')
-  const [treatedAt, setTreatedAt] = useState(nowRounded)
+  const [treatedDate, setTreatedDate] = useState(nowDate)
+  const [treatedTime, setTreatedTime] = useState(nowTime)
   const [notes, setNotes] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
 
@@ -163,9 +169,8 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
     setType(editMode.type as PatientTreatmentType)
     const dt = new Date(editMode.treatedAt)
     const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16)
-    setTreatedAt(local)
+    setTreatedDate(local.toISOString().slice(0, 10))
+    setTreatedTime(local.toISOString().slice(11, 16))
     setNotes(editMode.notes ?? '')
     const d = editMode.data
     switch (editMode.type) {
@@ -353,13 +358,13 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       if (isEditMode) {
         onSave({
           type: 'MEAL',
-          treatedAt: new Date(treatedAt).toISOString(),
+          treatedAt: combineDatetime(treatedDate, treatedTime),
           data: { insulin, carbs: carbsVal },
           ...(notes.trim() && { notes: notes.trim() }),
         })
       } else {
         onSaveMeal({
-          treatedAt: new Date(treatedAt).toISOString(),
+          treatedAt: combineDatetime(treatedDate, treatedTime),
           insulinUnits: insulin,
           carbs: carbsVal,
         })
@@ -374,7 +379,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
     }
     onSave({
       type,
-      treatedAt: new Date(treatedAt).toISOString(),
+      treatedAt: combineDatetime(treatedDate, treatedTime),
       data,
       ...(notes.trim() && { notes: notes.trim() }),
     })
@@ -908,17 +913,28 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
             </select>
           </label>
 
-          <label style={labelStyle}>
-            <span>{t('treatmentModal.treatedAt')}</span>
-            <input
-              type="datetime-local"
-              lang={locale}
-              value={treatedAt}
-              onChange={(e) => setTreatedAt(e.target.value)}
-              style={inputStyle}
-              required
-            />
-          </label>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <label style={{ ...labelStyle, flex: 1 }}>
+              <span>{t('treatmentModal.treatedAt')}</span>
+              <input
+                type="date"
+                value={treatedDate}
+                onChange={(e) => setTreatedDate(e.target.value)}
+                style={inputStyle}
+                required
+              />
+            </label>
+            <label style={{ ...labelStyle, flex: '0 0 120px' }}>
+              <span>{t('modal.measuredTime', { defaultValue: 'Time' })}</span>
+              <input
+                type="time"
+                value={treatedTime}
+                onChange={(e) => setTreatedTime(e.target.value)}
+                style={inputStyle}
+                required
+              />
+            </label>
+          </div>
 
           {renderTypeFields()}
 
