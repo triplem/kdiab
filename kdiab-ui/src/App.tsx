@@ -22,7 +22,6 @@ import { ProfileHistory } from './features/profiles/ProfileHistory'
 import { AdminInsulinManager } from './features/profiles/AdminInsulinManager'
 import { TimelineView } from './features/timeline/TimelineView'
 import { AnalyticsView } from './features/analytics/AnalyticsView'
-import { ProfilesView } from './features/analytics/ProfilesView'
 import { FoodDatabase } from './features/carbs/FoodDatabase'
 import { DoseCalculator } from './features/calc/DoseCalculator'
 import { UserSettings } from './features/users/UserSettings'
@@ -357,12 +356,7 @@ export default function App() {
         return <TimelineView userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
 
       case 'analytics':
-        return (
-          <>
-            <AnalyticsView userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
-            <ProfilesView userId={viewingUserId} />
-          </>
-        )
+        return <AnalyticsView userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
 
       case 'carbs':
         return <FoodDatabase userId={viewingUserId} />
