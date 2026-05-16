@@ -158,6 +158,22 @@ class ExposedTreatmentRepository(
         }
     }
 
+    override suspend fun findLatestTimestampByType(userId: Uuid, type: TreatmentType): Instant? =
+        withContext(ioDispatcher) {
+            suspendTransaction {
+                TreatmentsTable.selectAll()
+                    .where {
+                        (TreatmentsTable.userId eq userId) and
+                            (TreatmentsTable.type eq type.name) and
+                            (TreatmentsTable.status eq TreatmentStatus.ACTIVE.name)
+                    }
+                    .orderBy(TreatmentsTable.treatedAt, SortOrder.DESC)
+                    .limit(1)
+                    .firstOrNull()
+                    ?.let { Instant.fromEpochMilliseconds(it[TreatmentsTable.treatedAt].toEpochMilli()) }
+            }
+        }
+
     override suspend fun archiveAll(ids: List<Uuid>, userId: Uuid): Unit = withContext(ioDispatcher) {
         suspendTransaction {
             TreatmentsTable.update({

@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { profilesApi } from '../../api/profilesApi'
 import type { Profile } from '../../api/profilesApi'
-import { startOfDay, endOfDay, subDays, formatISO, parseISO } from 'date-fns'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
 import { ProfileTimeline } from './ProfileTimeline'
+
+const PAGE_SIZE = 10
 
 interface ProfileHistoryProps {
   userId: string
@@ -33,7 +35,7 @@ function ProfileHistoryItem({
           <span className="date" style={{ marginLeft: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
             ({profile.createdAt ? new Date(profile.createdAt).toLocaleString(navigator.language, { dateStyle: 'short', timeStyle: 'short', hour12: !is24Hour }) : t('history.na')})
           </span>
-          {onSelectProfile && (
+          {onSelectProfile && status !== 'ARCHIVED' && (
             <button
               type="button"
               className="btn outline"
@@ -84,68 +86,49 @@ function ProfileHistoryItem({
 }
 
 export function ProfileHistory({ userId, onSelectProfile, glucoseUnit }: ProfileHistoryProps) {
-  const [history, setHistory] = useState<Profile[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [activeProfileWarning, setActiveProfileWarning] = useState<string | null>(null)
+  const [page, setPage] = useState(0)
   const [viewMode, setViewMode] = useState<'list' | 'timeline'>('list')
-  const { formatTime, is24Hour, locale } = useTimeFormat()
+  const { formatTime, is24Hour } = useTimeFormat()
   const { t } = useTranslation()
 
-  const [startDate, setStartDate] = useState(() =>
-    formatISO(subDays(new Date(), 30), { representation: 'date' })
-  )
-  const [endDate, setEndDate] = useState(() =>
-    formatISO(new Date(), { representation: 'date' })
-  )
+  // Fetch the active/draft profiles list
+  const { data: profilesData, isLoading: listLoading, isError: listError } = useQuery({
+    queryKey: ['profiles', userId],
+    queryFn: () => profilesApi.listProfiles(userId).then(r => r.data.items),
+    enabled: !!userId,
+  })
 
-  useEffect(() => {
-    if (!userId || !startDate || !endDate) return
-    if (startDate > endDate) { setError(t('history.error')); return }
+  // Fetch all-time history (10 years back to cover everything)
+  const tenYearsAgo = useMemo(() => new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000).toISOString(), [])
+  const nowIso = useMemo(() => new Date().toISOString(), [])
+  const { data: historyData, isLoading: historyLoading, isError: historyError } = useQuery({
+    queryKey: ['profile-history', userId],
+    queryFn: () => profilesApi.getProfileHistory(userId, tenYearsAgo, nowIso).then(r => r.data),
+    enabled: !!userId,
+  })
 
-    const fetchHistory = async () => {
-      setLoading(true)
-      setError(null)
-      setActiveProfileWarning(null)
-      try {
-        const from = startOfDay(parseISO(startDate)).toISOString()
-        const to = endOfDay(parseISO(endDate)).toISOString()
-        const historyRes = await profilesApi.getProfileHistory(userId, from, to)
-        try {
-          const profilesRes = await profilesApi.listProfiles(userId)
-          const activeProfile = profilesRes.data.items.find(p => p.status === 'ACTIVE')
-          if (activeProfile && !historyRes.data.find(p => p.id === activeProfile.id)) {
-            setHistory([activeProfile, ...historyRes.data])
-          } else {
-            setHistory(historyRes.data)
-          }
-        } catch {
-          setHistory(historyRes.data)
-          setActiveProfileWarning(t('history.activeProfileWarning'))
-        }
-      } catch {
-        setError(t('history.error'))
-      } finally {
-        setLoading(false)
-      }
-    }
+  const isLoading = listLoading || historyLoading
+  const isError = listError || historyError
 
-    void fetchHistory()
-  }, [userId, startDate, endDate, t])
+  // Merge: active/draft profiles + history (archived), deduplicate by id
+  const allProfiles: Profile[] = []
+  const seen = new Set<string>()
+  for (const p of profilesData ?? []) {
+    if (!seen.has(p.id)) { seen.add(p.id); allProfiles.push(p) }
+  }
+  for (const p of historyData ?? []) {
+    if (!seen.has(p.id)) { seen.add(p.id); allProfiles.push(p) }
+  }
+  allProfiles.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
+
+  const totalPages = Math.ceil(allProfiles.length / PAGE_SIZE)
+  const visibleProfiles = allProfiles.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   return (
     <div className="profile-history">
       <h3>{t('history.title')}</h3>
 
       <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <div>
-          <label htmlFor="start-date" style={{ marginRight: '0.5rem' }}>{t('history.from')}</label>
-          <input type="date" id="start-date" lang={locale} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        </div>
-        <div>
-          <label htmlFor="end-date" style={{ marginRight: '0.5rem' }}>{t('history.to')}</label>
-          <input type="date" id="end-date" lang={locale} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-        </div>
         <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem' }}>
           {(['list', 'timeline'] as const).map(mode => (
             <button
@@ -167,20 +150,47 @@ export function ProfileHistory({ userId, onSelectProfile, glucoseUnit }: Profile
         </div>
       </div>
 
-      {loading && <div>{t('history.loading')}</div>}
-      {error && <div style={{ color: 'var(--accent-danger)' }}>{error}</div>}
-      {activeProfileWarning && <div style={{ color: 'var(--accent-warning)' }}>{activeProfileWarning}</div>}
+      {isLoading && <div>{t('history.loading')}</div>}
+      {isError && <div style={{ color: 'var(--accent-danger)' }}>{t('history.error')}</div>}
 
-      {!loading && !error && history.length === 0 ? (
+      {!isLoading && !isError && allProfiles.length === 0 ? (
         <p>{t('history.empty')}</p>
       ) : viewMode === 'timeline' ? (
-        <ProfileTimeline profiles={history} />
+        <ProfileTimeline profiles={allProfiles} />
       ) : (
-        <ul className="history-list" style={{ listStyle: 'none', padding: 0 }}>
-          {history.map(profile => (
-            <ProfileHistoryItem key={profile.id} profile={profile} formatTime={formatTime} is24Hour={is24Hour} onSelectProfile={onSelectProfile} glucoseUnit={glucoseUnit} />
-          ))}
-        </ul>
+        <>
+          <ul className="history-list" style={{ listStyle: 'none', padding: 0 }}>
+            {visibleProfiles.map(profile => (
+              <ProfileHistoryItem key={profile.id} profile={profile} formatTime={formatTime} is24Hour={is24Hour} onSelectProfile={onSelectProfile} glucoseUnit={glucoseUnit} />
+            ))}
+          </ul>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', marginTop: '1rem', alignItems: 'center' }}>
+              <button
+                type="button"
+                className="btn outline"
+                disabled={page === 0}
+                onClick={() => setPage(p => p - 1)}
+                style={{ padding: '0.3rem 0.8rem' }}
+              >
+                ←
+              </button>
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                {page + 1} / {totalPages}
+              </span>
+              <button
+                type="button"
+                className="btn outline"
+                disabled={page >= totalPages - 1}
+                onClick={() => setPage(p => p + 1)}
+                style={{ padding: '0.3rem 0.8rem' }}
+              >
+                →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

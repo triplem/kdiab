@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
 
 type MeasureType = 'BGM' | 'CGM' | 'BLOOD_PRESSURE' | 'WEIGHT' | 'PULSE' | 'BG_CHECK' | 'KETONE_CHECK'
@@ -31,7 +30,6 @@ interface AddMeasureModalProps {
 
 const MEASURE_TYPES: MeasureType[] = [
   'BGM',
-  'CGM',
   'BG_CHECK',
   'BLOOD_PRESSURE',
   'WEIGHT',
@@ -54,10 +52,17 @@ const labelStyle: React.CSSProperties = {
   gap: '4px',
 }
 
-function nowRounded(): string {
+function nowDate(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function nowTime(): string {
   const d = new Date()
-  d.setSeconds(0, 0)
-  return d.toISOString().slice(0, 16)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
+function combineDatetime(date: string, time: string): string {
+  return new Date(`${date}T${time}:00`).toISOString()
 }
 
 export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
@@ -70,11 +75,11 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
   error,
   editMode,
 }) => {
-  const { locale } = useTimeFormat()
   const { t } = useTranslation()
   const firstInputRef = useRef<HTMLSelectElement>(null)
   const [type, setType] = useState<MeasureType>('BGM')
-  const [measuredAt, setMeasuredAt] = useState(nowRounded)
+  const [measuredDate, setMeasuredDate] = useState(nowDate)
+  const [measuredTime, setMeasuredTime] = useState(nowTime)
   const [validationError, setValidationError] = useState<string | null>(null)
 
   const [bgmValue, setBgmValue] = useState('')
@@ -93,9 +98,8 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
     setType(editMode.type as MeasureType)
     const dt = new Date(editMode.measuredAt)
     const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16)
-    setMeasuredAt(local)
+    setMeasuredDate(local.toISOString().slice(0, 10))
+    setMeasuredTime(local.toISOString().slice(11, 16))
     const d = editMode.data
     switch (editMode.type) {
       case 'BGM': setBgmValue(String(d.value ?? '')); break
@@ -181,7 +185,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
     setValidationError(null)
     onSave({
       type,
-      measuredAt: new Date(measuredAt).toISOString(),
+      measuredAt: combineDatetime(measuredDate, measuredTime),
       source: 'MANUAL',
       data,
     })
@@ -403,17 +407,28 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
             </select>
           </label>
 
-          <label style={labelStyle}>
-            <span>{t('modal.measuredAt')}</span>
-            <input
-              type="datetime-local"
-              lang={locale}
-              value={measuredAt}
-              onChange={(e) => setMeasuredAt(e.target.value)}
-              style={inputStyle}
-              required
-            />
-          </label>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <label style={{ ...labelStyle, flex: 1 }}>
+              <span>{t('modal.measuredAt')}</span>
+              <input
+                type="date"
+                value={measuredDate}
+                onChange={(e) => setMeasuredDate(e.target.value)}
+                style={inputStyle}
+                required
+              />
+            </label>
+            <label style={{ ...labelStyle, flex: '0 0 120px' }}>
+              <span>{t('modal.measuredTime', { defaultValue: 'Time' })}</span>
+              <input
+                type="time"
+                value={measuredTime}
+                onChange={(e) => setMeasuredTime(e.target.value)}
+                style={inputStyle}
+                required
+              />
+            </label>
+          </div>
 
           {renderTypeFields()}
 

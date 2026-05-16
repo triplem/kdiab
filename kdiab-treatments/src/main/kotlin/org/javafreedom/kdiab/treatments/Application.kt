@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.javafreedom.kdiab.treatments.adapters.inbound.web.auditRoutes
+import org.javafreedom.kdiab.treatments.adapters.inbound.web.deviceAgeRoutes
 import org.javafreedom.kdiab.treatments.adapters.inbound.web.deviceStatusRoutes
 import org.javafreedom.kdiab.treatments.adapters.inbound.web.treatmentRoutes
 import org.javafreedom.kdiab.treatments.application.service.DeviceStatusService
@@ -117,6 +118,7 @@ fun Application.module(
         route("/api/v1") {
             treatmentRoutes(treatmentService, deviceStatusService, auditLogRepository)
             deviceStatusRoutes(deviceStatusService)
+            deviceAgeRoutes(treatmentService)
             auditRoutes(auditLogRepository)
         }
 

@@ -4,6 +4,7 @@ import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useState, useMemo } from 'react'
 import { analyzeApi } from '../../api/analyzeApi'
 import { profilesApi } from '../../api/profilesApi'
+import { treatmentsApi } from '../../api/treatmentsApi'
 import { DeviceStatusWidget } from '../treatments/DeviceStatusWidget'
 import {
   ComposedChart,
@@ -114,16 +115,6 @@ function currentBasalRate(basal: Array<{ startTime: string; value: number }> | u
   return rate ?? sorted[sorted.length - 1]?.value ?? null
 }
 
-// Find most recent treatment of given types
-function lastTreatmentDate(
-  treatments: Array<{ treatedAt: string; type: string }>,
-  ...types: string[]
-): string | undefined {
-  return treatments
-    .filter(t => types.includes(t.type))
-    .sort((a, b) => new Date(b.treatedAt).getTime() - new Date(a.treatedAt).getTime())[0]?.treatedAt
-}
-
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 interface StatTileProps {
@@ -166,6 +157,8 @@ function TreatmentDot(props: { cx?: number; cy?: number; payload?: { treatmentTy
 
   return (
     <g>
+      {/* transparent hit area so hover/tooltip works */}
+      <circle cx={cx} cy={cy} r={12} fill="transparent" />
       <text x={cx} y={cy - 4} textAnchor="middle" fill={color} fontSize={12}>{shape}</text>
       {label && <text x={cx} y={cy + 14} textAnchor="middle" fill={color} fontSize={9}>{label}</text>}
     </g>
@@ -261,12 +254,18 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
   const cob = calcCOB(recentTimeline?.treatments ?? [])
   const basalRate = currentBasalRate(activeProfile?.basal)
 
-  // ── Device ages ─────────────────────────────────────────────────────────────
+  // ── Device ages (fetched from server — no time-window limit) ───────────────
 
-  const allTreatments = recentTimeline?.treatments ?? []
-  const catheterDate = lastTreatmentDate(allTreatments, 'SITE_CHANGE')
-  const reservoirDate = lastTreatmentDate(allTreatments, 'INSULIN_CHANGE')
-  const sensorDate = lastTreatmentDate(allTreatments, 'SENSOR_INSERT')
+  const { data: deviceAge } = useQuery({
+    queryKey: ['device-age', userId],
+    queryFn: () => treatmentsApi.getDeviceAge(userId).then(r => r.data),
+    enabled: !!userId,
+    staleTime: 10 * 60 * 1000,
+  })
+
+  const catheterDate = deviceAge?.catheterChangedAt ?? undefined
+  const reservoirDate = deviceAge?.reservoirChangedAt ?? undefined
+  const sensorDate = deviceAge?.sensorInsertedAt ?? undefined
 
   // ── Chart data ──────────────────────────────────────────────────────────────
 
@@ -442,13 +441,14 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                 dot={false}
                 strokeWidth={2}
                 isAnimationActive={false}
-                connectNulls={false}
+                connectNulls={true}
               />
               {treatmentMarkers.length > 0 && (
                 <Scatter
                   dataKey="marker"
                   shape={TreatmentDot}
                   isAnimationActive={false}
+                  cursor="pointer"
                 />
               )}
             </ComposedChart>
