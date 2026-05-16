@@ -1,0 +1,46 @@
+= ADR-011: Frontend-only CGM daily trend aggregation
+:date: 2026-05-16
+:status: Accepted
+:deciders: triplem
+
+== Context
+
+The analytics view needed an aggregated CGM trend graph showing daily median, minimum, and maximum glucose values over selectable time windows (1 week, 2 weeks, 1 month, 90 days). This required bucketing individual CGM readings by calendar day and computing summary statistics.
+
+Two implementation sites were possible: the kdiab-analyze BFF backend (new aggregate endpoint) or the kdiab-ui frontend (using data already fetched by the timeline endpoint).
+
+== Decision
+
+Aggregation is performed **on the frontend** using data returned by the existing `/api/analyze/v1/users/{userId}/timeline` endpoint.
+
+The `CgmTrendGraph` component:
+
+. Issues a separate `getTimeline` query scoped to the selected window (1W/2W/1M/90D), independent of the main analytics timeframe picker.
+. Filters for `type === 'CGM'` entries, converts storage units (mg/dL ↔ mmol/L) to the user's preference, and buckets readings by UTC calendar day (`measuredAt.slice(0,10)`).
+. For each day bucket, computes median, min, and max using a sort-based approach.
+. Renders a `ComposedChart` with a median `Line` and a min–max `Area` band, with TIR reference areas at 70 and 180 mg/dL equivalent thresholds.
+
+== Consequences
+
+=== Positive
+
+* No backend changes required; kdiab-analyze remains stateless and unchanged.
+* The timeline endpoint already returns all measures for a user; no additional data fetching abstraction is needed.
+* Unit handling is consistent with the existing `TimelineChart` component logic.
+* Time window queries are cached independently (`['cgmTrend', userId, activeWindow]`), so switching windows only refetches on cache miss.
+
+=== Constraints and Failure Modes
+
+* **Data volume**: 90-day windows return ~25,920 CGM readings at 5-minute intervals. This is manageable in modern browsers but may be slow on older devices. If this becomes a bottleneck, a new `/analytics/daily-trend` backend endpoint should be introduced.
+* **Timezone**: Bucketing uses UTC date strings from `measuredAt`. Readings taken near UTC midnight may appear in a different day than the user's local calendar. Timezone-aware bucketing is deferred to a future story.
+* **Gaps**: Days with no CGM readings produce no bucket entry, rendering as a visible gap in the line and area — consistent with the acceptance criterion.
+
+== Alternatives Considered
+
+=== New backend endpoint `/analytics/daily-trend`
+
+*Rejected*: Would require backend changes to kdiab-analyze, new OpenAPI spec entries, frontend API client regeneration, and additional Ktor route code. Deferred until data volume or timezone accuracy becomes a real requirement.
+
+=== Reuse AGP hourly percentile data
+
+*Rejected*: AGP buckets by UTC hour (0–23) across all days, not by calendar day. Reshaping it into a daily view would produce inaccurate daily summaries and is architecturally confusing.
