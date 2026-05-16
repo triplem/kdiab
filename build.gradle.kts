@@ -46,10 +46,18 @@ tasks.register("check") {
 }
 
 // ── Clean ─────────────────────────────────────────────────────────────────────
+val cleanFrontend by tasks.registering(Exec::class) {
+    group = "build"
+    description = "Deletes kdiab-ui Vite build outputs (dist/ and node_modules/.vite cache)."
+    workingDir(layout.projectDirectory.dir("kdiab-ui"))
+    commandLine("bash", "-c", "rm -rf dist node_modules/.vite")
+}
+
 tasks.register("clean") {
     group = "build"
-    description = "Deletes build outputs for all service backends."
+    description = "Deletes build outputs for all service backends and the kdiab-ui frontend."
     dependsOn(
+        cleanFrontend,
         gradle.includedBuild("kdiab-measures").task(":cleanAll"),
         gradle.includedBuild("kdiab-profiles").task(":cleanAll"),
         gradle.includedBuild("kdiab-treatments").task(":cleanAll"),
