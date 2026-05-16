@@ -474,13 +474,15 @@ export const MeasureList: React.FC<MeasureListProps> = ({
                     </span>
                   </td>
                   <td style={{ padding: '12px 8px' }} onClick={(e) => e.stopPropagation()}>
-                    <button
-                      className="btn outline"
-                      style={{ marginRight: '5px', padding: '2px 8px', fontSize: '0.8rem' }}
-                      onClick={() => setEditTarget({ id: m.id, type: m.type, measuredAt: m.measuredAt, data: m.data })}
-                    >
-                      {t('list.edit', { defaultValue: 'Edit' })}
-                    </button>
+                    {m.type !== 'CGM' && (
+                      <button
+                        className="btn outline"
+                        style={{ marginRight: '5px', padding: '2px 8px', fontSize: '0.8rem' }}
+                        onClick={() => setEditTarget({ id: m.id, type: m.type, measuredAt: m.measuredAt, data: m.data })}
+                      >
+                        {t('list.edit', { defaultValue: 'Edit' })}
+                      </button>
+                    )}
                     {showArchived ? (
                       <button
                         className="btn outline"

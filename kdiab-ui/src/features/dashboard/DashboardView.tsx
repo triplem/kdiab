@@ -157,6 +157,8 @@ function TreatmentDot(props: { cx?: number; cy?: number; payload?: { treatmentTy
 
   return (
     <g>
+      {/* transparent hit area so hover/tooltip works */}
+      <circle cx={cx} cy={cy} r={12} fill="transparent" />
       <text x={cx} y={cy - 4} textAnchor="middle" fill={color} fontSize={12}>{shape}</text>
       {label && <text x={cx} y={cy + 14} textAnchor="middle" fill={color} fontSize={9}>{label}</text>}
     </g>
@@ -439,13 +441,14 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                 dot={false}
                 strokeWidth={2}
                 isAnimationActive={false}
-                connectNulls={false}
+                connectNulls={true}
               />
               {treatmentMarkers.length > 0 && (
                 <Scatter
                   dataKey="marker"
                   shape={TreatmentDot}
                   isAnimationActive={false}
+                  cursor="pointer"
                 />
               )}
             </ComposedChart>
