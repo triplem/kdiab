@@ -15,6 +15,7 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceLine,
+  ReferenceArea,
   ResponsiveContainer,
 } from 'recharts'
 
@@ -38,6 +39,21 @@ const WINDOWS: { key: string; hours: number; label: string }[] = [
 const TREND_ARROWS: Record<string, string> = {
   DoubleUp: '↑↑', SingleUp: '↑', FortyFiveUp: '↗',
   Flat: '→', FortyFiveDown: '↘', SingleDown: '↓', DoubleDown: '↓↓',
+}
+
+const BASAL_COLORS: Record<string, string> = {
+  SCHEDULED: '#64748b',
+  ABOVE:     '#22c55e',
+  BELOW:     '#f59e0b',
+  SUSPENDED: '#e2e8f0',
+}
+
+interface BasalBlock {
+  startMs: number
+  endMs: number
+  deliveredRate: number
+  scheduledRate: number
+  state: 'SCHEDULED' | 'ABOVE' | 'BELOW' | 'SUSPENDED'
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -105,21 +121,111 @@ function calcCOB(
   return Math.max(0, cob)
 }
 
+function segToMin(t: string): number {
+  const [h = 0, m = 0] = t.split(':').map(Number)
+  return h * 60 + m
+}
+
+// Scheduled basal rate from profile at a given timestamp
+function scheduledRateAt(
+  basal: Array<{ startTime: string; value: number }>,
+  ms: number,
+): number {
+  const sorted = [...basal].sort((a, b) => segToMin(a.startTime) - segToMin(b.startTime))
+  const d = new Date(ms)
+  const nowMin = d.getHours() * 60 + d.getMinutes()
+  let rate = sorted[sorted.length - 1]?.value ?? 0
+  for (const seg of sorted) {
+    if (segToMin(seg.startTime) <= nowMin) rate = seg.value
+  }
+  return rate
+}
+
+// Reconstruct delivered basal blocks from profile + TEMP_BASAL/PUMP_SUSPEND treatments
+export function reconstructBasalBlocks(
+  fromMs: number,
+  toMs: number,
+  basal: Array<{ startTime: string; value: number }>,
+  treatments: Array<{ treatedAt: string; type: string; data: Record<string, unknown> }>,
+): BasalBlock[] {
+  if (!basal.length) return []
+
+  const bounds = new Set<number>([fromMs, toMs])
+
+  // Profile segment change timestamps (per calendar day)
+  for (let d = Math.floor(fromMs / 86400000) * 86400000; d <= toMs; d += 86400000) {
+    for (const seg of basal) {
+      const ms = d + segToMin(seg.startTime) * 60000
+      if (ms > fromMs && ms < toMs) bounds.add(ms)
+    }
+  }
+
+  // TEMP_BASAL and PUMP_SUSPEND periods
+  type TempPeriod = { startMs: number; endMs: number; rate: number; absolute: boolean; isSuspend: boolean }
+  const tempPeriods: TempPeriod[] = []
+  for (const t of treatments) {
+    if (t.type !== 'TEMP_BASAL' && t.type !== 'PUMP_SUSPEND') continue
+    const startMs = new Date(t.treatedAt).getTime()
+    const durMin = typeof t.data['duration'] === 'number' ? (t.data['duration'] as number) : 0
+    const endMs = startMs + durMin * 60000
+    if (endMs <= fromMs || startMs >= toMs) continue
+    const cs = Math.max(startMs, fromMs)
+    const ce = Math.min(endMs, toMs)
+    bounds.add(cs)
+    bounds.add(ce)
+    tempPeriods.push({
+      startMs: cs, endMs: ce,
+      rate: typeof t.data['rate'] === 'number' ? (t.data['rate'] as number) : 0,
+      absolute: t.data['absolute'] === true,
+      isSuspend: t.type === 'PUMP_SUSPEND',
+    })
+  }
+
+  const sortedBounds = [...bounds].sort((a, b) => a - b)
+  const raw: BasalBlock[] = []
+
+  for (let i = 0; i < sortedBounds.length - 1; i++) {
+    const startMs = sortedBounds[i]!
+    const endMs = sortedBounds[i + 1]!
+    const sched = scheduledRateAt(basal, (startMs + endMs) / 2)
+
+    // Latest-started active period wins
+    const active = tempPeriods
+      .filter(p => p.startMs <= startMs && p.endMs >= endMs)
+      .sort((a, b) => b.startMs - a.startMs)[0]
+
+    let delivered: number
+    let state: BasalBlock['state']
+    if (!active) {
+      delivered = sched; state = 'SCHEDULED'
+    } else if (active.isSuspend) {
+      delivered = 0; state = 'SUSPENDED'
+    } else {
+      delivered = active.absolute ? active.rate : sched * (active.rate / 100)
+      state = Math.abs(delivered - sched) < 0.001 ? 'SCHEDULED'
+           : delivered > sched ? 'ABOVE' : 'BELOW'
+    }
+    raw.push({ startMs, endMs, deliveredRate: delivered, scheduledRate: sched, state })
+  }
+
+  // Merge consecutive same-state blocks
+  const merged: BasalBlock[] = []
+  for (const b of raw) {
+    const last = merged[merged.length - 1]
+    if (last && last.state === b.state && Math.abs(last.deliveredRate - b.deliveredRate) < 0.001) {
+      last.endMs = b.endMs
+    } else {
+      merged.push({ ...b })
+    }
+  }
+  return merged
+}
+
 // Current basal rate from active profile
 function currentBasalRate(basal: Array<{ startTime: string; value: number }> | undefined): number | null {
   if (!basal?.length) return null
-  const now = new Date()
-  const nowMin = now.getHours() * 60 + now.getMinutes()
-  const sorted = [...basal].sort((a, b) => {
-    const toMin = (t: string) => { const [h = 0, m = 0] = t.split(':').map(Number); return h * 60 + m }
-    return toMin(a.startTime) - toMin(b.startTime)
-  })
-  let rate: number | null = null
-  for (const seg of sorted) {
-    const [h = 0, m = 0] = seg.startTime.split(':').map(Number)
-    if (h * 60 + m <= nowMin) rate = seg.value
-  }
-  return rate ?? sorted[sorted.length - 1]?.value ?? null
+  const rate = scheduledRateAt(basal, Date.now())
+  return rate > 0 ? rate : null
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
@@ -367,6 +473,32 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
   // Combined dataset for ComposedChart root — enables tooltip cursor to find points
   const chartData = [...cgmPoints, ...bgmPoints, ...treatmentMarkers].sort((a, b) => a.time - b.time)
 
+  // Basal block reconstruction
+  const { basalBlocks, basalProfileLine } = useMemo(() => {
+    const basal = activeProfile?.basal
+    if (!basal?.length) return { basalBlocks: [], basalProfileLine: [] }
+    const fromMs = new Date(windowFrom).getTime()
+    const toMs = new Date(windowTo).getTime()
+    const blocks = reconstructBasalBlocks(fromMs, toMs, basal, windowTimeline?.treatments ?? [])
+
+    // Stepped profile rate line for dashed overlay
+    const sorted = [...basal].sort((a, b) => segToMin(a.startTime) - segToMin(b.startTime))
+    const line: Array<{ time: number; sched: number }> = [
+      { time: fromMs, sched: scheduledRateAt(sorted, fromMs) },
+    ]
+    for (let d = Math.floor(fromMs / 86400000) * 86400000; d <= toMs; d += 86400000) {
+      for (const seg of sorted) {
+        const ms = d + segToMin(seg.startTime) * 60000
+        if (ms > fromMs && ms < toMs) {
+          line.push({ time: ms - 1, sched: line[line.length - 1]!.sched })
+          line.push({ time: ms, sched: seg.value })
+        }
+      }
+    }
+    line.push({ time: toMs, sched: line[line.length - 1]!.sched })
+    return { basalBlocks: blocks, basalProfileLine: line }
+  }, [activeProfile?.basal, windowFrom, windowTo, windowTimeline?.treatments])
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   const deltaColor = (d: number | null) => {
@@ -468,7 +600,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
       {/* ── Combined glucose + treatment markers chart ────────────────────── */}
       <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
         <h3 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '1rem' }}>
-          {t('dashboard.cgmChart', { defaultValue: 'Glucose' })}
+          {t('dashboard.cgmChart')}
         </h3>
         {isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
         {cgmPoints.length > 0 && (
@@ -555,6 +687,68 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
           <span><span style={{ color: '#8b5cf6' }}>◆</span> {t('dashboard.legendSensorInsert')}</span>
           <span><span style={{ color: '#ec4899' }}>◈</span> {t('dashboard.legendInsulinChange')}</span>
         </div>
+      </div>
+
+      {/* ── Basal block chart ─────────────────────────────────────────────── */}
+      <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
+        <h3 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '1rem' }}>
+          {t('dashboard.basalChart')}
+        </h3>
+        {!activeProfile && (
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+            {t('dashboard.noProfile')}
+          </p>
+        )}
+        {activeProfile && (
+          <>
+            <ResponsiveContainer width="100%" height={120}>
+              <ComposedChart data={basalProfileLine} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="time"
+                  type="number"
+                  domain={[new Date(windowFrom).getTime(), new Date(windowTo).getTime()]}
+                  tickFormatter={(ms: number) => formatTime(new Date(ms).toISOString())}
+                  tick={{ fontSize: 11 }}
+                  scale="time"
+                />
+                <YAxis
+                  tick={{ fontSize: 11 }}
+                  label={{ value: 'U/h', angle: -90, position: 'insideLeft', offset: 15, style: { fontSize: 11 }, fill: 'var(--text-secondary)' }}
+                  domain={[0, 'auto']}
+                />
+                {basalBlocks.map((block, i) => (
+                  <ReferenceArea
+                    key={i}
+                    x1={block.startMs}
+                    x2={block.endMs}
+                    y1={0}
+                    y2={block.deliveredRate}
+                    fill={BASAL_COLORS[block.state] ?? BASAL_COLORS['SCHEDULED']!}
+                    fillOpacity={0.75}
+                    stroke="none"
+                    ifOverflow="extendDomain"
+                  />
+                ))}
+                <Line
+                  dataKey="sched"
+                  stroke="var(--text-secondary)"
+                  strokeDasharray="6 3"
+                  strokeWidth={1.5}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+            {/* Legend */}
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              <span><span style={{ display: 'inline-block', width: 10, height: 10, background: BASAL_COLORS['SCHEDULED'], borderRadius: 2, marginRight: 3 }} />{t('dashboard.legendScheduled')}</span>
+              <span><span style={{ display: 'inline-block', width: 10, height: 10, background: BASAL_COLORS['ABOVE'], borderRadius: 2, marginRight: 3 }} />{t('dashboard.legendAbove')}</span>
+              <span><span style={{ display: 'inline-block', width: 10, height: 10, background: BASAL_COLORS['BELOW'], borderRadius: 2, marginRight: 3 }} />{t('dashboard.legendBelow')}</span>
+              <span><span style={{ display: 'inline-block', width: 10, height: 10, background: BASAL_COLORS['SUSPENDED'], border: '1px solid var(--border)', borderRadius: 2, marginRight: 3 }} />{t('dashboard.legendSuspended')}</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
