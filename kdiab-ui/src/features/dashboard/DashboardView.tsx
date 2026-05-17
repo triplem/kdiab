@@ -61,29 +61,29 @@ interface BasalBlock {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-function toDisplay(mgdl: number, unit: string): number {
+export function toDisplay(mgdl: number, unit: string): number {
   return unit === 'mmol/L'
     ? Math.round(mgdl * MGDL_TO_MMOL * 10) / 10
     : Math.round(mgdl)
 }
 
-function glucoseColor(mgdl: number): string {
+export function glucoseColor(mgdl: number): string {
   if (mgdl < 70) return 'var(--accent-danger)'
   if (mgdl > 180) return 'var(--accent-warning)'
   return 'var(--accent-success)'
 }
 
-function trendArrow(trend: unknown): string {
+export function trendArrow(trend: unknown): string {
   return typeof trend === 'string' ? (TREND_ARROWS[trend] ?? '') : ''
 }
 
-function daysSince(iso: string | undefined): string {
+export function daysSince(iso: string | undefined): string {
   if (!iso) return '—'
   const d = (Date.now() - new Date(iso).getTime()) / 86400000
   return `${d.toFixed(1)} d`
 }
 
-function sensorExpiryLabel(insertedAt: string | undefined, durationHours: number): string {
+export function sensorExpiryLabel(insertedAt: string | undefined, durationHours: number): string {
   if (!insertedAt) return '—'
   const remainingMs = new Date(insertedAt).getTime() + durationHours * 3600000 - Date.now()
   const remainingHours = Math.round(remainingMs / 3600000)
@@ -91,7 +91,7 @@ function sensorExpiryLabel(insertedAt: string | undefined, durationHours: number
 }
 
 // Linear IOB decay over DIA window
-function calcIOB(
+export function calcIOB(
   treatments: Array<{ treatedAt: string; type: string; data: Record<string, unknown> }>,
   diaMinutes: number,
 ): number {
@@ -108,7 +108,7 @@ function calcIOB(
 }
 
 // Linear COB decay over absorption window (absorptionTime field, default 180 min)
-function calcCOB(
+export function calcCOB(
   treatments: Array<{ treatedAt: string; type: string; data: Record<string, unknown> }>,
 ): number {
   const now = Date.now()
@@ -124,13 +124,13 @@ function calcCOB(
   return Math.max(0, cob)
 }
 
-function segToMin(t: string): number {
+export function segToMin(t: string): number {
   const [h = 0, m = 0] = t.split(':').map(Number)
   return h * 60 + m
 }
 
 // Scheduled basal rate from profile at a given timestamp
-function scheduledRateAt(
+export function scheduledRateAt(
   basal: Array<{ startTime: string; value: number }>,
   ms: number,
 ): number {
@@ -225,7 +225,7 @@ export function reconstructBasalBlocks(
 }
 
 // Current basal rate from active profile
-function currentBasalRate(basal: Array<{ startTime: string; value: number }> | undefined): number | null {
+export function currentBasalRate(basal: Array<{ startTime: string; value: number }> | undefined): number | null {
   if (!basal?.length) return null
   return scheduledRateAt(basal, Date.now())
 }
