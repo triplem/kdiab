@@ -7,6 +7,7 @@ import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 
 class TreatmentsClientTest {
 
@@ -170,6 +171,90 @@ class TreatmentsClientTest {
         assertEquals(1, capturedParams.size)
         assertEquals(null, capturedParams[0].first)
         assertEquals(null, capturedParams[0].second)
+    }
+
+    // ── getDeviceAge ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `getDeviceAge returns device age timestamps`() = runTest {
+        val body = """{"catheterChangedAt":"2026-05-14T10:30:00Z","reservoirChangedAt":"2026-05-13T08:00:00Z","sensorInsertedAt":"2026-05-12T18:00:00Z"}"""
+        val engine = MockEngine { _ ->
+            respond(
+                content = body,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val result = buildClient(engine).getDeviceAge(userId, auth, correlationId)
+        assertEquals("2026-05-14T10:30:00Z", result.catheterChangedAt)
+        assertEquals("2026-05-13T08:00:00Z", result.reservoirChangedAt)
+        assertEquals("2026-05-12T18:00:00Z", result.sensorInsertedAt)
+    }
+
+    @Test
+    fun `getDeviceAge returns null fields when no device events recorded`() = runTest {
+        val body = """{}"""
+        val engine = MockEngine { _ ->
+            respond(
+                content = body,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val result = buildClient(engine).getDeviceAge(userId, auth, correlationId)
+        assertEquals(null, result.catheterChangedAt)
+        assertEquals(null, result.reservoirChangedAt)
+        assertEquals(null, result.sensorInsertedAt)
+    }
+
+    @Test
+    fun `getDeviceAge throws UpstreamException on 500`() = runTest {
+        val engine = MockEngine { _ ->
+            respond(content = """{"code":500,"message":"error"}""", status = HttpStatusCode.InternalServerError)
+        }
+        val ex = assertFailsWith<UpstreamException> {
+            buildClient(engine).getDeviceAge(userId, auth, correlationId)
+        }
+        assertEquals("treatments", ex.service)
+        assertEquals(500, ex.statusCode)
+    }
+
+    // ── getLatestDeviceStatus ─────────────────────────────────────────────────
+
+    @Test
+    fun `getLatestDeviceStatus returns status when found`() = runTest {
+        val body = """{"id":"abc","userId":"$userId","recordedAt":"2026-05-16T10:00:00Z","device":"AAPS 3.2.0","batteryLevel":87}"""
+        val engine = MockEngine { _ ->
+            respond(
+                content = body,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val result = buildClient(engine).getLatestDeviceStatus(userId, auth, correlationId)
+        assertNotNull(result)
+        assertEquals("abc", result.id)
+        assertEquals("AAPS 3.2.0", result.device)
+        assertEquals(87, result.batteryLevel)
+    }
+
+    @Test
+    fun `getLatestDeviceStatus returns null when 404`() = runTest {
+        val engine = MockEngine { _ ->
+            respond(content = """{"code":404,"message":"Not Found"}""", status = HttpStatusCode.NotFound)
+        }
+        val result = buildClient(engine).getLatestDeviceStatus(userId, auth, correlationId)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `getLatestDeviceStatus throws UpstreamException on 500`() = runTest {
+        val engine = MockEngine { _ ->
+            respond(content = """{"code":500,"message":"error"}""", status = HttpStatusCode.InternalServerError)
+        }
+        assertFailsWith<UpstreamException> {
+            buildClient(engine).getLatestDeviceStatus(userId, auth, correlationId)
+        }
     }
 
     private fun buildClient(engine: MockEngine): TreatmentsClient =

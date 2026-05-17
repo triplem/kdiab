@@ -12,6 +12,7 @@ import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.analyze.api.Paths
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
+import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
@@ -30,6 +31,7 @@ fun Route.bffRoutes(
     analyticsService: AnalyticsService,
     profilesService: ProfilesService,
     profilesClient: ProfilesClient? = null,
+    treatmentsClient: TreatmentsClient? = null,
 ) {
     authenticate("auth-jwt") {
         get<Paths.getTimeline> { params ->
@@ -115,6 +117,40 @@ fun Route.bffRoutes(
             )
             call.respond(result.toResponse())
         }
+
+        get("/users/{userId}/device-age") { handleDeviceAge(call, treatmentsClient) }
+
+        get("/users/{userId}/device-status") { handleDeviceStatus(call, treatmentsClient) }
+    }
+}
+
+private suspend fun handleDeviceAge(call: ApplicationCall, treatmentsClient: TreatmentsClient?) {
+    val userId = call.parameters["userId"] ?: return call.respond(HttpStatusCode.BadRequest)
+    val ctx = extractContext(call, userId)
+    auditDoctorAccess(ctx, "analyze.device-age")
+    val client = treatmentsClient ?: return call.respond(HttpStatusCode.ServiceUnavailable)
+    val deviceAge = client.getDeviceAge(
+        userId = ctx.targetUserId.toString(),
+        authorization = ctx.authorization,
+        correlationId = ctx.correlationId,
+    )
+    call.respond(deviceAge.toResponse())
+}
+
+private suspend fun handleDeviceStatus(call: ApplicationCall, treatmentsClient: TreatmentsClient?) {
+    val userId = call.parameters["userId"] ?: return call.respond(HttpStatusCode.BadRequest)
+    val ctx = extractContext(call, userId)
+    auditDoctorAccess(ctx, "analyze.device-status")
+    val client = treatmentsClient ?: return call.respond(HttpStatusCode.ServiceUnavailable)
+    val deviceStatus = client.getLatestDeviceStatus(
+        userId = ctx.targetUserId.toString(),
+        authorization = ctx.authorization,
+        correlationId = ctx.correlationId,
+    )
+    if (deviceStatus == null) {
+        call.respond(HttpStatusCode.NoContent)
+    } else {
+        call.respond(deviceStatus.toResponse())
     }
 }
 

@@ -3,6 +3,8 @@ package org.javafreedom.kdiab.analyze.adapters.inbound.web
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
+import org.javafreedom.kdiab.analyze.domain.model.DeviceAge
+import org.javafreedom.kdiab.analyze.domain.model.DeviceStatus
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.ProfilesResult
 import org.javafreedom.kdiab.analyze.domain.model.Timeline
@@ -87,6 +89,40 @@ data class ProfileSummaryDto(
     val previousProfileId: String? = null,
     val activatedAt: String? = null,
     val archivedAt: String? = null,
+    val insulinType: String? = null,
+    val durationOfAction: Int? = null,
+    val basal: List<BasalSegmentDto>? = null,
+    val icr: List<RatioSegmentDto>? = null,
+    val isf: List<RatioSegmentDto>? = null,
+    val targets: List<TargetSegmentDto>? = null,
+)
+
+@Serializable
+data class BasalSegmentDto(val startTime: String, val value: Double)
+
+@Serializable
+data class RatioSegmentDto(val startTime: String, val value: Double)
+
+@Serializable
+data class TargetSegmentDto(val startTime: String, val low: Double, val high: Double)
+
+@Serializable
+data class DeviceAgeResponseDto(
+    val catheterChangedAt: String?,
+    val reservoirChangedAt: String?,
+    val sensorInsertedAt: String?,
+)
+
+@Serializable
+data class DeviceStatusResponseDto(
+    val id: String,
+    val userId: String,
+    val recordedAt: String,
+    val device: String,
+    val pumpName: String?,
+    val reservoirUnits: Double?,
+    val batteryLevel: Int?,
+    val pumpConnected: Boolean?,
 )
 
 fun Timeline.toResponse() = TimelineResponse(
@@ -134,15 +170,38 @@ fun AgpResult.toResponse() = AgpResponseDto(
 fun ProfilesResult.toResponse() = ProfilesResponseDto(
     profiles = profiles.map {
         ProfileSummaryDto(
-            it.id,
-            it.userId,
-            it.status,
-            it.name,
-            it.createdAt,
-            it.validFrom,
-            it.previousProfileId,
-            it.activatedAt,
-            it.archivedAt,
+            id = it.id,
+            userId = it.userId,
+            status = it.status,
+            name = it.name,
+            createdAt = it.createdAt,
+            validFrom = it.validFrom,
+            previousProfileId = it.previousProfileId,
+            activatedAt = it.activatedAt,
+            archivedAt = it.archivedAt,
+            insulinType = it.insulinType,
+            durationOfAction = it.durationOfAction,
+            basal = it.basal?.map { s -> BasalSegmentDto(s.startTime, s.value) },
+            icr = it.icr?.map { s -> RatioSegmentDto(s.startTime, s.value) },
+            isf = it.isf?.map { s -> RatioSegmentDto(s.startTime, s.value) },
+            targets = it.targets?.map { s -> TargetSegmentDto(s.startTime, s.low, s.high) },
         )
     },
+)
+
+fun DeviceAge.toResponse() = DeviceAgeResponseDto(
+    catheterChangedAt = catheterChangedAt,
+    reservoirChangedAt = reservoirChangedAt,
+    sensorInsertedAt = sensorInsertedAt,
+)
+
+fun DeviceStatus.toResponse() = DeviceStatusResponseDto(
+    id = id,
+    userId = userId,
+    recordedAt = recordedAt,
+    device = device,
+    pumpName = pumpName,
+    reservoirUnits = reservoirUnits,
+    batteryLevel = batteryLevel,
+    pumpConnected = pumpConnected,
 )
