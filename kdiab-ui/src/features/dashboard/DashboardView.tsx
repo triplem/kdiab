@@ -141,22 +141,23 @@ function StatTile({ label, value, sub, color }: StatTileProps) {
   )
 }
 
-// Treatment marker shape for Recharts Scatter — must spread event props so Recharts tooltip fires.
-// Parameter is `unknown` to satisfy ScatterCustomizedShape contravariance; cast internally.
+function treatmentAppearance(type: string): { color: string; shape: string } {
+  if (type === 'BOLUS' || type === 'CORRECTION_BOLUS') return { color: '#3b82f6', shape: '▲' }
+  if (type === 'CARBS' || type === 'MEAL')             return { color: '#f59e0b', shape: '●' }
+  if (type === 'SITE_CHANGE')                          return { color: '#10b981', shape: '⊕' }
+  if (type === 'SENSOR_INSERT')                        return { color: '#8b5cf6', shape: '◆' }
+  if (type === 'INSULIN_CHANGE')                       return { color: '#ec4899', shape: '◈' }
+  return { color: '#6366f1', shape: '▼' }
+}
+
+// Treatment marker shape — `unknown` satisfies Recharts' contravariant dot prop type; cast internally.
 function TreatmentDot(props: unknown) {
   const p = props as Record<string, unknown>
   const cx = (p['cx'] as number) ?? 0
   const cy = (p['cy'] as number) ?? 0
   const payload = p['payload'] as { treatmentType?: string; label?: string } | undefined
-  const type = payload?.treatmentType ?? ''
+  const { color, shape } = treatmentAppearance(payload?.treatmentType ?? '')
   const label = payload?.label ?? ''
-  let color = '#6366f1'
-  let shape = '▼'
-  if (type === 'BOLUS' || type === 'CORRECTION_BOLUS') { color = '#3b82f6'; shape = '▲' }
-  else if (type === 'CARBS' || type === 'MEAL') { color = '#f59e0b'; shape = '●' }
-  else if (type === 'SITE_CHANGE') { color = '#10b981'; shape = '⊕' }
-  else if (type === 'SENSOR_INSERT') { color = '#8b5cf6'; shape = '◆' }
-  else if (type === 'INSULIN_CHANGE') { color = '#ec4899'; shape = '◈' }
 
   // Spread Recharts-injected event handlers so the shared Tooltip fires on hover
   const eventProps: Record<string, unknown> = {}
@@ -169,6 +170,23 @@ function TreatmentDot(props: unknown) {
       <circle cx={cx} cy={cy} r={14} fill="transparent" pointerEvents="all" />
       <text x={cx} y={cy - 4} textAnchor="middle" fill={color} fontSize={12}>{shape}</text>
       {label && <text x={cx} y={cy + 14} textAnchor="middle" fill={color} fontSize={9}>{label}</text>}
+    </g>
+  )
+}
+
+function TreatmentActiveDot(props: unknown) {
+  const p = props as Record<string, unknown>
+  const cx = (p['cx'] as number) ?? 0
+  const cy = (p['cy'] as number) ?? 0
+  const payload = p['payload'] as { treatmentType?: string; label?: string } | undefined
+  const { color, shape } = treatmentAppearance(payload?.treatmentType ?? '')
+  const label = payload?.label ?? ''
+
+  return (
+    <g style={{ cursor: 'pointer' }}>
+      <circle cx={cx} cy={cy} r={16} fill={color} fillOpacity={0.2} stroke={color} strokeWidth={1} />
+      <text x={cx} y={cy - 4} textAnchor="middle" fill={color} fontSize={15}>{shape}</text>
+      {label && <text x={cx} y={cy + 16} textAnchor="middle" fill={color} fontSize={9}>{label}</text>}
     </g>
   )
 }
@@ -485,7 +503,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                   stroke="none"
                   strokeWidth={0}
                   dot={(props: object) => <TreatmentDot {...props} />}
-                  activeDot={false}
+                  activeDot={(props: object) => <TreatmentActiveDot {...props} />}
                   isAnimationActive={false}
                   connectNulls={false}
                 />
