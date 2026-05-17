@@ -6,7 +6,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.CircuitBreakerOpenException
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
+import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
+import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureSource
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureStatus
@@ -20,8 +21,9 @@ import kotlin.test.assertTrue
 
 class AnalyticsServiceTest {
 
-    private val measuresClient = mockk<MeasuresClient>()
-    private val service = AnalyticsService(measuresClient)
+    private val measuresClient = mockk<MeasuresPort>()
+    private val profilesClient = mockk<ProfilesPort>()
+    private val service = AnalyticsService(measuresClient, profilesClient)
 
     private val userId = "user-1"
     private val auth = "Bearer token"

@@ -139,6 +139,7 @@ class BffRoutesTest {
 
     @Test
     fun `hba1c - 200 patient reads own data`() = routeTest { _, svc, _ ->
+        coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -146,6 +147,7 @@ class BffRoutesTest {
 
     @Test
     fun `agp - 200 patient reads own data`() = routeTest { _, svc, _ ->
+        coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -195,6 +197,7 @@ class BffRoutesTest {
 
     @Test
     fun `hba1c - 200 doctor reads allowed patient data`() = routeTest { _, svc, _ ->
+        coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -202,6 +205,7 @@ class BffRoutesTest {
 
     @Test
     fun `agp - 200 doctor reads allowed patient data`() = routeTest { _, svc, _ ->
+        coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -251,6 +255,7 @@ class BffRoutesTest {
 
     @Test
     fun `hba1c - 200 admin reads any user data`() = routeTest { _, svc, _ ->
+        coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getHba1c(MIKE_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -258,6 +263,7 @@ class BffRoutesTest {
 
     @Test
     fun `agp - 200 admin reads any user data`() = routeTest { _, svc, _ ->
+        coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getAgp(MIKE_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)

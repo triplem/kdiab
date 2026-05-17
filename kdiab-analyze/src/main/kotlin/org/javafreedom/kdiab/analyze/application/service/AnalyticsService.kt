@@ -1,7 +1,9 @@
 package org.javafreedom.kdiab.analyze.application.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
+import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.Profile
+import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
+import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
@@ -53,11 +55,27 @@ private data class MeasuresCacheKey(val userId: String, val from: String, val to
 private data class MeasuresCacheEntry(val measures: List<MeasureResponse>, val fetchedAt: Instant)
 
 class AnalyticsService(
-    private val measuresClient: MeasuresClient,
+    private val measuresClient: MeasuresPort,
+    private val profilesClient: ProfilesPort,
 ) {
     // In-process cache keyed by (userId, from, to). Avoids double-fetching when getHba1c and
     // getAgp are called in the same request burst for the same time window.
     private val measuresCache = ConcurrentHashMap<MeasuresCacheKey, MeasuresCacheEntry>()
+
+
+    suspend fun getAnalysisThresholds(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+    ): Pair<Double, Double> {
+        val activeProfile = runCatching {
+            profilesClient.getProfiles(userId, authorization, correlationId)
+                .firstOrNull { it.status == Profile.Status.ACTIVE }
+        }.getOrNull()
+        val tirLow = activeProfile?.analysisLow ?: TIR_LOW
+        val tirHigh = activeProfile?.analysisHigh ?: TIR_HIGH
+        return Pair(tirLow, tirHigh)
+    }
 
     private suspend fun getMeasuresCached(
         userId: String,

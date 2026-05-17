@@ -16,6 +16,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.DefaultApi
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentResponse
+import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 
 private val logger = KotlinLogging.logger {}
@@ -29,7 +30,7 @@ class TreatmentsClient(
     httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
     val circuitBreaker: CircuitBreaker = CircuitBreaker(name = "treatments"),
-) {
+) : TreatmentsPort {
     private val httpClient = HttpClient(httpClientEngine) {
         install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
         install(HttpTimeout) {
@@ -42,12 +43,12 @@ class TreatmentsClient(
         }
     }
 
-    suspend fun getTreatments(
+    override suspend fun getTreatments(
         userId: String,
         authorization: String,
         correlationId: String,
-        from: String? = null,
-        to: String? = null,
+        from: String?,
+        to: String?,
     ): List<TreatmentResponse> {
         val token = authorization.removePrefix("Bearer ").trim()
         val api = buildApi(token, correlationId)

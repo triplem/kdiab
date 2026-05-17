@@ -1,11 +1,11 @@
 package org.javafreedom.kdiab.analyze.application.service
 
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
+import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
 import org.javafreedom.kdiab.analyze.domain.model.ProfileSummary
 import org.javafreedom.kdiab.analyze.domain.model.ProfilesResult
 
 class ProfilesService(
-    private val profilesClient: ProfilesClient,
+    private val profilesClient: ProfilesPort,
 ) {
     @Suppress("UnusedParameter")
     suspend fun getProfiles(

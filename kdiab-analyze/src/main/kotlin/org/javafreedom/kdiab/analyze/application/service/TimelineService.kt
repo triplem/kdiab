@@ -2,8 +2,8 @@
 
 package org.javafreedom.kdiab.analyze.application.service
 
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
+import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
+import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.domain.model.Timeline
 import org.javafreedom.kdiab.analyze.domain.model.TimelineMeasure
 import org.javafreedom.kdiab.analyze.domain.model.TimelineTreatment
@@ -13,8 +13,8 @@ import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 class TimelineService(
-    private val measuresClient: MeasuresClient,
-    private val treatmentsClient: TreatmentsClient,
+    private val measuresClient: MeasuresPort,
+    private val treatmentsClient: TreatmentsPort,
 ) {
     suspend fun getTimeline(
         userId: String,
