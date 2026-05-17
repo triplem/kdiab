@@ -34,6 +34,10 @@ data class AgpResult(
     val warnings: List<String> = emptyList(),
 )
 
+data class BasalSegment(val startTime: String, val value: Double)
+data class RatioSegment(val startTime: String, val value: Double)
+data class TargetSegment(val startTime: String, val low: Double, val high: Double)
+
 data class ProfileSummary(
     val id: String,
     val userId: String,
@@ -44,6 +48,12 @@ data class ProfileSummary(
     val previousProfileId: String?,
     val activatedAt: String? = null,
     val archivedAt: String? = null,
+    val insulinType: String? = null,
+    val durationOfAction: Int? = null,
+    val basal: List<BasalSegment>? = null,
+    val icr: List<RatioSegment>? = null,
+    val isf: List<RatioSegment>? = null,
+    val targets: List<TargetSegment>? = null,
 )
 
 data class ProfilesResult(
@@ -60,4 +70,21 @@ data class DeviceUsageResult(
     val stddevReservoirDays: Double?,
     val avgBatteryDays: Double?,
     val stddevBatteryDays: Double?,
+)
+
+data class DeviceAge(
+    val catheterChangedAt: String?,
+    val reservoirChangedAt: String?,
+    val sensorInsertedAt: String?,
+)
+
+data class DeviceStatus(
+    val id: String,
+    val userId: String,
+    val recordedAt: String,
+    val device: String,
+    val pumpName: String?,
+    val reservoirUnits: Double?,
+    val batteryLevel: Int?,
+    val pumpConnected: Boolean?,
 )

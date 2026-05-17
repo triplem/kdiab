@@ -9,16 +9,21 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.request.header
 import io.ktor.client.statement.request
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.DefaultApi
+import org.javafreedom.kdiab.analyze.api.upstream.treatments.DeviceStatusApi
+import org.javafreedom.kdiab.analyze.api.upstream.treatments.TreatmentsApi
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentResponse
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
+import org.javafreedom.kdiab.analyze.domain.model.DeviceAge
+import org.javafreedom.kdiab.analyze.domain.model.DeviceStatus
 
 private val logger = KotlinLogging.logger {}
 
@@ -196,8 +201,97 @@ class TreatmentsClient(
         return result
     }
 
+    override suspend fun getDeviceAge(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+    ): DeviceAge {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val api = buildTreatmentsApi(token, correlationId)
+        val start = System.currentTimeMillis()
+        val httpResponse = circuitBreaker.execute { api.getDeviceAge(userId) }
+        val ms = System.currentTimeMillis() - start
+        if (!httpResponse.success) {
+            val requestUrl = httpResponse.response.request.url.toString()
+            logger.warn { "Upstream device-age returned ${httpResponse.status} in ${ms}ms url=$requestUrl" }
+            throw UpstreamException(
+                service = "treatments",
+                statusCode = httpResponse.status,
+                message = httpResponse.response.status.description,
+                responseBody = null,
+                url = requestUrl,
+            )
+        }
+        logger.info { "Fetched device-age in ${ms}ms [status=${httpResponse.status}]" }
+        val body = httpResponse.body()
+        return DeviceAge(
+            catheterChangedAt = body.catheterChangedAt,
+            reservoirChangedAt = body.reservoirChangedAt,
+            sensorInsertedAt = body.sensorInsertedAt,
+        )
+    }
+
+    override suspend fun getLatestDeviceStatus(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+    ): DeviceStatus? {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val api = buildDeviceStatusApi(token, correlationId)
+        val start = System.currentTimeMillis()
+        val httpResponse = circuitBreaker.execute { api.getLatestDeviceStatus(userId) }
+        val ms = System.currentTimeMillis() - start
+        if (httpResponse.status == HttpStatusCode.NotFound.value) {
+            logger.info { "No device status found for userId=$userId in ${ms}ms" }
+            return null
+        }
+        if (!httpResponse.success) {
+            val requestUrl = httpResponse.response.request.url.toString()
+            logger.warn { "Upstream device-status returned ${httpResponse.status} in ${ms}ms url=$requestUrl" }
+            throw UpstreamException(
+                service = "treatments",
+                statusCode = httpResponse.status,
+                message = httpResponse.response.status.description,
+                responseBody = null,
+                url = requestUrl,
+            )
+        }
+        logger.info { "Fetched device-status in ${ms}ms [status=${httpResponse.status}]" }
+        val body = httpResponse.body()
+        return DeviceStatus(
+            id = body.id,
+            userId = body.userId,
+            recordedAt = body.recordedAt,
+            device = body.device,
+            pumpName = body.pumpName,
+            reservoirUnits = body.reservoirUnits,
+            batteryLevel = body.batteryLevel,
+            pumpConnected = body.pumpConnected,
+        )
+    }
+
     private fun buildApi(token: String, correlationId: String): DefaultApi =
         DefaultApi(
+            baseUrl = "$baseUrl/api/v1",
+            httpClientEngine = httpClient.engine,
+            httpClientConfig = { config ->
+                config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+            },
+        ).apply { setBearerToken(token) }
+
+    private fun buildTreatmentsApi(token: String, correlationId: String): TreatmentsApi =
+        TreatmentsApi(
+            baseUrl = "$baseUrl/api/v1",
+            httpClientEngine = httpClient.engine,
+            httpClientConfig = { config ->
+                config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+            },
+        ).apply { setBearerToken(token) }
+
+    private fun buildDeviceStatusApi(token: String, correlationId: String): DeviceStatusApi =
+        DeviceStatusApi(
             baseUrl = "$baseUrl/api/v1",
             httpClientEngine = httpClient.engine,
             httpClientConfig = { config ->
