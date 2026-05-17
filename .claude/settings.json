@@ -139,7 +139,6 @@
     "APPROVAL_LABEL": "approved",
     "COVERAGE_THRESHOLD": "80",
     "DEFAULT_BRANCH": "main",
-    "AUDIT_LOG": "audit/agent-log.jsonl",
-    "HUMAN_LOG": "audit/human-decisions.jsonl"
+    "SESSION_LOG_DIR": "~/.claude/kdiab-sessions"
   }
 }
