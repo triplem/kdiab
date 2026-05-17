@@ -204,4 +204,64 @@ class ExposedTreatmentRepositoryTest {
         val result = repository.findLatestTimestampsByTypes(userId, setOf(TreatmentType.SENSOR_INSERT))
         assertEquals(emptyMap(), result)
     }
+
+    // ── findLatestTimestampByType (singular) ──────────────────────────────────
+
+    @Test
+    fun `findLatestTimestampByType - returns latest timestamp for type`() = runBlocking {
+        val userId = Uuid.parse("77777777-7777-7777-7777-777777777777")
+        val early  = testTreatment(userId, TreatmentType.SENSOR_INSERT, Instant.parse("2024-01-10T08:00:00Z"))
+        val latest = testTreatment(userId, TreatmentType.SENSOR_INSERT, Instant.parse("2024-01-20T08:00:00Z"))
+        repository.save(early)
+        repository.save(latest)
+
+        val result = repository.findLatestTimestampByType(userId, TreatmentType.SENSOR_INSERT)
+
+        assertEquals(latest.treatedAt, result)
+    }
+
+    @Test
+    fun `findLatestTimestampByType - returns null when no matching treatments exist`() = runBlocking {
+        val userId = Uuid.parse("88888888-8888-8888-8888-888888888888")
+        // Insert a treatment of a different type — should not be returned
+        repository.save(testTreatment(userId, TreatmentType.BOLUS, Instant.parse("2024-01-10T08:00:00Z")))
+
+        val result = repository.findLatestTimestampByType(userId, TreatmentType.SENSOR_INSERT)
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `findLatestTimestampByType - returns null when no treatments at all`() = runBlocking {
+        val userId = Uuid.parse("99999999-9999-9999-9999-999999999999")
+
+        val result = repository.findLatestTimestampByType(userId, TreatmentType.SENSOR_INSERT)
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `findLatestTimestampByType - ignores archived treatments`() = runBlocking {
+        val userId   = Uuid.parse("aaaaaaaa-aaaa-aaaa-aaaa-000000000001")
+        val archived = testTreatment(userId, TreatmentType.SITE_CHANGE, Instant.parse("2024-01-15T08:00:00Z"))
+            .copy(status = org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus.ARCHIVED)
+        repository.save(archived)
+
+        val result = repository.findLatestTimestampByType(userId, TreatmentType.SITE_CHANGE)
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `findLatestTimestampByType - returns latest when multiple active treatments exist`() = runBlocking {
+        val userId = Uuid.parse("aaaaaaaa-aaaa-aaaa-aaaa-000000000002")
+        val t1 = testTreatment(userId, TreatmentType.INSULIN_CHANGE, Instant.parse("2024-01-01T08:00:00Z"))
+        val t2 = testTreatment(userId, TreatmentType.INSULIN_CHANGE, Instant.parse("2024-01-15T08:00:00Z"))
+        val t3 = testTreatment(userId, TreatmentType.INSULIN_CHANGE, Instant.parse("2024-01-10T08:00:00Z"))
+        repository.save(t1); repository.save(t2); repository.save(t3)
+
+        val result = repository.findLatestTimestampByType(userId, TreatmentType.INSULIN_CHANGE)
+
+        assertEquals(t2.treatedAt, result)
+    }
 }
