@@ -5,13 +5,17 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.javafreedom.kdiab.analyze.adapters.outbound.http.CircuitBreakerOpenException
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureSource
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureStatus
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureType
+import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class AnalyticsServiceTest {
@@ -335,6 +339,63 @@ class AnalyticsServiceTest {
         )
         val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
         assertTrue(result.warnings.none { it.contains("Unit mismatch") })
+    }
+
+    // ── Graceful degradation — upstream unavailable ───────────────────────────
+
+    @Test
+    fun `getHba1c returns empty result with warning when upstream throws UpstreamException`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } throws
+            UpstreamException("measures", 503, "Service Unavailable")
+        val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
+        assertEquals(0, result.readingCount)
+        assertNull(result.hba1c)
+        assertEquals(0.0, result.meanGlucose)
+        assertTrue(result.warnings.any { it.contains("temporarily unavailable") })
+    }
+
+    @Test
+    fun `getHba1c returns empty result with warning when circuit breaker is open`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } throws
+            CircuitBreakerOpenException("measures")
+        val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")
+        assertEquals(0, result.readingCount)
+        assertNull(result.hba1c)
+        assertTrue(result.warnings.any { it.contains("temporarily unavailable") })
+    }
+
+    @Test
+    fun `getAgp returns 24 empty buckets with warning when upstream throws UpstreamException`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } throws
+            UpstreamException("measures", 502, "Bad Gateway")
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        assertEquals(24, result.hourlyData.size)
+        assertTrue(result.hourlyData.all { it.count == 0 })
+        assertEquals(0, result.totalReadingCount)
+        assertEquals(0, result.sensorWearDays)
+        assertTrue(result.warnings.any { it.contains("temporarily unavailable") })
+    }
+
+    @Test
+    fun `getAgp returns 24 empty buckets with warning when circuit breaker is open`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } throws
+            CircuitBreakerOpenException("measures")
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        assertEquals(24, result.hourlyData.size)
+        assertTrue(result.hourlyData.all { it.count == 0 })
+        assertTrue(result.warnings.any { it.contains("temporarily unavailable") })
+    }
+
+    @Test
+    fun `getAgp empty buckets returned by graceful degradation have correct hour indices`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } throws
+            UpstreamException("measures", 500, "Internal Server Error")
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        assertEquals(24, result.hourlyData.size)
+        result.hourlyData.forEachIndexed { index, bucket ->
+            assertEquals(index, bucket.hour)
+            assertNull(bucket.median)
+        }
     }
 }
 

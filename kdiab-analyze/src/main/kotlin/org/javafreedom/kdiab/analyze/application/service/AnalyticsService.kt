@@ -1,5 +1,6 @@
 package org.javafreedom.kdiab.analyze.application.service
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
@@ -9,6 +10,8 @@ import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+
+private val logger = KotlinLogging.logger {}
 
 // DCCT formula: HbA1c (%) = (mean_glucose_mg_dL + 46.7) / 28.7
 // Source: DCCT Research Group, NEJM 1993; https://doi.org/10.1056/NEJM199309303291401
@@ -57,7 +60,18 @@ class AnalyticsService(
         tirLow: Double = TIR_LOW,
         tirHigh: Double = TIR_HIGH,
     ): Hba1cResult {
-        val fetchResult = fetchCgmReadings(userId, from, to, authorization, glucoseUnit, correlationId)
+        val fetchResult = try {
+            fetchCgmReadings(userId, from, to, authorization, glucoseUnit, correlationId)
+        } catch (e: Exception) {
+            logger.warn(e) { "analytics_service action=getHba1c status=upstream_error userId=$userId — returning empty result" }
+            return Hba1cResult(
+                hba1c = null,
+                meanGlucose = 0.0,
+                readingCount = 0,
+                tir = TirBreakdown(),
+                warnings = listOf("Glucose data is temporarily unavailable. Please try again later."),
+            )
+        }
         val readings = fetchResult.readings
 
         val warnings = buildList {
@@ -102,7 +116,19 @@ class AnalyticsService(
         tirLow: Double = TIR_LOW,
         tirHigh: Double = TIR_HIGH,
     ): AgpResult {
-        val allMeasures = measuresClient.getMeasures(userId, authorization, correlationId, from, to)
+        val allMeasures = try {
+            measuresClient.getMeasures(userId, authorization, correlationId, from, to)
+        } catch (e: Exception) {
+            logger.warn(e) { "analytics_service action=getAgp status=upstream_error userId=$userId — returning empty result" }
+            return AgpResult(
+                hourlyData = (0 until HOURS_IN_DAY).map { hour ->
+                    AgpHourlyData(hour = hour, p10 = null, p25 = null, median = null, p75 = null, p90 = null, count = 0)
+                },
+                totalReadingCount = 0,
+                sensorWearDays = 0,
+                warnings = listOf("Glucose data is temporarily unavailable. Please try again later."),
+            )
+        }
 
         val byHour = Array(HOURS_IN_DAY) { mutableListOf<Double>() }
 
