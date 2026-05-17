@@ -268,6 +268,14 @@ describe('segToMin', () => {
   })
 })
 
+// scheduledRateAt uses d.getHours() (local time), so tests must build timestamps
+// using local midnight + offset to remain correct across all timezones.
+function localTimeMs(hours: number, minutes = 0): number {
+  const d = new Date()
+  d.setHours(hours, minutes, 0, 0)
+  return d.getTime()
+}
+
 describe('scheduledRateAt', () => {
   const profile = [
     { startTime: '00:00', value: 0.8 },
@@ -276,37 +284,33 @@ describe('scheduledRateAt', () => {
     { startTime: '18:00', value: 1.0 },
   ]
 
-  test('returns midnight rate at 00:00', () => {
-    const ms = new Date('2024-06-01T00:00:00Z').getTime()
-    expect(scheduledRateAt(profile, ms)).toBeCloseTo(0.8)
+  test('returns midnight rate at 00:00 local', () => {
+    expect(scheduledRateAt(profile, localTimeMs(0))).toBeCloseTo(0.8)
   })
 
-  test('returns morning rate at 06:00', () => {
-    const ms = new Date('2024-06-01T06:00:00Z').getTime()
-    expect(scheduledRateAt(profile, ms)).toBeCloseTo(1.2)
+  test('returns morning rate at 06:00 local', () => {
+    expect(scheduledRateAt(profile, localTimeMs(6))).toBeCloseTo(1.2)
   })
 
-  test('returns noon rate at 12:00', () => {
-    const ms = new Date('2024-06-01T12:00:00Z').getTime()
-    expect(scheduledRateAt(profile, ms)).toBeCloseTo(0.9)
+  test('returns noon rate at 12:00 local', () => {
+    expect(scheduledRateAt(profile, localTimeMs(12))).toBeCloseTo(0.9)
   })
 
-  test('returns evening rate at 18:00', () => {
-    const ms = new Date('2024-06-01T18:00:00Z').getTime()
-    expect(scheduledRateAt(profile, ms)).toBeCloseTo(1.0)
+  test('returns evening rate at 18:00 local', () => {
+    expect(scheduledRateAt(profile, localTimeMs(18))).toBeCloseTo(1.0)
   })
 
   test('handles single-segment profile', () => {
     const single = [{ startTime: '00:00', value: 1.5 }]
-    const ms = new Date('2024-06-01T14:00:00Z').getTime()
-    expect(scheduledRateAt(single, ms)).toBeCloseTo(1.5)
+    expect(scheduledRateAt(single, localTimeMs(14))).toBeCloseTo(1.5)
   })
 })
 
 describe('currentBasalRate', () => {
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.setSystemTime(new Date('2024-06-01T08:00:00Z').getTime())
+    // Set system time to local 08:00 so getHours() returns 8 in any timezone
+    vi.setSystemTime(localTimeMs(8))
   })
 
   afterEach(() => {
@@ -327,8 +331,8 @@ describe('currentBasalRate', () => {
     expect(currentBasalRate([])).toBeNull()
   })
 
-  test('returns scheduled rate at current time', () => {
-    // 08:00 → falls in 06:00 segment → 1.2 U/h
+  test('returns scheduled rate at current local time', () => {
+    // local 08:00 → falls in 06:00 segment → 1.2 U/h
     const result = currentBasalRate(profile)
     expect(result).toBeCloseTo(1.2)
   })
