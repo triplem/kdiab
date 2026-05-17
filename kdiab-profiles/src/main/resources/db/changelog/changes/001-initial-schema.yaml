@@ -248,3 +248,22 @@ databaseChangeLog:
             sql: >-
               ALTER TABLE profile_statuses
               DROP COLUMN IF EXISTS active_user_key
+
+  # ── 7. Performance indexes on user_id ────────────────────────────────────────
+  # Supports fast per-user profile lookups without a full table scan.
+  - changeSet:
+      id: 004
+      author: audit-fix-523
+      changes:
+        - createIndex:
+            tableName: profiles
+            indexName: IDX_PROFILES_USER_ID
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            tableName: profile_statuses
+            indexName: IDX_PROFILE_STATUSES_USER_ID
+            columns:
+              - column:
+                  name: user_id

@@ -31,48 +31,6 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  - package-ecosystem: "npm"
-    directory: "/kdiab-measures/frontend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
-    ignore:
-      - dependency-name: "eslint"
-        versions: [">= 10"]
-      - dependency-name: "@eslint/js"
-        versions: [">= 10"]
-    groups:
-      measures-npm-major:
-        patterns: ["*"]
-        update-types: ["major"]
-      measures-npm-minor:
-        patterns: ["*"]
-        update-types: ["minor"]
-      measures-npm-patch:
-        patterns: ["*"]
-        update-types: ["patch"]
-
-  - package-ecosystem: "docker"
-    directory: "/kdiab-measures/backend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    ignore:
-      - dependency-name: "eclipse-temurin"
-        versions: [">= 22"]
-    groups:
-      measures-docker:
-        patterns: ["*"]
-
-  - package-ecosystem: "docker"
-    directory: "/kdiab-measures/frontend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      measures-frontend-docker:
-        patterns: ["*"]
-
   # ── kdiab-profiles ──────────────────────────────────────────────────────────
   - package-ecosystem: "gradle"
     directory: "/kdiab-profiles"
@@ -95,48 +53,6 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  - package-ecosystem: "npm"
-    directory: "/kdiab-profiles/frontend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
-    ignore:
-      - dependency-name: "eslint"
-        versions: [">= 10"]
-      - dependency-name: "@eslint/js"
-        versions: [">= 10"]
-    groups:
-      profiles-npm-major:
-        patterns: ["*"]
-        update-types: ["major"]
-      profiles-npm-minor:
-        patterns: ["*"]
-        update-types: ["minor"]
-      profiles-npm-patch:
-        patterns: ["*"]
-        update-types: ["patch"]
-
-  - package-ecosystem: "docker"
-    directory: "/kdiab-profiles/backend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    ignore:
-      - dependency-name: "eclipse-temurin"
-        versions: [">= 22"]
-    groups:
-      profiles-docker:
-        patterns: ["*"]
-
-  - package-ecosystem: "docker"
-    directory: "/kdiab-profiles/frontend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      profiles-frontend-docker:
-        patterns: ["*"]
-
   # ── kdiab-treatments ────────────────────────────────────────────────────────
   - package-ecosystem: "gradle"
     directory: "/kdiab-treatments"
@@ -157,49 +73,7 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  - package-ecosystem: "npm"
-    directory: "/kdiab-treatments/frontend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
-    ignore:
-      - dependency-name: "eslint"
-        versions: [">= 10"]
-      - dependency-name: "@eslint/js"
-        versions: [">= 10"]
-    groups:
-      treatments-npm-major:
-        patterns: ["*"]
-        update-types: ["major"]
-      treatments-npm-minor:
-        patterns: ["*"]
-        update-types: ["minor"]
-      treatments-npm-patch:
-        patterns: ["*"]
-        update-types: ["patch"]
-
-  - package-ecosystem: "docker"
-    directory: "/kdiab-treatments/backend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    ignore:
-      - dependency-name: "eclipse-temurin"
-        versions: [">= 22"]
-    groups:
-      treatments-docker:
-        patterns: ["*"]
-
-  - package-ecosystem: "docker"
-    directory: "/kdiab-treatments/frontend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      treatments-frontend-docker:
-        patterns: ["*"]
-
-  # ── kdiab-analyze ───────────────────────────────────────────────────────────────
+  # ── kdiab-analyze ───────────────────────────────────────────────────────────
   - package-ecosystem: "gradle"
     directory: "/kdiab-analyze"
     schedule:
@@ -219,8 +93,89 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
+  # ── kdiab-carbs ─────────────────────────────────────────────────────────────
+  - package-ecosystem: "gradle"
+    directory: "/kdiab-carbs"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+    groups:
+      carbs-gradle-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      carbs-gradle-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      carbs-gradle-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  # ── kdiab-calc ──────────────────────────────────────────────────────────────
+  - package-ecosystem: "gradle"
+    directory: "/kdiab-calc"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+    groups:
+      calc-gradle-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      calc-gradle-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      calc-gradle-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  # ── kdiab-users ─────────────────────────────────────────────────────────────
+  - package-ecosystem: "gradle"
+    directory: "/kdiab-users"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+    groups:
+      users-gradle-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      users-gradle-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      users-gradle-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  # ── kdiab-nightscout ────────────────────────────────────────────────────────
+  - package-ecosystem: "gradle"
+    directory: "/kdiab-nightscout"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    ignore:
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
+    groups:
+      nightscout-gradle-major:
+        patterns: ["*"]
+        update-types: ["major"]
+      nightscout-gradle-minor:
+        patterns: ["*"]
+        update-types: ["minor"]
+      nightscout-gradle-patch:
+        patterns: ["*"]
+        update-types: ["patch"]
+
+  # ── kdiab-ui (unified SPA) ──────────────────────────────────────────────────
   - package-ecosystem: "npm"
-    directory: "/kdiab-analyze/frontend"
+    directory: "/kdiab-ui"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
@@ -230,18 +185,19 @@ updates:
       - dependency-name: "@eslint/js"
         versions: [">= 10"]
     groups:
-      analyze-npm-major:
+      ui-npm-major:
         patterns: ["*"]
         update-types: ["major"]
-      analyze-npm-minor:
+      ui-npm-minor:
         patterns: ["*"]
         update-types: ["minor"]
-      analyze-npm-patch:
+      ui-npm-patch:
         patterns: ["*"]
         update-types: ["patch"]
 
+  # ── Docker (root compose) ───────────────────────────────────────────────────
   - package-ecosystem: "docker"
-    directory: "/kdiab-analyze/backend"
+    directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
@@ -249,14 +205,5 @@ updates:
       - dependency-name: "eclipse-temurin"
         versions: [">= 22"]
     groups:
-      analyze-docker:
-        patterns: ["*"]
-
-  - package-ecosystem: "docker"
-    directory: "/kdiab-analyze/frontend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 5
-    groups:
-      analyze-frontend-docker:
+      docker:
         patterns: ["*"]
