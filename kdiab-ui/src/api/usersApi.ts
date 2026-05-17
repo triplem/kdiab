@@ -12,6 +12,7 @@ export interface UserSettings {
   alarmHigh: number | null
   alarmLow: number | null
   alarmUrgentLow: number | null
+  sensorDurationHours: number
   updatedAt: string
   jwtBackedNote?: string | null
 }
@@ -46,6 +47,7 @@ export interface PatchSettingsRequest {
   alarmHigh?: number | null
   alarmLow?: number | null
   alarmUrgentLow?: number | null
+  sensorDurationHours?: number
 }
 
 export interface RegisterRequest {

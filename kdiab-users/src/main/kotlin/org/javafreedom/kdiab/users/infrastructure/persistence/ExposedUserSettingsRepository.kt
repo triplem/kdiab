@@ -19,6 +19,7 @@ object UserSettingsTable : Table("user_settings") {
     private const val UNIT_LEN = 16
     private const val ISO_INSTANT_LEN = 50
     private const val DEFAULT_TIME_FORMAT = 24
+    private const val DEFAULT_SENSOR_DURATION_HOURS = 240
 
     val userId = varchar("user_id", UUID_LEN)
     val timezone = varchar("timezone", TIMEZONE_LEN).default("UTC")
@@ -30,6 +31,7 @@ object UserSettingsTable : Table("user_settings") {
     val alarmHigh = integer("alarm_high").nullable()
     val alarmLow = integer("alarm_low").nullable()
     val alarmUrgentLow = integer("alarm_urgent_low").nullable()
+    val sensorDurationHours = integer("sensor_duration_hours").default(DEFAULT_SENSOR_DURATION_HOURS)
     val createdAt = varchar("created_at", ISO_INSTANT_LEN)
     val updatedAt = varchar("updated_at", ISO_INSTANT_LEN)
 
@@ -55,6 +57,7 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
                         alarmHigh = row[UserSettingsTable.alarmHigh],
                         alarmLow = row[UserSettingsTable.alarmLow],
                         alarmUrgentLow = row[UserSettingsTable.alarmUrgentLow],
+                        sensorDurationHours = row[UserSettingsTable.sensorDurationHours],
                         createdAt = Instant.parse(row[UserSettingsTable.createdAt]),
                         updatedAt = Instant.parse(row[UserSettingsTable.updatedAt]),
                     )
@@ -75,6 +78,7 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
                 it[alarmHigh] = settings.alarmHigh
                 it[alarmLow] = settings.alarmLow
                 it[alarmUrgentLow] = settings.alarmUrgentLow
+                it[sensorDurationHours] = settings.sensorDurationHours
                 it[createdAt] = settings.createdAt.toString()
                 it[updatedAt] = settings.updatedAt.toString()
             }

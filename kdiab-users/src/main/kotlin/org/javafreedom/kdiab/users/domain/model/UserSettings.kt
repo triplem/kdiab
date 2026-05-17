@@ -15,6 +15,7 @@ data class UserSettings(
     val alarmHigh: Int? = 200,
     val alarmLow: Int? = 75,
     val alarmUrgentLow: Int? = 55,
+    val sensorDurationHours: Int = 240,
     val createdAt: Instant,
     val updatedAt: Instant,
 )

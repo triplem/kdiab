@@ -5,6 +5,7 @@ import { useState, useMemo } from 'react'
 import { analyzeApi } from '../../api/analyzeApi'
 import { profilesApi } from '../../api/profilesApi'
 import { treatmentsApi } from '../../api/treatmentsApi'
+import { usersApi } from '../../api/usersApi'
 import { DeviceStatusWidget } from '../treatments/DeviceStatusWidget'
 import {
   ComposedChart,
@@ -61,6 +62,13 @@ function daysSince(iso: string | undefined): string {
   if (!iso) return '—'
   const d = (Date.now() - new Date(iso).getTime()) / 86400000
   return `${d.toFixed(1)} d`
+}
+
+function sensorExpiryLabel(insertedAt: string | undefined, durationHours: number): string {
+  if (!insertedAt) return '—'
+  const remainingMs = new Date(insertedAt).getTime() + durationHours * 3600000 - Date.now()
+  const remainingHours = Math.round(remainingMs / 3600000)
+  return remainingHours <= 0 ? 'expired' : `exp ${remainingHours}h`
 }
 
 // Linear IOB decay over DIA window
@@ -289,9 +297,24 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     staleTime: 10 * 60 * 1000,
   })
 
+  const { data: deviceStatus } = useQuery({
+    queryKey: ['device-status', userId],
+    queryFn: () => treatmentsApi.getLatestDeviceStatus(userId).then(r => r.data).catch(() => null),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const { data: userMe } = useQuery({
+    queryKey: ['user', 'me'],
+    queryFn: () => usersApi.getMe().then(r => r.data),
+    staleTime: 10 * 60 * 1000,
+  })
+
   const catheterDate = deviceAge?.catheterChangedAt ?? undefined
   const reservoirDate = deviceAge?.reservoirChangedAt ?? undefined
   const sensorDate = deviceAge?.sensorInsertedAt ?? undefined
+  const sensorDurationHours = userMe?.settings?.sensorDurationHours ?? 240
+  const batteryLevel = deviceStatus?.batteryLevel ?? null
 
   // ── Chart data ──────────────────────────────────────────────────────────────
 
@@ -396,11 +419,18 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         {activeProfile && <StatTile label={t('dashboard.profile', { defaultValue: 'Profile' })} value={activeProfile.name} />}
       </div>
 
-      {/* ── Stat tiles row 2: device ages ─────────────────────────────────── */}
+      {/* ── Stat tiles row 2: device ages + battery ───────────────────────── */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
         <StatTile label={t('dashboard.catheter', { defaultValue: 'Catheter' })} value={daysSince(catheterDate)} sub={t('dashboard.age', { defaultValue: 'age' })} />
         <StatTile label={t('dashboard.reservoir', { defaultValue: 'Reservoir' })} value={daysSince(reservoirDate)} sub={t('dashboard.age', { defaultValue: 'age' })} />
-        <StatTile label={t('dashboard.sensor', { defaultValue: 'Sensor' })} value={daysSince(sensorDate)} sub={t('dashboard.age', { defaultValue: 'age' })} />
+        <StatTile
+          label={t('dashboard.sensor', { defaultValue: 'Sensor' })}
+          value={daysSince(sensorDate)}
+          sub={sensorExpiryLabel(sensorDate, sensorDurationHours)}
+        />
+        {batteryLevel !== null && (
+          <StatTile label={t('dashboard.battery', { defaultValue: 'Battery' })} value={`${batteryLevel} %`} sub={t('dashboard.pumpBattery', { defaultValue: 'pump' })} />
+        )}
       </div>
 
       {/* ── Time window selector ──────────────────────────────────────────── */}
@@ -513,17 +543,17 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         )}
         {!isLoading && cgmPoints.length === 0 && (
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            {t('dashboard.noData', { defaultValue: 'No CGM data for this window.' })}
+            {t('dashboard.noData')}
           </p>
         )}
         {/* Legend */}
         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-          <span><span style={{ color: '#ef4444' }}>●</span> {t('dashboard.legendBgm', { defaultValue: 'BGM' })}</span>
-          <span><span style={{ color: '#3b82f6' }}>▲</span> {t('dashboard.legendBolus', { defaultValue: 'Bolus' })}</span>
-          <span><span style={{ color: '#f59e0b' }}>●</span> {t('dashboard.legendCarbs', { defaultValue: 'Carbs' })}</span>
-          <span><span style={{ color: '#10b981' }}>⊕</span> {t('dashboard.legendSiteChange', { defaultValue: 'Site change' })}</span>
-          <span><span style={{ color: '#8b5cf6' }}>◆</span> {t('dashboard.legendSensor', { defaultValue: 'Sensor' })}</span>
-          <span><span style={{ color: '#ec4899' }}>◈</span> {t('dashboard.legendInsulin', { defaultValue: 'Insulin change' })}</span>
+          <span><span style={{ color: '#ef4444' }}>●</span> {t('dashboard.legendBgm')}</span>
+          <span><span style={{ color: '#3b82f6' }}>▲</span> {t('dashboard.legendBolus')}</span>
+          <span><span style={{ color: '#f59e0b' }}>●</span> {t('dashboard.legendCarbs')}</span>
+          <span><span style={{ color: '#10b981' }}>⊕</span> {t('dashboard.legendSiteChange')}</span>
+          <span><span style={{ color: '#8b5cf6' }}>◆</span> {t('dashboard.legendSensorInsert')}</span>
+          <span><span style={{ color: '#ec4899' }}>◈</span> {t('dashboard.legendInsulinChange')}</span>
         </div>
       </div>
     </div>

@@ -58,6 +58,7 @@ class UserService(
             alarmHigh = patch.alarmHigh ?: existing.alarmHigh,
             alarmLow = patch.alarmLow ?: existing.alarmLow,
             alarmUrgentLow = patch.alarmUrgentLow ?: existing.alarmUrgentLow,
+            sensorDurationHours = patch.sensorDurationHours ?: existing.sensorDurationHours,
             updatedAt = now,
         )
 
@@ -206,6 +207,7 @@ data class SettingsPatch(
     val alarmHigh: Int? = null,
     val alarmLow: Int? = null,
     val alarmUrgentLow: Int? = null,
+    val sensorDurationHours: Int? = null,
 )
 
 private fun KeycloakUser.toDomain(settings: UserSettings?, roles: Set<Role>): User {
