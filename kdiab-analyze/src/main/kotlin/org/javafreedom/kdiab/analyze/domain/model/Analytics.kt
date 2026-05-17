@@ -49,3 +49,15 @@ data class ProfileSummary(
 data class ProfilesResult(
     val profiles: List<ProfileSummary>,
 )
+
+data class DeviceUsageResult(
+    val userId: String,
+    val avgSensorDays: Double?,
+    val stddevSensorDays: Double?,
+    val avgCatheterDays: Double?,
+    val stddevCatheterDays: Double?,
+    val avgReservoirDays: Double?,
+    val stddevReservoirDays: Double?,
+    val avgBatteryDays: Double?,
+    val stddevBatteryDays: Double?,
+)

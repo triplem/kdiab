@@ -14,10 +14,12 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
+import org.javafreedom.kdiab.analyze.domain.model.DeviceUsageResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.ProfilesResult
 import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
@@ -67,6 +69,13 @@ class BffRoutesTest {
         AgpHourlyData(hour = h, p10 = 0.0, p25 = 0.0, median = 0.0, p75 = 0.0, p90 = 0.0, count = 0)
     })
     private val emptyProfiles = ProfilesResult(emptyList())
+    private val emptyDeviceUsage = DeviceUsageResult(
+        userId = SARAH_ID,
+        avgSensorDays = null, stddevSensorDays = null,
+        avgCatheterDays = null, stddevCatheterDays = null,
+        avgReservoirDays = null, stddevReservoirDays = null,
+        avgBatteryDays = null, stddevBatteryDays = null,
+    )
 
     // ── Test application setup ────────────────────────────────────────────────
 
@@ -75,11 +84,13 @@ class BffRoutesTest {
             timelineService: TimelineService,
             analyticsService: AnalyticsService,
             profilesService: ProfilesService,
+            deviceUsageService: DeviceUsageService,
         ) -> Unit,
     ) {
-        val timelineService  = mockk<TimelineService>()
-        val analyticsService = mockk<AnalyticsService>()
-        val profilesService  = mockk<ProfilesService>()
+        val timelineService     = mockk<TimelineService>()
+        val analyticsService    = mockk<AnalyticsService>()
+        val profilesService     = mockk<ProfilesService>()
+        val deviceUsageService  = mockk<DeviceUsageService>()
         testApplication {
             environment {
                 config = MapApplicationConfig(
@@ -90,40 +101,41 @@ class BffRoutesTest {
                     "jwt.secret"   to JWT_SECRET,
                 )
             }
-            application { module(timelineService, analyticsService, profilesService) }
-            block(timelineService, analyticsService, profilesService)
+            application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
+            block(timelineService, analyticsService, profilesService, deviceUsageService)
         }
     }
 
     // ── Helper: build URL with timeframe params ───────────────────────────────
 
-    private fun timelineUrl(userId: String)  = "/api/v1/users/$userId/timeline?from=$FROM&to=$TO"
-    private fun hba1cUrl(userId: String)     = "/api/v1/users/$userId/analytics/hba1c?from=$FROM&to=$TO"
-    private fun agpUrl(userId: String)       = "/api/v1/users/$userId/analytics/agp?from=$FROM&to=$TO"
-    private fun profilesUrl(userId: String)  = "/api/v1/users/$userId/profiles/active?from=$FROM&to=$TO"
+    private fun timelineUrl(userId: String)      = "/api/v1/users/$userId/timeline?from=$FROM&to=$TO"
+    private fun hba1cUrl(userId: String)         = "/api/v1/users/$userId/analytics/hba1c?from=$FROM&to=$TO"
+    private fun agpUrl(userId: String)           = "/api/v1/users/$userId/analytics/agp?from=$FROM&to=$TO"
+    private fun profilesUrl(userId: String)      = "/api/v1/users/$userId/profiles/active?from=$FROM&to=$TO"
+    private fun deviceUsageUrl(userId: String)   = "/api/v1/users/$userId/analytics/device-usage"
 
     // ── 401 — no auth token ───────────────────────────────────────────────────
 
     @Test
-    fun `timeline - 401 without auth token`() = routeTest { _, _, _ ->
+    fun `timeline - 401 without auth token`() = routeTest { _, _, _, _ ->
         val resp = client.get(timelineUrl(SARAH_ID))
         assertEquals(HttpStatusCode.Unauthorized, resp.status)
     }
 
     @Test
-    fun `hba1c - 401 without auth token`() = routeTest { _, _, _ ->
+    fun `hba1c - 401 without auth token`() = routeTest { _, _, _, _ ->
         val resp = client.get(hba1cUrl(SARAH_ID))
         assertEquals(HttpStatusCode.Unauthorized, resp.status)
     }
 
     @Test
-    fun `agp - 401 without auth token`() = routeTest { _, _, _ ->
+    fun `agp - 401 without auth token`() = routeTest { _, _, _, _ ->
         val resp = client.get(agpUrl(SARAH_ID))
         assertEquals(HttpStatusCode.Unauthorized, resp.status)
     }
 
     @Test
-    fun `profiles active - 401 without auth token`() = routeTest { _, _, _ ->
+    fun `profiles active - 401 without auth token`() = routeTest { _, _, _, _ ->
         val resp = client.get(profilesUrl(SARAH_ID))
         assertEquals(HttpStatusCode.Unauthorized, resp.status)
     }
@@ -131,14 +143,14 @@ class BffRoutesTest {
     // ── PATIENT — reads own data (200) ────────────────────────────────────────
 
     @Test
-    fun `timeline - 200 patient reads own data`() = routeTest { svc, _, _ ->
+    fun `timeline - 200 patient reads own data`() = routeTest { svc, _, _, _ ->
         coEvery { svc.getTimeline(SARAH_ID, FROM, TO, any(), any()) } returns emptyTimeline
         val resp = client.get(timelineUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
-    fun `hba1c - 200 patient reads own data`() = routeTest { _, svc, _ ->
+    fun `hba1c - 200 patient reads own data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(SARAH_ID)) { bearerAuth(sarahToken) }
@@ -146,7 +158,7 @@ class BffRoutesTest {
     }
 
     @Test
-    fun `agp - 200 patient reads own data`() = routeTest { _, svc, _ ->
+    fun `agp - 200 patient reads own data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(SARAH_ID)) { bearerAuth(sarahToken) }
@@ -154,7 +166,7 @@ class BffRoutesTest {
     }
 
     @Test
-    fun `profiles active - 200 patient reads own data`() = routeTest { _, _, svc ->
+    fun `profiles active - 200 patient reads own data`() = routeTest { _, _, svc, _ ->
         coEvery { svc.getProfiles(SARAH_ID, FROM, TO, any(), any()) } returns emptyProfiles
         val resp = client.get(profilesUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -163,25 +175,25 @@ class BffRoutesTest {
     // ── PATIENT — reads another user's data (403) ─────────────────────────────
 
     @Test
-    fun `timeline - 403 patient reads another user data`() = routeTest { _, _, _ ->
+    fun `timeline - 403 patient reads another user data`() = routeTest { _, _, _, _ ->
         val resp = client.get(timelineUrl(MIKE_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 
     @Test
-    fun `hba1c - 403 patient reads another user data`() = routeTest { _, _, _ ->
+    fun `hba1c - 403 patient reads another user data`() = routeTest { _, _, _, _ ->
         val resp = client.get(hba1cUrl(MIKE_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 
     @Test
-    fun `agp - 403 patient reads another user data`() = routeTest { _, _, _ ->
+    fun `agp - 403 patient reads another user data`() = routeTest { _, _, _, _ ->
         val resp = client.get(agpUrl(MIKE_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 
     @Test
-    fun `profiles active - 403 patient reads another user data`() = routeTest { _, _, _ ->
+    fun `profiles active - 403 patient reads another user data`() = routeTest { _, _, _, _ ->
         val resp = client.get(profilesUrl(MIKE_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
@@ -189,14 +201,14 @@ class BffRoutesTest {
     // ── DOCTOR — reads allowed patient data (200) ─────────────────────────────
 
     @Test
-    fun `timeline - 200 doctor reads allowed patient data`() = routeTest { svc, _, _ ->
+    fun `timeline - 200 doctor reads allowed patient data`() = routeTest { svc, _, _, _ ->
         coEvery { svc.getTimeline(SARAH_ID, FROM, TO, any(), any()) } returns emptyTimeline
         val resp = client.get(timelineUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
-    fun `hba1c - 200 doctor reads allowed patient data`() = routeTest { _, svc, _ ->
+    fun `hba1c - 200 doctor reads allowed patient data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(SARAH_ID)) { bearerAuth(doctorToken) }
@@ -204,7 +216,7 @@ class BffRoutesTest {
     }
 
     @Test
-    fun `agp - 200 doctor reads allowed patient data`() = routeTest { _, svc, _ ->
+    fun `agp - 200 doctor reads allowed patient data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(SARAH_ID)) { bearerAuth(doctorToken) }
@@ -212,7 +224,7 @@ class BffRoutesTest {
     }
 
     @Test
-    fun `profiles active - 200 doctor reads allowed patient data`() = routeTest { _, _, svc ->
+    fun `profiles active - 200 doctor reads allowed patient data`() = routeTest { _, _, svc, _ ->
         coEvery { svc.getProfiles(SARAH_ID, FROM, TO, any(), any()) } returns emptyProfiles
         val resp = client.get(profilesUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -221,25 +233,25 @@ class BffRoutesTest {
     // ── DOCTOR — reads non-allowed patient data (403) ─────────────────────────
 
     @Test
-    fun `timeline - 403 doctor reads non-allowed patient data`() = routeTest { _, _, _ ->
+    fun `timeline - 403 doctor reads non-allowed patient data`() = routeTest { _, _, _, _ ->
         val resp = client.get(timelineUrl(MIKE_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 
     @Test
-    fun `hba1c - 403 doctor reads non-allowed patient data`() = routeTest { _, _, _ ->
+    fun `hba1c - 403 doctor reads non-allowed patient data`() = routeTest { _, _, _, _ ->
         val resp = client.get(hba1cUrl(MIKE_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 
     @Test
-    fun `agp - 403 doctor reads non-allowed patient data`() = routeTest { _, _, _ ->
+    fun `agp - 403 doctor reads non-allowed patient data`() = routeTest { _, _, _, _ ->
         val resp = client.get(agpUrl(MIKE_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 
     @Test
-    fun `profiles active - 403 doctor reads non-allowed patient data`() = routeTest { _, _, _ ->
+    fun `profiles active - 403 doctor reads non-allowed patient data`() = routeTest { _, _, _, _ ->
         val resp = client.get(profilesUrl(MIKE_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
@@ -247,14 +259,14 @@ class BffRoutesTest {
     // ── ADMIN — reads any user's data (200) ──────────────────────────────────
 
     @Test
-    fun `timeline - 200 admin reads any user data`() = routeTest { svc, _, _ ->
+    fun `timeline - 200 admin reads any user data`() = routeTest { svc, _, _, _ ->
         coEvery { svc.getTimeline(MIKE_ID, FROM, TO, any(), any()) } returns emptyTimeline
         val resp = client.get(timelineUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     @Test
-    fun `hba1c - 200 admin reads any user data`() = routeTest { _, svc, _ ->
+    fun `hba1c - 200 admin reads any user data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getHba1c(MIKE_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(MIKE_ID)) { bearerAuth(adminToken) }
@@ -262,7 +274,7 @@ class BffRoutesTest {
     }
 
     @Test
-    fun `agp - 200 admin reads any user data`() = routeTest { _, svc, _ ->
+    fun `agp - 200 admin reads any user data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
         coEvery { svc.getAgp(MIKE_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(MIKE_ID)) { bearerAuth(adminToken) }
@@ -270,7 +282,7 @@ class BffRoutesTest {
     }
 
     @Test
-    fun `profiles active - 200 admin reads any user data`() = routeTest { _, _, svc ->
+    fun `profiles active - 200 admin reads any user data`() = routeTest { _, _, svc, _ ->
         coEvery { svc.getProfiles(MIKE_ID, FROM, TO, any(), any()) } returns emptyProfiles
         val resp = client.get(profilesUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -279,14 +291,14 @@ class BffRoutesTest {
     // ── Missing query params (400) ────────────────────────────────────────────
 
     @Test
-    fun `timeline - 404 when from param is missing`() = routeTest { _, _, _ ->
+    fun `timeline - 404 when from param is missing`() = routeTest { _, _, _, _ ->
         val resp = client.get("/api/v1/users/$SARAH_ID/timeline?to=$TO") { bearerAuth(sarahToken) }
         // Ktor Resources returns 404 when required query params are missing (route fails to bind)
         assertEquals(HttpStatusCode.NotFound, resp.status)
     }
 
     @Test
-    fun `hba1c - 404 when to param is missing`() = routeTest { _, _, _ ->
+    fun `hba1c - 404 when to param is missing`() = routeTest { _, _, _, _ ->
         val resp = client.get("/api/v1/users/$SARAH_ID/analytics/hba1c?from=$FROM") { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.NotFound, resp.status)
     }
@@ -294,7 +306,7 @@ class BffRoutesTest {
     // ── Missing upstream audiences (403) ─────────────────────────────────────
 
     @Test
-    fun `timeline - 403 when JWT lacks upstream audiences`() = routeTest { _, _, _ ->
+    fun `timeline - 403 when JWT lacks upstream audiences`() = routeTest { _, _, _, _ ->
         val tokenWithoutUpstreamAudiences = JWT.create()
             .withSubject(SARAH_ID)
             .withAudience(AUDIENCE)
@@ -303,5 +315,33 @@ class BffRoutesTest {
             .sign(Algorithm.HMAC256(JWT_SECRET))
         val resp = client.get(timelineUrl(SARAH_ID)) { bearerAuth(tokenWithoutUpstreamAudiences) }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
+    }
+
+    // ── Device usage analytics ────────────────────────────────────────────────
+
+    @Test
+    fun `device-usage - 401 without auth token`() = routeTest { _, _, _, _ ->
+        val resp = client.get(deviceUsageUrl(SARAH_ID))
+        assertEquals(HttpStatusCode.Unauthorized, resp.status)
+    }
+
+    @Test
+    fun `device-usage - 200 patient reads own data`() = routeTest { _, _, _, svc ->
+        coEvery { svc.compute(SARAH_ID, any(), any(), any()) } returns emptyDeviceUsage
+        val resp = client.get(deviceUsageUrl(SARAH_ID)) { bearerAuth(sarahToken) }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `device-usage - 403 patient reads another user data`() = routeTest { _, _, _, _ ->
+        val resp = client.get(deviceUsageUrl(MIKE_ID)) { bearerAuth(sarahToken) }
+        assertEquals(HttpStatusCode.Forbidden, resp.status)
+    }
+
+    @Test
+    fun `device-usage - 200 admin reads any user data`() = routeTest { _, _, _, svc ->
+        coEvery { svc.compute(MIKE_ID, any(), any(), any()) } returns emptyDeviceUsage.copy(userId = MIKE_ID)
+        val resp = client.get(deviceUsageUrl(MIKE_ID)) { bearerAuth(adminToken) }
+        assertEquals(HttpStatusCode.OK, resp.status)
     }
 }

@@ -3,6 +3,7 @@ package org.javafreedom.kdiab.analyze.adapters.inbound.web
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
+import org.javafreedom.kdiab.analyze.domain.model.DeviceUsageResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.ProfilesResult
 import org.javafreedom.kdiab.analyze.domain.model.Timeline
@@ -129,6 +130,31 @@ fun AgpResult.toResponse() = AgpResponseDto(
     totalReadingCount = totalReadingCount,
     sensorWearDays = sensorWearDays,
     warnings = warnings,
+)
+
+@Serializable
+data class DeviceUsageResponseDto(
+    val userId: String,
+    val avgSensorDays: Double? = null,
+    val stddevSensorDays: Double? = null,
+    val avgCatheterDays: Double? = null,
+    val stddevCatheterDays: Double? = null,
+    val avgReservoirDays: Double? = null,
+    val stddevReservoirDays: Double? = null,
+    val avgBatteryDays: Double? = null,
+    val stddevBatteryDays: Double? = null,
+)
+
+fun DeviceUsageResult.toResponse() = DeviceUsageResponseDto(
+    userId = userId,
+    avgSensorDays = avgSensorDays,
+    stddevSensorDays = stddevSensorDays,
+    avgCatheterDays = avgCatheterDays,
+    stddevCatheterDays = stddevCatheterDays,
+    avgReservoirDays = avgReservoirDays,
+    stddevReservoirDays = stddevReservoirDays,
+    avgBatteryDays = avgBatteryDays,
+    stddevBatteryDays = stddevBatteryDays,
 )
 
 fun ProfilesResult.toResponse() = ProfilesResponseDto(

@@ -8,6 +8,7 @@ import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 
@@ -31,6 +32,7 @@ class ApplicationTest {
                 timelineService = mockk(),
                 analyticsService = mockk(),
                 profilesService = mockk(),
+                deviceUsageService = mockk(),
             )
         }
     }

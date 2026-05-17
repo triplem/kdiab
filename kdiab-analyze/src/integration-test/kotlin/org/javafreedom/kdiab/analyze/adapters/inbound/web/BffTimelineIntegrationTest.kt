@@ -19,7 +19,9 @@ import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
+import io.mockk.mockk
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 import org.javafreedom.kdiab.analyze.module
@@ -142,6 +144,7 @@ class BffTimelineIntegrationTest {
         timelineService: TimelineService? = null,
         analyticsService: AnalyticsService? = null,
         profilesService: ProfilesService? = null,
+        deviceUsageService: DeviceUsageService? = mockk(),
     ) {
         environment {
             config = MapApplicationConfig(
@@ -152,7 +155,7 @@ class BffTimelineIntegrationTest {
                 "jwt.secret" to JWT_SECRET,
             )
         }
-        application { module(timelineService, analyticsService, profilesService) }
+        application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
     }
 
     @Test
