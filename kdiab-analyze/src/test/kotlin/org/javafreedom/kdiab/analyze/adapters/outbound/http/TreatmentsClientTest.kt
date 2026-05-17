@@ -57,14 +57,17 @@ class TreatmentsClientTest {
 
     @Test
     fun `getTreatments fetches multiple pages until all items retrieved`() = runTest {
+        // PAGE_SIZE=200: totalCount=201 forces 2 pages (ceil(201/200)=2)
+        val page0Items = (1..200).joinToString(",") { treatmentJson("t-$it") }
+        val page1Items = treatmentJson("t-201")
         var callCount = 0
         val engine = MockEngine { request ->
             callCount++
             val page = request.url.parameters["page"]?.toInt() ?: 0
             val body = if (page == 0)
-                pagedJson(treatmentJson("t-1"), 2)
+                """{"items":[$page0Items],"page":0,"size":200,"totalCount":201}"""
             else
-                pagedJson(treatmentJson("t-2"), 2)
+                """{"items":[$page1Items],"page":1,"size":200,"totalCount":201}"""
             respond(
                 content = body,
                 status = HttpStatusCode.OK,
@@ -72,7 +75,7 @@ class TreatmentsClientTest {
             )
         }
         val result = buildClient(engine).getTreatments(userId, auth, correlationId)
-        assertEquals(2, result.size)
+        assertEquals(201, result.size)
         assertEquals(2, callCount)
     }
 
@@ -90,11 +93,13 @@ class TreatmentsClientTest {
 
     @Test
     fun `getTreatments throws UpstreamException when second page returns 502`() = runTest {
-        var page = 0
+        // PAGE_SIZE=200: totalCount=201 forces 2 pages; page 1 returns 502
+        val page0Items = (1..200).joinToString(",") { treatmentJson("t-$it") }
+        var requestPage = 0
         val engine = MockEngine { _ ->
-            if (page++ == 0) {
+            if (requestPage++ == 0) {
                 respond(
-                    content = pagedJson(treatmentJson("t-1"), 2),
+                    content = """{"items":[$page0Items],"page":0,"size":200,"totalCount":201}""",
                     status = HttpStatusCode.OK,
                     headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
                 )

@@ -123,6 +123,7 @@
     <ID>NoNameShadowing:ApiKeyAuth.kt$ApiKeyAuthenticationProvider$call</ID>
     <ID>RedundantSuspendModifier:ApiClient.kt$ApiClient$suspend</ID>
     <ID>ReturnCount:AnalyticsService.kt$AnalyticsService$@Suppress("LongParameterList") suspend fun getHba1c( userId: String, from: String, to: String, authorization: String, glucoseUnit: String, correlationId: String, tirLow: Double = TIR_LOW, tirHigh: Double = TIR_HIGH, ): Hba1cResult</ID>
+    <ID>ReturnCount:AnalyticsService.kt$AnalyticsService$@Suppress("LongParameterList", "UnusedParameter") suspend fun getAgp( userId: String, from: String, to: String, authorization: String, glucoseUnit: String, correlationId: String, tirLow: Double = TIR_LOW, tirHigh: Double = TIR_HIGH, ): AgpResult</ID>
     <ID>TooGenericExceptionCaught:AnalyticsService.kt$AnalyticsService$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CircuitBreaker.kt$CircuitBreaker$e: Exception</ID>
     <ID>TooGenericExceptionThrown:ApiClient.kt$ApiClient$throw Exception("Authentication undefined: $authName")</ID>

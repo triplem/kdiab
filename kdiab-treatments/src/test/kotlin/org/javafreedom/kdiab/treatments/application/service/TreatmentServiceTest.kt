@@ -168,9 +168,16 @@ class TreatmentServiceTest {
         val catheter  = Instant.parse("2026-05-14T10:00:00Z")
         val reservoir = Instant.parse("2026-05-13T08:00:00Z")
         val sensor    = Instant.parse("2026-05-12T18:00:00Z")
-        coEvery { repo.findLatestTimestampByType(userId, TreatmentType.SITE_CHANGE)    } returns catheter
-        coEvery { repo.findLatestTimestampByType(userId, TreatmentType.INSULIN_CHANGE) } returns reservoir
-        coEvery { repo.findLatestTimestampByType(userId, TreatmentType.SENSOR_INSERT)  } returns sensor
+        coEvery {
+            repo.findLatestTimestampsByTypes(
+                userId,
+                setOf(TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE, TreatmentType.SENSOR_INSERT),
+            )
+        } returns mapOf(
+            TreatmentType.SITE_CHANGE    to catheter,
+            TreatmentType.INSULIN_CHANGE to reservoir,
+            TreatmentType.SENSOR_INSERT  to sensor,
+        )
 
         val (c, r, s) = service.getDeviceAge(userId)
 
@@ -181,9 +188,12 @@ class TreatmentServiceTest {
 
     @Test
     fun `getDeviceAge returns triple of nulls when no device treatments exist`() = runTest {
-        coEvery { repo.findLatestTimestampByType(userId, TreatmentType.SITE_CHANGE)    } returns null
-        coEvery { repo.findLatestTimestampByType(userId, TreatmentType.INSULIN_CHANGE) } returns null
-        coEvery { repo.findLatestTimestampByType(userId, TreatmentType.SENSOR_INSERT)  } returns null
+        coEvery {
+            repo.findLatestTimestampsByTypes(
+                userId,
+                setOf(TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE, TreatmentType.SENSOR_INSERT),
+            )
+        } returns emptyMap()
 
         val (c, r, s) = service.getDeviceAge(userId)
 
@@ -195,9 +205,12 @@ class TreatmentServiceTest {
     @Test
     fun `getDeviceAge returns partial nulls when only some device treatments exist`() = runTest {
         val catheter = Instant.parse("2026-05-14T10:00:00Z")
-        coEvery { repo.findLatestTimestampByType(userId, TreatmentType.SITE_CHANGE)    } returns catheter
-        coEvery { repo.findLatestTimestampByType(userId, TreatmentType.INSULIN_CHANGE) } returns null
-        coEvery { repo.findLatestTimestampByType(userId, TreatmentType.SENSOR_INSERT)  } returns null
+        coEvery {
+            repo.findLatestTimestampsByTypes(
+                userId,
+                setOf(TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE, TreatmentType.SENSOR_INSERT),
+            )
+        } returns mapOf(TreatmentType.SITE_CHANGE to catheter)
 
         val (c, r, s) = service.getDeviceAge(userId)
 

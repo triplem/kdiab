@@ -34,6 +34,7 @@ interface TreatmentRepository {
         status: TreatmentStatus = TreatmentStatus.ACTIVE,
     ): List<Treatment>
     suspend fun findLatestTimestampByType(userId: Uuid, type: TreatmentType): Instant?
+    suspend fun findLatestTimestampsByTypes(userId: Uuid, types: Set<TreatmentType>): Map<TreatmentType, Instant>
     suspend fun archiveAll(ids: List<Uuid>, userId: Uuid)
     suspend fun unarchiveAll(ids: List<Uuid>, userId: Uuid)
     suspend fun deleteAll(ids: List<Uuid>, userId: Uuid)

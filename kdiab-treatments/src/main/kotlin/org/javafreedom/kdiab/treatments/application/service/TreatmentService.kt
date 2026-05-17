@@ -69,10 +69,17 @@ class TreatmentService(
     }
 
     suspend fun getDeviceAge(userId: Uuid): Triple<Instant?, Instant?, Instant?> {
-        val catheter = treatmentRepository.findLatestTimestampByType(userId, TreatmentType.SITE_CHANGE)
-        val reservoir = treatmentRepository.findLatestTimestampByType(userId, TreatmentType.INSULIN_CHANGE)
-        val sensor = treatmentRepository.findLatestTimestampByType(userId, TreatmentType.SENSOR_INSERT)
-        return Triple(catheter, reservoir, sensor)
+        val deviceTypes = setOf(
+            TreatmentType.SITE_CHANGE,
+            TreatmentType.INSULIN_CHANGE,
+            TreatmentType.SENSOR_INSERT,
+        )
+        val latestByType = treatmentRepository.findLatestTimestampsByTypes(userId, deviceTypes)
+        return Triple(
+            latestByType[TreatmentType.SITE_CHANGE],
+            latestByType[TreatmentType.INSULIN_CHANGE],
+            latestByType[TreatmentType.SENSOR_INSERT],
+        )
     }
 
     suspend fun deleteTreatments(ids: List<Uuid>, userId: Uuid) {

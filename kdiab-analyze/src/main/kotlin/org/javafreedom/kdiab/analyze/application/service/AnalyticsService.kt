@@ -2,17 +2,22 @@ package org.javafreedom.kdiab.analyze.application.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
+import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 private val logger = KotlinLogging.logger {}
 
+private const val CACHE_TTL_MINUTES = 5
 // DCCT formula: HbA1c (%) = (mean_glucose_mg_dL + 46.7) / 28.7
 // Source: DCCT Research Group, NEJM 1993; https://doi.org/10.1056/NEJM199309303291401
 private const val DCCT_ADDEND = 46.7
@@ -45,10 +50,37 @@ private const val AGP_NINETIETH_PERCENTILE = 90
 private const val PERCENT_FACTOR = 100.0
 
 private data class CgmFetchResult(val readings: List<Double>, val mismatchCount: Int)
+private data class MeasuresCacheKey(val userId: String, val from: String, val to: String)
+private data class MeasuresCacheEntry(val measures: List<MeasureResponse>, val fetchedAt: Instant)
 
 class AnalyticsService(
     private val measuresClient: MeasuresClient,
 ) {
+    // In-process cache keyed by (userId, from, to). Avoids double-fetching when getHba1c and
+    // getAgp are called in the same request burst for the same time window.
+    private val measuresCache = ConcurrentHashMap<MeasuresCacheKey, MeasuresCacheEntry>()
+
+    private suspend fun getMeasuresCached(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        correlationId: String,
+    ): List<MeasureResponse> {
+        val key = MeasuresCacheKey(userId, from, to)
+        val now = Clock.System.now()
+        measuresCache[key]?.let { entry ->
+            if (now - entry.fetchedAt < CACHE_TTL_MINUTES.minutes) {
+                logger.debug { "CGM cache hit for userId=$userId from=$from to=$to" }
+                return entry.measures
+            }
+        }
+        val fresh = measuresClient.getMeasures(userId, authorization, correlationId, from, to)
+        measuresCache[key] = MeasuresCacheEntry(measures = fresh, fetchedAt = now)
+        // Evict entries older than the TTL to prevent unbounded growth.
+        measuresCache.entries.removeIf { (_, v) -> now - v.fetchedAt >= CACHE_TTL_MINUTES.minutes }
+        return fresh
+    }
     @Suppress("LongParameterList")
     suspend fun getHba1c(
         userId: String,
@@ -117,7 +149,7 @@ class AnalyticsService(
         tirHigh: Double = TIR_HIGH,
     ): AgpResult {
         val allMeasures = try {
-            measuresClient.getMeasures(userId, authorization, correlationId, from, to)
+            getMeasuresCached(userId, from, to, authorization, correlationId)
         } catch (e: Exception) {
             logger.warn(e) { "analytics_service action=getAgp status=upstream_error userId=$userId — returning empty result" }
             return AgpResult(
@@ -192,7 +224,7 @@ class AnalyticsService(
         correlationId: String,
     ): CgmFetchResult {
         var mismatchCount = 0
-        val readings = measuresClient.getMeasures(userId, authorization, correlationId, from, to)
+        val readings = getMeasuresCached(userId, from, to, authorization, correlationId)
             .filter { dto -> dto.type == MeasureType.CGM }
             .mapNotNull { dto ->
                 val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
