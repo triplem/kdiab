@@ -72,10 +72,12 @@ fi
 [ -d "docs/adr" ] && ls docs/adr/*.md 2>/dev/null | grep -q . && PHASE="ADRs present"
 [ -n "$STORY_ID" ] && PHASE="Implementation (story #${STORY_ID})"
 
-# --- Last audit entry ---
+# --- Last audit entry (from most recent session file in ~/.claude/kdiab-sessions/) ---
 LAST_ACTION=""
-if [ -f "audit/agent-log.jsonl" ]; then
-  LAST_ACTION=$(tail -1 audit/agent-log.jsonl 2>/dev/null | \
+_SESS_DIR="${HOME}/.claude/kdiab-sessions"
+_LAST_FILE=$(ls -t "${_SESS_DIR}/"*.jsonl 2>/dev/null | head -1)
+if [ -n "$_LAST_FILE" ] && [ -f "$_LAST_FILE" ]; then
+  LAST_ACTION=$(tail -1 "$_LAST_FILE" | \
     python3 -c "import sys,json; d=json.load(sys.stdin); print(f\"{d.get('agent','?')}: {d.get('action','?')}\")" 2>/dev/null || true)
 fi
 
@@ -99,7 +101,7 @@ d = json.load(sys.stdin)
 print(d.get('session_id', 'unknown'))
 " 2>/dev/null || echo "unknown")
 
-# Write to per-session temp file outside the repo — stop hook consolidates to main.
+# Write to per-session temp file outside the repo.
 SESSION_DIR="${HOME}/.claude/kdiab-sessions"
 AUDIT_FILE="${SESSION_DIR}/${SESSION_ID}.jsonl"
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || \

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) for all services in this monorepo.
 
-All agent work is logged to `audit/` for traceability.
+All agent work is logged to `~/.claude/kdiab-sessions/<session_id>.jsonl` for traceability.
 
 ## Project Overview
 
@@ -468,13 +468,13 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`
 
 ## Audit Logging
 
-Every agent action is appended to `audit/agent-log.jsonl`:
+Every agent action is appended to `~/.claude/kdiab-sessions/<session_id>.jsonl` (outside the repo):
 
 ```json
 {"ts":"2026-05-14T10:00:00Z","agent":"RequirementsAgent","action":"challenge","target":"epic-001","verdict":"REVISE","reason":"missing non-functional requirements"}
 ```
 
-Human decisions are logged to `audit/human-decisions.jsonl`.
+Session files accumulate all entries for a session and are never committed to git.
 
 ## Rules Index
 

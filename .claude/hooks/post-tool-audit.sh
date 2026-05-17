@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Hook: PostToolUse:Bash|Write|Edit
-# Appends one audit entry per significant tool use to audit/agent-log.jsonl.
+# Appends one audit entry per significant tool use to ~/.claude/kdiab-sessions/<session_id>.jsonl.
 # Runs async so it never blocks Claude.
 
 INPUT=$(cat)
@@ -12,8 +12,6 @@ d = json.load(sys.stdin)
 print(d.get('session_id', 'unknown'))
 " 2>/dev/null || echo "unknown")
 
-# Write to a per-session file outside the repo to avoid git branch conflicts.
-# The stop hook consolidates all session files into audit/agent-log.jsonl on main.
 SESSION_DIR="${HOME}/.claude/kdiab-sessions"
 AUDIT_FILE="${SESSION_DIR}/${SESSION_ID}.jsonl"
 
