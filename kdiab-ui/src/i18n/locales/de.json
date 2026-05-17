@@ -197,6 +197,7 @@
       "SITE_CHANGE": "Katheterwechsel (Infusion)",
       "SENSOR_INSERT": "CGM-Sensor einsetzen",
       "INSULIN_CHANGE": "Insulinkartuschenwechsel",
+      "PUMP_BATTERY_CHANGE": "Pumpenbatterie wechseln",
       "COMBO_BOLUS": "Kombibolus (sofort/verlängert)",
       "TEMP_BASAL": "Temporäre Basalrate",
       "PUMP_SUSPEND": "Pumpe pausieren",

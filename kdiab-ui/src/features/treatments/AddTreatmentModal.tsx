@@ -12,6 +12,7 @@ import { NoteForm } from './forms/NoteForm'
 import { SiteChangeForm } from './forms/SiteChangeForm'
 import { SensorInsertForm } from './forms/SensorInsertForm'
 import { InsulinChangeForm } from './forms/InsulinChangeForm'
+import { PumpBatteryChangeForm } from './forms/PumpBatteryChangeForm'
 import { ActivityForm } from './forms/ActivityForm'
 import { HypoTreatmentForm } from './forms/HypoTreatmentForm'
 import { inputStyle, labelStyle } from './forms/formStyles'
@@ -29,6 +30,7 @@ type PatientTreatmentType =
   | 'SITE_CHANGE'
   | 'SENSOR_INSERT'
   | 'INSULIN_CHANGE'
+  | 'PUMP_BATTERY_CHANGE'
   | 'ACTIVITY'
   | 'MEAL'
   | 'HYPO_TREATMENT'
@@ -81,6 +83,7 @@ const TREATMENT_TYPES: PatientTreatmentType[] = [
   'SITE_CHANGE',
   'SENSOR_INSERT',
   'INSULIN_CHANGE',
+  'PUMP_BATTERY_CHANGE',
   'ACTIVITY',
 ]
 
@@ -295,6 +298,12 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
         return (
           <InsulinChangeForm
             initialData={isEditMode ? { insulinType: editData.insulinType as string } : undefined}
+            onDataChange={(data) => setPendingData(data as Record<string, unknown>)}
+          />
+        )
+      case 'PUMP_BATTERY_CHANGE':
+        return (
+          <PumpBatteryChangeForm
             onDataChange={(data) => setPendingData(data as Record<string, unknown>)}
           />
         )

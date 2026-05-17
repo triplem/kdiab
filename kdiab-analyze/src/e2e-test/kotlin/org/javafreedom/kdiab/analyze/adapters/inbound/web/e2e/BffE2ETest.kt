@@ -30,7 +30,9 @@ import org.javafreedom.kdiab.analyze.adapters.inbound.web.TimelineResponse
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
+import io.mockk.mockk
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 import org.javafreedom.kdiab.analyze.module
@@ -151,12 +153,13 @@ class BffE2ETest : BehaviorSpec({
 
     given("a patient with CGM, BOLUS, and profile data") {
         val (timelineService, analyticsService, profilesService) = buildServices()
+        val deviceUsageService: DeviceUsageService = mockk()
 
         `when`("they GET /timeline") {
             then("the response contains the CGM measure and BOLUS treatment") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService) }
+                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
                     val resp = client.get("/api/v1/users/$sarahId/timeline?from=$from&to=$to") {
                         bearerAuth(sarahToken)
                     }
@@ -176,7 +179,7 @@ class BffE2ETest : BehaviorSpec({
             then("hba1c is computed and readingCount matches") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService) }
+                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
                     val resp = client.get("/api/v1/users/$sarahId/analytics/hba1c?from=$from&to=$to") {
                         bearerAuth(sarahToken)
                     }
@@ -193,7 +196,7 @@ class BffE2ETest : BehaviorSpec({
             then("the ACTIVE profile is listed with validFrom") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService) }
+                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
                     val resp = client.get("/api/v1/users/$sarahId/profiles/active?from=$from&to=$to") {
                         bearerAuth(sarahToken)
                     }
@@ -211,7 +214,7 @@ class BffE2ETest : BehaviorSpec({
             then("401 is returned") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService) }
+                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
                     val resp = client.get("/api/v1/users/$sarahId/timeline?from=$from&to=$to")
                     resp.status shouldBe HttpStatusCode.Unauthorized
                 }
@@ -242,7 +245,7 @@ class BffE2ETest : BehaviorSpec({
 
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(agpServices.first, agpServices.second, agpServices.third) }
+                    application { module(agpServices.first, agpServices.second, agpServices.third, deviceUsageService) }
                     val resp = client.get("/api/v1/users/$sarahId/analytics/agp?from=$from&to=$to") {
                         bearerAuth(sarahToken)
                     }
@@ -262,7 +265,7 @@ class BffE2ETest : BehaviorSpec({
             then("403 is returned") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService) }
+                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
                     // sarah's token used to request mike's userId — access must be denied
                     val resp = client.get("/api/v1/users/$mikeId/timeline?from=$from&to=$to") {
                         bearerAuth(sarahToken)
@@ -276,7 +279,7 @@ class BffE2ETest : BehaviorSpec({
             then("403 is returned") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService) }
+                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
                     val resp = client.get("/api/v1/users/$sarahId/timeline?from=$from&to=$to") {
                         bearerAuth(drCameronToken)
                     }
@@ -316,7 +319,7 @@ class BffE2ETest : BehaviorSpec({
 
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(failingTimelineService, analyticsService, profilesService) }
+                    application { module(failingTimelineService, analyticsService, profilesService, deviceUsageService) }
                     val resp = client.get("/api/v1/users/$sarahId/timeline?from=$from&to=$to") {
                         bearerAuth(sarahToken)
                     }

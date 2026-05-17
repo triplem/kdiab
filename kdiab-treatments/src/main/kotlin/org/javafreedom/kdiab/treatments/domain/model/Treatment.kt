@@ -21,6 +21,7 @@ enum class TreatmentType {
     ACTIVITY,
     HYPO_TREATMENT,
     DEVICE_STATUS,
+    PUMP_BATTERY_CHANGE,
 }
 
 enum class TreatmentStatus {

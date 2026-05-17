@@ -69,20 +69,26 @@ class DeviceAgeRoutesTest {
         }
     }
 
+    private val deviceTypes = setOf(
+        TreatmentType.SITE_CHANGE,
+        TreatmentType.INSULIN_CHANGE,
+        TreatmentType.SENSOR_INSERT,
+        TreatmentType.PUMP_BATTERY_CHANGE,
+    )
+
     @Test
     fun `GET device-age returns 200 with all timestamps populated`() = deviceAgeTest { repo ->
         val catheter  = Instant.parse("2026-05-14T10:00:00Z")
         val reservoir = Instant.parse("2026-05-13T08:00:00Z")
         val sensor    = Instant.parse("2026-05-12T18:00:00Z")
+        val battery   = Instant.parse("2026-05-10T14:00:00Z")
         coEvery {
-            repo.findLatestTimestampsByTypes(
-                Uuid.parse(SARAH_ID),
-                setOf(TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE, TreatmentType.SENSOR_INSERT),
-            )
+            repo.findLatestTimestampsByTypes(Uuid.parse(SARAH_ID), deviceTypes)
         } returns mapOf(
-            TreatmentType.SITE_CHANGE    to catheter,
-            TreatmentType.INSULIN_CHANGE to reservoir,
-            TreatmentType.SENSOR_INSERT  to sensor,
+            TreatmentType.SITE_CHANGE         to catheter,
+            TreatmentType.INSULIN_CHANGE      to reservoir,
+            TreatmentType.SENSOR_INSERT       to sensor,
+            TreatmentType.PUMP_BATTERY_CHANGE to battery,
         )
 
         val response = client.get("/api/v1/users/$SARAH_ID/device-age") {
@@ -94,15 +100,13 @@ class DeviceAgeRoutesTest {
         assertContains(body, "2026-05-14")
         assertContains(body, "2026-05-13")
         assertContains(body, "2026-05-12")
+        assertContains(body, "2026-05-10")
     }
 
     @Test
     fun `GET device-age returns 200 with null fields when no treatments exist`() = deviceAgeTest { repo ->
         coEvery {
-            repo.findLatestTimestampsByTypes(
-                Uuid.parse(SARAH_ID),
-                setOf(TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE, TreatmentType.SENSOR_INSERT),
-            )
+            repo.findLatestTimestampsByTypes(Uuid.parse(SARAH_ID), deviceTypes)
         } returns emptyMap()
 
         val response = client.get("/api/v1/users/$SARAH_ID/device-age") {
@@ -112,7 +116,25 @@ class DeviceAgeRoutesTest {
         assertEquals(HttpStatusCode.OK, response.status)
         val body = response.bodyAsText()
         assertContains(body, "catheterChangedAt")
+        assertContains(body, "batteryChangedAt")
         assertContains(body, "null")
+    }
+
+    @Test
+    fun `GET device-age returns batteryChangedAt when PUMP_BATTERY_CHANGE exists`() = deviceAgeTest { repo ->
+        val battery = Instant.parse("2026-05-10T14:00:00Z")
+        coEvery {
+            repo.findLatestTimestampsByTypes(Uuid.parse(SARAH_ID), deviceTypes)
+        } returns mapOf(TreatmentType.PUMP_BATTERY_CHANGE to battery)
+
+        val response = client.get("/api/v1/users/$SARAH_ID/device-age") {
+            header(HttpHeaders.Authorization, "Bearer $sarahToken")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        val body = response.bodyAsText()
+        assertContains(body, "batteryChangedAt")
+        assertContains(body, "2026-05-10")
     }
 
     @Test

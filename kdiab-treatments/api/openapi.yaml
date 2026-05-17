@@ -719,6 +719,11 @@ components:
           format: date-time
           description: When the CGM sensor was last inserted (SENSOR_INSERT)
           example: "2026-05-12T18:00:00Z"
+        batteryChangedAt:
+          type: ["string", "null"]
+          format: date-time
+          description: When the pump battery was last replaced (PUMP_BATTERY_CHANGE)
+          example: "2026-05-10T14:00:00Z"
 
     DeviceStatusResponse:
       type: object
@@ -789,6 +794,7 @@ components:
         - ACTIVITY: Physical activity log with name, duration (minutes), and intensity level (low/moderate/high)
         - HYPO_TREATMENT: Emergency fast-acting carbohydrate intake to correct hypoglycaemia (juice, dextrose)
         - DEVICE_STATUS: Pump and uploader status snapshot (reservoir units, battery level, client name)
+        - PUMP_BATTERY_CHANGE: Pump battery replacement
       enum:
         - BOLUS
         - BASAL
@@ -805,6 +811,7 @@ components:
         - ACTIVITY
         - HYPO_TREATMENT
         - DEVICE_STATUS
+        - PUMP_BATTERY_CHANGE
 
     ErrorResponse:
       type: object

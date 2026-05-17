@@ -19,6 +19,7 @@ import org.javafreedom.kdiab.analyze.api.upstream.treatments.DefaultApi
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.DeviceStatusApi
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.TreatmentsApi
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentResponse
+import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import org.javafreedom.kdiab.analyze.domain.model.DeviceAge
@@ -152,6 +153,52 @@ class TreatmentsClient(
         }
         logger.info { "Fetched treatments page $pageNum in ${pageMs}ms [status=${httpResponse.status}]" }
         return httpResponse.body().items
+    }
+
+    @Suppress("LongParameterList")
+    override suspend fun getTreatmentsByType(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        type: TreatmentType,
+        from: String?,
+        to: String?,
+    ): List<TreatmentResponse> {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val api = buildApi(token, correlationId)
+        val result = mutableListOf<TreatmentResponse>()
+        var page = 0
+
+        while (true) {
+            val pageStart = System.currentTimeMillis()
+            val httpResponse = circuitBreaker.execute {
+                api.listTreatments(
+                    userId = userId, type = type, from = from, to = to,
+                    status = null, page = page, size = PAGE_SIZE,
+                )
+            }
+            val pageMs = System.currentTimeMillis() - pageStart
+            if (!httpResponse.success) {
+                val requestUrl = httpResponse.response.request.url.toString()
+                logger.warn {
+                    "Upstream treatments page $page returned ${httpResponse.status} in ${pageMs}ms url=$requestUrl"
+                }
+                throw UpstreamException(
+                    service = "treatments",
+                    statusCode = httpResponse.status,
+                    message = httpResponse.response.status.description,
+                    responseBody = null,
+                    url = requestUrl,
+                )
+            }
+            logger.info { "Fetched treatments by type $type page $page in ${pageMs}ms [status=${httpResponse.status}]" }
+            val body = httpResponse.body()
+            result.addAll(body.items)
+            if (result.size >= body.totalCount || body.items.isEmpty()) break
+            page++
+        }
+
+        return result
     }
 
     override suspend fun getDeviceAge(

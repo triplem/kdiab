@@ -13,6 +13,7 @@ import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.analyze.api.Paths
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
@@ -22,10 +23,13 @@ import org.javafreedom.kdiab.common.plugins.UserPrincipal
 private val logger = KotlinLogging.logger {}
 
 
+private const val DEFAULT_DEVICE_USAGE_DAYS = 90
+
 fun Route.bffRoutes(
     timelineService: TimelineService,
     analyticsService: AnalyticsService,
     profilesService: ProfilesService,
+    deviceUsageService: DeviceUsageService,
     treatmentsClient: TreatmentsClient? = null,
 ) {
     authenticate("auth-jwt") {
@@ -101,6 +105,20 @@ fun Route.bffRoutes(
                 userId = ctx.targetUserId.toString(),
                 from = from,
                 to = to,
+                authorization = ctx.authorization,
+                correlationId = ctx.correlationId,
+            )
+            call.respond(result.toResponse())
+        }
+
+        get<Paths.getDeviceUsageAnalytics> { params ->
+            val ctx = extractContext(call, params.userId)
+            auditDoctorAccess(ctx, "analyze.device-usage")
+
+            val days = params.days ?: DEFAULT_DEVICE_USAGE_DAYS
+            val result = deviceUsageService.compute(
+                userId = ctx.targetUserId.toString(),
+                days = days,
                 authorization = ctx.authorization,
                 correlationId = ctx.correlationId,
             )

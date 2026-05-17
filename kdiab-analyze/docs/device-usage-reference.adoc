@@ -1,0 +1,147 @@
+= Device Usage Analytics — Developer Reference
+:toc:
+:toc-title: Contents
+:sectnums:
+:source-highlighter: highlight.js
+
+== Overview
+
+The `GET /api/v1/users/{userId}/analytics/device-usage` endpoint computes
+average wear durations and their population standard deviations for each
+category of insulin-pump and CGM device component.  It serves as a
+statistical summary tool to help patients and clinicians understand typical
+device usage patterns over a configurable lookback window.
+
+== Endpoint
+
+[cols="1,3"]
+|===
+|Method |`GET`
+|Path |`/api/v1/users/{userId}/analytics/device-usage`
+|Auth |Bearer JWT (same token forwarded to upstream kdiab-treatments)
+|Query param |`days` (optional, default `90`) — lookback window in days
+|Response |`200 OK` + `DeviceUsageResult` JSON body
+|===
+
+== Device-type Mapping
+
+The analytics service maps four `TreatmentType` values to the four result fields:
+
+[cols="1,2,2"]
+|===
+|Result field pair |Source treatment type |Meaning
+
+|`avgSensorDays` / `stddevSensorDays`
+|`SENSOR_INSERT`
+|Time between consecutive CGM sensor insertions
+
+|`avgCatheterDays` / `stddevCatheterDays`
+|`SITE_CHANGE`
+|Time between consecutive infusion-set site changes
+
+|`avgReservoirDays` / `stddevReservoirDays`
+|`INSULIN_CHANGE`
+|Time between consecutive insulin cartridge / reservoir changes
+
+|`avgBatteryDays` / `stddevBatteryDays`
+|`PUMP_BATTERY_CHANGE`
+|Time between consecutive pump battery replacements
+|===
+
+== Calculation Formulas
+
+=== Duration list
+
+Given a list of treatment events of a single type:
+
+. Sort events chronologically by `treatedAt`.
+. Compute consecutive differences:
++
+[source]
+----
+durations = [t[i+1] - t[i]  for i in 0..n-2]   (in fractional days)
+duration_days = difference_in_seconds / 86400.0
+----
+
+=== Average
+
+[source]
+----
+avg = sum(durations) / count(durations)
+----
+
+Returns `null` when fewer than 2 events exist (no durations can be computed).
+
+=== Population standard deviation
+
+[source]
+----
+stddev = sqrt( sum((d - avg)^2) / count(durations) )
+----
+
+Returns `null` when fewer than 2 events exist.
+Returns `0.0` when exactly 2 events exist (single duration has zero variance).
+
+== Null semantics
+
+All eight result fields are nullable.  A `null` value means:
+
+* fewer than 2 events of that type were recorded in the lookback window, OR
+* the upstream `kdiab-treatments` call failed for that type (gracefully handled — other types still compute).
+
+Frontend consumers should treat `null` as "no data" and display an appropriate placeholder.
+
+== Implementation
+
+=== Service layer
+
+`DeviceUsageService.compute()` (in `application/service/DeviceUsageService.kt`):
+
+. Computes `from` / `to` ISO-8601 timestamps from the `days` parameter.
+. Fetches all four device types in a `for` loop using `runCatching` per type,
+  so a single upstream failure does not prevent partial results.
+. Calls private helpers `avg()` and `stddev()` which both delegate to
+  `durations()` for the shared sort-and-diff logic.
+
+=== Port and adapter
+
+`TreatmentsPort.getTreatmentsByType()` (outbound port) is implemented by
+`TreatmentsClient.getTreatmentsByType()` which page-fetches treatments using
+the standard treatments `listTreatments` API, filtering by `type`, `from`,
+and `to` until all pages are consumed.
+
+=== Circuit breaker
+
+`TreatmentsClient` wraps every upstream HTTP call in a `CircuitBreaker`.
+If the circuit is OPEN, a `CircuitBreakerOpenException` propagates up and is
+mapped to `503 Service Unavailable` by the global `StatusPages` handler.
+
+== Frontend integration
+
+`kdiab-ui` exposes:
+
+* `analyzeApi.getDeviceUsage(userId, days?)` — Axios call returning `DeviceUsageResponse`
+* `DeviceUsageCard` component — renders a card with one row per device type showing
+  `avg ± stddev d` or "no data"
+* The card is mounted at the bottom of `DashboardView` and uses a 10-minute
+  `staleTime` via `@tanstack/react-query`.
+
+== Example response
+
+[source,json]
+----
+{
+  "userId": "11111111-1111-1111-1111-111111111111",
+  "avgSensorDays": 14.2,
+  "stddevSensorDays": 1.3,
+  "avgCatheterDays": 3.1,
+  "stddevCatheterDays": 0.4,
+  "avgReservoirDays": 3.0,
+  "stddevReservoirDays": 0.2,
+  "avgBatteryDays": null,
+  "stddevBatteryDays": null
+}
+----
+
+`avgBatteryDays` is `null` here because the user has fewer than 2
+`PUMP_BATTERY_CHANGE` events in the 90-day window.

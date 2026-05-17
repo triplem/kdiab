@@ -19,6 +19,7 @@ import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -48,6 +49,7 @@ fun Application.module(
     timelineService: TimelineService? = null,
     analyticsService: AnalyticsService? = null,
     profilesService: ProfilesService? = null,
+    deviceUsageService: DeviceUsageService? = null,
     treatmentsClient: TreatmentsClient? = null,
 ) {
     configureTracing()
@@ -100,14 +102,16 @@ fun Application.module(
     val resolvedTimelineService: TimelineService
     val resolvedAnalyticsService: AnalyticsService
     val resolvedProfilesService: ProfilesService
+    val resolvedDeviceUsageService: DeviceUsageService
     var resolvedTreatmentsClient: TreatmentsClient? = treatmentsClient
     var healthClient: HttpClient? = null
     var upstreamHealthUrls: List<String> = emptyList()
 
-    if (timelineService != null && analyticsService != null && profilesService != null) {
-        resolvedTimelineService = timelineService
-        resolvedAnalyticsService = analyticsService
-        resolvedProfilesService = profilesService
+    if (allServicesProvided(timelineService, analyticsService, profilesService, deviceUsageService)) {
+        resolvedTimelineService = timelineService!!
+        resolvedAnalyticsService = analyticsService!!
+        resolvedProfilesService = profilesService!!
+        resolvedDeviceUsageService = deviceUsageService!!
     } else {
         val connectTimeoutMs = environment.config.propertyOrNull("http.connectTimeoutMs")
             ?.getString()?.toLong() ?: HTTP_CONNECT_TIMEOUT_MS_DEFAULT
@@ -156,6 +160,7 @@ fun Application.module(
         resolvedTimelineService = TimelineService(measuresClient, realTreatmentsClient)
         resolvedAnalyticsService = AnalyticsService(measuresClient, realProfilesClient)
         resolvedProfilesService = ProfilesService(realProfilesClient)
+        resolvedDeviceUsageService = DeviceUsageService(realTreatmentsClient)
         resolvedTreatmentsClient = realTreatmentsClient
     }
 
@@ -183,6 +188,7 @@ fun Application.module(
                 resolvedTimelineService,
                 resolvedAnalyticsService,
                 resolvedProfilesService,
+                resolvedDeviceUsageService,
                 resolvedTreatmentsClient,
             )
         }
@@ -192,3 +198,11 @@ fun Application.module(
         }
     }
 }
+
+private fun allServicesProvided(
+    timelineService: TimelineService?,
+    analyticsService: AnalyticsService?,
+    profilesService: ProfilesService?,
+    deviceUsageService: DeviceUsageService?,
+): Boolean = listOf(timelineService, analyticsService, profilesService, deviceUsageService)
+    .all { it != null }

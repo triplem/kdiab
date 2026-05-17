@@ -10,6 +10,10 @@ servers:
 security:
   - bearerAuth: []
 
+tags:
+  - name: Analytics
+    description: Analytics and aggregation endpoints
+
 paths:
   /users/{userId}/timeline:
     get:
@@ -69,6 +73,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AgpResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}/analytics/device-usage:
+    get:
+      operationId: getDeviceUsageAnalytics
+      summary: Average device wear durations
+      description: Computes average and standard deviation of device component wear durations from treatment history. Requires at least 2 events of each type to compute a duration.
+      tags: [Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/userId'
+        - name: days
+          in: query
+          required: false
+          description: Number of days to look back (default 90)
+          schema:
+            type: integer
+            default: 90
+      responses:
+        '200':
+          description: Device usage averages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceUsageResult'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -521,6 +554,46 @@ components:
           nullable: true
           description: Whether the pump was connected at the time of the status report.
           example: true
+
+    DeviceUsageResult:
+      type: object
+      required: [userId]
+      properties:
+        userId:
+          type: string
+          description: The user this result belongs to
+        avgSensorDays:
+          type: ["number", "null"]
+          format: double
+          description: Average sensor wear duration in days. Null if fewer than 2 SENSOR_INSERT events exist.
+        stddevSensorDays:
+          type: ["number", "null"]
+          format: double
+          description: Population standard deviation of sensor wear duration in days.
+        avgCatheterDays:
+          type: ["number", "null"]
+          format: double
+          description: Average catheter/cannula wear duration in days. Null if fewer than 2 SITE_CHANGE events exist.
+        stddevCatheterDays:
+          type: ["number", "null"]
+          format: double
+          description: Population standard deviation of catheter wear duration in days.
+        avgReservoirDays:
+          type: ["number", "null"]
+          format: double
+          description: Average reservoir/insulin cartridge wear duration in days. Null if fewer than 2 INSULIN_CHANGE events exist.
+        stddevReservoirDays:
+          type: ["number", "null"]
+          format: double
+          description: Population standard deviation of reservoir wear duration in days.
+        avgBatteryDays:
+          type: ["number", "null"]
+          format: double
+          description: Average pump battery wear duration in days. Null if fewer than 2 PUMP_BATTERY_CHANGE events exist.
+        stddevBatteryDays:
+          type: ["number", "null"]
+          format: double
+          description: Population standard deviation of battery wear duration in days.
 
     ErrorResponse:
       type: object

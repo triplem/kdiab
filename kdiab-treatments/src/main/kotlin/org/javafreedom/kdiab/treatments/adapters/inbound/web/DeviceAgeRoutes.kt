@@ -18,6 +18,7 @@ data class DeviceAgeResponse(
     val catheterChangedAt: String?,
     val reservoirChangedAt: String?,
     val sensorInsertedAt: String?,
+    val batteryChangedAt: String?,
 )
 
 fun Route.deviceAgeRoutes(treatmentService: TreatmentService) {
@@ -32,12 +33,13 @@ private fun Route.getDeviceAge(treatmentService: TreatmentService) {
         val targetUserId = parseUuid(call.parameters["userId"] ?: "")
         checkAccess(principal, targetUserId)
 
-        val (catheter, reservoir, sensor) = treatmentService.getDeviceAge(targetUserId)
+        val deviceAge = treatmentService.getDeviceAge(targetUserId)
         logger.debug { "Returning device age for user $targetUserId" }
         call.respond(HttpStatusCode.OK, DeviceAgeResponse(
-            catheterChangedAt = catheter?.toString(),
-            reservoirChangedAt = reservoir?.toString(),
-            sensorInsertedAt = sensor?.toString(),
+            catheterChangedAt = deviceAge.catheterChangedAt?.toString(),
+            reservoirChangedAt = deviceAge.reservoirChangedAt?.toString(),
+            sensorInsertedAt = deviceAge.sensorInsertedAt?.toString(),
+            batteryChangedAt = deviceAge.batteryChangedAt?.toString(),
         ))
     }
 }

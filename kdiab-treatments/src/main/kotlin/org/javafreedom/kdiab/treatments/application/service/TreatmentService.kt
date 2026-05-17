@@ -68,19 +68,28 @@ class TreatmentService(
         treatmentRepository.unarchiveAll(ids, userId)
     }
 
-    suspend fun getDeviceAge(userId: Uuid): Triple<Instant?, Instant?, Instant?> {
+    suspend fun getDeviceAge(userId: Uuid): DeviceAge {
         val deviceTypes = setOf(
             TreatmentType.SITE_CHANGE,
             TreatmentType.INSULIN_CHANGE,
             TreatmentType.SENSOR_INSERT,
+            TreatmentType.PUMP_BATTERY_CHANGE,
         )
         val latestByType = treatmentRepository.findLatestTimestampsByTypes(userId, deviceTypes)
-        return Triple(
-            latestByType[TreatmentType.SITE_CHANGE],
-            latestByType[TreatmentType.INSULIN_CHANGE],
-            latestByType[TreatmentType.SENSOR_INSERT],
+        return DeviceAge(
+            catheterChangedAt = latestByType[TreatmentType.SITE_CHANGE],
+            reservoirChangedAt = latestByType[TreatmentType.INSULIN_CHANGE],
+            sensorInsertedAt = latestByType[TreatmentType.SENSOR_INSERT],
+            batteryChangedAt = latestByType[TreatmentType.PUMP_BATTERY_CHANGE],
         )
     }
+
+    data class DeviceAge(
+        val catheterChangedAt: Instant?,
+        val reservoirChangedAt: Instant?,
+        val sensorInsertedAt: Instant?,
+        val batteryChangedAt: Instant?,
+    )
 
     suspend fun deleteTreatments(ids: List<Uuid>, userId: Uuid) {
         if (ids.isEmpty()) throw ResourceNotFoundException("No treatment IDs provided")
