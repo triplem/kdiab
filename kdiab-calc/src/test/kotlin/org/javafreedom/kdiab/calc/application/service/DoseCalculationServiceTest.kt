@@ -116,7 +116,7 @@ class DoseCalculationServiceTest {
     }
 
     @Test
-    fun `calculateDose applies SINGLE_UP trend adjustment of 1_0 units`() = runTest {
+    fun `calculateDose applies SINGLE_UP trend adjustment scaled by ISF`() = runTest {
         coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
 
         val request = DoseRequest(
@@ -128,9 +128,70 @@ class DoseCalculationServiceTest {
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
 
-        // correction = (110 - 110) / 50 = 0, trend = +1.0, total = 1.0
-        assertEquals(1.0, result.trendAdjustment)
-        assertEquals(1.0, result.totalRecommended)
+        // correction = (110 - 110) / 50 = 0, trend = 20.0 / 50 = 0.4, total = 0.4
+        assertEquals(0.4, result.trendAdjustment)
+        assertEquals(0.4, result.totalRecommended)
+    }
+
+    @Test
+    fun `calculateDose trend adjustments are proportional to 1 over ISF`() = runTest {
+        val isfValue = 40.0
+        val lowIsfProfile = testProfile.copy(
+            isf = listOf(IsfSegment(startTime = "00:00", `value` = isfValue)),
+        )
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns lowIsfProfile
+
+        // BG at target so correction = 0; only trend contributes
+        val request = DoseRequest(
+            currentBg = 110.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.DOUBLE_UP,
+            carbsGrams = 0.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        // DOUBLE_UP offset = 30 mg/dL / ISF — proportional to 1/isf
+        val expected = 30.0 / isfValue
+        assertEquals(expected, result.trendAdjustment)
+    }
+
+    @Test
+    fun `calculateDose negative trends reduce dose proportionally to ISF`() = runTest {
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        // BG at target + slightly above so correction is small positive; SINGLE_DOWN should reduce
+        val request = DoseRequest(
+            currentBg = 160.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.SINGLE_DOWN,
+            carbsGrams = 0.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        // trend = -20.0 / 50 = -0.4
+        assertEquals(-0.4, result.trendAdjustment)
+    }
+
+    @Test
+    fun `calculateDose does not produce NaN when ISF is very small but positive`() = runTest {
+        val tinyIsfProfile = testProfile.copy(
+            isf = listOf(IsfSegment(startTime = "00:00", `value` = 0.1)),
+        )
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns tinyIsfProfile
+
+        val request = DoseRequest(
+            currentBg = 110.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.SINGLE_UP,
+            carbsGrams = 0.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertTrue(!result.trendAdjustment.isNaN())
+        assertTrue(!result.trendAdjustment.isInfinite())
     }
 
     @Test
