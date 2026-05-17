@@ -20,8 +20,8 @@ kotest = "6.1.11"
 liquibase = "5.0.2"
 kotlinx-coroutines = "1.10.2"
 cyclonedx = "3.2.2"
-opentelemetry = "1.47.0"
-opentelemetry-instrumentation = "2.13.3-alpha"
+opentelemetry = "1.51.0"
+opentelemetry-instrumentation = "2.27.0-alpha"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }

@@ -1,0 +1,65 @@
+name: kdiab-carbs / Release
+
+on:
+  workflow_run:
+    workflows: ["kdiab-carbs / Backend CI"]
+    branches: ["main"]
+    types:
+      - completed
+
+jobs:
+  release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+
+      - name: Get Backend CI run ID
+        id: backend-run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID=$(gh run list --workflow=ci-carbs-backend.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId')
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+      - name: Download backend-image
+        uses: actions/download-artifact@v8
+        with:
+          name: carbs-backend-image
+          path: .
+          run-id: ${{ steps.backend-run.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download backend-bom
+        uses: actions/download-artifact@v8
+        with:
+          name: carbs-backend-bom
+          path: .
+          run-id: ${{ steps.backend-run.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v6
+        with:
+          working_directory: kdiab-carbs
+          extra_plugins: |
+            @semantic-release/github
+            @semantic-release/commit-analyzer
+            @semantic-release/release-notes-generator
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
