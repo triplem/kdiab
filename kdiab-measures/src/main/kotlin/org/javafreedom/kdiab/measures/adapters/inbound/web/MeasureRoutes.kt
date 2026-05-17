@@ -117,7 +117,7 @@ private fun Route.updateMeasure(measureService: MeasureService, auditLogReposito
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
         val measureId = parseUuid(params.measureId)
-        checkReadAccess(principal, targetUserId)
+        checkWriteAccess(principal, targetUserId)
         auditIfDoctor(call, principal, targetUserId, "measures.update", auditLogRepository)
 
         val glucoseUnit = principal?.glucoseUnit ?: "mg/dL"
@@ -137,7 +137,7 @@ private fun Route.archiveMeasures(measureService: MeasureService, auditLogReposi
     post<Paths.archiveMeasures> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
-        checkReadAccess(principal, targetUserId)
+        checkWriteAccess(principal, targetUserId)
         auditIfDoctor(call, principal, targetUserId, "measures.archive", auditLogRepository)
 
         val request = call.receive<BulkMeasureRequest>()
@@ -152,7 +152,7 @@ private fun Route.unarchiveMeasures(measureService: MeasureService, auditLogRepo
     post<Paths.unarchiveMeasures> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
-        checkReadAccess(principal, targetUserId)
+        checkWriteAccess(principal, targetUserId)
         auditIfDoctor(call, principal, targetUserId, "measures.unarchive", auditLogRepository)
 
         val request = call.receive<BulkMeasureRequest>()
@@ -172,7 +172,7 @@ private fun Route.deleteMeasures(measureService: MeasureService, auditLogReposit
             logger.warn { "Delete denied: principalId=${principal?.userId} roles=${principal?.roles}" }
             throw AuthorizationException("Only doctors and admins can permanently delete measures")
         }
-        checkReadAccess(principal, targetUserId)
+        checkWriteAccess(principal, targetUserId)
 
         val request = call.receive<BulkMeasureRequest>()
         val ids = request.measureIds.map { parseUuid(it) }

@@ -9,6 +9,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.users.domain.model.User
@@ -22,6 +23,9 @@ import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakUser
 import org.javafreedom.kdiab.users.infrastructure.keycloak.toKeycloakName
 
 private val logger = KotlinLogging.logger {}
+
+private val VALID_GLUCOSE_UNITS = setOf("mg/dL", "mmol/L")
+private val VALID_WEIGHT_UNITS  = setOf("kg", "lbs")
 
 class UserService(
     private val keycloak: KeycloakAdminClient,
@@ -45,6 +49,14 @@ class UserService(
         principal: UserPrincipal,
         patch: SettingsPatch,
     ): UserSettings {
+        patch.glucoseUnit?.let {
+            if (it !in VALID_GLUCOSE_UNITS)
+                throw BusinessValidationException("Invalid glucose unit '$it'. Allowed: ${VALID_GLUCOSE_UNITS.joinToString()}")
+        }
+        patch.weightUnit?.let {
+            if (it !in VALID_WEIGHT_UNITS)
+                throw BusinessValidationException("Invalid weight unit '$it'. Allowed: ${VALID_WEIGHT_UNITS.joinToString()}")
+        }
         val existing = settingsRepo.findByUserId(principal.userId)
             ?: defaultSettings(principal.userId)
         val now = Clock.System.now()

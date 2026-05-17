@@ -78,6 +78,7 @@ fun Application.module(
         allowMethod(HttpMethod.Get)
     }
     install(DefaultHeaders) {
+        header("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none'")
         header("X-Content-Type-Options", "nosniff")
         header("X-Frame-Options", "DENY")
         header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
