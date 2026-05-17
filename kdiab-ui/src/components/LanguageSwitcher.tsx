@@ -5,10 +5,7 @@ export const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation()
   const auth = useAuth()
 
-  const localeMap: Record<string, string> = { en: 'en-GB', de: 'de-DE' }
-
   const changeLanguage = async (lang: string) => {
-    document.documentElement.lang = localeMap[lang] ?? lang
     await i18n.changeLanguage(lang)
 
     if (auth.isAuthenticated && auth.user?.access_token) {

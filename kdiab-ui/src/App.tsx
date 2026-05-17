@@ -79,11 +79,9 @@ export default function App() {
       setGlucoseUnit(parseGlucoseUnitFromToken(token))
       setWeightUnit(parseWeightUnitFromToken(token))
 
-      // Set locale from Keycloak profile — map short codes to regional locales
-      // so that date/time inputs render in 24h / dd.MM.yyyy format
-      const localeMap: Record<string, string> = { en: 'en-GB', de: 'de-DE' }
+      // Set locale from Keycloak profile
       const locale = auth.user.profile?.locale as string | undefined
-      if (locale) document.documentElement.lang = localeMap[locale] ?? locale
+      if (locale) document.documentElement.lang = locale
     } else {
       setAccessToken(null)
     }

@@ -564,3 +564,6 @@ main {
 .timeline-node-name { font-size: 0.78rem; color: var(--text-primary); font-weight: 500; max-width: 8rem; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .timeline-node-date { font-size: 0.72rem; color: var(--text-secondary); }
 .timeline-arrow { color: var(--text-secondary); font-size: 1.2rem; padding-top: 0.2rem; }
+
+/* Force 24h display on time inputs — WebKit shows AM/PM based on OS locale otherwise */
+input[type="time"]::-webkit-datetime-edit-ampm-field { display: none; }
