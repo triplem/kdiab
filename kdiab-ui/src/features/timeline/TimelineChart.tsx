@@ -39,7 +39,8 @@ interface Props {
 const MGDL_TO_MMOL = 1 / 18.0
 
 interface TtPayload {
-  dataKey?: string | number
+  // dataKey can be a function in recharts 3.x
+  dataKey?: string | number | ((obj: unknown) => unknown)
   value?: unknown
   payload?: Record<string, unknown>
 }
@@ -51,15 +52,15 @@ function TimelineTooltip({
   glucoseUnit,
 }: {
   active?: boolean
-  payload?: TtPayload[]
-  label?: number
+  payload?: readonly TtPayload[]
+  label?: number | string
   glucoseUnit: string
 }) {
   if (!active || !payload?.length || label == null) return null
   const yUnit = glucoseUnit === 'mmol/L' ? 'mmol/L' : 'mg/dL'
   return (
     <div className="timeline-tooltip">
-      <p className="timeline-tooltip-time">{new Date(label).toLocaleString()}</p>
+      <p className="timeline-tooltip-time">{new Date(Number(label)).toLocaleString()}</p>
       {payload.map((p, i) => {
         const numVal = typeof p.value === 'number' ? p.value : undefined
         if (p.dataKey === 'value') {

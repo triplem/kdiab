@@ -657,8 +657,8 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                 label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 15, style: { fontSize: 11 }, fill: 'var(--text-secondary)' }}
               />
               <Tooltip
-                labelFormatter={(ms: number) => formatTime(new Date(ms).toISOString())}
-                formatter={(v: unknown, name: string, entry: { payload?: { treatmentType?: string; label?: string } }) => {
+                labelFormatter={(ms: unknown) => formatTime(new Date(typeof ms === 'number' ? ms : 0).toISOString())}
+                formatter={(v: unknown, name: unknown, entry: { payload?: { treatmentType?: string; label?: string } }) => {
                   if (name === 'sgv' && typeof v === 'number') return [`${v} ${yLabel}`, 'CGM']
                   if (name === 'bgm' && typeof v === 'number') return [`${v} ${yLabel}`, 'BGM']
                   if (name === 'marker') {
@@ -666,7 +666,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                     const lbl = entry.payload?.label ?? ''
                     return [lbl || ttype, ttype]
                   }
-                  return [`${String(v)}`, name]
+                  return [`${String(v)}`, String(name ?? '')]
                 }}
                 contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
                 wrapperStyle={{ outline: 'none' }}
