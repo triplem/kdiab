@@ -65,6 +65,18 @@ export interface ProfilesResponse {
   profiles: ProfileSummary[]
 }
 
+export interface DeviceUsageResponse {
+  userId: string
+  avgSensorDays: number | null
+  stddevSensorDays: number | null
+  avgCatheterDays: number | null
+  stddevCatheterDays: number | null
+  avgReservoirDays: number | null
+  stddevReservoirDays: number | null
+  avgBatteryDays: number | null
+  stddevBatteryDays: number | null
+}
+
 export const analyzeApi = {
   getTimeline: (userId: string, from: string, to: string) =>
     axiosInstance.get<TimelineResponse>(`${BASE}/users/${userId}/timeline`, {
@@ -81,5 +93,9 @@ export const analyzeApi = {
   getActiveProfiles: (userId: string, from: string, to: string) =>
     axiosInstance.get<ProfilesResponse>(`${BASE}/users/${userId}/profiles/active`, {
       params: { from, to },
+    }),
+  getDeviceUsage: (userId: string, days?: number) =>
+    axiosInstance.get<DeviceUsageResponse>(`${BASE}/users/${userId}/analytics/device-usage`, {
+      params: days !== undefined ? { days } : undefined,
     }),
 }

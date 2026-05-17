@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { useMemo } from 'react'
 import { DeviceStatusWidget } from '../treatments/DeviceStatusWidget'
+import { DeviceUsageCard } from './DeviceUsageCard'
 import { GlucoseHeroTile } from './GlucoseHeroTile'
 import { GlucoseTrendChart } from './GlucoseTrendChart'
 import { BasalRateChart } from './BasalRateChart'
@@ -325,6 +326,9 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         windowFrom={windowFrom}
         windowTo={windowTo}
       />
+
+      {/* ── Device usage averages ─────────────────────────────────────────── */}
+      <DeviceUsageCard userId={userId} />
     </div>
   )
 }
