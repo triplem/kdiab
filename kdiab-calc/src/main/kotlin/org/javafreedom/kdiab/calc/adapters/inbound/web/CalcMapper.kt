@@ -12,6 +12,7 @@ data class DoseRequestDto(
     val glucoseUnit: String,
     val trend: String,
     val carbsGrams: Double = 0.0,
+    val activeIob: Double = 0.0,
     val useProfileTime: String? = null,
 )
 
@@ -44,6 +45,7 @@ fun DoseRequestDto.toDomain(): DoseRequest {
         glucoseUnit = glucoseUnit,
         trend = cgmTrend,
         carbsGrams = carbsGrams,
+        activeIob = activeIob,
         useProfileTime = useProfileTime,
     )
 }

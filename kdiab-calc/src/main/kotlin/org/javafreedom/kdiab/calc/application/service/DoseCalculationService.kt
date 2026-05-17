@@ -54,7 +54,13 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
         val icr = lookupIcrSegment(profile.icr.orEmpty(), refTime)
         val target = lookupTargetSegment(profile.targets.orEmpty(), refTime)
 
-        val correctionDose = (bgMgDl - target) / isf
+        if (isf <= 0.0) throw BusinessValidationException("ISF value must be positive")
+        if (request.carbsGrams > 0 && icr <= 0.0) {
+            throw BusinessValidationException("ICR value must be positive when carbs are entered")
+        }
+
+        val rawCorrection = (bgMgDl - target) / isf
+        val correctionDose = maxOf(0.0, rawCorrection - request.activeIob)
         val carbDose = if (request.carbsGrams > 0) request.carbsGrams / icr else 0.0
         val trendAdj = trendAdjustment(request.trend, isf)
         val total = maxOf(0.0, correctionDose + carbDose + trendAdj)
@@ -62,8 +68,11 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
         val warnings = buildList {
             if (bgMgDl < HYPOGLYCEMIA_THRESHOLD) {
                 add("BG is hypoglycemic — no correction dose recommended; treat hypo first")
-            } else if (correctionDose < 0 && carbDose > 0) {
+            } else if (rawCorrection < 0 && carbDose > 0) {
                 add("BG is below target; carb dose only")
+            }
+            if (iobCoversFullCorrection(request.activeIob, rawCorrection, correctionDose, bgMgDl, target)) {
+                add("IOB covers the full correction — no additional correction dose recommended")
             }
             if (total > HIGH_DOSE_THRESHOLD) {
                 add("Calculated dose is unusually high — please verify inputs")
@@ -94,7 +103,9 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
             .filter { parseSegmentTime(it.startTime) <= refTime }
             .maxByOrNull { parseSegmentTime(it.startTime) }
             ?: segments.last()
-        return match.`value`
+        val value = match.`value`
+        if (value <= 0.0) throw BusinessValidationException("ISF value must be positive")
+        return value
     }
 
     private fun lookupIcrSegment(segments: List<IcrSegment>, refTime: LocalTime): Double {
@@ -103,7 +114,9 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
             .filter { parseSegmentTime(it.startTime) <= refTime }
             .maxByOrNull { parseSegmentTime(it.startTime) }
             ?: segments.last()
-        return match.`value`
+        val value = match.`value`
+        if (value <= 0.0) throw BusinessValidationException("ICR value must be positive")
+        return value
     }
 
     private fun lookupTargetSegment(segments: List<TargetSegment>, refTime: LocalTime): Double {
@@ -133,6 +146,14 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
         CgmTrend.DOUBLE_DOWN     -> -TREND_DOUBLE_MGDL_OFFSET / isf
         CgmTrend.NONE            ->  0.0
     }
+
+    private fun iobCoversFullCorrection(
+        activeIob: Double,
+        rawCorrection: Double,
+        correctionDose: Double,
+        bgMgDl: Double,
+        target: Double,
+    ) = activeIob > 0.0 && rawCorrection > 0.0 && correctionDose == 0.0 && bgMgDl > target
 
     private fun round2(v: Double) = Math.round(v * ROUND_TWO_DECIMAL_FACTOR) / ROUND_TWO_DECIMAL_FACTOR
 }

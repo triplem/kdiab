@@ -2,6 +2,7 @@ openapi: "3.1.0"
 info:
   title: kdiab-calc API
   version: "1.0.0"
+  description: Stateless insulin dose calculator — computes correction, carbohydrate, and trend-adjusted bolus recommendations from an active pump profile.
 servers:
   - url: /api/v1
 paths:
@@ -9,6 +10,11 @@ paths:
     post:
       operationId: calculateDose
       summary: Calculate recommended insulin dose
+      description: >
+        Computes a correction dose, a carbohydrate dose, and a CGM-trend adjustment
+        from the user's active pump profile. Active insulin on board (IOB) is
+        subtracted from the raw correction dose to prevent insulin stacking; the
+        result is floored at 0. Returns a full breakdown and any clinical warnings.
       security:
         - bearerAuth: []
       parameters:
@@ -73,6 +79,11 @@ components:
           type: number
           format: double
           default: 0.0
+        activeIob:
+          type: number
+          format: double
+          default: 0.0
+          description: Active insulin on board (units). When provided, subtracted from the raw correction dose to prevent insulin stacking.
         useProfileTime:
           type: string
           nullable: true
