@@ -90,6 +90,7 @@ fun Application.module(
     val httpsEnabled = environment.config.propertyOrNull("server.httpsEnabled")
         ?.getString()?.toBoolean() ?: false
     install(DefaultHeaders) {
+        header("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none'")
         header("X-Content-Type-Options", "nosniff")
         header("X-Frame-Options", "DENY")
         // HSTS is only meaningful over HTTPS; sending it on plain HTTP confuses intermediaries.
