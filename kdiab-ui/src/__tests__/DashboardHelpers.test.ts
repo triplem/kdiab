@@ -10,7 +10,7 @@ import {
   segToMin,
   scheduledRateAt,
   currentBasalRate,
-} from '../features/dashboard/DashboardView'
+} from '../features/dashboard/basalUtils'
 
 // Fixed reference time for deterministic tests
 const NOW = new Date('2024-06-01T10:00:00Z').getTime()
