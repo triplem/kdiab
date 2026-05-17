@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useState, useMemo, useEffect } from 'react'
 import { analyzeApi } from '../../api/analyzeApi'
-import { profilesApi } from '../../api/profilesApi'
-import { treatmentsApi } from '../../api/treatmentsApi'
 import { usersApi } from '../../api/usersApi'
 import { DeviceStatusWidget } from '../treatments/DeviceStatusWidget'
 import {
@@ -356,9 +354,13 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     staleTime: 2 * 60 * 1000,
   })
 
+  // Profile window: last 30 days — wide enough to always capture the active profile
+  const profileFrom = useMemo(() => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), [])
+  const profileTo = useMemo(() => new Date().toISOString(), [])
+
   const { data: profiles } = useQuery({
-    queryKey: ['profiles', userId],
-    queryFn: () => profilesApi.listProfiles(userId).then(r => r.data.items),
+    queryKey: ['bff-profiles', userId],
+    queryFn: () => analyzeApi.getActiveProfiles(userId, profileFrom, profileTo).then(r => r.data.profiles),
     enabled: !!userId,
     staleTime: 10 * 60 * 1000,
   })
@@ -405,20 +407,21 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
 
   const iob = calcIOB(recentTimeline?.treatments ?? [], diaMinutes)
   const cob = calcCOB(recentTimeline?.treatments ?? [])
-  const basalRate = currentBasalRate(activeProfile?.basal)
+  const basalRate = currentBasalRate(activeProfile?.basal ?? undefined)
 
-  // ── Device ages (fetched from server — no time-window limit) ───────────────
+  // ── Device ages (fetched via BFF — no time-window limit) ──────────────────
 
   const { data: deviceAge } = useQuery({
-    queryKey: ['device-age', userId],
-    queryFn: () => treatmentsApi.getDeviceAge(userId).then(r => r.data),
+    queryKey: ['bff-device-age', userId],
+    queryFn: () => analyzeApi.getDeviceAge(userId).then(r => r.data),
     enabled: !!userId,
     staleTime: 10 * 60 * 1000,
   })
 
   const { data: deviceStatus } = useQuery({
-    queryKey: ['device-status', userId],
-    queryFn: () => treatmentsApi.getLatestDeviceStatus(userId).then(r => r.data).catch(() => null),
+    queryKey: ['bff-device-status', userId],
+    queryFn: () =>
+      analyzeApi.getLatestDeviceStatus(userId).then(r => r.data).catch(() => null),
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
   })
