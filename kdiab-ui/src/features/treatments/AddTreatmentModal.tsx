@@ -87,7 +87,8 @@ const labelStyle: React.CSSProperties = {
 }
 
 function nowDate(): string {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
 }
 
 function nowTime(): string {
@@ -95,8 +96,13 @@ function nowTime(): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+function isoToDisplay(isoDate: string): string {
+  return `${isoDate.slice(8, 10)}.${isoDate.slice(5, 7)}.${isoDate.slice(0, 4)}`
+}
+
 function combineDatetime(date: string, time: string): string {
-  return new Date(`${date}T${time}:00`).toISOString()
+  const [dd, mm, yyyy] = date.split('.')
+  return new Date(`${yyyy}-${mm}-${dd}T${time}:00`).toISOString()
 }
 
 export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
@@ -169,7 +175,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
     setType(editMode.type as PatientTreatmentType)
     const dt = new Date(editMode.treatedAt)
     const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
-    setTreatedDate(local.toISOString().slice(0, 10))
+    setTreatedDate(isoToDisplay(local.toISOString().slice(0, 10)))
     setTreatedTime(local.toISOString().slice(11, 16))
     setNotes(editMode.notes ?? '')
     const d = editMode.data
@@ -917,9 +923,12 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
             <label style={{ ...labelStyle, flex: 1 }}>
               <span>{t('treatmentModal.treatedAt')}</span>
               <input
-                type="date"
+                type="text"
                 value={treatedDate}
                 onChange={(e) => setTreatedDate(e.target.value)}
+                placeholder="dd.MM.yyyy"
+                pattern="\d{2}\.\d{2}\.\d{4}"
+                inputMode="numeric"
                 style={inputStyle}
                 required
               />

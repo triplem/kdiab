@@ -53,7 +53,8 @@ const labelStyle: React.CSSProperties = {
 }
 
 function nowDate(): string {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  return `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`
 }
 
 function nowTime(): string {
@@ -61,8 +62,13 @@ function nowTime(): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+function isoToDisplay(isoDate: string): string {
+  return `${isoDate.slice(8, 10)}.${isoDate.slice(5, 7)}.${isoDate.slice(0, 4)}`
+}
+
 function combineDatetime(date: string, time: string): string {
-  return new Date(`${date}T${time}:00`).toISOString()
+  const [dd, mm, yyyy] = date.split('.')
+  return new Date(`${yyyy}-${mm}-${dd}T${time}:00`).toISOString()
 }
 
 export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
@@ -98,7 +104,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
     setType(editMode.type as MeasureType)
     const dt = new Date(editMode.measuredAt)
     const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000)
-    setMeasuredDate(local.toISOString().slice(0, 10))
+    setMeasuredDate(isoToDisplay(local.toISOString().slice(0, 10)))
     setMeasuredTime(local.toISOString().slice(11, 16))
     const d = editMode.data
     switch (editMode.type) {
@@ -411,9 +417,12 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
             <label style={{ ...labelStyle, flex: 1 }}>
               <span>{t('modal.measuredAt')}</span>
               <input
-                type="date"
+                type="text"
                 value={measuredDate}
                 onChange={(e) => setMeasuredDate(e.target.value)}
+                placeholder="dd.MM.yyyy"
+                pattern="\d{2}\.\d{2}\.\d{4}"
+                inputMode="numeric"
                 style={inputStyle}
                 required
               />
