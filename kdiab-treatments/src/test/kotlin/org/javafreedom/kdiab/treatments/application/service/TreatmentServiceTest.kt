@@ -163,59 +163,73 @@ class TreatmentServiceTest {
         coVerify(exactly = 0) { repo.deleteAll(any(), any()) }
     }
 
+    private val deviceTypes = setOf(
+        TreatmentType.SITE_CHANGE,
+        TreatmentType.INSULIN_CHANGE,
+        TreatmentType.SENSOR_INSERT,
+        TreatmentType.PUMP_BATTERY_CHANGE,
+    )
+
     @Test
-    fun `getDeviceAge returns timestamps for all three device types`() = runTest {
+    fun `getDeviceAge returns timestamps for all four device types`() = runTest {
         val catheter  = Instant.parse("2026-05-14T10:00:00Z")
         val reservoir = Instant.parse("2026-05-13T08:00:00Z")
         val sensor    = Instant.parse("2026-05-12T18:00:00Z")
-        coEvery {
-            repo.findLatestTimestampsByTypes(
-                userId,
-                setOf(TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE, TreatmentType.SENSOR_INSERT),
-            )
-        } returns mapOf(
-            TreatmentType.SITE_CHANGE    to catheter,
-            TreatmentType.INSULIN_CHANGE to reservoir,
-            TreatmentType.SENSOR_INSERT  to sensor,
+        val battery   = Instant.parse("2026-05-10T14:00:00Z")
+        coEvery { repo.findLatestTimestampsByTypes(userId, deviceTypes) } returns mapOf(
+            TreatmentType.SITE_CHANGE         to catheter,
+            TreatmentType.INSULIN_CHANGE      to reservoir,
+            TreatmentType.SENSOR_INSERT       to sensor,
+            TreatmentType.PUMP_BATTERY_CHANGE to battery,
         )
 
-        val (c, r, s) = service.getDeviceAge(userId)
+        val result = service.getDeviceAge(userId)
 
-        assertEquals(catheter, c)
-        assertEquals(reservoir, r)
-        assertEquals(sensor, s)
+        assertEquals(catheter, result.catheterChangedAt)
+        assertEquals(reservoir, result.reservoirChangedAt)
+        assertEquals(sensor, result.sensorInsertedAt)
+        assertEquals(battery, result.batteryChangedAt)
     }
 
     @Test
-    fun `getDeviceAge returns triple of nulls when no device treatments exist`() = runTest {
-        coEvery {
-            repo.findLatestTimestampsByTypes(
-                userId,
-                setOf(TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE, TreatmentType.SENSOR_INSERT),
-            )
-        } returns emptyMap()
+    fun `getDeviceAge returns all nulls when no device treatments exist`() = runTest {
+        coEvery { repo.findLatestTimestampsByTypes(userId, deviceTypes) } returns emptyMap()
 
-        val (c, r, s) = service.getDeviceAge(userId)
+        val result = service.getDeviceAge(userId)
 
-        assertEquals(null, c)
-        assertEquals(null, r)
-        assertEquals(null, s)
+        assertEquals(null, result.catheterChangedAt)
+        assertEquals(null, result.reservoirChangedAt)
+        assertEquals(null, result.sensorInsertedAt)
+        assertEquals(null, result.batteryChangedAt)
     }
 
     @Test
     fun `getDeviceAge returns partial nulls when only some device treatments exist`() = runTest {
         val catheter = Instant.parse("2026-05-14T10:00:00Z")
-        coEvery {
-            repo.findLatestTimestampsByTypes(
-                userId,
-                setOf(TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE, TreatmentType.SENSOR_INSERT),
-            )
-        } returns mapOf(TreatmentType.SITE_CHANGE to catheter)
+        coEvery { repo.findLatestTimestampsByTypes(userId, deviceTypes) } returns mapOf(
+            TreatmentType.SITE_CHANGE to catheter,
+        )
 
-        val (c, r, s) = service.getDeviceAge(userId)
+        val result = service.getDeviceAge(userId)
 
-        assertEquals(catheter, c)
-        assertEquals(null, r)
-        assertEquals(null, s)
+        assertEquals(catheter, result.catheterChangedAt)
+        assertEquals(null, result.reservoirChangedAt)
+        assertEquals(null, result.sensorInsertedAt)
+        assertEquals(null, result.batteryChangedAt)
+    }
+
+    @Test
+    fun `getDeviceAge returns battery timestamp when PUMP_BATTERY_CHANGE exists`() = runTest {
+        val battery = Instant.parse("2026-05-10T14:00:00Z")
+        coEvery { repo.findLatestTimestampsByTypes(userId, deviceTypes) } returns mapOf(
+            TreatmentType.PUMP_BATTERY_CHANGE to battery,
+        )
+
+        val result = service.getDeviceAge(userId)
+
+        assertEquals(null, result.catheterChangedAt)
+        assertEquals(null, result.reservoirChangedAt)
+        assertEquals(null, result.sensorInsertedAt)
+        assertEquals(battery, result.batteryChangedAt)
     }
 }
