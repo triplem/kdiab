@@ -106,6 +106,7 @@ private fun Route.createFoodEntry(service: FoodEntryService) {
         val entry = request.toDomain(targetUserId)
         val saved = service.createEntry(entry)
         logger.info { "Created food entry ${saved.id} for user $targetUserId" }
+        call.response.headers.append(HttpHeaders.Location, "/api/v1/users/$targetUserId/foods/${saved.id}")
         call.respond(HttpStatusCode.Created, saved.toApi())
     }
 }

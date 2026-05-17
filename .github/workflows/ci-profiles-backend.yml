@@ -98,6 +98,15 @@ jobs:
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=/tmp/backend-image.tar
 
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: kdiab-profiles-backend:${{ env.VERSION }}
+          format: 'table'
+          exit-code: '1'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+
       - name: Upload Docker Image
         uses: actions/upload-artifact@v7
         with:

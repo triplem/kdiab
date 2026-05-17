@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: "3.1.0"
 info:
   title: kdiab-treatments API
   version: 0.0.1
@@ -110,6 +110,11 @@ paths:
       responses:
         '201':
           description: Treatment created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created resource
           content:
             application/json:
               schema:
@@ -700,21 +705,18 @@ components:
       description: Most recent timestamp for each device-related treatment type. Null if that treatment type has never been recorded for the user.
       properties:
         catheterChangedAt:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
           description: When the infusion site/cannula was last replaced (SITE_CHANGE)
           example: "2026-05-14T10:30:00Z"
         reservoirChangedAt:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
           description: When the insulin cartridge was last replaced (INSULIN_CHANGE)
           example: "2026-05-13T08:00:00Z"
         sensorInsertedAt:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
           description: When the CGM sensor was last inserted (SENSOR_INSERT)
           example: "2026-05-12T18:00:00Z"
 

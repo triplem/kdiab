@@ -108,6 +108,7 @@ private fun Route.createMeasure(measureService: MeasureService, auditLogReposito
         val measure = request.toDomain(targetUserId)
         val saved = measureService.addMeasure(measure)
         logger.info { "Created measure ${saved.id} for user $targetUserId" }
+        call.response.headers.append(HttpHeaders.Location, "/api/v1/users/$targetUserId/measures/${saved.id}")
         call.respond(HttpStatusCode.Created, saved.toApi(glucoseUnit, weightUnit))
     }
 }

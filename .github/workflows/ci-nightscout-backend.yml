@@ -1,26 +1,26 @@
-name: kdiab-measures / Backend CI
+name: kdiab-nightscout / Backend CI
 
 on:
   push:
     branches: [ "**" ]
     paths:
-      - 'kdiab-measures/src/**'
-      - 'kdiab-measures/gradle/**'
-      - 'kdiab-measures/api/openapi.yaml'
-      - 'kdiab-measures/build.gradle.kts'
-      - 'kdiab-measures/settings.gradle.kts'
-      - 'kdiab-measures/gradle.properties'
-      - '.github/workflows/ci-measures-backend.yml'
+      - 'kdiab-nightscout/src/**'
+      - 'kdiab-nightscout/gradle/**'
+      - 'kdiab-nightscout/api/openapi.yaml'
+      - 'kdiab-nightscout/build.gradle.kts'
+      - 'kdiab-nightscout/settings.gradle.kts'
+      - 'kdiab-nightscout/gradle.properties'
+      - '.github/workflows/ci-nightscout-backend.yml'
   pull_request:
     branches: [ "**" ]
     paths:
-      - 'kdiab-measures/src/**'
-      - 'kdiab-measures/gradle/**'
-      - 'kdiab-measures/api/openapi.yaml'
-      - 'kdiab-measures/build.gradle.kts'
-      - 'kdiab-measures/settings.gradle.kts'
-      - 'kdiab-measures/gradle.properties'
-      - '.github/workflows/ci-measures-backend.yml'
+      - 'kdiab-nightscout/src/**'
+      - 'kdiab-nightscout/gradle/**'
+      - 'kdiab-nightscout/api/openapi.yaml'
+      - 'kdiab-nightscout/build.gradle.kts'
+      - 'kdiab-nightscout/settings.gradle.kts'
+      - 'kdiab-nightscout/gradle.properties'
+      - '.github/workflows/ci-nightscout-backend.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -63,7 +63,7 @@ jobs:
           fi
 
       - name: Build and Test
-        run: cd kdiab-measures && ./gradlew :check :buildFatJar :cyclonedxBom -Pversion=${{ env.VERSION }}
+        run: cd kdiab-nightscout && ./gradlew :check :buildFatJar :cyclonedxBom -Pversion=${{ env.VERSION }}
 
       - name: SonarCloud Scan
         if: ${{ env.SONAR_TOKEN != '' }}
@@ -72,9 +72,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          projectBaseDir: kdiab-measures
+          projectBaseDir: kdiab-nightscout
           args: >
-            -Dsonar.projectKey=triplem_kdiab-measures
+            -Dsonar.projectKey=triplem_kdiab-nightscout
             -Dsonar.organization=triplem
             -Dsonar.host.url=https://sonarcloud.io
             -Dsonar.sources=src/main/kotlin
@@ -88,12 +88,12 @@ jobs:
       - name: Build Docker Image
         uses: docker/build-push-action@v7
         with:
-          context: kdiab-measures
-          file: kdiab-measures/Dockerfile
+          context: kdiab-nightscout
+          file: kdiab-nightscout/Dockerfile
           push: false
           tags: |
-            kdiab-measures-backend:latest
-            kdiab-measures-backend:${{ env.VERSION }}
+            kdiab-nightscout-backend:latest
+            kdiab-nightscout-backend:${{ env.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=/tmp/backend-image.tar
@@ -101,7 +101,7 @@ jobs:
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@0.30.0
         with:
-          image-ref: kdiab-measures-backend:${{ env.VERSION }}
+          image-ref: kdiab-nightscout-backend:${{ env.VERSION }}
           format: 'table'
           exit-code: '1'
           severity: 'HIGH,CRITICAL'
@@ -110,13 +110,13 @@ jobs:
       - name: Upload Docker Image
         uses: actions/upload-artifact@v7
         with:
-          name: measures-backend-image
+          name: nightscout-backend-image
           path: /tmp/backend-image.tar
           retention-days: 7
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v7
         with:
-          name: measures-backend-bom
-          path: kdiab-measures/build/reports/cyclonedx/bom.json
+          name: nightscout-backend-bom
+          path: kdiab-nightscout/build/reports/cyclonedx/bom.json
           retention-days: 7
