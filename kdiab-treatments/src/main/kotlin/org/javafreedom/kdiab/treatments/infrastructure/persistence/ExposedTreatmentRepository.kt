@@ -174,6 +174,33 @@ class ExposedTreatmentRepository(
             }
         }
 
+    override suspend fun findLatestTimestampsByTypes(
+        userId: Uuid,
+        types: Set<TreatmentType>,
+    ): Map<TreatmentType, Instant> {
+        if (types.isEmpty()) return emptyMap()
+        return withContext(ioDispatcher) {
+            suspendTransaction {
+                val maxTreatedAt = TreatmentsTable.treatedAt.max()
+                TreatmentsTable
+                    .select(TreatmentsTable.type, maxTreatedAt)
+                    .where {
+                        (TreatmentsTable.userId eq userId) and
+                            (TreatmentsTable.type inList types.map { it.name }) and
+                            (TreatmentsTable.status eq TreatmentStatus.ACTIVE.name)
+                    }
+                    .groupBy(TreatmentsTable.type)
+                    .mapNotNull { row ->
+                        val type = TreatmentType.valueOf(row[TreatmentsTable.type])
+                        row[maxTreatedAt]?.let { javaInstant ->
+                            type to Instant.fromEpochMilliseconds(javaInstant.toEpochMilli())
+                        }
+                    }
+                    .toMap()
+            }
+        }
+    }
+
     override suspend fun archiveAll(ids: List<Uuid>, userId: Uuid): Unit = withContext(ioDispatcher) {
         suspendTransaction {
             TreatmentsTable.update({

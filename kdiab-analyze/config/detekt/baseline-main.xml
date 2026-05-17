@@ -2,24 +2,107 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>EmptyClassBlock:BasalData.kt$BasalData${ }</ID>
+    <ID>EmptyClassBlock:BasalSegment.kt$BasalSegment${ }</ID>
+    <ID>EmptyClassBlock:BgCheckData.kt$BgCheckData${ }</ID>
+    <ID>EmptyClassBlock:BgmData.kt$BgmData${ }</ID>
+    <ID>EmptyClassBlock:BloodPressureData.kt$BloodPressureData${ }</ID>
+    <ID>EmptyClassBlock:BolusData.kt$BolusData${ }</ID>
+    <ID>EmptyClassBlock:BulkMeasureRequest.kt$BulkMeasureRequest${ }</ID>
+    <ID>EmptyClassBlock:BulkTreatmentRequest.kt$BulkTreatmentRequest${ }</ID>
+    <ID>EmptyClassBlock:CarbsData.kt$CarbsData${ }</ID>
+    <ID>EmptyClassBlock:ComboBolusData.kt$ComboBolusData${ }</ID>
+    <ID>EmptyClassBlock:CorrectionBolusData.kt$CorrectionBolusData${ }</ID>
+    <ID>EmptyClassBlock:CreateHba1cEntryRequest.kt$CreateHba1cEntryRequest${ }</ID>
+    <ID>EmptyClassBlock:CreateInsulinRequest.kt$CreateInsulinRequest${ }</ID>
+    <ID>EmptyClassBlock:CreateMeasureRequest.kt$CreateMeasureRequest${ }</ID>
+    <ID>EmptyClassBlock:CreateProfileRequest.kt$CreateProfileRequest${ }</ID>
+    <ID>EmptyClassBlock:CreateTreatmentRequest.kt$CreateTreatmentRequest${ }</ID>
+    <ID>EmptyClassBlock:DeviceAgeResponse.kt$DeviceAgeResponse${ }</ID>
+    <ID>EmptyClassBlock:DeviceStatusData.kt$DeviceStatusData${ }</ID>
+    <ID>EmptyClassBlock:DeviceStatusResponse.kt$DeviceStatusResponse${ }</ID>
+    <ID>EmptyClassBlock:ErrorResponse.kt$ErrorResponse${ }</ID>
+    <ID>EmptyClassBlock:HbA1cEntryResponse.kt$HbA1cEntryResponse${ }</ID>
+    <ID>EmptyClassBlock:HypoTreatmentData.kt$HypoTreatmentData${ }</ID>
+    <ID>EmptyClassBlock:IcrSegment.kt$IcrSegment${ }</ID>
+    <ID>EmptyClassBlock:Insulin.kt$Insulin${ }</ID>
+    <ID>EmptyClassBlock:InsulinChangeData.kt$InsulinChangeData${ }</ID>
+    <ID>EmptyClassBlock:IsfSegment.kt$IsfSegment${ }</ID>
+    <ID>EmptyClassBlock:MeasureResponse.kt$MeasureResponse${ }</ID>
+    <ID>EmptyClassBlock:NoteData.kt$NoteData${ }</ID>
+    <ID>EmptyClassBlock:PagedMeasureResponse.kt$PagedMeasureResponse${ }</ID>
+    <ID>EmptyClassBlock:PagedProfilesResponse.kt$PagedProfilesResponse${ }</ID>
+    <ID>EmptyClassBlock:PagedTreatmentResponse.kt$PagedTreatmentResponse${ }</ID>
+    <ID>EmptyClassBlock:PulseData.kt$PulseData${ }</ID>
+    <ID>EmptyClassBlock:PumpSuspendData.kt$PumpSuspendData${ }</ID>
+    <ID>EmptyClassBlock:RejectProfileRequest.kt$RejectProfileRequest${ }</ID>
+    <ID>EmptyClassBlock:SensorInsertData.kt$SensorInsertData${ }</ID>
+    <ID>EmptyClassBlock:SiteChangeData.kt$SiteChangeData${ }</ID>
+    <ID>EmptyClassBlock:TargetSegment.kt$TargetSegment${ }</ID>
+    <ID>EmptyClassBlock:TempBasalData.kt$TempBasalData${ }</ID>
+    <ID>EmptyClassBlock:UpdateInsulinRequest.kt$UpdateInsulinRequest${ }</ID>
+    <ID>EmptyClassBlock:UpdateMeasureRequest.kt$UpdateMeasureRequest${ }</ID>
+    <ID>EmptyClassBlock:UpdateTreatmentRequest.kt$UpdateTreatmentRequest${ }</ID>
+    <ID>EnumNaming:ActivityData.kt$ActivityData.Intensity$high : Intensity</ID>
+    <ID>EnumNaming:ActivityData.kt$ActivityData.Intensity$low : Intensity</ID>
+    <ID>EnumNaming:ActivityData.kt$ActivityData.Intensity$moderate : Intensity</ID>
+    <ID>EnumNaming:ExerciseData.kt$ExerciseData.Intensity$high : Intensity</ID>
+    <ID>EnumNaming:ExerciseData.kt$ExerciseData.Intensity$low : Intensity</ID>
+    <ID>EnumNaming:ExerciseData.kt$ExerciseData.Intensity$moderate : Intensity</ID>
+    <ID>EnumNaming:KetoneCheckData.kt$KetoneCheckData.Method$blood : Method</ID>
+    <ID>EnumNaming:KetoneCheckData.kt$KetoneCheckData.Method$urine : Method</ID>
+    <ID>EnumNaming:Profile.kt$Profile.Units$mgSlashDL : Units</ID>
+    <ID>EnumNaming:Profile.kt$Profile.Units$mmolSlashL : Units</ID>
+    <ID>EnumNaming:WeightData.kt$WeightData.Unit$kg : Unit</ID>
+    <ID>EnumNaming:WeightData.kt$WeightData.Unit$lbs : Unit</ID>
     <ID>FunctionNaming:Configuration.kt$internal fun ApplicationCompressionConfiguration(): CompressionConfig.() -> Unit</ID>
     <ID>FunctionNaming:Configuration.kt$internal fun ApplicationHstsConfiguration(): HSTSConfig.() -> Unit</ID>
     <ID>FunctionNaming:DefaultApi.kt$fun Route.DefaultApi()</ID>
     <ID>LongMethod:DefaultApi.kt$fun Route.DefaultApi()</ID>
+    <ID>LongParameterList:DefaultApi.kt$DefaultApi$(userId: kotlin.String, page: kotlin.Int?, size: kotlin.Int?, from: kotlin.String?, to: kotlin.String?, status: kotlin.String?)</ID>
+    <ID>LongParameterList:DefaultApi.kt$DefaultApi$(userId: kotlin.String, type: TreatmentType?, from: kotlin.String?, to: kotlin.String?, status: kotlin.String?, page: kotlin.Int?, size: kotlin.Int?)</ID>
     <ID>MagicNumber:AppMain.kt$10</ID>
     <ID>MagicNumber:Configuration.kt$10.0</ID>
     <ID>MagicNumber:Configuration.kt$1024</ID>
     <ID>MagicNumber:Configuration.kt$365</ID>
     <ID>MaxLineLength:AgpHourlyData.kt$*</ID>
     <ID>MaxLineLength:AgpResponse.kt$*</ID>
+    <ID>MaxLineLength:ApiAbstractions.kt$fun</ID>
+    <ID>MaxLineLength:ApiClient.kt$ApiClient$encodedPath = encodedPath.trimEnd('/') + components.joinToString("/", prefix = "/") { it.encodeURLQueryComponent() }</ID>
+    <ID>MaxLineLength:ApiClient.kt$ApiClient$headers.filter { header -> !UNSAFE_HEADERS.contains(header.key) }.forEach { header -> this.header(header.key, header.value) }</ID>
+    <ID>MaxLineLength:ApiClient.kt$ApiClient$protected suspend</ID>
+    <ID>MaxLineLength:ApiClient.kt$ApiClient$protected suspend fun &lt;T: Any?> jsonRequest(requestConfig: RequestConfig&lt;T>, body: Any? = null, authNames: kotlin.collections.List&lt;String>): HttpResponse</ID>
+    <ID>MaxLineLength:ApiClient.kt$ApiClient$val</ID>
+    <ID>MaxLineLength:BffMapper.kt$tir = TirBreakdownDto(tir.veryLowCount, tir.belowCount, tir.inRangeCount, tir.aboveCount, tir.highCount, tir.totalCount)</ID>
+    <ID>MaxLineLength:CircuitBreaker.kt$CircuitBreaker$logger.warn { "circuit_breaker service=$name failures=$count threshold=$failureThreshold reason=${cause.message}" }</ID>
+    <ID>MaxLineLength:CreateProfileRequest.kt$CreateProfileRequest$*</ID>
+    <ID>MaxLineLength:CreateProfileRequest.kt$CreateProfileRequest$/* Default carb absorption rate in grams per hour. Used for COB calculation when a treatment does not specify an explicit absorptionTime. Defaults to 20.0 when null. */</ID>
     <ID>MaxLineLength:DefaultApi.kt$*</ID>
+    <ID>MaxLineLength:DefaultApi.kt$DefaultApi$"/users/{userId}/measures/{measureId}".replace("{" + "userId" + "}", "$userId").replace("{" + "measureId" + "}", "$measureId")</ID>
+    <ID>MaxLineLength:DefaultApi.kt$DefaultApi$"/users/{userId}/profiles/{profileId}".replace("{" + "userId" + "}", "$userId").replace("{" + "profileId" + "}", "$profileId")</ID>
+    <ID>MaxLineLength:DefaultApi.kt$DefaultApi$"/users/{userId}/profiles/{profileId}/accept".replace("{" + "userId" + "}", "$userId").replace("{" + "profileId" + "}", "$profileId")</ID>
+    <ID>MaxLineLength:DefaultApi.kt$DefaultApi$"/users/{userId}/profiles/{profileId}/activate".replace("{" + "userId" + "}", "$userId").replace("{" + "profileId" + "}", "$profileId")</ID>
+    <ID>MaxLineLength:DefaultApi.kt$DefaultApi$"/users/{userId}/profiles/{profileId}/reject".replace("{" + "userId" + "}", "$userId").replace("{" + "profileId" + "}", "$profileId")</ID>
+    <ID>MaxLineLength:DefaultApi.kt$DefaultApi$"/users/{userId}/profiles/{profileId}/{segmentType}/{startTime}".replace("{" + "userId" + "}", "$userId").replace("{" + "profileId" + "}", "$profileId").replace("{" + "segmentType" + "}", "$segmentType").replace("{" + "startTime" + "}", "$startTime")</ID>
+    <ID>MaxLineLength:DefaultApi.kt$DefaultApi$"/users/{userId}/treatments/{treatmentId}".replace("{" + "userId" + "}", "$userId").replace("{" + "treatmentId" + "}", "$treatmentId")</ID>
+    <ID>MaxLineLength:DefaultApi.kt$DefaultApi$*</ID>
+    <ID>MaxLineLength:DefaultApi.kt$DefaultApi$open</ID>
+    <ID>MaxLineLength:DefaultApi.kt$DefaultApi$open suspend</ID>
+    <ID>MaxLineLength:DeviceAgeResponse.kt$DeviceAgeResponse$*</ID>
+    <ID>MaxLineLength:DeviceStatusApi.kt$DeviceStatusApi$*</ID>
+    <ID>MaxLineLength:DeviceStatusData.kt$DeviceStatusData$*</ID>
     <ID>MaxLineLength:ErrorResponse.kt$*</ID>
+    <ID>MaxLineLength:HbA1cApi.kt$HbA1cApi$open</ID>
     <ID>MaxLineLength:Hba1cResponse.kt$*</ID>
+    <ID>MaxLineLength:HttpResponse.kt$MappedBodyProvider$class</ID>
+    <ID>MaxLineLength:MeasureType.kt$MeasureType$*</ID>
     <ID>MaxLineLength:Paths.kt$*</ID>
     <ID>MaxLineLength:Paths.kt$Paths.getActiveProfiles$@Resource("/users/{userId}/profiles/active")</ID>
     <ID>MaxLineLength:Paths.kt$Paths.getAgp$@Resource("/users/{userId}/analytics/agp")</ID>
     <ID>MaxLineLength:Paths.kt$Paths.getHba1c$@Resource("/users/{userId}/analytics/hba1c")</ID>
     <ID>MaxLineLength:Paths.kt$Paths.getTimeline$@Resource("/users/{userId}/timeline")</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$*</ID>
+    <ID>MaxLineLength:Profile.kt$Profile$/* Default carb absorption rate in grams per hour, used for carbs-on-board (COB) calculation when a treatment does not specify an explicit absorptionTime. Typical values: 10 g/hr (slow/high-fat meal), 20 g/hr (mixed meal), 40 g/hr (fast-acting carbs / juice). Defaults to 20.0 when null. */</ID>
     <ID>MaxLineLength:ProfileSummary.kt$*</ID>
     <ID>MaxLineLength:ProfilesResponse.kt$*</ID>
     <ID>MaxLineLength:TimelineMeasure.kt$*</ID>
@@ -28,10 +111,25 @@
     <ID>MaxLineLength:TimelineResponse.kt$TimelineResponse$/* Non-empty when one or more upstream services were unavailable. The timeline is returned with whatever data was successfully fetched. */</ID>
     <ID>MaxLineLength:TimelineTreatment.kt$*</ID>
     <ID>MaxLineLength:TirBreakdown.kt$*</ID>
+    <ID>MaxLineLength:TirBreakdown.kt$TirBreakdown$*</ID>
+    <ID>MaxLineLength:TirBreakdown.kt$TirBreakdown$/* Readings below 54 mg/dL (Level 2 hypoglycaemia — severe). International Consensus on TIR (Battelino et al. 2019). */</ID>
+    <ID>MaxLineLength:TreatmentType.kt$TreatmentType$*</ID>
+    <ID>MaxLineLength:TreatmentsApi.kt$TreatmentsApi$*</ID>
+    <ID>NewLineAtEndOfFile:OAuth.kt$org.javafreedom.kdiab.analyze.api.upstream.measures.auth.OAuth.kt</ID>
+    <ID>NewLineAtEndOfFile:OAuth.kt$org.javafreedom.kdiab.analyze.api.upstream.profiles.auth.OAuth.kt</ID>
+    <ID>NewLineAtEndOfFile:OAuth.kt$org.javafreedom.kdiab.analyze.api.upstream.treatments.auth.OAuth.kt</ID>
     <ID>NoNameShadowing:ApiKeyAuth.kt$ApiKeyAuthenticationProvider$call</ID>
-    <ID>RedundantSuspendModifier:MeasuresClient.kt$MeasuresClient$suspend</ID>
-    <ID>RedundantSuspendModifier:ProfilesClient.kt$ProfilesClient$suspend</ID>
-    <ID>RedundantSuspendModifier:TreatmentsClient.kt$TreatmentsClient$suspend</ID>
+    <ID>RedundantSuspendModifier:ApiClient.kt$ApiClient$suspend</ID>
+    <ID>TooGenericExceptionCaught:CircuitBreaker.kt$CircuitBreaker$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:ApiClient.kt$ApiClient$throw Exception("Authentication undefined: $authName")</ID>
+    <ID>TooGenericExceptionThrown:ApiClient.kt$ApiClient$throw Exception("No API key authentication configured")</ID>
+    <ID>TooGenericExceptionThrown:ApiClient.kt$ApiClient$throw Exception("No Bearer authentication configured")</ID>
+    <ID>TooGenericExceptionThrown:ApiClient.kt$ApiClient$throw Exception("No HTTP basic authentication configured")</ID>
+    <ID>TooGenericExceptionThrown:ApiClient.kt$ApiClient$throw Exception("No OAuth2 authentication configured")</ID>
+    <ID>UnnecessarySafeCall:ApiClient.kt$ApiClient$authentications?.get(authName)</ID>
+    <ID>UnnecessarySafeCall:ApiClient.kt$ApiClient$authentications?.values</ID>
+    <ID>UnnecessarySafeCall:DefaultApi.kt$DefaultApi$from?.apply { localVariableQuery["from"] = listOf("$from") }</ID>
+    <ID>UnnecessarySafeCall:DefaultApi.kt$DefaultApi$to?.apply { localVariableQuery["to"] = listOf("$to") }</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$byHour[hour].add(mgDl)</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$if (mgDl &lt;= 0.0) return@forEach</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$if (mgDl &lt;= 0.0) return@mapNotNull null</ID>
@@ -45,28 +143,22 @@
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach</ID>
     <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "measures" : [ { "id" : "id", "source" : "source", "type" : "type", "userId" : "userId", "timestamp" : "timestamp" }, { "id" : "id", "source" : "source", "type" : "type", "userId" : "userId", "timestamp" : "timestamp" } ], "treatments" : [ { "notes" : "notes", "id" : "id", "type" : "type", "userId" : "userId", "timestamp" : "timestamp" }, { "notes" : "notes", "id" : "id", "type" : "type", "userId" : "userId", "timestamp" : "timestamp" } ], "errors" : [ "errors", "errors" ] }"""</ID>
     <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "profiles" : [ { "createdAt" : "createdAt", "archivedAt" : "2000-01-23T04:56:07.000+00:00", "previousProfileId" : "previousProfileId", "activatedAt" : "2000-01-23T04:56:07.000+00:00", "name" : "name", "id" : "id", "validFrom" : "validFrom", "status" : "status" }, { "createdAt" : "createdAt", "archivedAt" : "2000-01-23T04:56:07.000+00:00", "previousProfileId" : "previousProfileId", "activatedAt" : "2000-01-23T04:56:07.000+00:00", "name" : "name", "id" : "id", "validFrom" : "validFrom", "status" : "status" } ] }"""</ID>
-    <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "readingCount" : 1, "warnings" : [ "warnings", "warnings" ], "meanGlucoseMgDl" : 6.027456183070403, "tir" : { "inRangeCount" : 5, "aboveCount" : 2, "belowCount" : 5, "highCount" : 7, "totalCount" : 9 }, "hba1c" : 0.8008281904610115 }"""</ID>
-    <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "warnings" : [ "warnings", "warnings" ], "hourlyData" : [ { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 } ] }"""</ID>
+    <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "readingCount" : 1, "warnings" : [ "warnings", "warnings" ], "meanGlucoseMgDl" : 6.027456183070403, "tir" : { "inRangeCount" : 2, "aboveCount" : 7, "veryLowCount" : 5, "belowCount" : 5, "highCount" : 9, "totalCount" : 3 }, "hba1c" : 0.8008281904610115 }"""</ID>
+    <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "totalReadingCount" : 9, "warnings" : [ "warnings", "warnings" ], "hourlyData" : [ { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 } ], "sensorWearDays" : 3 }"""</ID>
     <ID>UnreachableCode:DefaultApi.kt$val exampleContentType = "application/json"</ID>
     <ID>UnreachableCode:DefaultApi.kt$val principal = null!!</ID>
     <ID>UnreachableCode:DefaultApi.kt$when (exampleContentType) { "application/json" -> call.respondText(exampleContentType, ContentType.Application.Json) "application/xml" -> call.respondText(exampleContentString, ContentType.Text.Xml) else -> call.respondText(exampleContentString) }</ID>
-    <ID>UnreachableCode:Security.kt$UserPrincipal( userId, roles, allowedPatients, glucoseUnit, weightUnit, audiences = credential.payload.audience ?: emptyList(), )</ID>
-    <ID>UnreachableCode:Security.kt$if (roles.isEmpty()) return@validate null</ID>
-    <ID>UnreachableCode:Security.kt$val allowedPatients = credential.payload .getClaim("allowed_patients").asList(String::class.java) ?.mapNotNull { raw -> runCatching { Uuid.parse(raw) }.getOrNull() } ?.toSet() ?: emptySet()</ID>
-    <ID>UnreachableCode:Security.kt$val glucoseUnit = credential.payload.getClaim("glucose_unit").asString() ?: "mg/dL"</ID>
-    <ID>UnreachableCode:Security.kt$val rawRoles = credential.payload.getClaim("roles").asList(String::class.java) ?: emptyList()</ID>
-    <ID>UnreachableCode:Security.kt$val roles = rawRoles.mapNotNull { Role.fromString(it) }.toSet()</ID>
-    <ID>UnreachableCode:Security.kt$val userId = runCatching { Uuid.parse(credential.payload.subject) }.getOrNull() ?: return@validate null</ID>
-    <ID>UnreachableCode:Security.kt$val weightUnit = credential.payload.getClaim("weight_unit").asString() ?: "kg"</ID>
-    <ID>UnreachableCode:TimelineService.kt$TimelineService$TimelineMeasure( id = id, userId = uId, measuredAt = measuredAt, type = dto.type, source = dto.source, data = dto.data, status = dto.status, )</ID>
-    <ID>UnreachableCode:TimelineService.kt$TimelineService$TimelineTreatment( id = id, userId = uId, treatedAt = treatedAt, type = dto.type, notes = dto.notes, data = dto.data, )</ID>
+    <ID>UnreachableCode:TimelineService.kt$TimelineService$TimelineMeasure( id = id, userId = uId, measuredAt = measuredAt, type = dto.type.value, source = dto.source.value, data = dto.data, status = dto.status.value, )</ID>
+    <ID>UnreachableCode:TimelineService.kt$TimelineService$TimelineTreatment( id = id, userId = uId, treatedAt = treatedAt, type = dto.type.value, notes = dto.notes, data = dto.data, )</ID>
     <ID>UnreachableCode:TimelineService.kt$TimelineService$val id = runCatching { Uuid.parse(dto.id) }.getOrNull() ?: return@mapNotNull null</ID>
     <ID>UnreachableCode:TimelineService.kt$TimelineService$val measuredAt = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@mapNotNull null</ID>
     <ID>UnreachableCode:TimelineService.kt$TimelineService$val treatedAt = runCatching { Instant.parse(dto.treatedAt) }.getOrNull() ?: return@mapNotNull null</ID>
     <ID>UnreachableCode:TimelineService.kt$TimelineService$val uId = runCatching { Uuid.parse(dto.userId) }.getOrNull() ?: return@mapNotNull null</ID>
     <ID>UnsafeCallOnNullableType:DefaultApi.kt$null!!</ID>
-    <ID>UnsafeCallOnNullableType:Security.kt$jwtSecret!!</ID>
+    <ID>UnsafeCallOnNullableType:HttpBearerAuth.kt$HttpBearerAuth$upperCaseBearer(scheme)!!</ID>
     <ID>UnusedPrivateProperty:DefaultApi.kt$val empty = mutableMapOf&lt;String, Any?>()</ID>
     <ID>UnusedPrivateProperty:DefaultApi.kt$val principal = null!!</ID>
+    <ID>UseOrEmpty:HttpBasicAuth.kt$HttpBasicAuth$password ?: ""</ID>
+    <ID>UseOrEmpty:HttpBasicAuth.kt$HttpBasicAuth$username ?: ""</ID>
   </CurrentIssues>
 </SmellBaseline>

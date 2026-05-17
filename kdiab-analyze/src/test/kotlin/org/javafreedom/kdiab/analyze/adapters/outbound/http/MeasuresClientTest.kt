@@ -65,8 +65,9 @@ class MeasuresClientTest {
 
     @Test
     fun `getMeasures fetches all pages and returns flat list`() = runTest {
-        val page0 = (1..3).map { measure("m-$it") }
-        val page1 = (4..5).map { measure("m-$it") }
+        // PAGE_SIZE=200: totalCount=201 forces 2 pages (ceil(201/200)=2)
+        val page0 = (1..200).map { measure("m-$it") }
+        val page1 = listOf(measure("m-201"))
         var callCount = 0
 
         val engine = MockEngine { request ->
@@ -74,12 +75,12 @@ class MeasuresClientTest {
             callCount++
             when (page) {
                 0 -> respond(
-                    content = pagedJson(page0, page = 0, size = 3, total = 5),
+                    content = pagedJson(page0, page = 0, size = 200, total = 201),
                     status = HttpStatusCode.OK,
                     headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
                 )
                 else -> respond(
-                    content = pagedJson(page1, page = 1, size = 3, total = 5),
+                    content = pagedJson(page1, page = 1, size = 200, total = 201),
                     status = HttpStatusCode.OK,
                     headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
                 )
@@ -89,10 +90,10 @@ class MeasuresClientTest {
         val client = buildClient(engine)
         val result = client.getMeasures(userId, auth, correlationId)
 
-        assertEquals(5, result.size)
+        assertEquals(201, result.size)
         assertEquals(2, callCount)
         assertEquals("m-1", result[0].id)
-        assertEquals("m-5", result[4].id)
+        assertEquals("m-201", result[200].id)
     }
 
     // ── empty response ────────────────────────────────────────────────────────
@@ -149,7 +150,8 @@ class MeasuresClientTest {
 
     @Test
     fun `getMeasures throws UpstreamException when second page returns 502 and partial data is discarded`() = runTest {
-        val page0 = (1..3).map { measure("m-$it") }
+        // PAGE_SIZE=200: totalCount=201 forces 2 pages; page 1 returns 502
+        val page0 = (1..200).map { measure("m-$it") }
         var callCount = 0
 
         val engine = MockEngine { request ->
@@ -157,7 +159,7 @@ class MeasuresClientTest {
             callCount++
             when (page) {
                 0 -> respond(
-                    content = pagedJson(page0, page = 0, size = 3, total = 6),
+                    content = pagedJson(page0, page = 0, size = 200, total = 201),
                     status = HttpStatusCode.OK,
                     headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
                 )

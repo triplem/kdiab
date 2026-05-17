@@ -74,9 +74,16 @@ class DeviceAgeRoutesTest {
         val catheter  = Instant.parse("2026-05-14T10:00:00Z")
         val reservoir = Instant.parse("2026-05-13T08:00:00Z")
         val sensor    = Instant.parse("2026-05-12T18:00:00Z")
-        coEvery { repo.findLatestTimestampByType(Uuid.parse(SARAH_ID), TreatmentType.SITE_CHANGE)    } returns catheter
-        coEvery { repo.findLatestTimestampByType(Uuid.parse(SARAH_ID), TreatmentType.INSULIN_CHANGE) } returns reservoir
-        coEvery { repo.findLatestTimestampByType(Uuid.parse(SARAH_ID), TreatmentType.SENSOR_INSERT)  } returns sensor
+        coEvery {
+            repo.findLatestTimestampsByTypes(
+                Uuid.parse(SARAH_ID),
+                setOf(TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE, TreatmentType.SENSOR_INSERT),
+            )
+        } returns mapOf(
+            TreatmentType.SITE_CHANGE    to catheter,
+            TreatmentType.INSULIN_CHANGE to reservoir,
+            TreatmentType.SENSOR_INSERT  to sensor,
+        )
 
         val response = client.get("/api/v1/users/$SARAH_ID/device-age") {
             header(HttpHeaders.Authorization, "Bearer $sarahToken")
@@ -91,9 +98,12 @@ class DeviceAgeRoutesTest {
 
     @Test
     fun `GET device-age returns 200 with null fields when no treatments exist`() = deviceAgeTest { repo ->
-        coEvery { repo.findLatestTimestampByType(Uuid.parse(SARAH_ID), TreatmentType.SITE_CHANGE)    } returns null
-        coEvery { repo.findLatestTimestampByType(Uuid.parse(SARAH_ID), TreatmentType.INSULIN_CHANGE) } returns null
-        coEvery { repo.findLatestTimestampByType(Uuid.parse(SARAH_ID), TreatmentType.SENSOR_INSERT)  } returns null
+        coEvery {
+            repo.findLatestTimestampsByTypes(
+                Uuid.parse(SARAH_ID),
+                setOf(TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE, TreatmentType.SENSOR_INSERT),
+            )
+        } returns emptyMap()
 
         val response = client.get("/api/v1/users/$SARAH_ID/device-age") {
             header(HttpHeaders.Authorization, "Bearer $sarahToken")

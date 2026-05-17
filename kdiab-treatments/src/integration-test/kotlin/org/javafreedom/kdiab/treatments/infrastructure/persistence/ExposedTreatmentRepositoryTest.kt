@@ -162,4 +162,46 @@ class ExposedTreatmentRepositoryTest {
         val remaining = repository.findByUserId(userA, page = 0, size = 50)
         assertEquals(1, remaining.size)
     }
+
+    @Test
+    fun `findLatestTimestampsByTypes - returns correct latest per type`() = runBlocking {
+        val userId = Uuid.parse("44444444-4444-4444-4444-444444444444")
+
+        // Two SENSOR_INSERT treatments — latest is Jan 20
+        val sensorEarly = testTreatment(userId, TreatmentType.SENSOR_INSERT, Instant.parse("2024-01-10T08:00:00Z"))
+        val sensorLatest = testTreatment(userId, TreatmentType.SENSOR_INSERT, Instant.parse("2024-01-20T08:00:00Z"))
+        // One SITE_CHANGE treatment
+        val siteChange = testTreatment(userId, TreatmentType.SITE_CHANGE, Instant.parse("2024-01-15T12:00:00Z"))
+        repository.save(sensorEarly)
+        repository.save(sensorLatest)
+        repository.save(siteChange)
+
+        val result = repository.findLatestTimestampsByTypes(
+            userId,
+            setOf(TreatmentType.SENSOR_INSERT, TreatmentType.SITE_CHANGE, TreatmentType.INSULIN_CHANGE),
+        )
+
+        assertEquals(2, result.size, "Expected 2 entries — INSULIN_CHANGE has no rows")
+        assertEquals(sensorLatest.treatedAt, result[TreatmentType.SENSOR_INSERT])
+        assertEquals(siteChange.treatedAt, result[TreatmentType.SITE_CHANGE])
+        assertEquals(null, result[TreatmentType.INSULIN_CHANGE])
+    }
+
+    @Test
+    fun `findLatestTimestampsByTypes - returns empty map when types set is empty`() = runBlocking {
+        val userId = Uuid.parse("55555555-5555-5555-5555-555555555555")
+        val result = repository.findLatestTimestampsByTypes(userId, emptySet())
+        assertEquals(emptyMap(), result)
+    }
+
+    @Test
+    fun `findLatestTimestampsByTypes - ignores archived treatments`() = runBlocking {
+        val userId = Uuid.parse("66666666-6666-6666-6666-666666666666")
+        val archived = testTreatment(userId, TreatmentType.SENSOR_INSERT, Instant.parse("2024-01-10T08:00:00Z"))
+            .copy(status = org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus.ARCHIVED)
+        repository.save(archived)
+
+        val result = repository.findLatestTimestampsByTypes(userId, setOf(TreatmentType.SENSOR_INSERT))
+        assertEquals(emptyMap(), result)
+    }
 }
