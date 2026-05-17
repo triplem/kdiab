@@ -173,16 +173,22 @@ describe('calcIOB', () => {
     expect(calcIOB(treatments, DIA)).toBeCloseTo(10, 5)
   })
 
-  test('returns half insulin amount for BOLUS at halfway through DIA', () => {
+  test('returns 75% insulin amount for BOLUS at halfway through DIA (parabolic decay)', () => {
     const halfDia = new Date(NOW - (DIA / 2) * 60000).toISOString()
     const treatments = [{ treatedAt: halfDia, type: 'BOLUS', data: { insulin: 10 } }]
-    expect(calcIOB(treatments, DIA)).toBeCloseTo(5, 5)
+    // Parabolic (Scheiner): remaining = 1 - (0.5)^2 = 0.75 → 10 * 0.75 = 7.5
+    expect(calcIOB(treatments, DIA)).toBeCloseTo(7.5, 5)
   })
 
   test('returns 0 for BOLUS older than DIA', () => {
     const old = new Date(NOW - (DIA + 1) * 60000).toISOString()
     const treatments = [{ treatedAt: old, type: 'BOLUS', data: { insulin: 5 } }]
     expect(calcIOB(treatments, DIA)).toBe(0)
+  })
+
+  test('includes COMBO_BOLUS in IOB calculation', () => {
+    const treatments = [{ treatedAt: new Date(NOW).toISOString(), type: 'COMBO_BOLUS', data: { insulin: 8 } }]
+    expect(calcIOB(treatments, DIA)).toBeCloseTo(8, 5)
   })
 
   test('sums multiple boluses', () => {

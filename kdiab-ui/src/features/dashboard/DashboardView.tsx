@@ -90,7 +90,7 @@ export function sensorExpiryLabel(insertedAt: string | undefined, durationHours:
   return remainingHours <= 0 ? 'expired' : `exp ${remainingHours}h`
 }
 
-// Linear IOB decay over DIA window
+// Parabolic (Scheiner) IOB decay over DIA window
 export function calcIOB(
   treatments: Array<{ treatedAt: string; type: string; data: Record<string, unknown> }>,
   diaMinutes: number,
@@ -98,11 +98,11 @@ export function calcIOB(
   const now = Date.now()
   let iob = 0
   for (const t of treatments) {
-    if (t.type !== 'BOLUS' && t.type !== 'CORRECTION_BOLUS' && t.type !== 'MEAL') continue
+    if (t.type !== 'BOLUS' && t.type !== 'CORRECTION_BOLUS' && t.type !== 'COMBO_BOLUS' && t.type !== 'MEAL') continue
     const min = (now - new Date(t.treatedAt).getTime()) / 60000
     if (min < 0 || min > diaMinutes) continue
     const insulin = typeof t.data['insulin'] === 'number' ? t.data['insulin'] : 0
-    iob += insulin * (1 - min / diaMinutes)
+    iob += insulin * (1 - Math.pow(min / diaMinutes, 2))
   }
   return Math.max(0, iob)
 }
