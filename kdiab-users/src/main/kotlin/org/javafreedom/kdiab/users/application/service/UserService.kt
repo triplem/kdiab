@@ -51,11 +51,15 @@ class UserService(
     ): UserSettings {
         patch.glucoseUnit?.let {
             if (it !in VALID_GLUCOSE_UNITS)
-                throw BusinessValidationException("Invalid glucose unit '$it'. Allowed: ${VALID_GLUCOSE_UNITS.joinToString()}")
+                throw BusinessValidationException(
+                    "Invalid glucose unit '$it'. Allowed: ${VALID_GLUCOSE_UNITS.joinToString()}"
+                )
         }
         patch.weightUnit?.let {
             if (it !in VALID_WEIGHT_UNITS)
-                throw BusinessValidationException("Invalid weight unit '$it'. Allowed: ${VALID_WEIGHT_UNITS.joinToString()}")
+                throw BusinessValidationException(
+                    "Invalid weight unit '$it'. Allowed: ${VALID_WEIGHT_UNITS.joinToString()}"
+                )
         }
         val existing = settingsRepo.findByUserId(principal.userId)
             ?: defaultSettings(principal.userId)
