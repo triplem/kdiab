@@ -603,6 +603,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         </h3>
         {isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
         {cgmPoints.length > 0 && (
+          <div aria-label={t('dashboard.cgmChartAriaLabel', { defaultValue: 'Blood glucose over time chart' })}>
           <ResponsiveContainer width="100%" height={220}>
             <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -643,7 +644,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                 dot={false}
                 strokeWidth={2}
                 isAnimationActive={false}
-                connectNulls={true}
+                connectNulls={false}
               />
               {bgmPoints.length > 0 && (
                 <Line
@@ -671,6 +672,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
               )}
             </ComposedChart>
           </ResponsiveContainer>
+          </div>
         )}
         {!isLoading && cgmPoints.length === 0 && (
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
@@ -700,6 +702,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         )}
         {activeProfile && (
           <>
+            <div aria-label={t('dashboard.basalChartAriaLabel', { defaultValue: 'Basal insulin delivery chart' })}>
             <ResponsiveContainer width="100%" height={120}>
               <ComposedChart data={basalProfileLine} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -739,6 +742,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
                 />
               </ComposedChart>
             </ResponsiveContainer>
+            </div>
             {/* Legend */}
             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
               <span><span style={{ display: 'inline-block', width: 10, height: 10, background: BASAL_COLORS['SCHEDULED'], borderRadius: 2, marginRight: 3 }} />{t('dashboard.legendScheduled')}</span>

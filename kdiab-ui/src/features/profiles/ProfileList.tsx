@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { profilesApi } from '../../api/profilesApi'
 import type { Profile } from '../../api/profilesApi'
@@ -29,6 +29,28 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
   const [rejectReason, setRejectReason] = useState<string>('')
   const { formatDate, formatTime } = useTimeFormat()
   const { t } = useTranslation()
+
+  // Focus management for reject modal
+  const rejectModalRef = useRef<HTMLDivElement>(null)
+  const rejectTriggerRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
+
+  useEffect(() => {
+    if (pendingRejectProfileId) rejectModalRef.current?.focus()
+  }, [pendingRejectProfileId])
+
+  // Escape key closes the reject modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && pendingRejectProfileId) {
+        const id = pendingRejectProfileId
+        setPendingRejectProfileId(null)
+        setRejectReason('')
+        rejectTriggerRefs.current.get(id)?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [pendingRejectProfileId])
 
   const { data: profiles = [] as Profile[], isLoading, isError, error } = useQuery<Profile[]>({
     queryKey: ['profiles', userId],
@@ -243,6 +265,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
                 : t('profileList.accept')}
             </button>
             <button
+              ref={(el) => { if (el) rejectTriggerRefs.current.set(profile.id, el) }}
               onClick={(e) => handleReject(e, profile.id)}
               className="btn danger outline"
               disabled={rejectMutation.isPending}
@@ -262,14 +285,20 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
     <div className="profile-list">
       {pendingRejectProfileId != null && (
         <div
+          ref={rejectModalRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reject-modal-title"
           className="modal-overlay"
-          aria-hidden="true"
-          onClick={() => { setPendingRejectProfileId(null); setRejectReason('') }}
+          tabIndex={-1}
+          onClick={() => {
+            const id = pendingRejectProfileId
+            setPendingRejectProfileId(null)
+            setRejectReason('')
+            rejectTriggerRefs.current.get(id)?.focus()
+          }}
         >
           <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="reject-modal-title"
             className="modal-box"
             style={{ maxWidth: '400px' }}
             onClick={(e) => e.stopPropagation()}
@@ -304,7 +333,12 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
             <div className="modal-footer">
               <button
                 type="button"
-                onClick={() => { setPendingRejectProfileId(null); setRejectReason('') }}
+                onClick={() => {
+                  const id = pendingRejectProfileId
+                  setPendingRejectProfileId(null)
+                  setRejectReason('')
+                  if (id) rejectTriggerRefs.current.get(id)?.focus()
+                }}
                 className="btn outline"
               >
                 {t('confirm.cancelLabel')}
@@ -312,9 +346,11 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
               <button
                 type="button"
                 onClick={() => {
-                  rejectMutation.mutate({ profileId: pendingRejectProfileId, reason: rejectReason || undefined })
+                  const id = pendingRejectProfileId
+                  rejectMutation.mutate({ profileId: id, reason: rejectReason || undefined })
                   setPendingRejectProfileId(null)
                   setRejectReason('')
+                  if (id) rejectTriggerRefs.current.get(id)?.focus()
                 }}
                 className="btn danger"
                 disabled={rejectMutation.isPending}

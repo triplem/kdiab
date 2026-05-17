@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -35,6 +35,49 @@ export function AdminUserList() {
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null)
 
+  // Refs for focus management
+  const createModalRef = useRef<HTMLDivElement>(null)
+  const editModalRef = useRef<HTMLDivElement>(null)
+  const deleteModalRef = useRef<HTMLDivElement>(null)
+  const createTriggerRef = useRef<HTMLButtonElement>(null)
+  const editTriggerRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
+  const deleteTriggerRefs = useRef<Map<string, HTMLButtonElement>>(new Map())
+
+  // Move focus into modals when they open
+  useEffect(() => {
+    if (showCreate) createModalRef.current?.focus()
+  }, [showCreate])
+
+  useEffect(() => {
+    if (editUser) editModalRef.current?.focus()
+  }, [editUser])
+
+  useEffect(() => {
+    if (deleteUser) deleteModalRef.current?.focus()
+  }, [deleteUser])
+
+  // Escape key handler — closes whichever modal is open
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      if (deleteUser) {
+        setDeleteUser(null)
+        setDeleteConfirm('')
+        deleteTriggerRefs.current.get(deleteUser.userId)?.focus()
+      } else if (editUser) {
+        const id = editUser.userId
+        setEditUser(null)
+        editTriggerRefs.current.get(id)?.focus()
+      } else if (showCreate) {
+        setShowCreate(false)
+        createForm.reset()
+        createTriggerRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [showCreate, editUser, deleteUser]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const showToast = (kind: 'success' | 'error', msg: string) => {
     setToast({ kind, msg })
     setTimeout(() => setToast(null), 4000)
@@ -51,6 +94,8 @@ export function AdminUserList() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       setShowCreate(false)
+      createForm.reset()
+      createTriggerRef.current?.focus()
       showToast('success', t('adminUsers.createSuccess'))
     },
     onError: () => showToast('error', t('adminUsers.createError')),
@@ -59,9 +104,11 @@ export function AdminUserList() {
   const editMutation = useMutation({
     mutationFn: ({ userId, body }: { userId: string; body: EditForm }) =>
       usersApi.updateUser(userId, body),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      const id = variables.userId
       setEditUser(null)
+      editTriggerRefs.current.get(id)?.focus()
       showToast('success', t('adminUsers.editSuccess'))
     },
     onError: () => showToast('error', t('adminUsers.editError')),
@@ -69,10 +116,11 @@ export function AdminUserList() {
 
   const deleteMutation = useMutation({
     mutationFn: (userId: string) => usersApi.deleteUser(userId),
-    onSuccess: () => {
+    onSuccess: (_, userId) => {
       void queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       setDeleteUser(null)
       setDeleteConfirm('')
+      deleteTriggerRefs.current.get(userId)?.focus()
       showToast('success', t('adminUsers.deleteSuccess'))
     },
     onError: () => showToast('error', t('adminUsers.deleteError')),
@@ -86,11 +134,34 @@ export function AdminUserList() {
       : undefined,
   })
 
+  const handleCloseCreate = () => {
+    setShowCreate(false)
+    createForm.reset()
+    createTriggerRef.current?.focus()
+  }
+
+  const handleCloseEdit = () => {
+    const id = editUser?.userId
+    setEditUser(null)
+    if (id) editTriggerRefs.current.get(id)?.focus()
+  }
+
+  const handleCloseDelete = () => {
+    const id = deleteUser?.userId
+    setDeleteUser(null)
+    setDeleteConfirm('')
+    if (id) deleteTriggerRefs.current.get(id)?.focus()
+  }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2 style={{ margin: 0 }}>{t('adminUsers.title')}</h2>
-        <button className="primary" onClick={() => setShowCreate(true)}>
+        <button
+          ref={createTriggerRef}
+          className="primary"
+          onClick={() => setShowCreate(true)}
+        >
           + {t('adminUsers.createButton')}
         </button>
       </div>
@@ -117,10 +188,10 @@ export function AdminUserList() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={{ textAlign: 'left', padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>{t('adminUsers.colName')}</th>
-              <th style={{ textAlign: 'left', padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>{t('adminUsers.colEmail')}</th>
-              <th style={{ textAlign: 'left', padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>{t('adminUsers.colRole')}</th>
-              <th style={{ padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>{t('adminUsers.colActions')}</th>
+              <th scope="col" style={{ textAlign: 'left', padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>{t('adminUsers.colName')}</th>
+              <th scope="col" style={{ textAlign: 'left', padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>{t('adminUsers.colEmail')}</th>
+              <th scope="col" style={{ textAlign: 'left', padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>{t('adminUsers.colRole')}</th>
+              <th scope="col" style={{ padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>{t('adminUsers.colActions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -130,10 +201,19 @@ export function AdminUserList() {
                 <td style={{ padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>{u.email}</td>
                 <td style={{ padding: '0.5rem', borderBottom: '1px solid var(--border)' }}>{u.roles.join(', ')}</td>
                 <td style={{ padding: '0.5rem', borderBottom: '1px solid var(--border)', textAlign: 'right' }}>
-                  <button className="btn outline" style={{ marginRight: '0.4rem' }} onClick={() => setEditUser(u)}>
+                  <button
+                    ref={(el) => { if (el) editTriggerRefs.current.set(u.userId, el) }}
+                    className="btn outline"
+                    style={{ marginRight: '0.4rem' }}
+                    onClick={() => setEditUser(u)}
+                  >
                     {t('common.edit')}
                   </button>
-                  <button className="btn danger" onClick={() => setDeleteUser(u)}>
+                  <button
+                    ref={(el) => { if (el) deleteTriggerRefs.current.set(u.userId, el) }}
+                    className="btn danger"
+                    onClick={() => setDeleteUser(u)}
+                  >
                     {t('common.delete')}
                   </button>
                 </td>
@@ -162,9 +242,16 @@ export function AdminUserList() {
 
       {/* Create user modal */}
       {showCreate && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('adminUsers.createTitle')}>
+        <div
+          ref={createModalRef}
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="create-user-modal-title"
+          tabIndex={-1}
+        >
           <div className="modal-content" style={{ maxWidth: 420 }}>
-            <h3>{t('adminUsers.createTitle')}</h3>
+            <h3 id="create-user-modal-title">{t('adminUsers.createTitle')}</h3>
             <form onSubmit={(e) => { void createForm.handleSubmit((v) => createMutation.mutate(v))(e) }} noValidate>
               <div className="form-group">
                 <label htmlFor="cu-name">{t('adminUsers.fieldName')}</label>
@@ -190,7 +277,7 @@ export function AdminUserList() {
                 </select>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                <button type="button" className="btn outline" onClick={() => { setShowCreate(false); createForm.reset() }}>
+                <button type="button" className="btn outline" onClick={handleCloseCreate}>
                   {t('common.cancel')}
                 </button>
                 <button type="submit" className="primary" disabled={createMutation.isPending}>
@@ -202,11 +289,18 @@ export function AdminUserList() {
         </div>
       )}
 
-      {/* Edit user drawer */}
+      {/* Edit user modal */}
       {editUser && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('adminUsers.editTitle')}>
+        <div
+          ref={editModalRef}
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-user-modal-title"
+          tabIndex={-1}
+        >
           <div className="modal-content" style={{ maxWidth: 420 }}>
-            <h3>{t('adminUsers.editTitle')}</h3>
+            <h3 id="edit-user-modal-title">{t('adminUsers.editTitle')}</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
               {editUser.email} · {editUser.userId}
             </p>
@@ -224,7 +318,7 @@ export function AdminUserList() {
                 </select>
               </div>
               <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                <button type="button" className="btn outline" onClick={() => setEditUser(null)}>
+                <button type="button" className="btn outline" onClick={handleCloseEdit}>
                   {t('common.cancel')}
                 </button>
                 <button type="submit" className="primary" disabled={editMutation.isPending}>
@@ -238,9 +332,16 @@ export function AdminUserList() {
 
       {/* Delete confirmation dialog */}
       {deleteUser && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('adminUsers.deleteTitle')}>
+        <div
+          ref={deleteModalRef}
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-user-modal-title"
+          tabIndex={-1}
+        >
           <div className="modal-content" style={{ maxWidth: 420 }}>
-            <h3>{t('adminUsers.deleteTitle')}</h3>
+            <h3 id="delete-user-modal-title">{t('adminUsers.deleteTitle')}</h3>
             <p>{t('adminUsers.deleteConfirmPrompt', { email: deleteUser.email })}</p>
             <input
               type="text"
@@ -250,7 +351,7 @@ export function AdminUserList() {
               style={{ width: '100%', marginBottom: '1rem' }}
             />
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-              <button className="btn outline" onClick={() => { setDeleteUser(null); setDeleteConfirm('') }}>
+              <button className="btn outline" onClick={handleCloseDelete}>
                 {t('common.cancel')}
               </button>
               <button

@@ -406,16 +406,17 @@ export const MeasureList: React.FC<MeasureListProps> = ({
       >
         <thead>
           <tr style={{ borderBottom: '2px solid var(--table-border-header)' }}>
-            <th style={{ padding: '12px 8px' }}>
+            <th scope="col" style={{ padding: '12px 8px' }}>
               <input
                 type="checkbox"
+                aria-label={t('list.selectAll')}
                 checked={measures.length > 0 && selectedIds.size === measures.length}
                 onChange={toggleSelectAll}
               />
             </th>
-            <th style={{ padding: '12px 8px' }}>{t('list.summary')}</th>
-            <th style={{ padding: '12px 8px' }}>{t('list.typeSource')}</th>
-            <th style={{ padding: '12px 8px' }}>{t('list.actions')}</th>
+            <th scope="col" style={{ padding: '12px 8px' }}>{t('list.summary')}</th>
+            <th scope="col" style={{ padding: '12px 8px' }}>{t('list.typeSource')}</th>
+            <th scope="col" style={{ padding: '12px 8px' }}>{t('list.actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -431,7 +432,12 @@ export const MeasureList: React.FC<MeasureListProps> = ({
                     cursor: 'pointer',
                     background: selectedIds.has(m.id) ? 'var(--table-row-selected)' : 'transparent',
                   }}
+                  tabIndex={0}
+                  role="button"
+                  aria-expanded={isExpanded}
+                  aria-label={`${formatDate(m.measuredAt)} ${renderDataSummary(m)}`}
                   onClick={() => toggleExpand(m.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(m.id) } }}
                 >
                   <td style={{ padding: '12px 8px' }} onClick={(e) => e.stopPropagation()}>
                     <input
