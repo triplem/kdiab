@@ -10,6 +10,7 @@ import io.ktor.server.routing.*
 import kotlin.time.Instant
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.common.plugins.parseUuid
 import org.javafreedom.kdiab.measures.api.models.CreateHba1cEntryRequest
 import org.javafreedom.kdiab.measures.application.service.HbA1cEntryService
 
