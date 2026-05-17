@@ -63,17 +63,20 @@ data class Profile(
     }
 
     private fun validatePhysics() {
-        if (durationOfAction <= 0) {
-            throw BusinessValidationException("Duration of action must be positive")
+        if (durationOfAction < MIN_DURATION_OF_ACTION || durationOfAction > MAX_DURATION_OF_ACTION) {
+            throw BusinessValidationException(
+                "Duration of action must be between $MIN_DURATION_OF_ACTION and " +
+                    "$MAX_DURATION_OF_ACTION minutes (2–8 hours)"
+            )
         }
         if (basal.any { it.value < 0 }) {
             throw BusinessValidationException("Basal values cannot be negative")
         }
-        if (icr.any { it.value < 0 }) {
-            throw BusinessValidationException("ICR values cannot be negative")
+        if (icr.any { it.value <= 0 }) {
+            throw BusinessValidationException("ICR values must be positive")
         }
-        if (isf.any { it.value < 0 }) {
-            throw BusinessValidationException("ISF values cannot be negative")
+        if (isf.any { it.value <= 0 }) {
+            throw BusinessValidationException("ISF values must be positive")
         }
         if (targets.any { it.low < 0 || it.high < 0 || it.low > it.high }) {
             throw BusinessValidationException("Target values are invalid or low exceeds high")
@@ -156,6 +159,8 @@ data class Profile(
         const val MAX_ISF_MGDL = 200.0
         const val MIN_CARB_ABSORPTION_RATE = 1.0
         const val MAX_CARB_ABSORPTION_RATE = 100.0
+        const val MIN_DURATION_OF_ACTION = 120  // 2 hours in minutes
+        const val MAX_DURATION_OF_ACTION = 480  // 8 hours in minutes
     }
 }
 

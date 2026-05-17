@@ -19,9 +19,9 @@ import org.javafreedom.kdiab.calc.domain.model.DoseResult
 private const val MMOL_TO_MGDL_FACTOR = 18.0
 private const val HYPOGLYCEMIA_THRESHOLD = 70.0
 private const val HIGH_DOSE_THRESHOLD = 20.0
-private const val TREND_DOUBLE_ADJUSTMENT = 2.0
-private const val TREND_SINGLE_ADJUSTMENT = 1.0
-private const val TREND_FORTY_FIVE_ADJUSTMENT = 0.5
+private const val TREND_DOUBLE_MGDL_OFFSET = 30.0     // expected BG rise for DoubleUp
+private const val TREND_SINGLE_MGDL_OFFSET = 20.0
+private const val TREND_FORTY_FIVE_MGDL_OFFSET = 10.0
 private const val ROUND_TWO_DECIMAL_FACTOR = 100.0
 
 @Suppress("LongMethod")
@@ -56,7 +56,7 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
 
         val correctionDose = (bgMgDl - target) / isf
         val carbDose = if (request.carbsGrams > 0) request.carbsGrams / icr else 0.0
-        val trendAdj = trendAdjustment(request.trend)
+        val trendAdj = trendAdjustment(request.trend, isf)
         val total = maxOf(0.0, correctionDose + carbDose + trendAdj)
 
         val warnings = buildList {
@@ -123,15 +123,15 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
             throw BusinessValidationException("Invalid segment time format: '$time' — expected HH:mm")
         }
 
-    private fun trendAdjustment(trend: CgmTrend) = when (trend) {
-        CgmTrend.DOUBLE_UP -> TREND_DOUBLE_ADJUSTMENT
-        CgmTrend.SINGLE_UP -> TREND_SINGLE_ADJUSTMENT
-        CgmTrend.FORTY_FIVE_UP -> TREND_FORTY_FIVE_ADJUSTMENT
-        CgmTrend.FLAT -> 0.0
-        CgmTrend.FORTY_FIVE_DOWN -> -TREND_FORTY_FIVE_ADJUSTMENT
-        CgmTrend.SINGLE_DOWN -> -TREND_SINGLE_ADJUSTMENT
-        CgmTrend.DOUBLE_DOWN -> -TREND_DOUBLE_ADJUSTMENT
-        CgmTrend.NONE -> 0.0
+    private fun trendAdjustment(trend: CgmTrend, isf: Double) = when (trend) {
+        CgmTrend.DOUBLE_UP       ->  TREND_DOUBLE_MGDL_OFFSET / isf
+        CgmTrend.SINGLE_UP       ->  TREND_SINGLE_MGDL_OFFSET / isf
+        CgmTrend.FORTY_FIVE_UP   ->  TREND_FORTY_FIVE_MGDL_OFFSET / isf
+        CgmTrend.FLAT            ->  0.0
+        CgmTrend.FORTY_FIVE_DOWN -> -TREND_FORTY_FIVE_MGDL_OFFSET / isf
+        CgmTrend.SINGLE_DOWN     -> -TREND_SINGLE_MGDL_OFFSET / isf
+        CgmTrend.DOUBLE_DOWN     -> -TREND_DOUBLE_MGDL_OFFSET / isf
+        CgmTrend.NONE            ->  0.0
     }
 
     private fun round2(v: Double) = Math.round(v * ROUND_TWO_DECIMAL_FACTOR) / ROUND_TWO_DECIMAL_FACTOR

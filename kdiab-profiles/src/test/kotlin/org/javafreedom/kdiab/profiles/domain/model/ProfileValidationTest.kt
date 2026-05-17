@@ -94,6 +94,46 @@ class ProfileValidationTest {
     }
 
     @Test
+    fun `should throw when ICR is zero`() {
+        val profile = createValidProfile().copy(
+            icr = listOf(IcrSegment(LocalTime(0, 0), 0.0))
+        )
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
+    @Test
+    fun `should throw when ISF is zero`() {
+        val profile = createValidProfile().copy(
+            isf = listOf(IsfSegment(LocalTime(0, 0), 0.0))
+        )
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
+    @Test
+    fun `should throw when DIA is below 120 minutes`() {
+        val profile = createValidProfile().copy(durationOfAction = 119)
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
+    @Test
+    fun `should throw when DIA exceeds 480 minutes`() {
+        val profile = createValidProfile().copy(durationOfAction = 481)
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
+    @Test
+    fun `should pass validation when DIA is exactly at minimum boundary of 120 minutes`() {
+        val profile = createValidProfile().copy(durationOfAction = 120)
+        profile.validate()
+    }
+
+    @Test
+    fun `should pass validation when DIA is exactly at maximum boundary of 480 minutes`() {
+        val profile = createValidProfile().copy(durationOfAction = 480)
+        profile.validate()
+    }
+
+    @Test
     fun `should fail when carbAbsorptionRateGPerHour is zero`() {
         val profile = createValidProfile().copy(carbAbsorptionRateGPerHour = 0.0)
         assertFailsWith<BusinessValidationException> { profile.validate() }
