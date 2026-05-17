@@ -8,6 +8,7 @@ import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
+import org.javafreedom.kdiab.common.domain.model.GLUCOSE_CONVERSION_FACTOR
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
@@ -22,8 +23,6 @@ private const val CACHE_TTL_MINUTES = 5
 // Source: DCCT Research Group, NEJM 1993; https://doi.org/10.1056/NEJM199309303291401
 private const val DCCT_ADDEND = 46.7
 private const val DCCT_DIVISOR = 28.7
-// Conversion factor: 1 mmol/L = 18.0182 mg/dL (molecular weight of glucose = 180.16 g/mol)
-private const val MMOL_TO_MGDL = 18.0
 
 // TIR thresholds in mg/dL — ADA/EASD consensus targets for T1D (ADA Standards of Care 2023)
 // International Consensus on TIR (Battelino et al. 2019, doi:10.2337/dci19-0028)
@@ -169,7 +168,7 @@ class AnalyticsService(
             val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach
             val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach
             val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
-            val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * MMOL_TO_MGDL else sgv
+            val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * GLUCOSE_CONVERSION_FACTOR else sgv
             if (mgDl <= 0.0) return@forEach
             val hour = t.toLocalDateTime(TimeZone.UTC).hour
             byHour[hour].add(mgDl)
@@ -230,7 +229,7 @@ class AnalyticsService(
                 val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
                 val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
                 if (storageUnit != glucoseUnit) mismatchCount++
-                val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * MMOL_TO_MGDL else sgv
+                val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * GLUCOSE_CONVERSION_FACTOR else sgv
                 if (mgDl <= 0.0) return@mapNotNull null
                 mgDl
             }
