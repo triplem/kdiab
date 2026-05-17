@@ -74,6 +74,11 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_LOG_CONSOLE_OUTPUT: json
+      KC_TRACING_ENABLED: ${KC_TRACING_ENABLED:-false}
+      KC_TRACING_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      KC_TRACING_SAMPLER_TYPE: parentbased_traceidratio
+      KC_TRACING_SAMPLER_RATIO: "1.0"
     volumes:
       - ./config/keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
       - ./kdiab-measures/config/keycloak-theme:/opt/keycloak/themes/kdiab:ro

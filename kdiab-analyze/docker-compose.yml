@@ -5,6 +5,8 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_LOG_CONSOLE_OUTPUT: json
+      KC_TRACING_ENABLED: "false"
     volumes:
       - ./config/keycloak-realm.json:/opt/keycloak/data/import/realm.json
       - ./config/keycloak-theme:/opt/keycloak/themes/kdiab:ro
