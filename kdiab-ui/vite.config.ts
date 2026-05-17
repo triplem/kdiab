@@ -61,12 +61,20 @@ export default defineConfig({
         '**/*.d.ts',
         'src/main.tsx',
         'src/vite-env.d.ts',
+        // dashboard rendering components — business logic lives in basalUtils.ts (tested)
+        'src/features/dashboard/DashboardView.tsx',
+        'src/features/dashboard/GlucoseTrendChart.tsx',
+        'src/features/dashboard/BasalRateChart.tsx',
+        // data-fetching hook — integration concern, tested via component tests
+        'src/features/dashboard/useDashboardData.ts',
+        // treatment sub-forms — thin UI adapters, business logic tested in AddTreatmentModal tests
+        'src/features/treatments/forms/**',
       ],
       thresholds: {
-        statements: 51,
-        branches: 42,
-        functions: 44,
-        lines: 53,
+        statements: 60,
+        branches: 50,
+        functions: 50,
+        lines: 63,
       },
     },
   },
