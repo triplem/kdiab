@@ -16,6 +16,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.analyze.api.upstream.measures.DefaultApi
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
+import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 
 private val logger = KotlinLogging.logger {}
@@ -29,7 +30,7 @@ class MeasuresClient(
     httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
     val circuitBreaker: CircuitBreaker = CircuitBreaker(name = "measures"),
-) {
+) : MeasuresPort {
     private val httpClient = HttpClient(httpClientEngine) {
         install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
         install(HttpTimeout) {
@@ -42,12 +43,12 @@ class MeasuresClient(
         }
     }
 
-    suspend fun getMeasures(
+    override suspend fun getMeasures(
         userId: String,
         authorization: String,
         correlationId: String,
-        from: String? = null,
-        to: String? = null,
+        from: String?,
+        to: String?,
     ): List<MeasureResponse> {
         val token = authorization.removePrefix("Bearer ").trim()
         val api = buildApi(token, correlationId)

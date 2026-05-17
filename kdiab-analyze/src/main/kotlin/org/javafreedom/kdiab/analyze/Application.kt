@@ -48,7 +48,6 @@ fun Application.module(
     timelineService: TimelineService? = null,
     analyticsService: AnalyticsService? = null,
     profilesService: ProfilesService? = null,
-    profilesClient: ProfilesClient? = null,
 ) {
     configureTracing()
     configureLogging()
@@ -100,7 +99,6 @@ fun Application.module(
     val resolvedTimelineService: TimelineService
     val resolvedAnalyticsService: AnalyticsService
     val resolvedProfilesService: ProfilesService
-    var resolvedProfilesClient: ProfilesClient? = profilesClient
     var healthClient: HttpClient? = null
     var upstreamHealthUrls: List<String> = emptyList()
 
@@ -154,9 +152,8 @@ fun Application.module(
         val treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl)
 
         resolvedTimelineService = TimelineService(measuresClient, treatmentsClient)
-        resolvedAnalyticsService = AnalyticsService(measuresClient)
+        resolvedAnalyticsService = AnalyticsService(measuresClient, realProfilesClient)
         resolvedProfilesService = ProfilesService(realProfilesClient)
-        resolvedProfilesClient = realProfilesClient
     }
 
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
@@ -183,7 +180,6 @@ fun Application.module(
                 resolvedTimelineService,
                 resolvedAnalyticsService,
                 resolvedProfilesService,
-                resolvedProfilesClient,
             )
         }
 

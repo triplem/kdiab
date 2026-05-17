@@ -13,6 +13,7 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.analyze.api.upstream.profiles.DefaultApi
 import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.Profile
+import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 
 private val logger = KotlinLogging.logger {}
@@ -25,7 +26,7 @@ class ProfilesClient(
     httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
     val circuitBreaker: CircuitBreaker = CircuitBreaker(name = "profiles"),
-) {
+) : ProfilesPort {
     private val httpClient = HttpClient(httpClientEngine) {
         install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
         install(HttpTimeout) {
@@ -38,7 +39,7 @@ class ProfilesClient(
         }
     }
 
-    suspend fun getProfiles(userId: String, authorization: String, correlationId: String): List<Profile> {
+    override suspend fun getProfiles(userId: String, authorization: String, correlationId: String): List<Profile> {
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",

@@ -7,8 +7,8 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
+import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
+import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureSource
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureStatus
@@ -23,8 +23,8 @@ import kotlin.uuid.Uuid
 
 class TimelineServiceTest {
 
-    private val measuresClient = mockk<MeasuresClient>()
-    private val treatmentsClient = mockk<TreatmentsClient>()
+    private val measuresClient = mockk<MeasuresPort>()
+    private val treatmentsClient = mockk<TreatmentsPort>()
     private val service = TimelineService(measuresClient, treatmentsClient)
 
     private val userId = "11111111-1111-1111-1111-111111111111"
