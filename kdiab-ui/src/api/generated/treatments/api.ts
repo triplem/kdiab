@@ -140,6 +140,23 @@ export interface CreateTreatmentRequest {
 
 
 /**
+ * Most recent timestamp for each device-related treatment type. Null if that treatment type has never been recorded for the user.
+ */
+export interface DeviceAgeResponse {
+    /**
+     * When the infusion site/cannula was last replaced (SITE_CHANGE)
+     */
+    'catheterChangedAt'?: string | null;
+    /**
+     * When the insulin cartridge was last replaced (INSULIN_CHANGE)
+     */
+    'reservoirChangedAt'?: string | null;
+    /**
+     * When the CGM sensor was last inserted (SENSOR_INSERT)
+     */
+    'sensorInsertedAt'?: string | null;
+}
+/**
  * Pump and uploader device status snapshot (DEVICE_STATUS). Sent periodically by APS clients (AAPS, xDrip+, Juggluco) to report pump reservoir, battery, and client identity.
  */
 export interface DeviceStatusData {
@@ -1072,6 +1089,111 @@ export class DeviceStatusApi extends BaseAPI {
      */
     public getLatestDeviceStatus(userId: string, options?: RawAxiosRequestConfig) {
         return DeviceStatusApiFp(this.configuration).getLatestDeviceStatus(userId, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
+ * TreatmentsApi - axios parameter creator
+ */
+export const TreatmentsApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Returns the most recent timestamp for each device-related treatment type (catheter/cannula change, insulin reservoir change, CGM sensor insertion). Null if a treatment of that type has never been recorded.
+         * @summary Get device age timestamps for a user
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDeviceAge: async (userId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('getDeviceAge', 'userId', userId)
+            const localVarPath = `/users/{userId}/device-age`
+                .replace('{userId}', encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Accept'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * TreatmentsApi - functional programming interface
+ */
+export const TreatmentsApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = TreatmentsApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Returns the most recent timestamp for each device-related treatment type (catheter/cannula change, insulin reservoir change, CGM sensor insertion). Null if a treatment of that type has never been recorded.
+         * @summary Get device age timestamps for a user
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDeviceAge(userId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<DeviceAgeResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDeviceAge(userId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['TreatmentsApi.getDeviceAge']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * TreatmentsApi - factory interface
+ */
+export const TreatmentsApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = TreatmentsApiFp(configuration)
+    return {
+        /**
+         * Returns the most recent timestamp for each device-related treatment type (catheter/cannula change, insulin reservoir change, CGM sensor insertion). Null if a treatment of that type has never been recorded.
+         * @summary Get device age timestamps for a user
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDeviceAge(userId: string, options?: RawAxiosRequestConfig): AxiosPromise<DeviceAgeResponse> {
+            return localVarFp.getDeviceAge(userId, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * TreatmentsApi - object-oriented interface
+ */
+export class TreatmentsApi extends BaseAPI {
+    /**
+     * Returns the most recent timestamp for each device-related treatment type (catheter/cannula change, insulin reservoir change, CGM sensor insertion). Null if a treatment of that type has never been recorded.
+     * @summary Get device age timestamps for a user
+     * @param {string} userId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getDeviceAge(userId: string, options?: RawAxiosRequestConfig) {
+        return TreatmentsApiFp(this.configuration).getDeviceAge(userId, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

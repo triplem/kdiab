@@ -28,6 +28,7 @@ const schema = z.object({
   alarmHigh: z.number().nullable(),
   alarmLow: z.number().nullable(),
   alarmUrgentLow: z.number().nullable(),
+  sensorDurationHours: z.number().int().min(1).max(8760),
 }).refine(
   (d) => {
     const { alarmUrgentLow, alarmLow, alarmHigh, alarmUrgentHigh } = d
@@ -63,6 +64,7 @@ export function UserSettings() {
           alarmHigh: data.settings.alarmHigh,
           alarmLow: data.settings.alarmLow,
           alarmUrgentLow: data.settings.alarmUrgentLow,
+          sensorDurationHours: data.settings.sensorDurationHours ?? 240,
         }
       : undefined,
   })
@@ -173,6 +175,26 @@ export function UserSettings() {
             {t('settings.jwtBackedHint')}
           </p>
         )}
+
+        <div className="form-group">
+          <label htmlFor="sensorDurationHours">{t('settings.sensorDurationHours', { defaultValue: 'Sensor lifespan (hours)' })}</label>
+          <input
+            id="sensorDurationHours"
+            type="number"
+            min={1}
+            max={8760}
+            style={{ width: 100 }}
+            {...register('sensorDurationHours', { valueAsNumber: true })}
+          />
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '0.4rem' }}>
+            {t('settings.sensorDurationHint', { defaultValue: 'Libre 3/G7: 336, G6/Guardian 4: 168, default: 240' })}
+          </span>
+          {errors.sensorDurationHours && (
+            <p style={{ color: 'var(--danger)', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
+              {t('settings.sensorDurationError', { defaultValue: 'Must be between 1 and 8760 hours' })}
+            </p>
+          )}
+        </div>
 
         <fieldset style={{ border: '1px solid var(--border)', borderRadius: 4, padding: '0.75rem', marginBottom: '1rem' }}>
           <legend style={{ padding: '0 0.3rem', fontSize: '0.9rem' }}>{t('settings.alarmThresholds')}</legend>

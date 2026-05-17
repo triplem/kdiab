@@ -27,6 +27,7 @@ data class UserSettingsResponse(
     val alarmHigh: Int?,
     val alarmLow: Int?,
     val alarmUrgentLow: Int?,
+    val sensorDurationHours: Int,
     val updatedAt: String,
     val jwtBackedNote: String? = null,
 )
@@ -56,6 +57,7 @@ data class PatchSettingsRequest(
     val alarmHigh: Int? = null,
     val alarmLow: Int? = null,
     val alarmUrgentLow: Int? = null,
+    val sensorDurationHours: Int? = null,
 )
 
 @Serializable
@@ -101,6 +103,7 @@ fun UserSettings.toResponse(jwtBackedNote: String? = null): UserSettingsResponse
     alarmHigh = alarmHigh,
     alarmLow = alarmLow,
     alarmUrgentLow = alarmUrgentLow,
+    sensorDurationHours = sensorDurationHours,
     updatedAt = updatedAt.toString(),
     jwtBackedNote = jwtBackedNote,
 )
@@ -115,6 +118,7 @@ fun PatchSettingsRequest.toPatch() = SettingsPatch(
     alarmHigh = alarmHigh,
     alarmLow = alarmLow,
     alarmUrgentLow = alarmUrgentLow,
+    sensorDurationHours = sensorDurationHours,
 )
 
 fun DoctorPatientRelation.toResponse() = DoctorPatientResponse(

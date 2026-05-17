@@ -415,7 +415,7 @@ components:
 
     UserSettingsResponse:
       type: object
-      required: [timezone, language, timeFormat, glucoseUnit, weightUnit, updatedAt]
+      required: [timezone, language, timeFormat, glucoseUnit, weightUnit, sensorDurationHours, updatedAt]
       properties:
         timezone:
           type: string
@@ -451,6 +451,10 @@ components:
           type: integer
           nullable: true
           example: 55
+        sensorDurationHours:
+          type: integer
+          description: "How long a CGM sensor lasts (hours). Default: 240 (10 days). Libre 3/Dexcom G7/Libre 2 = 336, Dexcom G6/Guardian 4 = 168."
+          example: 240
         updatedAt:
           type: string
           format: date-time
@@ -487,6 +491,10 @@ components:
           type: integer
         alarmUrgentLow:
           type: integer
+        sensorDurationHours:
+          type: integer
+          description: "How long a CGM sensor lasts (hours). Default: 240."
+          example: 240
 
     CreateUserRequest:
       type: object

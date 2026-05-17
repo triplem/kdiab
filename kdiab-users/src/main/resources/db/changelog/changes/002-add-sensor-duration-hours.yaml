@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/db.changelog-root.yaml
+  - changeSet:
+      id: 003
+      author: javafreedom
+      changes:
+        - addColumn:
+            tableName: user_settings
+            columns:
+              - column:
+                  name: sensor_duration_hours
+                  type: int
+                  defaultValueNumeric: 240
+                  constraints:
+                    nullable: false
