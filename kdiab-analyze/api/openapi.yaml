@@ -15,6 +15,7 @@ paths:
     get:
       operationId: getTimeline
       summary: Combined measures and treatments for a timeframe
+      description: Returns all CGM/BGM measures and treatment events for the user within the given timeframe.
       parameters:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
@@ -35,6 +36,7 @@ paths:
     get:
       operationId: getHba1c
       summary: HbA1c estimation and time-in-range for a timeframe
+      description: Estimates HbA1c using the DCCT formula from CGM readings, and computes time-in-range zone counts.
       parameters:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
@@ -55,6 +57,7 @@ paths:
     get:
       operationId: getAgp
       summary: Ambulatory Glucose Profile — hourly percentiles
+      description: Groups CGM readings into 24 hourly buckets and computes p10/p25/median/p75/p90 percentiles for each.
       parameters:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
@@ -75,6 +78,7 @@ paths:
     get:
       operationId: getActiveProfiles
       summary: Profiles active during a timeframe
+      description: Returns all profiles (ACTIVE and ARCHIVED) for the user that overlap the given timeframe, including full clinical schedule data.
       parameters:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
@@ -86,6 +90,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfilesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}/device-age:
+    get:
+      operationId: getDeviceAge
+      summary: Get device component ages (proxy to kdiab-treatments)
+      description: Returns the most recent timestamp for each device-related treatment type (catheter, reservoir, CGM sensor). Proxied from kdiab-treatments.
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      responses:
+        '200':
+          description: Device component timestamps
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceAgeResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}/device-status:
+    get:
+      operationId: getLatestDeviceStatus
+      summary: Get latest pump/CGM device status (proxy to kdiab-treatments)
+      description: Returns the most recently recorded pump and uploader device status snapshot. Returns 204 if no status has been recorded yet. Proxied from kdiab-treatments.
+      parameters:
+        - $ref: '#/components/parameters/userId'
+      responses:
+        '200':
+          description: Latest device status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceStatusResponse'
+        '204':
+          description: No device status found
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -341,6 +385,154 @@ components:
           format: date-time
           nullable: true
           description: ISO-8601 timestamp of when the profile was archived.
+        insulinType:
+          type: string
+          nullable: true
+          description: Name of the insulin used (e.g. NovoRapid).
+        durationOfAction:
+          type: integer
+          format: int32
+          nullable: true
+          description: Duration of insulin action in minutes.
+        basal:
+          type: array
+          nullable: true
+          description: Basal rate schedule segments.
+          items:
+            $ref: '#/components/schemas/BasalSegment'
+        icr:
+          type: array
+          nullable: true
+          description: Insulin-to-carb ratio schedule.
+          items:
+            $ref: '#/components/schemas/RatioSegment'
+        isf:
+          type: array
+          nullable: true
+          description: Insulin sensitivity factor schedule.
+          items:
+            $ref: '#/components/schemas/RatioSegment'
+        targets:
+          type: array
+          nullable: true
+          description: Blood glucose target ranges.
+          items:
+            $ref: '#/components/schemas/TargetSegment'
+
+    BasalSegment:
+      type: object
+      required: [startTime, value]
+      properties:
+        startTime:
+          type: string
+          description: Segment start time in HH:MM format.
+          example: "06:00"
+        value:
+          type: number
+          format: double
+          description: Basal rate in U/h.
+
+    RatioSegment:
+      type: object
+      required: [startTime, value]
+      properties:
+        startTime:
+          type: string
+          description: Segment start time in HH:MM format.
+          example: "00:00"
+        value:
+          type: number
+          format: double
+          description: Ratio value (ICR in g/U; ISF in mg/dL/U or mmol/L/U depending on profile units).
+
+    TargetSegment:
+      type: object
+      required: [startTime, low, high]
+      properties:
+        startTime:
+          type: string
+          description: Segment start time in HH:MM format.
+          example: "00:00"
+        low:
+          type: number
+          format: double
+          description: Lower bound of the target range.
+        high:
+          type: number
+          format: double
+          description: Upper bound of the target range.
+
+    DeviceAgeResponse:
+      type: object
+      description: Most recent timestamp for each device-related treatment type. Null if that treatment type has never been recorded for the user.
+      properties:
+        catheterChangedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the infusion site/cannula was last replaced (SITE_CHANGE).
+          example: "2026-05-14T10:30:00Z"
+        reservoirChangedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the insulin cartridge was last replaced (INSULIN_CHANGE).
+          example: "2026-05-13T08:00:00Z"
+        sensorInsertedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the CGM sensor was last inserted (SENSOR_INSERT).
+          example: "2026-05-12T18:00:00Z"
+
+    DeviceStatusResponse:
+      type: object
+      description: Most recent pump and uploader device status snapshot for a user.
+      required: [id, userId, recordedAt, device]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the device status record.
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        userId:
+          type: string
+          format: uuid
+          description: User the status belongs to.
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        recordedAt:
+          type: string
+          format: date-time
+          description: When the status was recorded by the APS client.
+          example: "2026-05-16T10:00:00Z"
+        device:
+          type: string
+          description: Name and version of the uploading client application.
+          example: "AAPS 3.2.0"
+        pumpName:
+          type: string
+          nullable: true
+          description: Pump model identifier as reported by the client.
+          example: "Dana RS"
+        reservoirUnits:
+          type: number
+          format: double
+          nullable: true
+          description: Insulin units remaining in the pump reservoir.
+          example: 142.5
+        batteryLevel:
+          type: integer
+          format: int32
+          nullable: true
+          description: Pump battery level as a percentage (0–100).
+          minimum: 0
+          maximum: 100
+          example: 87
+        pumpConnected:
+          type: boolean
+          nullable: true
+          description: Whether the pump was connected at the time of the status report.
+          example: true
 
     ErrorResponse:
       type: object

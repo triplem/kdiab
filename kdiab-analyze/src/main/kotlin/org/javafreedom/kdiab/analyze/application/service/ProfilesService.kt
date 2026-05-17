@@ -1,8 +1,11 @@
 package org.javafreedom.kdiab.analyze.application.service
 
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
+import org.javafreedom.kdiab.analyze.domain.model.BasalSegment
 import org.javafreedom.kdiab.analyze.domain.model.ProfileSummary
 import org.javafreedom.kdiab.analyze.domain.model.ProfilesResult
+import org.javafreedom.kdiab.analyze.domain.model.RatioSegment
+import org.javafreedom.kdiab.analyze.domain.model.TargetSegment
 
 class ProfilesService(
     private val profilesClient: ProfilesClient,
@@ -29,6 +32,12 @@ class ProfilesService(
                     previousProfileId = dto.previousProfileId,
                     activatedAt = dto.activatedAt,
                     archivedAt = dto.archivedAt,
+                    insulinType = dto.insulinType,
+                    durationOfAction = dto.durationOfAction,
+                    basal = dto.basal?.map { s -> BasalSegment(s.startTime, s.value) },
+                    icr = dto.icr?.map { s -> RatioSegment(s.startTime, s.value) },
+                    isf = dto.isf?.map { s -> RatioSegment(s.startTime, s.value) },
+                    targets = dto.targets?.map { s -> TargetSegment(s.startTime, s.low, s.high) },
                 )
             }
 
