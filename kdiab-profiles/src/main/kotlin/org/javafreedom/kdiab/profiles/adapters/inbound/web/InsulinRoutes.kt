@@ -51,6 +51,7 @@ fun Route.insulinRoutes(service: InsulinService) {
                     return@post
                 }
                 val newInsulin = service.create(request.name).toApi()
+                call.response.headers.append(HttpHeaders.Location, "/api/v1/insulins/${newInsulin.id}")
                 call.respond(HttpStatusCode.Created, newInsulin)
             }
 

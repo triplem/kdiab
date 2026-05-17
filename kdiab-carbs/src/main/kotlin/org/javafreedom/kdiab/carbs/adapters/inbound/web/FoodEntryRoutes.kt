@@ -20,8 +20,9 @@ import org.javafreedom.kdiab.carbs.api.models.FoodEntryResponse
 import org.javafreedom.kdiab.carbs.api.models.UpdateFoodEntryRequest
 import org.javafreedom.kdiab.carbs.application.service.FoodEntryService
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
-import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.common.plugins.checkReadAccess
+import org.javafreedom.kdiab.common.plugins.parseUuid
 
 private const val DEFAULT_PAGE_SIZE = 50
 private const val MAX_PAGE_SIZE = 200
@@ -36,23 +37,7 @@ private data class PagedFoodResponseDto(
     val totalCount: Long,
 )
 
-private fun parseUuid(value: String): Uuid =
-    runCatching { Uuid.parse(value) }.getOrElse {
-        throw BusinessValidationException("Invalid UUID format: $value")
-    }
-
-private fun checkReadAccess(principal: UserPrincipal?, targetUserId: Uuid) {
-    if (principal == null || !principal.canAccess(targetUserId)) {
-        logger.warn {
-            "Read access denied: principalId=${principal?.userId} " +
-            "roles=${principal?.roles} " +
-            "allowedPatients=${principal?.allowedPatients} " +
-            "targetUserId=$targetUserId"
-        }
-        throw AuthorizationException("Access Not Authorized")
-    }
-}
-
+// Write access is stricter than read: doctors cannot write food entries on behalf of patients
 private fun checkWriteAccess(principal: UserPrincipal?, targetUserId: Uuid) {
     if (principal == null || (principal.userId != targetUserId && !principal.isAdmin())) {
         logger.warn {
@@ -106,6 +91,7 @@ private fun Route.createFoodEntry(service: FoodEntryService) {
         val entry = request.toDomain(targetUserId)
         val saved = service.createEntry(entry)
         logger.info { "Created food entry ${saved.id} for user $targetUserId" }
+        call.response.headers.append(HttpHeaders.Location, "/api/v1/users/$targetUserId/foods/${saved.id}")
         call.respond(HttpStatusCode.Created, saved.toApi())
     }
 }

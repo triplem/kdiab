@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { reconstructBasalBlocks } from '../features/dashboard/DashboardView'
+import { reconstructBasalBlocks } from '../features/dashboard/basalUtils'
 
 // Fixed reference time: 2024-06-01T00:00:00Z (Saturday)
 const BASE_MS = new Date('2024-06-01T00:00:00Z').getTime()

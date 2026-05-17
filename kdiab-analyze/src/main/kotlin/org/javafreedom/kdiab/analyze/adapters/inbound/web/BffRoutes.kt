@@ -23,8 +23,6 @@ import org.javafreedom.kdiab.common.plugins.UserPrincipal
 
 private val logger = KotlinLogging.logger {}
 
-private const val DEFAULT_TIR_LOW = 70.0
-private const val DEFAULT_TIR_HIGH = 180.0
 
 fun Route.bffRoutes(
     timelineService: TimelineService,
@@ -54,14 +52,11 @@ fun Route.bffRoutes(
             val (from, to) = validateDateRange(params.from, params.to)
             auditDoctorAccess(ctx, "analyze.hba1c")
 
-            val activeProfile = if (profilesClient != null) {
-                runCatching {
-                    profilesClient.getProfiles(ctx.targetUserId.toString(), ctx.authorization, ctx.correlationId)
-                        .firstOrNull { it.status == Profile.Status.ACTIVE }
-                }.getOrNull()
-            } else null
-            val tirLow = activeProfile?.analysisLow ?: DEFAULT_TIR_LOW
-            val tirHigh = activeProfile?.analysisHigh ?: DEFAULT_TIR_HIGH
+            val (tirLow, tirHigh) = analyticsService.getAnalysisThresholds(
+                userId = ctx.targetUserId.toString(),
+                authorization = ctx.authorization,
+                correlationId = ctx.correlationId,
+            )
 
             val result = analyticsService.getHba1c(
                 userId = ctx.targetUserId.toString(),
@@ -81,14 +76,11 @@ fun Route.bffRoutes(
             val (from, to) = validateDateRange(params.from, params.to)
             auditDoctorAccess(ctx, "analyze.agp")
 
-            val activeProfile = if (profilesClient != null) {
-                runCatching {
-                    profilesClient.getProfiles(ctx.targetUserId.toString(), ctx.authorization, ctx.correlationId)
-                        .firstOrNull { it.status == Profile.Status.ACTIVE }
-                }.getOrNull()
-            } else null
-            val tirLow = activeProfile?.analysisLow ?: DEFAULT_TIR_LOW
-            val tirHigh = activeProfile?.analysisHigh ?: DEFAULT_TIR_HIGH
+            val (tirLow, tirHigh) = analyticsService.getAnalysisThresholds(
+                userId = ctx.targetUserId.toString(),
+                authorization = ctx.authorization,
+                correlationId = ctx.correlationId,
+            )
 
             val result = analyticsService.getAgp(
                 userId = ctx.targetUserId.toString(),

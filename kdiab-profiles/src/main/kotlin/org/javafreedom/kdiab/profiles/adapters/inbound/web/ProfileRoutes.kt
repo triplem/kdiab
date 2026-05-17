@@ -1,3 +1,4 @@
+@file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.profiles.adapters.inbound.web
 
 import io.ktor.http.*
@@ -20,6 +21,8 @@ import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.common.plugins.checkReadAccess
+import org.javafreedom.kdiab.common.plugins.parseUuid
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -36,11 +39,6 @@ private data class PagedProfilesResponse(
 )
 
 private val logger = KotlinLogging.logger {}
-
-private fun parseUuid(value: String): Uuid =
-    runCatching { Uuid.parse(value) }.getOrElse {
-        throw BusinessValidationException("Invalid UUID format: $value")
-    }
 
 fun Route.profileRoutes(profileService: ProfileService, auditLogRepository: AuditLogRepository) {
 
@@ -162,6 +160,7 @@ private fun Route.createProfile(profileService: ProfileService, auditLogReposito
         val domainProfile = request.toDomain(targetUserId, status, createdBy)
         val created = profileService.createProfile(domainProfile)
         logger.info { "Created profile ${created.id} for user $targetUserId with status $status" }
+        call.response.headers.append(HttpHeaders.Location, "/api/v1/users/$targetUserId/profiles/${created.id}")
         call.respond(HttpStatusCode.Created, created.toApi())
     }
 }
@@ -282,21 +281,6 @@ private fun Route.deleteAllProfiles(profileService: ProfileService, auditLogRepo
         // Idempotent: deleting when no drafts exist is still a success
         profileService.deleteAllProfiles(targetUserId)
         call.respond(HttpStatusCode.NoContent)
-    }
-}
-
-private fun checkReadAccess(
-        principal: UserPrincipal?,
-        targetUserId: Uuid
-) {
-    if (principal == null || !principal.canAccess(targetUserId)) {
-        logger.warn {
-            "Read access denied: principalId=${principal?.userId} " +
-            "roles=${principal?.roles} " +
-            "allowedPatients=${principal?.allowedPatients} " +
-            "targetUserId=$targetUserId"
-        }
-        throw AuthorizationException("Access Not Authorized")
     }
 }
 

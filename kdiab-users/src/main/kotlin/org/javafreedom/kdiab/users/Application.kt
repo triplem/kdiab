@@ -26,6 +26,8 @@ import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakCircuitBreakerOpenException
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
+import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
+import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedDoctorPatientRepository
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedUserSettingsRepository
@@ -54,6 +56,8 @@ internal fun validateConfig(config: io.ktor.server.config.ApplicationConfig) {
 @Suppress("LongMethod")
 fun Application.module(
     keycloakAdminClient: KeycloakAdminClient? = null,
+    settingsRepository: UserSettingsRepository? = null,
+    doctorPatientRepository: DoctorPatientRepository? = null,
     initDatabase: Boolean = true,
 ) {
     validateConfig(environment.config)
@@ -112,8 +116,8 @@ fun Application.module(
     )
     monitor.subscribe(ApplicationStopping) { keycloak.close() }
 
-    val settingsRepo = ExposedUserSettingsRepository()
-    val doctorPatientRepo = ExposedDoctorPatientRepository()
+    val settingsRepo = settingsRepository ?: ExposedUserSettingsRepository()
+    val doctorPatientRepo = doctorPatientRepository ?: ExposedDoctorPatientRepository()
 
     val userService = UserService(keycloak, settingsRepo, doctorPatientRepo)
     val doctorPatientService = DoctorPatientService(doctorPatientRepo, keycloak)

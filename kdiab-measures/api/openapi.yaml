@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: "3.1.0"
 info:
   title: kdiab-measures API
   version: 0.0.1
@@ -97,6 +97,11 @@ paths:
       responses:
         '201':
           description: Measure created successfully
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created resource
           content:
             application/json:
               schema:
@@ -299,6 +304,11 @@ paths:
       responses:
         '201':
           description: HbA1c entry created
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created resource
           content:
             application/json:
               schema:
@@ -615,10 +625,9 @@ components:
         source:
           $ref: '#/components/schemas/HbA1cSource'
         notes:
-          type: string
+          type: ["string", "null"]
           description: Optional notes about the measurement
           example: "Fasting lab result from GP visit"
-          nullable: true
         createdAt:
           type: string
           format: date-time
@@ -645,10 +654,9 @@ components:
         source:
           $ref: '#/components/schemas/HbA1cSource'
         notes:
-          type: string
+          type: ["string", "null"]
           description: Optional notes
           example: "GP lab result"
-          nullable: true
 
     HbA1cSource:
       type: string

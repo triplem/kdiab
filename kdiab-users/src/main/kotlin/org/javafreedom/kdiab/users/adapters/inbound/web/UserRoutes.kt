@@ -12,6 +12,7 @@ import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.common.plugins.parseUuid as commonParseUuid
 import org.javafreedom.kdiab.users.application.service.UserService
 
 private val logger = KotlinLogging.logger {}
@@ -93,7 +94,4 @@ private fun Route.adminRoutes(userService: UserService) {
     }
 }
 
-internal fun parseUuid(value: String): Uuid =
-    runCatching { Uuid.parse(value) }.getOrElse {
-        throw BusinessValidationException("Invalid UUID format: $value")
-    }
+internal fun parseUuid(value: String): Uuid = commonParseUuid(value)

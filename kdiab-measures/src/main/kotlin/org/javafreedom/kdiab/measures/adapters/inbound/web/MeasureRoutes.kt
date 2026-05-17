@@ -25,6 +25,9 @@ import org.javafreedom.kdiab.measures.application.service.MeasureService
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.common.plugins.checkReadAccess
+import org.javafreedom.kdiab.common.plugins.checkWriteAccess
+import org.javafreedom.kdiab.common.plugins.parseUuid
 import org.javafreedom.kdiab.measures.domain.model.MeasureStatus
 import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
 
@@ -40,11 +43,6 @@ private data class PagedMeasureResponse(
 )
 
 private val logger = KotlinLogging.logger {}
-
-internal fun parseUuid(value: String): Uuid =
-    runCatching { Uuid.parse(value) }.getOrElse {
-        throw BusinessValidationException("Invalid UUID format: $value")
-    }
 
 fun Route.measureRoutes(measureService: MeasureService, auditLogRepository: AuditLogRepository) {
     authenticate("auth-jwt") {
@@ -108,6 +106,7 @@ private fun Route.createMeasure(measureService: MeasureService, auditLogReposito
         val measure = request.toDomain(targetUserId)
         val saved = measureService.addMeasure(measure)
         logger.info { "Created measure ${saved.id} for user $targetUserId" }
+        call.response.headers.append(HttpHeaders.Location, "/api/v1/users/$targetUserId/measures/${saved.id}")
         call.respond(HttpStatusCode.Created, saved.toApi(glucoseUnit, weightUnit))
     }
 }
@@ -183,28 +182,3 @@ private fun Route.deleteMeasures(measureService: MeasureService, auditLogReposit
     }
 }
 
-// ── Access control helpers ────────────────────────────────────────────────────
-
-private fun checkReadAccess(principal: UserPrincipal?, targetUserId: Uuid) {
-    if (principal == null || !principal.canAccess(targetUserId)) {
-        logger.warn {
-            "Read access denied: principalId=${principal?.userId} " +
-            "roles=${principal?.roles} " +
-            "allowedPatients=${principal?.allowedPatients} " +
-            "targetUserId=$targetUserId"
-        }
-        throw AuthorizationException("Access Not Authorized")
-    }
-}
-
-private fun checkWriteAccess(principal: UserPrincipal?, targetUserId: Uuid) {
-    if (principal == null || !principal.canAccess(targetUserId)) {
-        logger.warn {
-            "Write access denied: principalId=${principal?.userId} " +
-            "roles=${principal?.roles} " +
-            "allowedPatients=${principal?.allowedPatients} " +
-            "targetUserId=$targetUserId"
-        }
-        throw AuthorizationException("Access Not Authorized")
-    }
-}

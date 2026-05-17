@@ -156,7 +156,7 @@ fun Application.module(
         val realTreatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl)
 
         resolvedTimelineService = TimelineService(measuresClient, realTreatmentsClient)
-        resolvedAnalyticsService = AnalyticsService(measuresClient)
+        resolvedAnalyticsService = AnalyticsService(measuresClient, realProfilesClient)
         resolvedProfilesService = ProfilesService(realProfilesClient)
         resolvedProfilesClient = realProfilesClient
         resolvedTreatmentsClient = realTreatmentsClient

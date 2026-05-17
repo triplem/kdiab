@@ -3,7 +3,7 @@ package org.javafreedom.kdiab.analyze.application.service
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
+import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
 import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.BasalSegment
 import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.IcrSegment
 import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.IsfSegment
@@ -16,7 +16,7 @@ import kotlin.test.assertTrue
 
 class ProfilesServiceTest {
 
-    private val profilesClient = mockk<ProfilesClient>()
+    private val profilesClient = mockk<ProfilesPort>()
     private val service = ProfilesService(profilesClient)
 
     private val userId = "user-1"
