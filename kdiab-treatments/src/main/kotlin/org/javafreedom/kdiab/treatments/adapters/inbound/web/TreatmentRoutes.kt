@@ -125,6 +125,7 @@ private fun Route.createTreatment(
         val treatment = request.toDomain(targetUserId)
         val saved = treatmentService.addTreatment(treatment)
         logger.info { "Created treatment ${saved.id} for user $targetUserId" }
+        call.response.headers.append(HttpHeaders.Location, "/api/v1/users/$targetUserId/treatments/${saved.id}")
         call.respond(HttpStatusCode.Created, saved.toApi())
     }
 }

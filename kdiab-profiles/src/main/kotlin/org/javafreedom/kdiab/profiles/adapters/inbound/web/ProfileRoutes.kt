@@ -162,6 +162,7 @@ private fun Route.createProfile(profileService: ProfileService, auditLogReposito
         val domainProfile = request.toDomain(targetUserId, status, createdBy)
         val created = profileService.createProfile(domainProfile)
         logger.info { "Created profile ${created.id} for user $targetUserId with status $status" }
+        call.response.headers.append(HttpHeaders.Location, "/api/v1/users/$targetUserId/profiles/${created.id}")
         call.respond(HttpStatusCode.Created, created.toApi())
     }
 }

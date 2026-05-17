@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: "3.1.0"
 info:
   title: kdiab-analyze API
   version: 0.1.0
@@ -15,6 +15,7 @@ paths:
     get:
       operationId: getTimeline
       summary: Combined measures and treatments for a timeframe
+      description: Returns all CGM/BGM measures and treatment events for the user within the given time window, merged into a single chronological list.
       parameters:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
@@ -35,6 +36,7 @@ paths:
     get:
       operationId: getHba1c
       summary: HbA1c estimation and time-in-range for a timeframe
+      description: Computes an estimated HbA1c (DCCT formula) and time-in-range breakdown from CGM readings in the given window. Returns null hba1c if no CGM data is available.
       parameters:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
@@ -55,6 +57,7 @@ paths:
     get:
       operationId: getAgp
       summary: Ambulatory Glucose Profile — hourly percentiles
+      description: Groups CGM readings by UTC hour (0–23) and returns p10/p25/p50/p75/p90 percentiles for each bucket. Buckets with no readings have null percentile values.
       parameters:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
@@ -75,6 +78,7 @@ paths:
     get:
       operationId: getActiveProfiles
       summary: Profiles active during a timeframe
+      description: Returns the insulin pump profiles that were active or archived during the given time window, including segment data (basal, ICR, ISF, targets).
       parameters:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
@@ -196,8 +200,7 @@ components:
         type:
           type: string
         notes:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         data:
           $ref: '#/components/schemas/TimelineTreatmentData'
 
@@ -206,14 +209,12 @@ components:
       required: [readingCount, tir]
       properties:
         hba1c:
-          type: number
+          type: ["number", "null"]
           format: double
-          nullable: true
           description: Estimated HbA1c in % (DCCT formula). Null if no CGM readings.
         meanGlucoseMgDl:
-          type: number
+          type: ["number", "null"]
           format: double
-          nullable: true
           description: Mean CGM glucose in mg/dL over the period.
         readingCount:
           type: integer
@@ -281,25 +282,20 @@ components:
           minimum: 0
           maximum: 23
         p10:
-          type: number
+          type: ["number", "null"]
           format: double
-          nullable: true
         p25:
-          type: number
+          type: ["number", "null"]
           format: double
-          nullable: true
         median:
-          type: number
+          type: ["number", "null"]
           format: double
-          nullable: true
         p75:
-          type: number
+          type: ["number", "null"]
           format: double
-          nullable: true
         p90:
-          type: number
+          type: ["number", "null"]
           format: double
-          nullable: true
         count:
           type: integer
 
@@ -325,21 +321,17 @@ components:
         createdAt:
           type: string
         validFrom:
-          type: string
-          nullable: true
+          type: ["string", "null"]
           description: ISO-8601 timestamp of when the profile entered its current status.
         previousProfileId:
-          type: string
-          nullable: true
+          type: ["string", "null"]
         activatedAt:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
           description: ISO-8601 timestamp of when the profile was activated.
         archivedAt:
-          type: string
+          type: ["string", "null"]
           format: date-time
-          nullable: true
           description: ISO-8601 timestamp of when the profile was archived.
 
     ErrorResponse:

@@ -53,6 +53,7 @@ private fun Route.createHba1cEntry(hbA1cEntryService: HbA1cEntryService) {
         val entry = request.toDomain(targetUserId)
         val saved = hbA1cEntryService.createEntry(entry, principal, targetUserId)
         logger.info { "Created HbA1c entry ${saved.id} for user $targetUserId" }
+        call.response.headers.append(HttpHeaders.Location, "/api/v1/users/$targetUserId/hba1c/${saved.id}")
         call.respond(HttpStatusCode.Created, saved.toApi())
     }
 }
