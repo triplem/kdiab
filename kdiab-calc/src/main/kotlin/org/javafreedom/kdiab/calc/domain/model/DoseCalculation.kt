@@ -7,6 +7,7 @@ data class DoseRequest(
     val glucoseUnit: String,
     val trend: CgmTrend,
     val carbsGrams: Double = 0.0,
+    val activeIob: Double = 0.0,
     val useProfileTime: String? = null,
 )
 

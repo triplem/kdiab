@@ -8,6 +8,7 @@ import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IcrSegment
 import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IsfSegment
 import org.javafreedom.kdiab.calc.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.calc.api.upstream.profiles.models.TargetSegment
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.calc.domain.model.CgmTrend
 import org.javafreedom.kdiab.calc.domain.model.DoseRequest
@@ -93,9 +94,9 @@ class DoseCalculationServiceTest {
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
 
-        // correction = (80 - 110) / 50 = -0.6, clamp to 0
+        // rawCorrection = (80 - 110) / 50 = -0.6; floored to 0 by maxOf(0.0, ...) logic
+        assertEquals(0.0, result.correctionDose)
         assertEquals(0.0, result.totalRecommended)
-        assertTrue(result.correctionDose < 0)
     }
 
     @Test
@@ -299,5 +300,137 @@ class DoseCalculationServiceTest {
 
         assertTrue(result.totalRecommended > 20.0)
         assertTrue(result.warnings.any { it.contains("unusually high") })
+    }
+
+    @Test
+    fun `calculateDose applies FORTY_FIVE_UP trend adjustment increasing dose`() = runTest {
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        val request = DoseRequest(
+            currentBg = 110.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FORTY_FIVE_UP,
+            carbsGrams = 0.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        // correction = (110 - 110) / 50 = 0, trend = 10.0 / 50 = 0.2
+        assertEquals(0.2, result.trendAdjustment)
+        assertEquals(0.2, result.totalRecommended)
+    }
+
+    @Test
+    fun `calculateDose applies FORTY_FIVE_DOWN trend adjustment decreasing dose`() = runTest {
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        val request = DoseRequest(
+            currentBg = 160.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FORTY_FIVE_DOWN,
+            carbsGrams = 0.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        // correction = (160 - 110) / 50 = 1.0, trend = -10.0 / 50 = -0.2, total = 0.8
+        assertEquals(-0.2, result.trendAdjustment)
+        assertEquals(0.8, result.totalRecommended)
+    }
+
+    @Test
+    fun `calculateDose throws BusinessValidationException when ISF segment value is zero`() = runTest {
+        val zeroIsfProfile = testProfile.copy(
+            isf = listOf(IsfSegment(startTime = "00:00", `value` = 0.0)),
+        )
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns zeroIsfProfile
+
+        val request = DoseRequest(
+            currentBg = 200.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+        )
+
+        assertFailsWith<BusinessValidationException> {
+            service.calculateDose("user-123", request, "Bearer token", "corr-id")
+        }
+    }
+
+    @Test
+    fun `calculateDose throws BusinessValidationException when ICR segment value is zero and carbs entered`() = runTest {
+        val zeroIcrProfile = testProfile.copy(
+            icr = listOf(IcrSegment(startTime = "00:00", `value` = 0.0)),
+        )
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns zeroIcrProfile
+
+        val request = DoseRequest(
+            currentBg = 150.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 30.0,
+        )
+
+        assertFailsWith<BusinessValidationException> {
+            service.calculateDose("user-123", request, "Bearer token", "corr-id")
+        }
+    }
+
+    @Test
+    fun `calculateDose converts 10 mmolL to 180 mgdL before calculation`() = runTest {
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        val request = DoseRequest(
+            currentBg = 10.0,
+            glucoseUnit = "mmol/L",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        // 10.0 mmol/L * 18 = 180 mg/dL
+        assertEquals(180.0, result.breakdown.currentBgMgDl)
+        // correction = (180 - 110) / 50 = 1.4
+        assertEquals(1.4, result.correctionDose)
+    }
+
+    @Test
+    fun `calculateDose subtracts activeIob from raw correction dose`() = runTest {
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        // rawCorrection = (200 - 110) / 50 = 1.8; IOB = 1.0 => correctionDose = 0.8
+        val request = DoseRequest(
+            currentBg = 200.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+            activeIob = 1.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertEquals(0.8, result.correctionDose)
+        assertEquals(0.8, result.totalRecommended)
+        assertTrue(result.warnings.isEmpty())
+    }
+
+    @Test
+    fun `calculateDose floors correctionDose at 0 when activeIob exceeds raw correction`() = runTest {
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        // rawCorrection = (200 - 110) / 50 = 1.8; IOB = 3.0 => correctionDose = max(0, -1.2) = 0
+        val request = DoseRequest(
+            currentBg = 200.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+            activeIob = 3.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertEquals(0.0, result.correctionDose)
+        assertEquals(0.0, result.totalRecommended)
+        assertTrue(result.warnings.any { it.contains("IOB covers the full correction") })
     }
 }
