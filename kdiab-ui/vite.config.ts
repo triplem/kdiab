@@ -49,6 +49,14 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
       exclude: [
         'src/api/generated/**',
+        // thin axios-wrapper files: no business logic, analogous to generated code
+        'src/api/analyzeApi.ts',
+        'src/api/carbsApi.ts',
+        'src/api/measuresApi.ts',
+        'src/api/profilesApi.ts',
+        'src/api/treatmentsApi.ts',
+        'src/api/usersApi.ts',
+        'src/i18n/**',
         'src/test/**',
         '**/*.d.ts',
         'src/main.tsx',
