@@ -52,6 +52,17 @@ export interface AgpResponse {
   warnings?: string[]
 }
 
+export interface ProfileSegment {
+  startTime: string
+  value: number
+}
+
+export interface TargetSegment {
+  startTime: string
+  low: number
+  high: number
+}
+
 export interface ProfileSummary {
   id: string
   status: string
@@ -59,10 +70,35 @@ export interface ProfileSummary {
   createdAt?: string
   previousProfileId?: string
   validFrom?: string | null
+  activatedAt?: string | null
+  archivedAt?: string | null
+  insulinType?: string | null
+  durationOfAction?: number | null
+  basal?: ProfileSegment[] | null
+  icr?: ProfileSegment[] | null
+  isf?: ProfileSegment[] | null
+  targets?: TargetSegment[] | null
 }
 
 export interface ProfilesResponse {
   profiles: ProfileSummary[]
+}
+
+export interface DeviceAgeResponse {
+  catheterChangedAt: string | null
+  reservoirChangedAt: string | null
+  sensorInsertedAt: string | null
+}
+
+export interface DeviceStatusResponse {
+  id: string
+  userId: string
+  recordedAt: string
+  device: string
+  pumpName?: string | null
+  reservoirUnits?: number | null
+  batteryLevel?: number | null
+  pumpConnected?: boolean | null
 }
 
 export const analyzeApi = {
@@ -82,4 +118,8 @@ export const analyzeApi = {
     axiosInstance.get<ProfilesResponse>(`${BASE}/users/${userId}/profiles/active`, {
       params: { from, to },
     }),
+  getDeviceAge: (userId: string) =>
+    axiosInstance.get<DeviceAgeResponse>(`${BASE}/users/${userId}/device-age`),
+  getLatestDeviceStatus: (userId: string) =>
+    axiosInstance.get<DeviceStatusResponse>(`${BASE}/users/${userId}/device-status`),
 }

@@ -127,7 +127,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
 
   const iob = calcIOB(recentTimeline?.treatments ?? [], diaMinutes)
   const cob = calcCOB(recentTimeline?.treatments ?? [])
-  const basalRate = currentBasalRate(activeProfile?.basal)
+  const basalRate = currentBasalRate(activeProfile?.basal ?? undefined)
 
   // ── Device ages ────────────────────────────────────────────────────────────
 
