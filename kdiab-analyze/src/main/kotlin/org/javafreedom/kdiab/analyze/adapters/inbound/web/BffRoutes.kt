@@ -11,9 +11,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.analyze.api.Paths
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
-import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
@@ -28,7 +26,6 @@ fun Route.bffRoutes(
     timelineService: TimelineService,
     analyticsService: AnalyticsService,
     profilesService: ProfilesService,
-    profilesClient: ProfilesClient? = null,
     treatmentsClient: TreatmentsClient? = null,
 ) {
     authenticate("auth-jwt") {

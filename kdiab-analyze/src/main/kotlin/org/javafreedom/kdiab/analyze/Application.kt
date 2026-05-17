@@ -48,7 +48,6 @@ fun Application.module(
     timelineService: TimelineService? = null,
     analyticsService: AnalyticsService? = null,
     profilesService: ProfilesService? = null,
-    profilesClient: ProfilesClient? = null,
     treatmentsClient: TreatmentsClient? = null,
 ) {
     configureTracing()
@@ -101,7 +100,6 @@ fun Application.module(
     val resolvedTimelineService: TimelineService
     val resolvedAnalyticsService: AnalyticsService
     val resolvedProfilesService: ProfilesService
-    var resolvedProfilesClient: ProfilesClient? = profilesClient
     var resolvedTreatmentsClient: TreatmentsClient? = treatmentsClient
     var healthClient: HttpClient? = null
     var upstreamHealthUrls: List<String> = emptyList()
@@ -158,7 +156,6 @@ fun Application.module(
         resolvedTimelineService = TimelineService(measuresClient, realTreatmentsClient)
         resolvedAnalyticsService = AnalyticsService(measuresClient, realProfilesClient)
         resolvedProfilesService = ProfilesService(realProfilesClient)
-        resolvedProfilesClient = realProfilesClient
         resolvedTreatmentsClient = realTreatmentsClient
     }
 
@@ -186,7 +183,6 @@ fun Application.module(
                 resolvedTimelineService,
                 resolvedAnalyticsService,
                 resolvedProfilesService,
-                resolvedProfilesClient,
                 resolvedTreatmentsClient,
             )
         }
