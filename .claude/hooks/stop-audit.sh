@@ -86,6 +86,9 @@ if ! git -C "$PROJECT_DIR" diff --quiet -- audit/agent-log.jsonl 2>/dev/null; th
     git -C "$PROJECT_DIR" commit -m "chore(audit): log session ${SESSION_ID:0:8}" 2>/dev/null || true
 fi
 
+# Truncate temp file so entries are not re-appended on the next stop hook run
+> "$TEMP_FILE"
+
 # Return to the original branch
 if [ "$ORIGINAL_BRANCH" != "main" ]; then
     git -C "$PROJECT_DIR" checkout "$ORIGINAL_BRANCH" 2>/dev/null || true
