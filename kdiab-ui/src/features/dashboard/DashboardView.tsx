@@ -224,8 +224,7 @@ export function reconstructBasalBlocks(
 // Current basal rate from active profile
 function currentBasalRate(basal: Array<{ startTime: string; value: number }> | undefined): number | null {
   if (!basal?.length) return null
-  const rate = scheduledRateAt(basal, Date.now())
-  return rate > 0 ? rate : null
+  return scheduledRateAt(basal, Date.now())
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
