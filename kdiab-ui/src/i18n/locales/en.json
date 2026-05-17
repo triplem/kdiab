@@ -197,6 +197,7 @@
       "SITE_CHANGE": "Site change (infusion set)",
       "SENSOR_INSERT": "Insert CGM sensor",
       "INSULIN_CHANGE": "Change insulin cartridge",
+      "PUMP_BATTERY_CHANGE": "Replace pump battery",
       "COMBO_BOLUS": "Combo bolus (immediate/extended)",
       "TEMP_BASAL": "Temporary basal rate",
       "PUMP_SUSPEND": "Suspend pump",
