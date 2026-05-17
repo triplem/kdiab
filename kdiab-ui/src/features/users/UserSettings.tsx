@@ -135,39 +135,45 @@ export function UserSettings() {
         </div>
 
         <div className="form-group">
-          <label>{t('settings.timeFormat')}</label>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            {([12, 24] as const).map((v) => (
-              <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-                <input type="radio" value={v} {...register('timeFormat', { valueAsNumber: true })} />
-                {v}h
-              </label>
-            ))}
-          </div>
+          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+            <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.timeFormat')}</legend>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              {([12, 24] as const).map((v) => (
+                <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                  <input type="radio" value={v} {...register('timeFormat', { valueAsNumber: true })} />
+                  {v}h
+                </label>
+              ))}
+            </div>
+          </fieldset>
         </div>
 
         <div className="form-group">
-          <label>{t('settings.glucoseUnit')}</label>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            {(['mg/dL', 'mmol/L'] as const).map((v) => (
-              <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-                <input type="radio" value={v} {...register('glucoseUnit')} />
-                {v}
-              </label>
-            ))}
-          </div>
+          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+            <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.glucoseUnit')}</legend>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              {(['mg/dL', 'mmol/L'] as const).map((v) => (
+                <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                  <input type="radio" value={v} {...register('glucoseUnit')} />
+                  {v}
+                </label>
+              ))}
+            </div>
+          </fieldset>
         </div>
 
         <div className="form-group">
-          <label>{t('settings.weightUnit')}</label>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            {(['kg', 'lbs'] as const).map((v) => (
-              <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-                <input type="radio" value={v} {...register('weightUnit')} />
-                {v}
-              </label>
-            ))}
-          </div>
+          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+            <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.weightUnit')}</legend>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              {(['kg', 'lbs'] as const).map((v) => (
+                <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                  <input type="radio" value={v} {...register('weightUnit')} />
+                  {v}
+                </label>
+              ))}
+            </div>
+          </fieldset>
         </div>
 
         {jwtBacked && (

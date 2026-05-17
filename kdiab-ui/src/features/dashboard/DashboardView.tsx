@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useTimeFormat } from '../../context/TimeFormatContext'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { analyzeApi } from '../../api/analyzeApi'
 import { profilesApi } from '../../api/profilesApi'
 import { treatmentsApi } from '../../api/treatmentsApi'
@@ -47,6 +47,9 @@ const BASAL_COLORS: Record<string, string> = {
   BELOW:     '#f59e0b',
   SUSPENDED: '#e2e8f0',
 }
+
+const STALE_WARN_MS = 15 * 60 * 1000  // 15 minutes
+const STALE_ERROR_MS = 30 * 60 * 1000 // 30 minutes
 
 interface BasalBlock {
   startMs: number
@@ -328,9 +331,14 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
 
   const atNow = windowEndOffset === 0
 
-  // Fetch 6h of data for IOB/COB (always back from now)
-  const sixHoursAgo = useMemo(() => new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), [])
-  const nowIso = useMemo(() => new Date().toISOString(), [])
+  // Rolling "now" that refreshes every 5 min so the 6h IOB/COB window doesn't freeze at mount
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 5 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [])
+  const sixHoursAgo = useMemo(() => new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(), [now])
+  const nowIso = useMemo(() => now.toISOString(), [now])
 
   const { data: recentTimeline } = useQuery({
     queryKey: ['dashboard-recent', userId],
@@ -387,6 +395,12 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     ? Math.round((Date.now() - new Date(latestCgm.measuredAt).getTime()) / 60000)
     : null
 
+  // ── CGM staleness ──────────────────────────────────────────────────────────
+
+  const staleMs = latestCgm ? Date.now() - new Date(latestCgm.measuredAt).getTime() : 0
+  const isStale = staleMs > STALE_WARN_MS
+  const isVeryStale = staleMs > STALE_ERROR_MS
+
   // ── IOB / COB (from recent treatments) ─────────────────────────────────────
 
   const iob = calcIOB(recentTimeline?.treatments ?? [], diaMinutes)
@@ -427,50 +441,62 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
   const tirLow = toDisplay(70, glucoseUnit)
   const tirHigh = toDisplay(180, glucoseUnit)
 
-  const cgmPoints = (windowTimeline?.measures ?? [])
-    .filter(m => m.type === 'CGM' && typeof m.data['value'] === 'number')
-    .map(m => ({
-      time: new Date(m.measuredAt).getTime(),
-      sgv: toDisplay(m.data['value'] as number, glucoseUnit),
-      bgm: null as number | null,
-      marker: null as number | null,
-      treatmentType: null as string | null,
-      label: null as string | null,
-    }))
+  const cgmPoints = useMemo(() =>
+    (windowTimeline?.measures ?? [])
+      .filter(m => m.type === 'CGM' && typeof m.data['value'] === 'number')
+      .map(m => ({
+        time: new Date(m.measuredAt).getTime(),
+        sgv: toDisplay(m.data['value'] as number, glucoseUnit),
+        bgm: null as number | null,
+        marker: null as number | null,
+        treatmentType: null as string | null,
+        label: null as string | null,
+      })),
+    [windowTimeline?.measures, glucoseUnit]
+  )
 
   // BGM readings shown as distinct dots above the treatment marker row
-  const bgmPoints = (windowTimeline?.measures ?? [])
-    .filter(m => m.type === 'BGM' && typeof m.data['value'] === 'number')
-    .map(m => ({
-      time: new Date(m.measuredAt).getTime(),
-      sgv: null as number | null,
-      bgm: toDisplay(m.data['value'] as number, glucoseUnit),
-      marker: null as number | null,
-      treatmentType: null as string | null,
-      label: null as string | null,
-    }))
+  const bgmPoints = useMemo(() =>
+    (windowTimeline?.measures ?? [])
+      .filter(m => m.type === 'BGM' && typeof m.data['value'] === 'number')
+      .map(m => ({
+        time: new Date(m.measuredAt).getTime(),
+        sgv: null as number | null,
+        bgm: toDisplay(m.data['value'] as number, glucoseUnit),
+        marker: null as number | null,
+        treatmentType: null as string | null,
+        label: null as string | null,
+      })),
+    [windowTimeline?.measures, glucoseUnit]
+  )
 
   // Treatment markers: merge into same point shape as cgmPoints, at bottom of TIR range
-  const treatmentMarkers = (windowTimeline?.treatments ?? [])
-    .filter(t => ['BOLUS', 'CORRECTION_BOLUS', 'CARBS', 'MEAL', 'SITE_CHANGE', 'SENSOR_INSERT', 'INSULIN_CHANGE'].includes(t.type))
-    .map(t => {
-      let label = ''
-      if ((t.type === 'BOLUS' || t.type === 'CORRECTION_BOLUS') && typeof t.data['insulin'] === 'number')
-        label = `${(t.data['insulin'] as number).toFixed(1)}U`
-      else if ((t.type === 'CARBS' || t.type === 'MEAL') && typeof t.data['carbs'] === 'number')
-        label = `${Math.round(t.data['carbs'] as number)}g`
-      return {
-        time: new Date(t.treatedAt).getTime(),
-        sgv: null as number | null,
-        bgm: null as number | null,
-        marker: tirLow * 0.85,
-        treatmentType: t.type,
-        label,
-      }
-    })
+  const treatmentMarkers = useMemo(() =>
+    (windowTimeline?.treatments ?? [])
+      .filter(t => ['BOLUS', 'CORRECTION_BOLUS', 'CARBS', 'MEAL', 'SITE_CHANGE', 'SENSOR_INSERT', 'INSULIN_CHANGE'].includes(t.type))
+      .map(t => {
+        let label = ''
+        if ((t.type === 'BOLUS' || t.type === 'CORRECTION_BOLUS') && typeof t.data['insulin'] === 'number')
+          label = `${(t.data['insulin'] as number).toFixed(1)}U`
+        else if ((t.type === 'CARBS' || t.type === 'MEAL') && typeof t.data['carbs'] === 'number')
+          label = `${Math.round(t.data['carbs'] as number)}g`
+        return {
+          time: new Date(t.treatedAt).getTime(),
+          sgv: null as number | null,
+          bgm: null as number | null,
+          marker: tirLow * 0.85,
+          treatmentType: t.type,
+          label,
+        }
+      }),
+    [windowTimeline?.treatments, tirLow]
+  )
 
   // Combined dataset for ComposedChart root — enables tooltip cursor to find points
-  const chartData = [...cgmPoints, ...bgmPoints, ...treatmentMarkers].sort((a, b) => a.time - b.time)
+  const chartData = useMemo(
+    () => [...cgmPoints, ...bgmPoints, ...treatmentMarkers].sort((a, b) => a.time - b.time),
+    [cgmPoints, bgmPoints, treatmentMarkers]
+  )
 
   // Basal block reconstruction
   const { basalBlocks, basalProfileLine } = useMemo(() => {
@@ -538,6 +564,16 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
               </span>
             )}
           </div>
+          {isVeryStale && (
+            <p style={{ color: 'var(--color-error, #dc2626)', fontSize: '0.75rem', margin: '0.25rem 0 0' }}>
+              ⚠ CGM data is more than 30 min old
+            </p>
+          )}
+          {isStale && !isVeryStale && (
+            <p style={{ color: 'var(--color-warning, #d97706)', fontSize: '0.75rem', margin: '0.25rem 0 0' }}>
+              CGM data may be outdated
+            </p>
+          )}
         </div>
       )}
 

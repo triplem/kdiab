@@ -221,7 +221,9 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
       </form>
 
       {calcError && (
-        <p style={{ color: 'var(--accent-danger)', marginTop: '1rem' }}>{calcError}</p>
+        <div role="alert" aria-live="assertive" style={{ color: 'var(--color-error, #dc2626)', marginTop: '1rem' }}>
+          {calcError}
+        </div>
       )}
 
       {result && (
@@ -323,9 +325,9 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
             )}
 
             {logMutation.isError && (
-              <p style={{ color: 'var(--color-danger)', marginTop: '0.5rem', textAlign: 'center', fontSize: '0.875rem' }}>
+              <div role="alert" aria-live="assertive" style={{ color: 'var(--color-error, #dc2626)', marginTop: '0.5rem', textAlign: 'center', fontSize: '0.875rem' }}>
                 {t('doseCalc.logError')}
-              </p>
+              </div>
             )}
           </div>
         </div>
