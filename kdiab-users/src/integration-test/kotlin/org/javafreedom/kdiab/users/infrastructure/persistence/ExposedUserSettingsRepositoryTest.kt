@@ -44,6 +44,16 @@ class ExposedUserSettingsRepositoryTest {
         assertEquals(s.glucoseUnit, found.glucoseUnit)
         assertEquals(s.weightUnit, found.weightUnit)
         assertEquals(s.language, found.language)
+        assertEquals(s.sensorDurationHours, found.sensorDurationHours)
+    }
+
+    @Test
+    fun `save persists custom sensorDurationHours and retrieves it`() = runBlocking {
+        val s = settings().copy(sensorDurationHours = 336)
+        repository.save(s)
+        val found = repository.findByUserId(s.userId)
+        assertNotNull(found)
+        assertEquals(336, found.sensorDurationHours)
     }
 
     @Test

@@ -27,6 +27,7 @@ function makeSettings(overrides = {}) {
     alarmHigh: 180,
     alarmLow: 70,
     alarmUrgentLow: 54,
+    sensorDurationHours: 240,
     updatedAt: '2024-01-01T00:00:00Z',
     jwtBackedNote: null,
     ...overrides,
@@ -55,7 +56,7 @@ beforeEach(() => {
 })
 
 describe('UserSettings', () => {
-  test('renders all 9 setting fields', async () => {
+  test('renders all setting fields including sensorDurationHours', async () => {
     mockedGetMe.mockResolvedValue({ data: makeUser() } as never)
     render(<UserSettings />, { wrapper })
     await waitFor(() => expect(screen.getByLabelText(/timezone/i)).toBeInTheDocument())
@@ -63,10 +64,32 @@ describe('UserSettings', () => {
     expect(screen.getByText(/time format/i)).toBeInTheDocument()
     expect(screen.getByText(/glucose unit/i)).toBeInTheDocument()
     expect(screen.getByText(/weight unit/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/sensor lifespan/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/urgent high/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/^high/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/^low/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/urgent low/i)).toBeInTheDocument()
+  })
+
+  test('pre-fills sensorDurationHours from stored settings', async () => {
+    mockedGetMe.mockResolvedValue({ data: makeUser({ sensorDurationHours: 336 }) } as never)
+    render(<UserSettings />, { wrapper })
+    await waitFor(() => expect(screen.getByLabelText(/sensor lifespan/i)).toBeInTheDocument())
+    expect(screen.getByLabelText(/sensor lifespan/i)).toHaveValue(336)
+  })
+
+  test('includes sensorDurationHours in PATCH payload on save', async () => {
+    mockedGetMe.mockResolvedValue({ data: makeUser({ sensorDurationHours: 240 }) } as never)
+    mockedPatch.mockResolvedValue({ data: makeSettings({ sensorDurationHours: 168 }) } as never)
+    render(<UserSettings />, { wrapper })
+    await waitFor(() => screen.getByLabelText(/sensor lifespan/i))
+
+    fireEvent.change(screen.getByLabelText(/sensor lifespan/i), { target: { value: '168' } })
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
+
+    await waitFor(() => expect(mockedPatch).toHaveBeenCalledWith(
+      expect.objectContaining({ sensorDurationHours: 168 })
+    ))
   })
 
   test('shows success toast after successful save', async () => {

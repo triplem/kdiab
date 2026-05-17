@@ -177,7 +177,7 @@ export function UserSettings() {
         )}
 
         <div className="form-group">
-          <label htmlFor="sensorDurationHours">{t('settings.sensorDurationHours', { defaultValue: 'Sensor lifespan (hours)' })}</label>
+          <label htmlFor="sensorDurationHours">{t('settings.sensorDurationHours')}</label>
           <input
             id="sensorDurationHours"
             type="number"
@@ -187,11 +187,11 @@ export function UserSettings() {
             {...register('sensorDurationHours', { valueAsNumber: true })}
           />
           <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '0.4rem' }}>
-            {t('settings.sensorDurationHint', { defaultValue: 'Libre 3/G7: 336, G6/Guardian 4: 168, default: 240' })}
+            {t('settings.sensorDurationHint')}
           </span>
           {errors.sensorDurationHours && (
             <p style={{ color: 'var(--danger)', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
-              {t('settings.sensorDurationError', { defaultValue: 'Must be between 1 and 8760 hours' })}
+              {t('settings.sensorDurationError')}
             </p>
           )}
         </div>
