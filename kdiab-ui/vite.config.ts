@@ -6,14 +6,14 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-hook-form'],
-          query: ['@tanstack/react-query'],
-          charts: ['recharts'],
-          oidc: ['oidc-client-ts', 'react-oidc-context'],
-          i18n: ['i18next', 'react-i18next'],
-          zod: ['zod', '@hookform/resolvers'],
-          axios: ['axios'],
+        manualChunks: (id: string) => {
+          if (id.includes('node_modules/recharts') || id.includes('node_modules/d3')) return 'charts'
+          if (id.includes('node_modules/i18next') || id.includes('node_modules/react-i18next')) return 'i18n'
+          if (id.includes('node_modules/oidc-client-ts') || id.includes('node_modules/react-oidc-context')) return 'oidc'
+          if (id.includes('node_modules/@tanstack/react-query')) return 'query'
+          if (id.includes('node_modules/zod') || id.includes('node_modules/@hookform')) return 'zod'
+          if (id.includes('node_modules/axios')) return 'axios'
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-hook-form')) return 'react'
         },
       },
     },

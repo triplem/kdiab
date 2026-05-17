@@ -96,10 +96,10 @@ export function AgpChart({ hourlyData, glucoseUnit, warnings, totalReadingCount,
             label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 10, fill: 'var(--text-secondary)' }}
           />
           <Tooltip
-            labelFormatter={(h: number) => formatHour(h)}
-            formatter={(val: number | [number, number], name: string) => {
-              if (Array.isArray(val)) return [`${val[0]}–${val[1]} ${yLabel}`, name]
-              return [`${val} ${yLabel}`, name]
+            labelFormatter={(h: unknown) => formatHour(typeof h === 'number' ? h : 0)}
+            formatter={(val: unknown, name: unknown) => {
+              if (Array.isArray(val)) return [`${String(val[0])}–${String(val[1])} ${yLabel}`, String(name ?? '')]
+              return [`${String(val)} ${yLabel}`, String(name ?? '')]
             }}
             contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
             wrapperStyle={{ outline: 'none' }}
