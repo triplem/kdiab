@@ -433,7 +433,14 @@
     "legendCarbs": "Kohlenhydrate",
     "legendSiteChange": "Katheter",
     "legendSensorInsert": "Sensor",
-    "legendInsulinChange": "Insulin"
+    "legendInsulinChange": "Insulin",
+    "cgmChart": "Glukose",
+    "basalChart": "Basal",
+    "noProfile": "Kein aktives Profil",
+    "legendScheduled": "Geplant",
+    "legendAbove": "Über Profil",
+    "legendBelow": "Unter Profil",
+    "legendSuspended": "Unterbrochen"
   },
   "settings": {
     "title": "Einstellungen",

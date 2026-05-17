@@ -433,7 +433,14 @@
     "legendCarbs": "Carbs",
     "legendSiteChange": "Site Change",
     "legendSensorInsert": "Sensor Insert",
-    "legendInsulinChange": "Insulin Change"
+    "legendInsulinChange": "Insulin Change",
+    "cgmChart": "Glucose",
+    "basalChart": "Basal",
+    "noProfile": "No active profile",
+    "legendScheduled": "Scheduled",
+    "legendAbove": "Above profile",
+    "legendBelow": "Below profile",
+    "legendSuspended": "Suspended"
   },
   "settings": {
     "title": "Settings",
