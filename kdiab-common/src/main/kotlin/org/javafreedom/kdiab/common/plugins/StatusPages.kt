@@ -30,7 +30,7 @@ fun Application.configureStatusPages(
                 "reason=${cause.message}"
             }
             val status = HttpStatusCode.Unauthorized
-            call.respond(status, ErrorResponse(status.value, cause.message ?: "Unauthorized"))
+            call.respond(status, ErrorResponse(status.value, cause.message ?: "Unauthorized", call.callId))
         }
         exception<AuthorizationException> { call, cause ->
             logger.warn {
@@ -42,38 +42,38 @@ fun Application.configureStatusPages(
                 "reason=${cause.message}"
             }
             val status = HttpStatusCode.Forbidden
-            call.respond(status, ErrorResponse(status.value, cause.message ?: "Forbidden"))
+            call.respond(status, ErrorResponse(status.value, cause.message ?: "Forbidden", call.callId))
         }
         exception<ConflictException> { call, cause ->
             logger.warn(cause) { "Conflict on resource" }
             val status = HttpStatusCode.Conflict
-            call.respond(status, ErrorResponse(status.value, cause.message ?: "Conflict"))
+            call.respond(status, ErrorResponse(status.value, cause.message ?: "Conflict", call.callId))
         }
         exception<ResourceNotFoundException> { call, cause ->
             logger.debug(cause) { "Resource not found" }
             val status = HttpStatusCode.NotFound
-            call.respond(status, ErrorResponse(status.value, cause.message ?: "Not Found"))
+            call.respond(status, ErrorResponse(status.value, cause.message ?: "Not Found", call.callId))
         }
         exception<BusinessValidationException> { call, cause ->
             logger.warn(cause) { "Business validation failure" }
             val status = HttpStatusCode.BadRequest
-            call.respond(status, ErrorResponse(status.value, cause.message ?: "Bad Request"))
+            call.respond(status, ErrorResponse(status.value, cause.message ?: "Bad Request", call.callId))
         }
         exception<IllegalArgumentException> { call, cause ->
             logger.warn(cause) { "Illegal argument" }
             val status = HttpStatusCode.BadRequest
-            call.respond(status, ErrorResponse(status.value, cause.message ?: "Invalid Argument"))
+            call.respond(status, ErrorResponse(status.value, cause.message ?: "Invalid Argument", call.callId))
         }
         exception<SerializationException> { call, cause ->
             logger.warn(cause) { "Request deserialization failure" }
             val status = HttpStatusCode.BadRequest
-            call.respond(status, ErrorResponse(status.value, "Invalid request body"))
+            call.respond(status, ErrorResponse(status.value, "Invalid request body", call.callId))
         }
         extraHandlers()
         exception<Throwable> { call, cause ->
             logger.error(cause) { "Unhandled internal server error" }
             val status = HttpStatusCode.InternalServerError
-            call.respond(status, ErrorResponse(status.value, "Internal Server Error"))
+            call.respond(status, ErrorResponse(status.value, "Internal Server Error", call.callId))
         }
     }
 }
