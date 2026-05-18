@@ -68,6 +68,12 @@ export default function App() {
   const [loginError, setLoginError] = useState<string | null>(null)
 
   useEffect(() => {
+    const handler = () => { void auth.signinRedirect() }
+    window.addEventListener('auth:unauthorized', handler)
+    return () => window.removeEventListener('auth:unauthorized', handler)
+  }, [auth])
+
+  useEffect(() => {
     if (auth.user?.access_token) {
       const token = auth.user.access_token
       setAccessToken(token)
