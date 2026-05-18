@@ -50,3 +50,6 @@ Desktop.ini
 .env.local
 secrets.properties
 .claude/worktrees/
+
+# debug artifacts
+error.txt
