@@ -10,6 +10,7 @@ import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.runBlocking
 import org.javafreedom.kdiab.carbs.domain.model.FoodEntry
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.jetbrains.exposed.v1.jdbc.Database
 import kotlin.test.assertFailsWith
@@ -67,6 +68,16 @@ class ExposedFoodEntryRepositoryTest {
     }
 
     @Test
+    fun `save - throws ConflictException when entry with same id is saved twice`() = runBlocking {
+        val entry = testEntry()
+        repository.save(entry)
+
+        assertFailsWith<ConflictException> {
+            repository.save(entry)
+        }
+    }
+
+    @Test
     fun `findByUserId - returns entries for correct user only`() = runBlocking {
         val userA = Uuid.parse("11111111-1111-1111-1111-111111111111")
         val userB = Uuid.parse("22222222-2222-2222-2222-222222222222")
@@ -92,7 +103,7 @@ class ExposedFoodEntryRepositoryTest {
 
         assertEquals(3, page0.size)
         assertEquals(2, page1.size)
-        // Results are ordered by name ASC — pages must be disjoint
+        // Results are ordered by name ASC -- pages must be disjoint
         val page0Names = page0.map { it.name }.toSet()
         val page1Names = page1.map { it.name }.toSet()
         assertEquals(0, (page0Names intersect page1Names).size)
@@ -149,7 +160,9 @@ class ExposedFoodEntryRepositoryTest {
     @Test
     fun `update - modifies name, portionGrams, and carbsPer100g`() = runBlocking {
         val userId = Uuid.parse("11111111-1111-1111-1111-111111111111")
-        val saved = repository.save(testEntry(userId = userId, name = "Old Name", portionGrams = 100.0, carbsPer100g = 20.0))
+        val saved = repository.save(
+            testEntry(userId = userId, name = "Old Name", portionGrams = 100.0, carbsPer100g = 20.0)
+        )
 
         val updated = repository.update(
             id = saved.id,

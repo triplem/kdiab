@@ -2,10 +2,11 @@ package org.javafreedom.kdiab.carbs.infrastructure.persistence
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.config.ApplicationConfig
-import org.jetbrains.exposed.v1.core.*
-import org.jetbrains.exposed.v1.jdbc.*
-import org.jetbrains.exposed.v1.jdbc.transactions.*
+import org.jetbrains.exposed.v1.jdbc.Database
+
+private val logger = KotlinLogging.logger {}
 
 object DatabaseFactory {
     private const val CONNECTION_TIMEOUT_MS = 30_000L
@@ -37,11 +38,12 @@ object DatabaseFactory {
             this.leakDetectionThreshold = LEAK_DETECTION_THRESHOLD_MS
             validate()
         }
+
+        // Schema is managed exclusively by the liquibase-carbs container (runs as
+        // the PostgreSQL superuser before this service starts). The app role is
+        // DML-only and must not issue any DDL.
+        logger.info { "Connecting to database: $jdbcUrl" }
         val dataSource = HikariDataSource(hikariConfig)
         Database.connect(dataSource)
-
-        transaction {
-            SchemaUtils.create(FoodEntriesTable)
-        }
     }
 }
