@@ -12,10 +12,10 @@ import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.analyze.api.Paths
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
-import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
-import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
-import org.javafreedom.kdiab.analyze.application.service.ProfilesService
-import org.javafreedom.kdiab.analyze.application.service.TimelineService
+import org.javafreedom.kdiab.analyze.application.service.AnalyticsOperation
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageOperation
+import org.javafreedom.kdiab.analyze.application.service.ProfilesOperation
+import org.javafreedom.kdiab.analyze.application.service.TimelineOperation
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
@@ -26,10 +26,10 @@ private val logger = KotlinLogging.logger {}
 private const val DEFAULT_DEVICE_USAGE_DAYS = 90
 
 fun Route.bffRoutes(
-    timelineService: TimelineService,
-    analyticsService: AnalyticsService,
-    profilesService: ProfilesService,
-    deviceUsageService: DeviceUsageService,
+    timelineService: TimelineOperation,
+    analyticsService: AnalyticsOperation,
+    profilesService: ProfilesOperation,
+    deviceUsageService: DeviceUsageOperation,
     treatmentsClient: TreatmentsClient? = null,
 ) {
     authenticate("auth-jwt") {
@@ -98,13 +98,13 @@ fun Route.bffRoutes(
 
         get<Paths.getActiveProfiles> { params ->
             val ctx = extractContext(call, params.userId)
-            val (from, to) = validateDateRange(params.from, params.to)
+            // The date range is validated but not forwarded — kdiab-profiles does not support
+            // date-range filtering on its list endpoint.
+            validateDateRange(params.from, params.to)
             auditDoctorAccess(ctx, "analyze.profiles")
 
             val result = profilesService.getProfiles(
                 userId = ctx.targetUserId.toString(),
-                from = from,
-                to = to,
                 authorization = ctx.authorization,
                 correlationId = ctx.correlationId,
             )

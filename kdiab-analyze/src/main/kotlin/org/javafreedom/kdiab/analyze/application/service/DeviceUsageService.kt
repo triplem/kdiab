@@ -15,8 +15,8 @@ private const val SECONDS_PER_DAY = 86_400.0
 
 class DeviceUsageService(
     private val treatmentsPort: TreatmentsPort,
-) {
-    suspend fun compute(
+) : DeviceUsageOperation {
+    override suspend fun compute(
         userId: String,
         days: Int,
         authorization: String,

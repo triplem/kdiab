@@ -7,10 +7,10 @@ import io.ktor.server.testing.*
 import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
-import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
-import org.javafreedom.kdiab.analyze.application.service.ProfilesService
-import org.javafreedom.kdiab.analyze.application.service.TimelineService
+import org.javafreedom.kdiab.analyze.application.service.AnalyticsOperation
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageOperation
+import org.javafreedom.kdiab.analyze.application.service.ProfilesOperation
+import org.javafreedom.kdiab.analyze.application.service.TimelineOperation
 
 class ApplicationTest {
 
@@ -29,10 +29,10 @@ class ApplicationTest {
     private fun ApplicationTestBuilder.withMockServices() {
         application {
             module(
-                timelineService = mockk(),
-                analyticsService = mockk(),
-                profilesService = mockk(),
-                deviceUsageService = mockk(),
+                timelineService = mockk<TimelineOperation>(),
+                analyticsService = mockk<AnalyticsOperation>(),
+                profilesService = mockk<ProfilesOperation>(),
+                deviceUsageService = mockk<DeviceUsageOperation>(),
             )
         }
     }

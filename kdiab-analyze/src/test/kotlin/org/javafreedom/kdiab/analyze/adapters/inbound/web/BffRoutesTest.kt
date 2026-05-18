@@ -13,10 +13,10 @@ import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
-import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
-import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
-import org.javafreedom.kdiab.analyze.application.service.ProfilesService
-import org.javafreedom.kdiab.analyze.application.service.TimelineService
+import org.javafreedom.kdiab.analyze.application.service.AnalyticsOperation
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageOperation
+import org.javafreedom.kdiab.analyze.application.service.ProfilesOperation
+import org.javafreedom.kdiab.analyze.application.service.TimelineOperation
 import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.DeviceUsageResult
@@ -81,16 +81,16 @@ class BffRoutesTest {
 
     private fun routeTest(
         block: suspend ApplicationTestBuilder.(
-            timelineService: TimelineService,
-            analyticsService: AnalyticsService,
-            profilesService: ProfilesService,
-            deviceUsageService: DeviceUsageService,
+            timelineService: TimelineOperation,
+            analyticsService: AnalyticsOperation,
+            profilesService: ProfilesOperation,
+            deviceUsageService: DeviceUsageOperation,
         ) -> Unit,
     ) {
-        val timelineService     = mockk<TimelineService>()
-        val analyticsService    = mockk<AnalyticsService>()
-        val profilesService     = mockk<ProfilesService>()
-        val deviceUsageService  = mockk<DeviceUsageService>()
+        val timelineService     = mockk<TimelineOperation>()
+        val analyticsService    = mockk<AnalyticsOperation>()
+        val profilesService     = mockk<ProfilesOperation>()
+        val deviceUsageService  = mockk<DeviceUsageOperation>()
         testApplication {
             environment {
                 config = MapApplicationConfig(
@@ -167,7 +167,7 @@ class BffRoutesTest {
 
     @Test
     fun `profiles active - 200 patient reads own data`() = routeTest { _, _, svc, _ ->
-        coEvery { svc.getProfiles(SARAH_ID, FROM, TO, any(), any()) } returns emptyProfiles
+        coEvery { svc.getProfiles(SARAH_ID, any(), any()) } returns emptyProfiles
         val resp = client.get(profilesUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
@@ -225,7 +225,7 @@ class BffRoutesTest {
 
     @Test
     fun `profiles active - 200 doctor reads allowed patient data`() = routeTest { _, _, svc, _ ->
-        coEvery { svc.getProfiles(SARAH_ID, FROM, TO, any(), any()) } returns emptyProfiles
+        coEvery { svc.getProfiles(SARAH_ID, any(), any()) } returns emptyProfiles
         val resp = client.get(profilesUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
@@ -283,7 +283,7 @@ class BffRoutesTest {
 
     @Test
     fun `profiles active - 200 admin reads any user data`() = routeTest { _, _, svc, _ ->
-        coEvery { svc.getProfiles(MIKE_ID, FROM, TO, any(), any()) } returns emptyProfiles
+        coEvery { svc.getProfiles(MIKE_ID, any(), any()) } returns emptyProfiles
         val resp = client.get(profilesUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }

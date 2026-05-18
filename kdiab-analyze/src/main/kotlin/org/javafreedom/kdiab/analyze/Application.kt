@@ -18,9 +18,13 @@ import org.javafreedom.kdiab.analyze.adapters.inbound.web.bffRoutes
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
+import org.javafreedom.kdiab.analyze.application.service.AnalyticsOperation
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageOperation
 import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
+import org.javafreedom.kdiab.analyze.application.service.ProfilesOperation
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
+import org.javafreedom.kdiab.analyze.application.service.TimelineOperation
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.plugins.statuspages.*
@@ -46,10 +50,10 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @Suppress("LongMethod")
 fun Application.module(
-    timelineService: TimelineService? = null,
-    analyticsService: AnalyticsService? = null,
-    profilesService: ProfilesService? = null,
-    deviceUsageService: DeviceUsageService? = null,
+    timelineService: TimelineOperation? = null,
+    analyticsService: AnalyticsOperation? = null,
+    profilesService: ProfilesOperation? = null,
+    deviceUsageService: DeviceUsageOperation? = null,
     treatmentsClient: TreatmentsClient? = null,
 ) {
     configureTracing()
@@ -99,19 +103,19 @@ fun Application.module(
         header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     }
 
-    val resolvedTimelineService: TimelineService
-    val resolvedAnalyticsService: AnalyticsService
-    val resolvedProfilesService: ProfilesService
-    val resolvedDeviceUsageService: DeviceUsageService
+    val resolvedTimelineService: TimelineOperation
+    val resolvedAnalyticsService: AnalyticsOperation
+    val resolvedProfilesService: ProfilesOperation
+    val resolvedDeviceUsageService: DeviceUsageOperation
     var resolvedTreatmentsClient: TreatmentsClient? = treatmentsClient
     var healthClient: HttpClient? = null
     var upstreamHealthUrls: List<String> = emptyList()
 
     if (allServicesProvided(timelineService, analyticsService, profilesService, deviceUsageService)) {
-        resolvedTimelineService = timelineService!!
-        resolvedAnalyticsService = analyticsService!!
-        resolvedProfilesService = profilesService!!
-        resolvedDeviceUsageService = deviceUsageService!!
+        resolvedTimelineService = requireNotNull(timelineService)
+        resolvedAnalyticsService = requireNotNull(analyticsService)
+        resolvedProfilesService = requireNotNull(profilesService)
+        resolvedDeviceUsageService = requireNotNull(deviceUsageService)
     } else {
         val connectTimeoutMs = environment.config.propertyOrNull("http.connectTimeoutMs")
             ?.getString()?.toLong() ?: HTTP_CONNECT_TIMEOUT_MS_DEFAULT
@@ -200,9 +204,9 @@ fun Application.module(
 }
 
 private fun allServicesProvided(
-    timelineService: TimelineService?,
-    analyticsService: AnalyticsService?,
-    profilesService: ProfilesService?,
-    deviceUsageService: DeviceUsageService?,
+    timelineService: TimelineOperation?,
+    analyticsService: AnalyticsOperation?,
+    profilesService: ProfilesOperation?,
+    deviceUsageService: DeviceUsageOperation?,
 ): Boolean = listOf(timelineService, analyticsService, profilesService, deviceUsageService)
     .all { it != null }

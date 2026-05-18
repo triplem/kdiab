@@ -13,10 +13,10 @@ import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
 class TimelineService(
-    private val measuresClient: MeasuresPort,
-    private val treatmentsClient: TreatmentsPort,
-) {
-    suspend fun getTimeline(
+    private val measuresPort: MeasuresPort,
+    private val treatmentsPort: TreatmentsPort,
+) : TimelineOperation {
+    override suspend fun getTimeline(
         userId: String,
         from: String,
         to: String,
@@ -27,10 +27,10 @@ class TimelineService(
         val toInstant = Instant.parse(to)
 
         val measuresDeferred = async {
-            runCatching { measuresClient.getMeasures(userId, authorization, correlationId, from, to) }
+            runCatching { measuresPort.getMeasures(userId, authorization, correlationId, from, to) }
         }
         val treatmentsDeferred = async {
-            runCatching { treatmentsClient.getTreatments(userId, authorization, correlationId, from, to) }
+            runCatching { treatmentsPort.getTreatments(userId, authorization, correlationId, from, to) }
         }
 
         val measuresResult = measuresDeferred.await()
@@ -55,7 +55,7 @@ class TimelineService(
                     status = dto.status.value,
                 )
             }
-            .filter { it.measuredAt >= fromInstant && it.measuredAt <= toInstant }
+            .filter { it.measuredAt in fromInstant..toInstant }
 
         val filteredTreatments = allTreatments
             .mapNotNull { dto ->
@@ -71,7 +71,7 @@ class TimelineService(
                     data = dto.data,
                 )
             }
-            .filter { it.treatedAt >= fromInstant && it.treatedAt <= toInstant }
+            .filter { it.treatedAt in fromInstant..toInstant }
 
         Timeline(measures = filteredMeasures, treatments = filteredTreatments, errors = errors)
     }
