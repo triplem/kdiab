@@ -19,9 +19,9 @@ axiosInstance.interceptors.response.use(
   },
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid — redirect to login so the user can re-authenticate.
-      // useAuth() is unavailable here (outside the React tree), so we use a hard redirect.
-      window.location.href = '/login'
+      // useAuth() is unavailable here (outside the React tree). Dispatch a custom
+      // event; App.tsx listens and calls auth.signinRedirect() to restart OIDC login.
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'))
     }
     return Promise.reject(error)
   }
