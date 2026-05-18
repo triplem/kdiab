@@ -16,13 +16,11 @@ import kotlin.test.assertTrue
 
 class ProfilesServiceTest {
 
-    private val profilesClient = mockk<ProfilesPort>()
-    private val service = ProfilesService(profilesClient)
+    private val profilesPort = mockk<ProfilesPort>()
+    private val service = ProfilesService(profilesPort)
 
     private val userId = "user-1"
     private val auth = "Bearer token"
-    private val from = "2024-01-01T00:00:00Z"
-    private val to = "2024-01-31T23:59:59Z"
 
     private fun profile(id: String, status: Profile.Status) = Profile(
         id = id, userId = userId, status = status,
@@ -33,18 +31,18 @@ class ProfilesServiceTest {
 
     @Test
     fun `getProfiles returns empty list when no profiles`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns emptyList()
-        val result = service.getProfiles(userId, from, to, auth, "")
+        coEvery { profilesPort.getProfiles(userId, auth, any()) } returns emptyList()
+        val result = service.getProfiles(userId, auth, "")
         assertTrue(result.profiles.isEmpty())
     }
 
     @Test
     fun `getProfiles includes ACTIVE profiles`() = runTest {
         // Upstream already filters to ACTIVE+ARCHIVED, so mock returns only those
-        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
+        coEvery { profilesPort.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", Profile.Status.ACTIVE),
         )
-        val result = service.getProfiles(userId, from, to, auth, "")
+        val result = service.getProfiles(userId, auth, "")
         assertEquals(1, result.profiles.size)
         assertEquals("ACTIVE", result.profiles.first().status)
     }
@@ -52,17 +50,17 @@ class ProfilesServiceTest {
     @Test
     fun `getProfiles includes ARCHIVED profiles`() = runTest {
         // Upstream already filters to ACTIVE+ARCHIVED, so mock returns only those
-        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
+        coEvery { profilesPort.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", Profile.Status.ARCHIVED),
         )
-        val result = service.getProfiles(userId, from, to, auth, "")
+        val result = service.getProfiles(userId, auth, "")
         assertEquals(1, result.profiles.size)
         assertEquals("ARCHIVED", result.profiles.first().status)
     }
 
     @Test
     fun `getProfiles maps profile fields correctly`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
+        coEvery { profilesPort.getProfiles(userId, auth, any()) } returns listOf(
             Profile(
                 id = "p-xyz", userId = userId, status = Profile.Status.ACTIVE,
                 name = "Basal A", insulinType = "rapid", durationOfAction = 180,
@@ -71,7 +69,7 @@ class ProfilesServiceTest {
                 previousProfileId = "p-prev",
             )
         )
-        val result = service.getProfiles(userId, from, to, auth, "")
+        val result = service.getProfiles(userId, auth, "")
         val p = result.profiles.first()
         assertEquals("p-xyz", p.id)
         assertEquals("ACTIVE", p.status)
@@ -84,11 +82,11 @@ class ProfilesServiceTest {
     @Test
     fun `getProfiles returns both ACTIVE and ARCHIVED when mixed`() = runTest {
         // Upstream already filters to ACTIVE+ARCHIVED — mock reflects that
-        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
+        coEvery { profilesPort.getProfiles(userId, auth, any()) } returns listOf(
             profile("p1", Profile.Status.ARCHIVED),
             profile("p2", Profile.Status.ACTIVE),
         )
-        val result = service.getProfiles(userId, from, to, auth, "")
+        val result = service.getProfiles(userId, auth, "")
         assertEquals(2, result.profiles.size)
         assertTrue(result.profiles.any { it.id == "p1" })
         assertTrue(result.profiles.any { it.id == "p2" })
@@ -96,7 +94,7 @@ class ProfilesServiceTest {
 
     @Test
     fun `getProfiles maps clinical fields including basal icr isf and targets`() = runTest {
-        coEvery { profilesClient.getProfiles(userId, auth, any()) } returns listOf(
+        coEvery { profilesPort.getProfiles(userId, auth, any()) } returns listOf(
             Profile(
                 id = "p-clinical", userId = userId, status = Profile.Status.ACTIVE,
                 name = "Clinical Profile", insulinType = "NovoRapid", durationOfAction = 240,
@@ -107,7 +105,7 @@ class ProfilesServiceTest {
                 targets = listOf(TargetSegment(startTime = "00:00", low = 72.0, high = 126.0)),
             )
         )
-        val result = service.getProfiles(userId, from, to, auth, "")
+        val result = service.getProfiles(userId, auth, "")
         val p = result.profiles.first()
         assertEquals("NovoRapid", p.insulinType)
         assertEquals(240, p.durationOfAction)

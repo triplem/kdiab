@@ -55,21 +55,21 @@ private data class MeasuresCacheKey(val userId: String, val from: String, val to
 private data class MeasuresCacheEntry(val measures: List<MeasureResponse>, val fetchedAt: Instant)
 
 class AnalyticsService(
-    private val measuresClient: MeasuresPort,
-    private val profilesClient: ProfilesPort,
-) {
+    private val measuresPort: MeasuresPort,
+    private val profilesPort: ProfilesPort,
+) : AnalyticsOperation {
     // In-process cache keyed by (userId, from, to). Avoids double-fetching when getHba1c and
     // getAgp are called in the same request burst for the same time window.
     private val measuresCache = ConcurrentHashMap<MeasuresCacheKey, MeasuresCacheEntry>()
 
 
-    suspend fun getAnalysisThresholds(
+    override suspend fun getAnalysisThresholds(
         userId: String,
         authorization: String,
         correlationId: String,
     ): Pair<Double, Double> {
         val activeProfile = runCatching {
-            profilesClient.getProfiles(userId, authorization, correlationId)
+            profilesPort.getProfiles(userId, authorization, correlationId)
                 .firstOrNull { it.status == Profile.Status.ACTIVE }
         }.getOrNull()
         val tirLow = activeProfile?.analysisLow ?: TIR_LOW
@@ -92,22 +92,23 @@ class AnalyticsService(
                 return entry.measures
             }
         }
-        val fresh = measuresClient.getMeasures(userId, authorization, correlationId, from, to)
+        val fresh = measuresPort.getMeasures(userId, authorization, correlationId, from, to)
         measuresCache[key] = MeasuresCacheEntry(measures = fresh, fetchedAt = now)
         // Evict entries older than the TTL to prevent unbounded growth.
         measuresCache.entries.removeIf { (_, v) -> now - v.fetchedAt >= CACHE_TTL_MINUTES.minutes }
         return fresh
     }
+
     @Suppress("LongParameterList")
-    suspend fun getHba1c(
+    override suspend fun getHba1c(
         userId: String,
         from: String,
         to: String,
         authorization: String,
         glucoseUnit: String,
         correlationId: String,
-        tirLow: Double = TIR_LOW,
-        tirHigh: Double = TIR_HIGH,
+        tirLow: Double,
+        tirHigh: Double,
     ): Hba1cResult {
         val fetchResult = try {
             fetchCgmReadings(userId, from, to, authorization, glucoseUnit, correlationId)
@@ -155,15 +156,15 @@ class AnalyticsService(
     }
 
     @Suppress("LongParameterList", "UnusedParameter")
-    suspend fun getAgp(
+    override suspend fun getAgp(
         userId: String,
         from: String,
         to: String,
         authorization: String,
         glucoseUnit: String,
         correlationId: String,
-        tirLow: Double = TIR_LOW,
-        tirHigh: Double = TIR_HIGH,
+        tirLow: Double,
+        tirHigh: Double,
     ): AgpResult {
         val allMeasures = try {
             getMeasuresCached(userId, from, to, authorization, correlationId)

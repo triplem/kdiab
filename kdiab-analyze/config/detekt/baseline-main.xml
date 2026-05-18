@@ -55,6 +55,7 @@
     <ID>EnumNaming:Profile.kt$Profile.Units$mmolSlashL : Units</ID>
     <ID>EnumNaming:WeightData.kt$WeightData.Unit$kg : Unit</ID>
     <ID>EnumNaming:WeightData.kt$WeightData.Unit$lbs : Unit</ID>
+    <ID>FunctionNaming:AnalyticsApi.kt$fun Route.AnalyticsApi()</ID>
     <ID>FunctionNaming:Configuration.kt$internal fun ApplicationCompressionConfiguration(): CompressionConfig.() -> Unit</ID>
     <ID>FunctionNaming:Configuration.kt$internal fun ApplicationHstsConfiguration(): HSTSConfig.() -> Unit</ID>
     <ID>FunctionNaming:DefaultApi.kt$fun Route.DefaultApi()</ID>
@@ -67,6 +68,7 @@
     <ID>MagicNumber:Configuration.kt$365</ID>
     <ID>MaxLineLength:AgpHourlyData.kt$*</ID>
     <ID>MaxLineLength:AgpResponse.kt$*</ID>
+    <ID>MaxLineLength:AnalyticsApi.kt$*</ID>
     <ID>MaxLineLength:AnalyticsService.kt$AnalyticsService$logger.warn(e) { "analytics_service action=getAgp status=upstream_error userId=$userId — returning empty result" }</ID>
     <ID>MaxLineLength:AnalyticsService.kt$AnalyticsService$logger.warn(e) { "analytics_service action=getHba1c status=upstream_error userId=$userId — returning empty result" }</ID>
     <ID>MaxLineLength:ApiAbstractions.kt$fun</ID>
@@ -75,6 +77,7 @@
     <ID>MaxLineLength:ApiClient.kt$ApiClient$protected suspend</ID>
     <ID>MaxLineLength:ApiClient.kt$ApiClient$protected suspend fun &lt;T: Any?> jsonRequest(requestConfig: RequestConfig&lt;T>, body: Any? = null, authNames: kotlin.collections.List&lt;String>): HttpResponse</ID>
     <ID>MaxLineLength:ApiClient.kt$ApiClient$val</ID>
+    <ID>MaxLineLength:BasalSegment.kt$*</ID>
     <ID>MaxLineLength:BffMapper.kt$tir = TirBreakdownDto(tir.veryLowCount, tir.belowCount, tir.inRangeCount, tir.aboveCount, tir.highCount, tir.totalCount)</ID>
     <ID>MaxLineLength:CircuitBreaker.kt$CircuitBreaker$logger.warn { "circuit_breaker service=$name failures=$count threshold=$failureThreshold reason=${cause.message}" }</ID>
     <ID>MaxLineLength:CreateProfileRequest.kt$CreateProfileRequest$*</ID>
@@ -90,23 +93,37 @@
     <ID>MaxLineLength:DefaultApi.kt$DefaultApi$*</ID>
     <ID>MaxLineLength:DefaultApi.kt$DefaultApi$open</ID>
     <ID>MaxLineLength:DefaultApi.kt$DefaultApi$open suspend</ID>
+    <ID>MaxLineLength:DeviceAgeResponse.kt$*</ID>
     <ID>MaxLineLength:DeviceAgeResponse.kt$DeviceAgeResponse$*</ID>
     <ID>MaxLineLength:DeviceStatusApi.kt$DeviceStatusApi$*</ID>
     <ID>MaxLineLength:DeviceStatusData.kt$DeviceStatusData$*</ID>
+    <ID>MaxLineLength:DeviceStatusResponse.kt$*</ID>
+    <ID>MaxLineLength:DeviceUsageResult.kt$*</ID>
+    <ID>MaxLineLength:DeviceUsageResult.kt$DeviceUsageResult$*</ID>
     <ID>MaxLineLength:ErrorResponse.kt$*</ID>
     <ID>MaxLineLength:HbA1cApi.kt$HbA1cApi$open</ID>
     <ID>MaxLineLength:Hba1cResponse.kt$*</ID>
     <ID>MaxLineLength:HttpResponse.kt$MappedBodyProvider$class</ID>
     <ID>MaxLineLength:MeasureType.kt$MeasureType$*</ID>
     <ID>MaxLineLength:Paths.kt$*</ID>
+    <ID>MaxLineLength:Paths.kt$Paths.getActiveProfiles$*</ID>
     <ID>MaxLineLength:Paths.kt$Paths.getActiveProfiles$@Resource("/users/{userId}/profiles/active")</ID>
+    <ID>MaxLineLength:Paths.kt$Paths.getAgp$*</ID>
     <ID>MaxLineLength:Paths.kt$Paths.getAgp$@Resource("/users/{userId}/analytics/agp")</ID>
+    <ID>MaxLineLength:Paths.kt$Paths.getDeviceAge$*</ID>
+    <ID>MaxLineLength:Paths.kt$Paths.getDeviceUsageAnalytics$*</ID>
+    <ID>MaxLineLength:Paths.kt$Paths.getDeviceUsageAnalytics$@Resource("/users/{userId}/analytics/device-usage")</ID>
+    <ID>MaxLineLength:Paths.kt$Paths.getHba1c$*</ID>
     <ID>MaxLineLength:Paths.kt$Paths.getHba1c$@Resource("/users/{userId}/analytics/hba1c")</ID>
+    <ID>MaxLineLength:Paths.kt$Paths.getLatestDeviceStatus$*</ID>
+    <ID>MaxLineLength:Paths.kt$Paths.getTimeline$*</ID>
     <ID>MaxLineLength:Paths.kt$Paths.getTimeline$@Resource("/users/{userId}/timeline")</ID>
     <ID>MaxLineLength:Profile.kt$Profile$*</ID>
     <ID>MaxLineLength:Profile.kt$Profile$/* Default carb absorption rate in grams per hour, used for carbs-on-board (COB) calculation when a treatment does not specify an explicit absorptionTime. Typical values: 10 g/hr (slow/high-fat meal), 20 g/hr (mixed meal), 40 g/hr (fast-acting carbs / juice). Defaults to 20.0 when null. */</ID>
     <ID>MaxLineLength:ProfileSummary.kt$*</ID>
     <ID>MaxLineLength:ProfilesResponse.kt$*</ID>
+    <ID>MaxLineLength:RatioSegment.kt$*</ID>
+    <ID>MaxLineLength:TargetSegment.kt$*</ID>
     <ID>MaxLineLength:TimelineMeasure.kt$*</ID>
     <ID>MaxLineLength:TimelineResponse.kt$*</ID>
     <ID>MaxLineLength:TimelineResponse.kt$TimelineResponse$*</ID>
@@ -122,8 +139,7 @@
     <ID>NewLineAtEndOfFile:OAuth.kt$org.javafreedom.kdiab.analyze.api.upstream.treatments.auth.OAuth.kt</ID>
     <ID>NoNameShadowing:ApiKeyAuth.kt$ApiKeyAuthenticationProvider$call</ID>
     <ID>RedundantSuspendModifier:ApiClient.kt$ApiClient$suspend</ID>
-    <ID>ReturnCount:AnalyticsService.kt$AnalyticsService$@Suppress("LongParameterList") suspend fun getHba1c( userId: String, from: String, to: String, authorization: String, glucoseUnit: String, correlationId: String, tirLow: Double = TIR_LOW, tirHigh: Double = TIR_HIGH, ): Hba1cResult</ID>
-    <ID>ReturnCount:AnalyticsService.kt$AnalyticsService$@Suppress("LongParameterList", "UnusedParameter") suspend fun getAgp( userId: String, from: String, to: String, authorization: String, glucoseUnit: String, correlationId: String, tirLow: Double = TIR_LOW, tirHigh: Double = TIR_HIGH, ): AgpResult</ID>
+    <ID>ReturnCount:AnalyticsService.kt$AnalyticsService$@Suppress("LongParameterList") override suspend fun getHba1c( userId: String, from: String, to: String, authorization: String, glucoseUnit: String, correlationId: String, tirLow: Double, tirHigh: Double, ): Hba1cResult</ID>
     <ID>TooGenericExceptionCaught:AnalyticsService.kt$AnalyticsService$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CircuitBreaker.kt$CircuitBreaker$e: Exception</ID>
     <ID>TooGenericExceptionThrown:ApiClient.kt$ApiClient$throw Exception("Authentication undefined: $authName")</ID>
@@ -135,19 +151,25 @@
     <ID>UnnecessarySafeCall:ApiClient.kt$ApiClient$authentications?.values</ID>
     <ID>UnnecessarySafeCall:DefaultApi.kt$DefaultApi$from?.apply { localVariableQuery["from"] = listOf("$from") }</ID>
     <ID>UnnecessarySafeCall:DefaultApi.kt$DefaultApi$to?.apply { localVariableQuery["to"] = listOf("$to") }</ID>
+    <ID>UnreachableCode:AnalyticsApi.kt$val exampleContentString = """{ "stddevSensorDays" : 6.027456183070403, "stddevReservoirDays" : 2.3021358869347655, "avgBatteryDays" : 7.061401241503109, "avgReservoirDays" : 5.637376656633329, "avgSensorDays" : 0.8008281904610115, "stddevCatheterDays" : 5.962133916683182, "userId" : "userId", "avgCatheterDays" : 1.4658129805029452, "stddevBatteryDays" : 9.301444243932576 }"""</ID>
+    <ID>UnreachableCode:AnalyticsApi.kt$val exampleContentType = "application/json"</ID>
+    <ID>UnreachableCode:AnalyticsApi.kt$val principal = null!!</ID>
+    <ID>UnreachableCode:AnalyticsApi.kt$when (exampleContentType) { "application/json" -> call.respondText(exampleContentType, ContentType.Application.Json) "application/xml" -> call.respondText(exampleContentString, ContentType.Text.Xml) else -> call.respondText(exampleContentString) }</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$byHour[hour].add(mgDl)</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$if (mgDl &lt;= 0.0) return@forEach</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$if (mgDl &lt;= 0.0) return@mapNotNull null</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$if (storageUnit != glucoseUnit) mismatchCount++</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$mgDl</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$val hour = t.toLocalDateTime(TimeZone.UTC).hour</ID>
-    <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * MMOL_TO_MGDL else sgv</ID>
+    <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * GLUCOSE_CONVERSION_FACTOR else sgv</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit</ID>
     <ID>UnreachableCode:AnalyticsService.kt$AnalyticsService$val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach</ID>
+    <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "catheterChangedAt" : "2026-05-14T10:30:00Z", "reservoirChangedAt" : "2026-05-13T08:00:00Z", "sensorInsertedAt" : "2026-05-12T18:00:00Z" }"""</ID>
     <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "measures" : [ { "id" : "id", "source" : "source", "type" : "type", "userId" : "userId", "timestamp" : "timestamp" }, { "id" : "id", "source" : "source", "type" : "type", "userId" : "userId", "timestamp" : "timestamp" } ], "treatments" : [ { "notes" : "notes", "id" : "id", "type" : "type", "userId" : "userId", "timestamp" : "timestamp" }, { "notes" : "notes", "id" : "id", "type" : "type", "userId" : "userId", "timestamp" : "timestamp" } ], "errors" : [ "errors", "errors" ] }"""</ID>
-    <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "profiles" : [ { "createdAt" : "createdAt", "archivedAt" : "2000-01-23T04:56:07.000+00:00", "previousProfileId" : "previousProfileId", "activatedAt" : "2000-01-23T04:56:07.000+00:00", "name" : "name", "id" : "id", "validFrom" : "validFrom", "status" : "status" }, { "createdAt" : "createdAt", "archivedAt" : "2000-01-23T04:56:07.000+00:00", "previousProfileId" : "previousProfileId", "activatedAt" : "2000-01-23T04:56:07.000+00:00", "name" : "name", "id" : "id", "validFrom" : "validFrom", "status" : "status" } ] }"""</ID>
+    <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "profiles" : [ { "insulinType" : "insulinType", "durationOfAction" : 0, "activatedAt" : "2000-01-23T04:56:07.000+00:00", "validFrom" : "validFrom", "basal" : [ { "startTime" : "06:00", "value" : 6.027456183070403 }, { "startTime" : "06:00", "value" : 6.027456183070403 } ], "targets" : [ { "high" : 5.637376656633329, "low" : 5.962133916683182, "startTime" : "00:00" }, { "high" : 5.637376656633329, "low" : 5.962133916683182, "startTime" : "00:00" } ], "createdAt" : "createdAt", "archivedAt" : "2000-01-23T04:56:07.000+00:00", "previousProfileId" : "previousProfileId", "name" : "name", "icr" : [ { "startTime" : "00:00", "value" : 1.4658129805029452 }, { "startTime" : "00:00", "value" : 1.4658129805029452 } ], "id" : "id", "isf" : [ { "startTime" : "00:00", "value" : 1.4658129805029452 }, { "startTime" : "00:00", "value" : 1.4658129805029452 } ], "status" : "status" }, { "insulinType" : "insulinType", "durationOfAction" : 0, "activatedAt" : "2000-01-23T04:56:07.000+00:00", "validFrom" : "validFrom", "basal" : [ { "startTime" : "06:00", "value" : 6.027456183070403 }, { "startTime" : "06:00", "value" : 6.027456183070403 } ], "targets" : [ { "high" : 5.637376656633329, "low" : 5.962133916683182, "startTime" : "00:00" }, { "high" : 5.637376656633329, "low" : 5.962133916683182, "startTime" : "00:00" } ], "createdAt" : "createdAt", "archivedAt" : "2000-01-23T04:56:07.000+00:00", "previousProfileId" : "previousProfileId", "name" : "name", "icr" : [ { "startTime" : "00:00", "value" : 1.4658129805029452 }, { "startTime" : "00:00", "value" : 1.4658129805029452 } ], "id" : "id", "isf" : [ { "startTime" : "00:00", "value" : 1.4658129805029452 }, { "startTime" : "00:00", "value" : 1.4658129805029452 } ], "status" : "status" } ] }"""</ID>
+    <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "pumpConnected" : true, "recordedAt" : "2026-05-16T10:00:00Z", "reservoirUnits" : 142.5, "id" : "3fa85f64-5717-4562-b3fc-2c963f66afa6", "userId" : "3fa85f64-5717-4562-b3fc-2c963f66afa6", "device" : "AAPS 3.2.0", "pumpName" : "Dana RS", "batteryLevel" : 87 }"""</ID>
     <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "readingCount" : 1, "warnings" : [ "warnings", "warnings" ], "meanGlucoseMgDl" : 6.027456183070403, "tir" : { "inRangeCount" : 2, "aboveCount" : 7, "veryLowCount" : 5, "belowCount" : 5, "highCount" : 9, "totalCount" : 3 }, "hba1c" : 0.8008281904610115 }"""</ID>
     <ID>UnreachableCode:DefaultApi.kt$val exampleContentString = """{ "totalReadingCount" : 9, "warnings" : [ "warnings", "warnings" ], "hourlyData" : [ { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 }, { "p25" : 1.4658129805029452, "hour" : 1, "median" : 5.962133916683182, "p90" : 2.3021358869347655, "count" : 7, "p10" : 6.027456183070403, "p75" : 5.637376656633329 } ], "sensorWearDays" : 3 }"""</ID>
     <ID>UnreachableCode:DefaultApi.kt$val exampleContentType = "application/json"</ID>
@@ -159,8 +181,11 @@
     <ID>UnreachableCode:TimelineService.kt$TimelineService$val measuredAt = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@mapNotNull null</ID>
     <ID>UnreachableCode:TimelineService.kt$TimelineService$val treatedAt = runCatching { Instant.parse(dto.treatedAt) }.getOrNull() ?: return@mapNotNull null</ID>
     <ID>UnreachableCode:TimelineService.kt$TimelineService$val uId = runCatching { Uuid.parse(dto.userId) }.getOrNull() ?: return@mapNotNull null</ID>
+    <ID>UnsafeCallOnNullableType:AnalyticsApi.kt$null!!</ID>
     <ID>UnsafeCallOnNullableType:DefaultApi.kt$null!!</ID>
     <ID>UnsafeCallOnNullableType:HttpBearerAuth.kt$HttpBearerAuth$upperCaseBearer(scheme)!!</ID>
+    <ID>UnusedPrivateProperty:AnalyticsApi.kt$val empty = mutableMapOf&lt;String, Any?>()</ID>
+    <ID>UnusedPrivateProperty:AnalyticsApi.kt$val principal = null!!</ID>
     <ID>UnusedPrivateProperty:DefaultApi.kt$val empty = mutableMapOf&lt;String, Any?>()</ID>
     <ID>UnusedPrivateProperty:DefaultApi.kt$val principal = null!!</ID>
     <ID>UseOrEmpty:HttpBasicAuth.kt$HttpBasicAuth$password ?: ""</ID>

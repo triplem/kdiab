@@ -20,9 +20,13 @@ import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
 import io.mockk.mockk
+import org.javafreedom.kdiab.analyze.application.service.AnalyticsOperation
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageOperation
 import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
+import org.javafreedom.kdiab.analyze.application.service.ProfilesOperation
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
+import org.javafreedom.kdiab.analyze.application.service.TimelineOperation
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 import org.javafreedom.kdiab.analyze.module
 import kotlin.test.Test
@@ -141,10 +145,10 @@ class BffTimelineIntegrationTest {
     }
 
     private fun ApplicationTestBuilder.setupApp(
-        timelineService: TimelineService? = null,
-        analyticsService: AnalyticsService? = null,
-        profilesService: ProfilesService? = null,
-        deviceUsageService: DeviceUsageService? = mockk(),
+        timelineService: TimelineOperation? = null,
+        analyticsService: AnalyticsOperation? = null,
+        profilesService: ProfilesOperation? = null,
+        deviceUsageService: DeviceUsageOperation? = mockk(),
     ) {
         environment {
             config = MapApplicationConfig(

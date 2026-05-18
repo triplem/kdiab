@@ -8,19 +8,19 @@ import org.javafreedom.kdiab.analyze.domain.model.RatioSegment
 import org.javafreedom.kdiab.analyze.domain.model.TargetSegment
 
 class ProfilesService(
-    private val profilesClient: ProfilesPort,
-) {
-    @Suppress("UnusedParameter")
-    suspend fun getProfiles(
+    private val profilesPort: ProfilesPort,
+) : ProfilesOperation {
+    // The upstream kdiab-profiles service does not support date-range filtering on its list
+    // endpoint, so `from` and `to` are not accepted here. Callers that receive profiles
+    // outside the requested window should filter client-side if needed.
+    override suspend fun getProfiles(
         userId: String,
-        from: String,
-        to: String,
         authorization: String,
         correlationId: String,
     ): ProfilesResult {
         // Upstream call already filters to ACTIVE and ARCHIVED via the status query param.
         // No in-memory filtering needed.
-        val profiles = profilesClient.getProfiles(userId, authorization, correlationId)
+        val profiles = profilesPort.getProfiles(userId, authorization, correlationId)
             .map { dto ->
                 ProfileSummary(
                     id = dto.id,
