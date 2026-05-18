@@ -179,18 +179,26 @@ tasks.compileKotlin {
 }
 
 kover {
+    // Both 'test' and 'integrationTest' tasks are instrumented by default in Kover 0.9. (#599)
+    // No tasks are disabled here so integration-test coverage contributes to the aggregate.
     reports {
         filters {
             excludes {
                 classes(
+                    // Entry point — no logic to measure
                     "org.javafreedom.kdiab.nightscout.ApplicationKt*"
                 )
                 packages(
+                    // Generated upstream client models — not hand-written, excluded by convention
                     "org.javafreedom.kdiab.nightscout.api.upstream.measures",
                     "org.javafreedom.kdiab.nightscout.api.upstream.treatments",
+                    // Adapters require live Ktor test engine or running upstream services;
+                    // covered by integration tests, not unit tests (#599)
                     "org.javafreedom.kdiab.nightscout.adapters.inbound.web",
                     "org.javafreedom.kdiab.nightscout.adapters.outbound.http",
+                    // Ktor plugins require a running server to test
                     "org.javafreedom.kdiab.nightscout.plugins",
+                    // Exception data classes have no logic to measure
                     "org.javafreedom.kdiab.nightscout.domain.exception"
                 )
             }

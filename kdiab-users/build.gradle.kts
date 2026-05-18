@@ -124,15 +124,25 @@ application {
 }
 
 kover {
+    // Both 'test' and 'integrationTest' tasks are instrumented by default in Kover 0.9. (#599)
+    // No tasks are disabled here so integration-test coverage contributes to the aggregate.
     reports {
         filters {
             excludes {
-                classes("org.javafreedom.kdiab.users.ApplicationKt*")
+                classes(
+                    // Entry point — no logic to measure
+                    "org.javafreedom.kdiab.users.ApplicationKt*"
+                )
                 packages(
+                    // Route handlers require auth+DB; covered by integration tests (#599)
                     "org.javafreedom.kdiab.users.adapters.inbound.web",
+                    // DB layer requires live Postgres; covered by integration tests (#599)
                     "org.javafreedom.kdiab.users.infrastructure.persistence",
+                    // Keycloak admin client requires live Keycloak; covered by integration tests
                     "org.javafreedom.kdiab.users.infrastructure.keycloak",
+                    // Ktor plugins require a running server to test
                     "org.javafreedom.kdiab.users.plugins",
+                    // Exception data classes have no logic to measure
                     "org.javafreedom.kdiab.users.domain.exception",
                 )
             }

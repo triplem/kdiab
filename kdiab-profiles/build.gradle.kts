@@ -186,6 +186,8 @@ application {
 }
 
 // Generate API Classes
+// Common defaults live in gradle/openapi-defaults.properties (#598).
+// Only service-specific values (spec path, packages, schema mappings) are declared here.
 openApiGenerate {
     generatorName.set("kotlin-server")
     inputSpec.set(layout.projectDirectory.file("api/openapi.yaml").asFile.path)
@@ -204,10 +206,11 @@ openApiGenerate {
     ))
     configOptions.set(mapOf(
         "library" to "ktor",
-        "dateLibrary" to "java8", 
+        "dateLibrary" to "java8",
         "serializationLibrary" to "kotlinx_serialization"
     ))
-    templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
+    // Shared template dir — all services use the same mustache overrides (#603)
+    templateDir.set(rootDir.parentFile.resolve("config/openapi-templates").path)
 }
 
 tasks.compileKotlin {
@@ -221,14 +224,19 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 kover {
+    // Both 'test' and 'integrationTest' tasks are instrumented by default in Kover 0.9. (#599)
+    // No tasks are disabled here so integration-test coverage contributes to the aggregate.
     reports {
         filters {
             excludes {
                 classes(
+                    // Entry point — no logic to measure
                     "org.javafreedom.kdiab.profiles.ApplicationKt*",
+                    // DB factory — requires a live Postgres; covered by integration tests
                     "org.javafreedom.kdiab.profiles.infrastructure.persistence.DatabaseFactory*"
                 )
                 packages(
+                    // Generated OpenAPI stubs — not hand-written, excluded by convention
                     "org.javafreedom.kdiab.profiles.api"
                 )
             }
