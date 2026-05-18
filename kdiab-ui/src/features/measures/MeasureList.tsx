@@ -8,26 +8,10 @@ import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import { ConfirmModal } from '../../components/ConfirmModal'
 import { renderDataSummary } from './measureHelpers'
+import type { MeasureResponse } from '../../api/measuresApi'
+import type { PagedMeasureResponse } from '../../api/generated/measures'
 
 const PAGE_SIZES = [5, 20, 50, 100] as const
-
-interface MeasureResponse {
-  id: string
-  userId: string
-  measuredAt: string
-  createdAt: string
-  type: string
-  source: string
-  status: string
-  data: Record<string, unknown>
-}
-
-interface PagedMeasures {
-  items: MeasureResponse[]
-  page: number
-  size: number
-  totalCount: number
-}
 
 interface MeasureListProps {
   userId: string
@@ -61,7 +45,7 @@ function toMgDl(value: number, unit: string): number {
 
 function getGlucoseZoneForMeasure(m: MeasureResponse): GlucoseZone {
   if (m.type !== 'CGM' && m.type !== 'BGM' && m.type !== 'BG_CHECK') return ''
-  const d = m.data as Record<string, unknown>
+  const d = m.data as unknown as Record<string, unknown>
   const raw = d['value']
   const val = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN
   if (isNaN(val)) return ''
@@ -111,7 +95,7 @@ export const MeasureList: React.FC<MeasureListProps> = ({
     queryFn: async () => {
       const status = showArchived ? 'ARCHIVED' : 'ACTIVE'
       const res = await measuresApi.listMeasures(userId, page, pageSize, status)
-      const paged = res.data as PagedMeasures
+      const paged = res.data as PagedMeasureResponse
       if (page === 0) {
         setMeasures(paged.items ?? [])
       } else {
@@ -432,7 +416,7 @@ export const MeasureList: React.FC<MeasureListProps> = ({
                       <button
                         className="btn outline"
                         style={{ marginRight: '5px', padding: '2px 8px', fontSize: '0.8rem' }}
-                        onClick={() => setEditTarget({ id: m.id, type: m.type, measuredAt: m.measuredAt, data: m.data })}
+                        onClick={() => setEditTarget({ id: m.id, type: m.type, measuredAt: m.measuredAt, data: m.data as unknown as Record<string, unknown> })}
                       >
                         {t('list.edit', { defaultValue: 'Edit' })}
                       </button>

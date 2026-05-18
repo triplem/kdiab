@@ -1,28 +1,13 @@
 import { axiosInstance } from './axiosInstance'
+import type { MeasureResponse, PagedMeasureResponse } from './generated/measures'
+
+export type { MeasureResponse }
 
 const BASE = '/api/measures/v1'
 
-interface MeasureResponse {
-  id: string
-  userId: string
-  measuredAt: string
-  createdAt: string
-  type: string
-  source: string
-  status: string
-  data: Record<string, unknown>
-}
-
-interface PagedMeasures {
-  items: MeasureResponse[]
-  page: number
-  size: number
-  totalCount: number
-}
-
 export const measuresApi = {
   listMeasures: (userId: string, page = 0, size = 50, status?: string) =>
-    axiosInstance.get<PagedMeasures>(`${BASE}/users/${userId}/measures`, {
+    axiosInstance.get<PagedMeasureResponse>(`${BASE}/users/${userId}/measures`, {
       params: { page, size, ...(status ? { status } : {}) },
     }),
   archiveMeasures: (userId: string, body: { measureIds: string[] }) =>

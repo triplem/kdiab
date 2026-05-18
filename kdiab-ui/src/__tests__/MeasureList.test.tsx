@@ -31,35 +31,25 @@ vi.mock('../components/ConfirmModal', () => ({
 }))
 
 import { measuresApi } from '../api/measuresApi'
+import type { MeasureResponse } from '../api/measuresApi'
 import { MeasureList } from '../features/measures/MeasureList'
 import { renderDataSummary } from '../features/measures/measureHelpers'
 
 const mockedListMeasures = vi.mocked(measuresApi.listMeasures)
 const mockedDeleteMeasures = vi.mocked(measuresApi.deleteMeasures)
 
-interface MeasureResponse {
-  id: string
-  userId: string
-  measuredAt: string
-  createdAt: string
-  type: string
-  source: string
-  status: string
-  data: Record<string, unknown>
-}
-
-function makeMeasure(overrides: Partial<MeasureResponse> = {}): MeasureResponse {
+function makeMeasure(overrides: Record<string, unknown> = {}): MeasureResponse {
   return {
     id: 'measure-1',
     userId: 'user-1',
     measuredAt: '2024-01-15T10:30:00Z',
     createdAt: '2024-01-15T10:30:00Z',
     type: 'CGM',
-    source: 'DEXCOM',
+    source: 'MANUAL',
     status: 'ACTIVE',
     data: { value: 120, unit: 'mg/dL', trend: 'Flat' },
     ...overrides,
-  }
+  } as unknown as MeasureResponse
 }
 
 function makePagedResponse(items: MeasureResponse[], totalCount = items.length) {
@@ -320,7 +310,7 @@ describe('MeasureList', () => {
 })
 
 describe('renderDataSummary', () => {
-  function makeMeasureForSummary(type: string, data: Record<string, unknown>) {
+  function makeMeasureForSummary(type: string, data: Record<string, unknown>): MeasureResponse {
     return {
       id: 'test',
       userId: 'u',
@@ -330,7 +320,7 @@ describe('renderDataSummary', () => {
       source: 'MANUAL',
       status: 'ACTIVE',
       data,
-    }
+    } as unknown as MeasureResponse
   }
 
   test('formats CGM reading with mg/dL unit and trend arrow', () => {

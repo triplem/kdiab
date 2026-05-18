@@ -1,13 +1,4 @@
-interface MeasureResponse {
-  id: string
-  userId: string
-  measuredAt: string
-  createdAt: string
-  type: string
-  source: string
-  status: string
-  data: Record<string, unknown>
-}
+import type { MeasureResponse } from '../../api/measuresApi'
 
 function trendToArrow(trend: string): string {
   const map: Record<string, string> = {
@@ -23,7 +14,7 @@ function trendToArrow(trend: string): string {
 }
 
 export const renderDataSummary = (m: MeasureResponse): string => {
-  const d = m.data as Record<string, unknown>
+  const d = m.data as unknown as Record<string, unknown>
   switch (m.type) {
     case 'CGM': {
       const trend = typeof d.trend === 'string' ? ` ${trendToArrow(d.trend)}` : ''
