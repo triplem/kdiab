@@ -21,21 +21,6 @@ import {
   WINDOWS,
 } from './basalUtils'
 
-// Re-export for backwards compatibility with existing test files
-export {
-  toDisplay,
-  glucoseColor,
-  trendArrow,
-  daysSince,
-  sensorExpiryLabel,
-  calcIOB,
-  calcCOB,
-  segToMin,
-  scheduledRateAt,
-  currentBasalRate,
-  reconstructBasalBlocks,
-} from './basalUtils'
-
 interface Props {
   userId: string
   glucoseUnit: string
