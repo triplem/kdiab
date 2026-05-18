@@ -91,6 +91,9 @@ testing {
 
             dependencies {
                 implementation(project())
+                // LiquibaseTestHelper runs migrations against H2 in integration tests.
+                // Not needed at runtime — the liquibase-carbs container handles production migrations.
+                implementation(libs.liquibase.core)
             }
 
             targets {
