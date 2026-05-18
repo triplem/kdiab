@@ -1,13 +1,4 @@
-interface MeasureResponse {
-  id: string
-  userId: string
-  measuredAt: string
-  createdAt: string
-  type: string
-  source: string
-  status: string
-  data: Record<string, unknown>
-}
+import type { MeasureResponse } from '../../api/measuresApi'
 
 function trendToArrow(trend: string): string {
   const map: Record<string, string> = {
