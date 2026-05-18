@@ -458,7 +458,8 @@ ON CONFLICT (profile_id) DO NOTHING;
 -- =============================================================================
 -- kdiab-users seed data
 --
--- user_settings: one row per user (sarah mg/dL, mike mmol/L, matching measures)
+-- user_settings: sarah (mg/dL), dr_house, dr_cameron, admin — mike intentionally omitted
+--   so that mike's first login exercises the "new user" path (no settings row exists yet).
 -- doctor_patient: dr_house→sarah, dr_cameron→mike (mirrors Keycloak assignments)
 -- =============================================================================
 

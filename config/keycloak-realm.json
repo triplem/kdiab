@@ -149,6 +149,20 @@
       "realmRoles": [
         "ADMIN"
       ]
+    },
+    {
+      "username": "service-account-kdiab-users-service",
+      "enabled": true,
+      "serviceAccountClientId": "kdiab-users-service",
+      "clientRoles": {
+        "realm-management": [
+          "view-users",
+          "query-users",
+          "manage-users",
+          "view-realm",
+          "query-groups"
+        ]
+      }
     }
   ],
   "clients": [
