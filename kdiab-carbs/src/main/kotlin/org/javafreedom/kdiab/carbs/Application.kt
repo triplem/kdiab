@@ -33,7 +33,8 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 fun Application.module(
     foodEntryService: FoodEntryService = FoodEntryService(ExposedFoodEntryRepository()),
-    initDatabase: Boolean = true
+    initDatabase: Boolean = true,
+    createSchema: Boolean = false,
 ) {
     configureCommonPlugins()
     configureStatusPages {
@@ -84,7 +85,7 @@ fun Application.module(
     }
 
     if (initDatabase) {
-        DatabaseFactory.init(environment.config)
+        DatabaseFactory.init(environment.config, createSchema = createSchema)
     }
 
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
