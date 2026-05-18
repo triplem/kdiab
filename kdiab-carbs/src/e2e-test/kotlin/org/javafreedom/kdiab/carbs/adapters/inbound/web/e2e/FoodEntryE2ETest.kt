@@ -73,7 +73,7 @@ class FoodEntryE2ETest : BehaviorSpec({
             then("GET /healthz returns 200 without authentication") {
                 testApplication {
                     environment { config = carbsConfig("e2e_carbs_health") }
-                    application { module() }
+                    application { module(createSchema = true) }
                     val response = client.get("/healthz")
                     response.status shouldBe HttpStatusCode.OK
                 }
@@ -84,7 +84,7 @@ class FoodEntryE2ETest : BehaviorSpec({
             then("they can create, list, update, and delete food entries") {
                 testApplication {
                     environment { config = carbsConfig("e2e_carbs_crud") }
-                    application { module() }
+                    application { module(createSchema = true) }
 
                     val client = createClient { install(ContentNegotiation) { json() } }
                     val sarahToken = generateJwt(userSarahId.toString(), listOf("PATIENT"))
@@ -156,7 +156,7 @@ class FoodEntryE2ETest : BehaviorSpec({
             then("GET /foods?q=rice returns only matching entries") {
                 testApplication {
                     environment { config = carbsConfig("e2e_carbs_search") }
-                    application { module() }
+                    application { module(createSchema = true) }
 
                     val client = createClient { install(ContentNegotiation) { json() } }
                     val sarahToken = generateJwt(userSarahId.toString(), listOf("PATIENT"))
@@ -188,7 +188,7 @@ class FoodEntryE2ETest : BehaviorSpec({
             then("they receive 403 Forbidden") {
                 testApplication {
                     environment { config = carbsConfig("e2e_carbs_403") }
-                    application { module() }
+                    application { module(createSchema = true) }
 
                     val client = createClient { install(ContentNegotiation) { json() } }
                     val sarahToken = generateJwt(userSarahId.toString(), listOf("PATIENT"))
@@ -205,7 +205,7 @@ class FoodEntryE2ETest : BehaviorSpec({
             then("they receive 401 Unauthorized") {
                 testApplication {
                     environment { config = carbsConfig("e2e_carbs_401") }
-                    application { module() }
+                    application { module(createSchema = true) }
 
                     val resp = client.get("/api/v1/users/$userSarahId/foods")
                     resp.status shouldBe HttpStatusCode.Unauthorized

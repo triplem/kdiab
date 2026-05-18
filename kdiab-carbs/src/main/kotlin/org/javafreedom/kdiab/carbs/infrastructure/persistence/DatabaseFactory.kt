@@ -4,7 +4,10 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.config.ApplicationConfig
+import org.javafreedom.kdiab.carbs.infrastructure.persistence.FoodEntriesTable
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 private val logger = KotlinLogging.logger {}
 
@@ -14,7 +17,9 @@ object DatabaseFactory {
     private const val MAX_LIFETIME_MS = 1_800_000L
     private const val LEAK_DETECTION_THRESHOLD_MS = 60_000L
 
-    fun init(config: ApplicationConfig) {
+    // createSchema is true only in E2E tests that embed the app with H2.
+    // In production the liquibase-carbs container creates the schema (DML-only app role).
+    fun init(config: ApplicationConfig, createSchema: Boolean = false) {
         val storageConfig = config.config("storage")
         val driverClassName = storageConfig.property("driverClassName").getString()
         val jdbcUrl = storageConfig.property("jdbcUrl").getString()
@@ -45,5 +50,9 @@ object DatabaseFactory {
         logger.info { "Connecting to database: $jdbcUrl" }
         val dataSource = HikariDataSource(hikariConfig)
         Database.connect(dataSource)
+
+        if (createSchema) {
+            transaction { SchemaUtils.create(FoodEntriesTable) }
+        }
     }
 }
