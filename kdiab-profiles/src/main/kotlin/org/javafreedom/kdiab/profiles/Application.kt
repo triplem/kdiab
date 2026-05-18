@@ -29,11 +29,8 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.plugins.swagger.*
 import io.ktor.server.resources.Resources
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
-import org.javafreedom.kdiab.common.plugins.configureLogging
-import org.javafreedom.kdiab.common.plugins.configureSecurity
+import org.javafreedom.kdiab.common.plugins.configureCommonPlugins
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
-import org.javafreedom.kdiab.common.plugins.configureTracing
-import org.javafreedom.kdiab.profiles.plugins.configureMetrics
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 
 private val logger = KotlinLogging.logger {}
@@ -46,10 +43,7 @@ fun Application.module(
         auditLogRepository: AuditLogRepository = ExposedAuditLogRepository(),
         initDatabase: Boolean = true
 ) {
-    configureTracing()
-    configureLogging()
-    configureMetrics()
-    configureSecurity()
+    configureCommonPlugins()
     configureStatusPages {
         exception<ExposedSQLException> { call, cause ->
             val sqlState = cause.cause?.let { (it as? java.sql.SQLException)?.sqlState }

@@ -19,12 +19,9 @@ import org.javafreedom.kdiab.calc.application.service.DoseCalculationService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.plugins.statuspages.*
 import org.javafreedom.kdiab.calc.domain.exception.UpstreamException
-import org.javafreedom.kdiab.calc.plugins.configureMetrics
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
-import org.javafreedom.kdiab.common.plugins.configureLogging
-import org.javafreedom.kdiab.common.plugins.configureSecurity
+import org.javafreedom.kdiab.common.plugins.configureCommonPlugins
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
-import org.javafreedom.kdiab.common.plugins.configureTracing
 
 private val logger = KotlinLogging.logger {}
 
@@ -41,10 +38,7 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 fun Application.module(
     doseCalculationService: DoseCalculationService? = null,
 ) {
-    configureTracing()
-    configureLogging()
-    configureMetrics()
-    configureSecurity()
+    configureCommonPlugins()
     configureStatusPages {
         exception<UpstreamException> { call, cause ->
             logger.error(cause) { "Upstream service error: ${cause.service}" }
