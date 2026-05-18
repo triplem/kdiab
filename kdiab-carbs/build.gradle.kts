@@ -63,8 +63,6 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.h2)
 
-    // Infrastructure
-    implementation(libs.liquibase.core)
     testImplementation(libs.kotlinx.coroutines.test)
 }
 
