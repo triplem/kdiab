@@ -41,7 +41,16 @@ fun Application.configureTracing() {
             }
         }
     } catch (e: Exception) {
-        logger.warn(e) { "OpenTelemetry autoconfigure failed — tracing disabled" }
+        // GlobalOpenTelemetry is a JVM-level singleton. In tests multiple Ktor applications
+        // start in the same JVM, so every application after the first hits this path.
+        // That is expected — log at DEBUG so test output stays clean.
+        val alreadySet = generateSequence<Throwable>(e) { it.cause }
+            .any { it is IllegalStateException && it.message?.contains("already been called") == true }
+        if (alreadySet) {
+            logger.debug { "OTel already initialised in this JVM — skipping duplicate registration" }
+        } else {
+            logger.warn(e) { "OpenTelemetry autoconfigure failed — tracing disabled" }
+        }
         return
     }
 

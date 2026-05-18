@@ -86,10 +86,10 @@ class DeviceUsageServiceTest {
         val result = service.compute(userId, 90, auth, correlationId)
 
         assertNotNull(result.avgSensorDays)
-        assertTrue(abs(result.avgSensorDays!! - 14.0) < 0.01, "Expected ~14 days, got ${result.avgSensorDays}")
+        assertTrue(abs(result.avgSensorDays - 14.0) < 0.01, "Expected ~14 days, got ${result.avgSensorDays}")
         assertNotNull(result.stddevSensorDays)
         // stddev of single value is 0
-        assertTrue(abs(result.stddevSensorDays!!) < 0.01, "Expected stddev=0 for single duration")
+        assertTrue(abs(result.stddevSensorDays) < 0.01, "Expected stddev=0 for single duration")
     }
 
     @Test
@@ -105,9 +105,9 @@ class DeviceUsageServiceTest {
         val result = service.compute(userId, 90, auth, correlationId)
 
         assertNotNull(result.avgCatheterDays)
-        assertTrue(abs(result.avgCatheterDays!! - 10.5) < 0.01, "Expected avg=10.5, got ${result.avgCatheterDays}")
+        assertTrue(abs(result.avgCatheterDays - 10.5) < 0.01, "Expected avg=10.5, got ${result.avgCatheterDays}")
         assertNotNull(result.stddevCatheterDays)
-        assertTrue(abs(result.stddevCatheterDays!! - 3.5) < 0.01, "Expected stddev=3.5, got ${result.stddevCatheterDays}")
+        assertTrue(abs(result.stddevCatheterDays - 3.5) < 0.01, "Expected stddev=3.5, got ${result.stddevCatheterDays}")
     }
 
     @Test
@@ -121,7 +121,7 @@ class DeviceUsageServiceTest {
         val result = service.compute(userId, 90, auth, correlationId)
 
         assertNotNull(result.avgBatteryDays)
-        assertTrue(abs(result.avgBatteryDays!! - 21.0) < 0.01, "Expected ~21 days, got ${result.avgBatteryDays}")
+        assertTrue(abs(result.avgBatteryDays - 21.0) < 0.01, "Expected ~21 days, got ${result.avgBatteryDays}")
         assertNull(result.avgSensorDays)
     }
 
@@ -136,7 +136,7 @@ class DeviceUsageServiceTest {
         val result = service.compute(userId, 90, auth, correlationId)
 
         assertNotNull(result.avgReservoirDays)
-        assertTrue(abs(result.avgReservoirDays!! - 3.0) < 0.01, "Expected ~3 days, got ${result.avgReservoirDays}")
+        assertTrue(abs(result.avgReservoirDays - 3.0) < 0.01, "Expected ~3 days, got ${result.avgReservoirDays}")
     }
 
     @Test

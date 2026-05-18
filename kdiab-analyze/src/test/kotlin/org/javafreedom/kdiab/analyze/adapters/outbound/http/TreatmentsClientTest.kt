@@ -53,7 +53,7 @@ class TreatmentsClientTest {
         val client = buildClient(engine)
         val result = client.getTreatments(userId, auth, correlationId)
         assertEquals(0, result.size)
-        assertEquals(1, (engine as MockEngine).requestHistory.size)
+        assertEquals(1, engine.requestHistory.size)
     }
 
     @Test
