@@ -17,6 +17,7 @@ dependencies {
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.call.id)
     implementation(libs.ktor.server.call.logging)
+    implementation(libs.ktor.server.metrics)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlin.logging)
     implementation(libs.opentelemetry.api)

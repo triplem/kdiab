@@ -1,4 +1,4 @@
-package org.javafreedom.kdiab.calc.plugins
+package org.javafreedom.kdiab.common.plugins
 
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet
@@ -26,6 +26,10 @@ fun Application.configureMetrics() {
 
     routing {
         get("/metrics") {
+            if (call.request.headers[HttpHeaders.Authorization] == null) {
+                call.respond(HttpStatusCode.Unauthorized)
+                return@get
+            }
             val sb = StringBuilder()
             registry.gauges.forEach { (name, gauge) ->
                 val n = sanitize(name)
