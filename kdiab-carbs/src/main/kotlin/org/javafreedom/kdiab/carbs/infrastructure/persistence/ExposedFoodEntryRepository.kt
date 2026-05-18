@@ -1,4 +1,3 @@
-@file:Suppress("WildcardImport", "MagicNumber", "MaxLineLength", "TooManyFunctions")
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.carbs.infrastructure.persistence
 
@@ -7,23 +6,33 @@ import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.carbs.domain.model.FoodEntry
 import org.javafreedom.kdiab.carbs.domain.model.FoodEntryStatus
 import org.javafreedom.kdiab.carbs.domain.repository.FoodEntryRepository
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.*
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.javatime.timestamp
 
+// NAME_MAX_LENGTH and STATUS_MAX_LENGTH define the DB column widths for food_entries.
+private const val NAME_MAX_LENGTH = 200
+private const val STATUS_MAX_LENGTH = 20
+
+// Wildcard imports are required: Exposed's query DSL (eq, and, lowerCase, like, selectAll, insert,
+// update, deleteWhere, etc.) is spread across multiple extension functions in exposed-core and
+// exposed-jdbc packages and cannot be imported individually without excessive boilerplate.
+
 object FoodEntriesTable : Table("food_entries") {
     val id = uuid("id")
     val userId = uuid("user_id")
-    val name = varchar("name", 200)
+    val name = varchar("name", NAME_MAX_LENGTH)
     val portionGrams = double("portion_grams")
     val carbsPer100g = double("carbs_per_100g")
-    val status = varchar("status", 20).default("ACTIVE")
+    val status = varchar("status", STATUS_MAX_LENGTH).default("ACTIVE")
     val createdAt = timestamp("created_at")
     val updatedAt = timestamp("updated_at")
 
@@ -90,18 +99,30 @@ class ExposedFoodEntryRepository(
     }
 
     override suspend fun save(entry: FoodEntry): FoodEntry = withContext(ioDispatcher) {
-        suspendTransaction {
-            FoodEntriesTable.insert {
-                it[FoodEntriesTable.id] = entry.id
-                it[FoodEntriesTable.userId] = entry.userId
-                it[FoodEntriesTable.name] = entry.name
-                it[FoodEntriesTable.portionGrams] = entry.portionGrams
-                it[FoodEntriesTable.carbsPer100g] = entry.carbsPer100g
-                it[FoodEntriesTable.status] = entry.status.name
-                it[FoodEntriesTable.createdAt] = java.time.Instant.ofEpochMilli(entry.createdAt.toEpochMilliseconds())
-                it[FoodEntriesTable.updatedAt] = java.time.Instant.ofEpochMilli(entry.updatedAt.toEpochMilliseconds())
+        try {
+            suspendTransaction {
+                FoodEntriesTable.insert {
+                    it[FoodEntriesTable.id] = entry.id
+                    it[FoodEntriesTable.userId] = entry.userId
+                    it[FoodEntriesTable.name] = entry.name
+                    it[FoodEntriesTable.portionGrams] = entry.portionGrams
+                    it[FoodEntriesTable.carbsPer100g] = entry.carbsPer100g
+                    it[FoodEntriesTable.status] = entry.status.name
+                    it[FoodEntriesTable.createdAt] =
+                        java.time.Instant.ofEpochMilli(entry.createdAt.toEpochMilliseconds())
+                    it[FoodEntriesTable.updatedAt] =
+                        java.time.Instant.ofEpochMilli(entry.updatedAt.toEpochMilliseconds())
+                }
+                entry
             }
-            entry
+        } catch (ex: ExposedSQLException) {
+            // SQL state 23505 = unique_violation; wrap in domain exception so callers
+            // only need to handle domain exceptions, not infrastructure-level SQL errors.
+            val sqlState = ex.cause?.let { (it as? java.sql.SQLException)?.sqlState }
+            if (sqlState == "23505") {
+                throw ConflictException("Food entry already exists: ${entry.id}", ex)
+            }
+            throw ex
         }
     }
 
