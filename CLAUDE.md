@@ -40,6 +40,10 @@ Each service follows the same stack and architecture conventions. All commands b
 ```
 Gradle output is in each service's `build/` directory. Use `--info` or `--parallel` flags as needed.
 
+> **Memory note (#613):** A full `./gradlew clean dockerBuild` launches one Kotlin compiler daemon per
+> included build. On machines with ≤ 8 GB RAM, pass `--no-parallel` to serialise them:
+> `./gradlew clean dockerBuild --no-parallel`
+
 ### Full Stack (Docker/Podman) — Root Compose
 The root `docker-compose.yml` starts the entire platform (all services + Keycloak + PostgreSQL):
 ```bash

@@ -1,3 +1,19 @@
+// ── Service list ──────────────────────────────────────────────────────────────
+// The eight backend services that produce runnable JARs and Docker images.
+// kdiab-common is a shared library included automatically as a substituted
+// dependency — it does not need its own build/check/clean invocation here.
+// (#600) Use a single list so adding/removing a service updates all tasks at once.
+val serviceBuilds = listOf(
+    "kdiab-measures",
+    "kdiab-profiles",
+    "kdiab-treatments",
+    "kdiab-analyze",
+    "kdiab-carbs",
+    "kdiab-calc",
+    "kdiab-nightscout",
+    "kdiab-users",
+)
+
 // ── Frontend (kdiab-ui npm) ────────────────────────────────────────────────────
 val buildFrontend by tasks.registering(Exec::class) {
     group = "build"
@@ -10,16 +26,7 @@ val buildFrontend by tasks.registering(Exec::class) {
 val buildBackends by tasks.registering {
     group = "build"
     description = "Builds all eight service backends via Gradle (no frontend)."
-    dependsOn(
-        gradle.includedBuild("kdiab-measures").task(":buildAll"),
-        gradle.includedBuild("kdiab-profiles").task(":buildAll"),
-        gradle.includedBuild("kdiab-treatments").task(":buildAll"),
-        gradle.includedBuild("kdiab-analyze").task(":buildAll"),
-        gradle.includedBuild("kdiab-carbs").task(":buildAll"),
-        gradle.includedBuild("kdiab-calc").task(":buildAll"),
-        gradle.includedBuild("kdiab-nightscout").task(":buildAll"),
-        gradle.includedBuild("kdiab-users").task(":buildAll"),
-    )
+    dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":buildAll") })
 }
 
 // ── Full build (backends + frontend) ──────────────────────────────────────────
@@ -33,16 +40,7 @@ tasks.register("build") {
 tasks.register("check") {
     group = "verification"
     description = "Runs all tests, detekt, and kover for all service backends."
-    dependsOn(
-        gradle.includedBuild("kdiab-measures").task(":checkAll"),
-        gradle.includedBuild("kdiab-profiles").task(":checkAll"),
-        gradle.includedBuild("kdiab-treatments").task(":checkAll"),
-        gradle.includedBuild("kdiab-analyze").task(":checkAll"),
-        gradle.includedBuild("kdiab-carbs").task(":checkAll"),
-        gradle.includedBuild("kdiab-calc").task(":checkAll"),
-        gradle.includedBuild("kdiab-nightscout").task(":checkAll"),
-        gradle.includedBuild("kdiab-users").task(":checkAll"),
-    )
+    dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":checkAll") })
 }
 
 // ── Clean ─────────────────────────────────────────────────────────────────────
@@ -56,20 +54,14 @@ val cleanFrontend by tasks.registering(Exec::class) {
 tasks.register("clean") {
     group = "build"
     description = "Deletes build outputs for all service backends and the kdiab-ui frontend."
-    dependsOn(
-        cleanFrontend,
-        gradle.includedBuild("kdiab-measures").task(":cleanAll"),
-        gradle.includedBuild("kdiab-profiles").task(":cleanAll"),
-        gradle.includedBuild("kdiab-treatments").task(":cleanAll"),
-        gradle.includedBuild("kdiab-analyze").task(":cleanAll"),
-        gradle.includedBuild("kdiab-carbs").task(":cleanAll"),
-        gradle.includedBuild("kdiab-calc").task(":cleanAll"),
-        gradle.includedBuild("kdiab-nightscout").task(":cleanAll"),
-        gradle.includedBuild("kdiab-users").task(":cleanAll"),
-    )
+    dependsOn(cleanFrontend)
+    dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":cleanAll") })
 }
 
 // ── Docker ────────────────────────────────────────────────────────────────────
+// (#613) Docker images are built sequentially in a single podman compose call to avoid
+// running multiple compose build processes in parallel, which can exhaust available RAM.
+// For a full sequential build use: ./gradlew clean dockerBuild --no-parallel
 tasks.register<Exec>("dockerBuild") {
     group = "podman"
     description = "Builds all kdiab Docker images via docker compose. JARs are pre-built by buildBackends."

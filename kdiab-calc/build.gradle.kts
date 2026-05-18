@@ -173,6 +173,8 @@ application {
     mainClass.set("org.javafreedom.kdiab.calc.ApplicationKt")
 }
 
+// Common defaults live in gradle/openapi-defaults.properties (#598).
+// Only service-specific values (spec path, packages, schema mappings) are declared here.
 openApiGenerate {
     generatorName.set("kotlin-server")
     inputSpec.set(layout.projectDirectory.file("api/openapi.yaml").asFile.path)
@@ -194,7 +196,8 @@ openApiGenerate {
         "dateLibrary" to "java8",
         "serializationLibrary" to "kotlinx_serialization"
     ))
-    templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
+    // Shared template dir — all services use the same mustache overrides (#603)
+    templateDir.set(rootDir.parentFile.resolve("config/openapi-templates").path)
 }
 
 val generateProfilesModels by tasks.registering(GenerateTask::class) {
@@ -225,17 +228,22 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 kover {
+    // Both 'test' and 'integrationTest' tasks are instrumented by default in Kover 0.9. (#599)
+    // No tasks are disabled here so integration-test coverage contributes to the aggregate.
     reports {
         filters {
             excludes {
                 classes(
+                    // Entry point — no logic to measure
                     "org.javafreedom.kdiab.calc.ApplicationKt*"
                 )
                 packages(
+                    // Generated OpenAPI stubs — not hand-written, excluded by convention
                     "org.javafreedom.kdiab.calc.api",
+                    // Generated upstream client models — not hand-written, excluded by convention
                     "org.javafreedom.kdiab.calc.api.upstream.profiles.models",
                     // Adapters require live Ktor test engine or running upstream services;
-                    // covered by integration/e2e tests, not unit tests
+                    // covered by integration/e2e tests, not unit tests (#599)
                     "org.javafreedom.kdiab.calc.adapters.inbound.web",
                     "org.javafreedom.kdiab.calc.adapters.outbound.http",
                     // Ktor plugins require a running server to test

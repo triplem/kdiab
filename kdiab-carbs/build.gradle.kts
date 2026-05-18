@@ -175,6 +175,8 @@ application {
 }
 
 // Generate API Classes
+// Common defaults live in gradle/openapi-defaults.properties (#598).
+// Only service-specific values (spec path, packages, schema mappings) are declared here.
 openApiGenerate {
     generatorName.set("kotlin-server")
     inputSpec.set(layout.projectDirectory.file("api/openapi.yaml").asFile.path)
@@ -185,7 +187,7 @@ openApiGenerate {
     typeMappings.set(mapOf(
         "UUID" to "kotlin.String",
         "date-time" to "kotlin.String",
-        "number" to "kotlin.Double"
+        "number" to "kotlin.Double"   // carbs-specific: food quantities use Double
     ))
     globalProperties.set(mapOf(
         "models" to "",
@@ -197,7 +199,8 @@ openApiGenerate {
         "dateLibrary" to "java8",
         "serializationLibrary" to "kotlinx_serialization"
     ))
-    templateDir.set(layout.projectDirectory.dir("openapi-templates").asFile.path)
+    // Shared template dir — all services use the same mustache overrides (#603)
+    templateDir.set(rootDir.parentFile.resolve("config/openapi-templates").path)
 }
 
 tasks.compileKotlin {
@@ -211,28 +214,33 @@ tasks.named<ProcessResources>("processResources") {
 }
 
 kover {
+    // Both 'test' and 'integrationTest' tasks are instrumented by default in Kover 0.9. (#599)
+    // No tasks are disabled here so integration-test coverage contributes to the aggregate.
     reports {
         filters {
             excludes {
                 classes(
+                    // Entry point — no logic to measure
                     "org.javafreedom.kdiab.carbs.ApplicationKt*",
+                    // DB factory — requires a live Postgres; covered by integration tests
                     "org.javafreedom.kdiab.carbs.infrastructure.persistence.DatabaseFactory*",
-                    // DB-layer classes require a live database; covered by integration tests
+                    // DB-layer classes require a live database; covered by integration tests (#599)
                     "org.javafreedom.kdiab.carbs.infrastructure.persistence.ExposedFoodEntryRepository*",
                     "org.javafreedom.kdiab.carbs.infrastructure.persistence.FoodEntriesTable*",
-                    // Route handlers require auth+DB; covered by integration/e2e tests
+                    // Route handlers require auth+DB; covered by integration/e2e tests (#599)
                     "org.javafreedom.kdiab.carbs.adapters.inbound.web.FoodEntryRoutesKt*",
                     "org.javafreedom.kdiab.carbs.adapters.inbound.web.PagedFoodResponseDto*",
-                    // Plugin infrastructure — tested via integration
+                    // Plugin infrastructure — Ktor plugins require a running server; tested via integration
                     "org.javafreedom.kdiab.carbs.plugins.StatusPagesKt*",
                     "org.javafreedom.kdiab.carbs.plugins.SecurityKt*",
                     "org.javafreedom.kdiab.carbs.plugins.UserPrincipal*",
                     "org.javafreedom.kdiab.carbs.plugins.ErrorResponse*",
-                    // Domain exceptions and Role are trivial value types
+                    // Domain exceptions and Role are trivial value types with no branching logic
                     "org.javafreedom.kdiab.carbs.domain.exception.*",
                     "org.javafreedom.kdiab.carbs.domain.model.Role*"
                 )
                 packages(
+                    // Generated OpenAPI stubs — not hand-written, excluded by convention
                     "org.javafreedom.kdiab.carbs.api"
                 )
             }
