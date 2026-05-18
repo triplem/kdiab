@@ -14,7 +14,7 @@ function trendToArrow(trend: string): string {
 }
 
 export const renderDataSummary = (m: MeasureResponse): string => {
-  const d = m.data as Record<string, unknown>
+  const d = m.data as unknown as Record<string, unknown>
   switch (m.type) {
     case 'CGM': {
       const trend = typeof d.trend === 'string' ? ` ${trendToArrow(d.trend)}` : ''

@@ -45,7 +45,7 @@ function toMgDl(value: number, unit: string): number {
 
 function getGlucoseZoneForMeasure(m: MeasureResponse): GlucoseZone {
   if (m.type !== 'CGM' && m.type !== 'BGM' && m.type !== 'BG_CHECK') return ''
-  const d = m.data as Record<string, unknown>
+  const d = m.data as unknown as Record<string, unknown>
   const raw = d['value']
   const val = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN
   if (isNaN(val)) return ''
@@ -416,7 +416,7 @@ export const MeasureList: React.FC<MeasureListProps> = ({
                       <button
                         className="btn outline"
                         style={{ marginRight: '5px', padding: '2px 8px', fontSize: '0.8rem' }}
-                        onClick={() => setEditTarget({ id: m.id, type: m.type, measuredAt: m.measuredAt, data: m.data })}
+                        onClick={() => setEditTarget({ id: m.id, type: m.type, measuredAt: m.measuredAt, data: m.data as unknown as Record<string, unknown> })}
                       >
                         {t('list.edit', { defaultValue: 'Edit' })}
                       </button>

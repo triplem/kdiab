@@ -52,7 +52,7 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
   useEffect(() => {
     if (!cgmData?.data?.items) return
     const cgmReadings = cgmData.data.items
-      .filter((m) => m.type === 'CGM' && typeof m.data['value'] === 'number')
+      .filter((m) => m.type === 'CGM' && typeof (m.data as unknown as Record<string, unknown>)['value'] === 'number')
       .sort((a, b) => new Date(b.measuredAt).getTime() - new Date(a.measuredAt).getTime())
     const latest = cgmReadings[0]
     if (!latest) return
@@ -62,10 +62,11 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
     setCgmAgeMin(ageMin)
 
     if (ageMin <= CGM_STALE_MIN) {
-      const displayBg = toDisplay(latest.data['value'] as number, glucoseUnit)
+      const latestData = latest.data as unknown as Record<string, unknown>
+      const displayBg = toDisplay(latestData['value'] as number, glucoseUnit)
       setCurrentBg(String(displayBg))
 
-      const cgmTrend = latest.data['trend'] as string | undefined
+      const cgmTrend = latestData['trend'] as string | undefined
       if (cgmTrend && CGM_TRENDS.some((tr) => tr.value === cgmTrend)) {
         setTrend(cgmTrend)
       }
