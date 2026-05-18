@@ -4,6 +4,7 @@ package org.javafreedom.kdiab.treatments.adapters.inbound.web
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.client.request.*
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -168,6 +169,19 @@ class TreatmentRoutesTest {
             bearerAuth(sarahToken)
         }
         assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `list treatments - 200 type filter returns PagedTreatmentResponse object`() = routeTest { repo ->
+        coEvery { repo.findByUserIdAndType(Uuid.parse(SARAH_ID), any(), any(), any(), any()) } returns listOf(testTreatment())
+        val resp = client.get("/api/v1/users/$SARAH_ID/treatments?type=BOLUS") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+        val body = resp.bodyAsText()
+        assert(body.trimStart().startsWith("{")) { "Expected JSON object but got: $body" }
+        assert(body.contains("\"items\"")) { "Expected 'items' field in paged response: $body" }
+        assert(body.contains("\"totalCount\"")) { "Expected 'totalCount' field in paged response: $body" }
     }
 
     @Test
