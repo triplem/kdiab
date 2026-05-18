@@ -85,7 +85,13 @@ private fun Route.listTreatments(treatmentService: TreatmentService, auditLogRep
         if (params.type != null) {
             val treatmentType = org.javafreedom.kdiab.treatments.domain.model.TreatmentType.valueOf(params.type.name)
             val treatments = treatmentService.getTreatmentsByType(targetUserId, treatmentType, from, to, status)
-            call.respond(treatments.map { it.toApi() })
+            val apiItems = treatments.map { it.toApi() }
+            call.respond(PagedTreatmentResponse(
+                items = apiItems,
+                page = 0,
+                size = apiItems.size,
+                totalCount = apiItems.size.toLong(),
+            ))
         } else {
             val paged = treatmentService.getTreatments(targetUserId, from, to, status, page, size)
             call.respond(PagedTreatmentResponse(

@@ -88,12 +88,14 @@ class TreatmentE2ETest : BehaviorSpec({
                     onePaged["items"]!!.jsonArray.size shouldBe 1
                     onePaged["totalCount"]!!.jsonPrimitive.content.toLong() shouldBe 1L
 
-                    // 4. Type filter CARBS → empty (type filter returns plain array)
+                    // 4. Type filter CARBS → empty (returns PagedTreatmentResponse)
                     val listCarbs = client.get("/api/v1/users/$SARAH_ID/treatments?type=CARBS") {
                         bearerAuth(sarahToken)
                     }
                     listCarbs.status shouldBe HttpStatusCode.OK
-                    Json.decodeFromString<List<JsonObject>>(listCarbs.bodyAsText()).size shouldBe 0
+                    val carbsPaged = Json.decodeFromString<JsonObject>(listCarbs.bodyAsText())
+                    carbsPaged["items"]!!.jsonArray.size shouldBe 0
+                    carbsPaged["totalCount"]!!.jsonPrimitive.content.toLong() shouldBe 0L
 
                     // 5. Delete → 200
                     val delete = client.post("/api/v1/users/$SARAH_ID/treatments/delete") {
