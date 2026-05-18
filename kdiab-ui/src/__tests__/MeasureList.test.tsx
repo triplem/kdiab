@@ -31,7 +31,8 @@ vi.mock('../components/ConfirmModal', () => ({
 }))
 
 import { measuresApi } from '../api/measuresApi'
-import { MeasureList, renderDataSummary } from '../features/measures/MeasureList'
+import { MeasureList } from '../features/measures/MeasureList'
+import { renderDataSummary } from '../features/measures/measureHelpers'
 
 const mockedListMeasures = vi.mocked(measuresApi.listMeasures)
 const mockedDeleteMeasures = vi.mocked(measuresApi.deleteMeasures)

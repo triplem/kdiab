@@ -93,6 +93,7 @@ export function TimeframePicker({ value, onChange }: Props) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function defaultTimeframe(): Timeframe {
   return presetToTimeframe('7d')
 }
