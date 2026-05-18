@@ -21,6 +21,11 @@ liquibase = "5.0.2"
 kotlinx-coroutines = "1.10.2"
 cyclonedx = "3.2.2"
 opentelemetry = "1.51.0"
+# The -alpha suffix on opentelemetry-instrumentation is intentional and permanent.
+# The OTel project keeps framework-specific instrumentation libraries (Ktor, Exposed, etc.)
+# in -alpha because they instrument framework internals that change between major versions.
+# No stable GA release exists for opentelemetry-ktor-*; this is an upstream policy decision,
+# not a sign the library is unsuitable for production. Do not remove the -alpha suffix.
 opentelemetry-instrumentation = "2.27.0-alpha"
 
 [libraries]
@@ -70,6 +75,7 @@ opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref
 opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
 opentelemetry-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }
 opentelemetry-semconv = { module = "io.opentelemetry.semconv:opentelemetry-semconv", version = "1.30.1" }
+# Uses opentelemetry-instrumentation (-alpha); see version note above.
 opentelemetry-ktor = { module = "io.opentelemetry.instrumentation:opentelemetry-ktor-3.0-jvm", version.ref = "opentelemetry-instrumentation" }
 
 [plugins]
