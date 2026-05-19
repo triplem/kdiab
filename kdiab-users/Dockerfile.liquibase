@@ -1,4 +1,4 @@
-FROM liquibase/liquibase:4.20
+FROM liquibase/liquibase:5.0
 
 COPY src/main/resources/db /liquibase/db
 
