@@ -81,7 +81,7 @@ services:
       KC_TRACING_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
     volumes:
       - ./config/keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
-      - ./kdiab-measures/config/keycloak-theme:/opt/keycloak/themes/kdiab:ro
+      - ./config/keycloak-theme:/opt/keycloak/themes/kdiab:ro
     ports:
       - "127.0.0.1:8081:8080"
     networks:

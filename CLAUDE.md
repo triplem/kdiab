@@ -195,6 +195,12 @@ config/
   keycloak-realm.json          # Unified Keycloak realm "kdiab" used by root docker-compose.yml.
                                # Contains all clients, roles, and test users. The kdiab-analyze-frontend
                                # client has 6 audience mappers (analyze, measure, profile, treatment, carbs, calc).
+                               # See config/keycloak-realm.README.md for the production vs test-data boundary.
+  keycloak-realm.README.md     # Documents production config vs test-data boundary; explains why the realm
+                               # is one file (Keycloak --import-realm does not support partial imports).
+  keycloak-theme/              # Custom Keycloak login theme (mounted as /opt/keycloak/themes/kdiab).
+    login/                     # login.ftl, template.ftl, theme.properties, resources/css/login.css,
+                               # login-update-password.ftl, login-update-profile.ftl
   postgres/
     01-init-databases.sh       # Creates kdiab-measures, kdiab-profiles, kdiab-treatments, kdiab-carbs databases.
                                # Runs once on first Postgres startup via docker-entrypoint-initdb.d.
