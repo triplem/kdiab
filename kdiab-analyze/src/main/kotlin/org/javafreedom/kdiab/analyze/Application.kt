@@ -6,7 +6,6 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.swagger.*
@@ -37,7 +36,10 @@ import org.javafreedom.kdiab.common.plugins.HTTP_RETRY_MAX_DELAY_MS_DEFAULT
 import org.javafreedom.kdiab.common.plugins.HTTP_RETRY_MAX_RETRIES_DEFAULT
 import org.javafreedom.kdiab.common.plugins.HTTP_SERVER_ERROR_STATUS
 import org.javafreedom.kdiab.common.plugins.HTTP_SOCKET_TIMEOUT_MS_DEFAULT
+import org.javafreedom.kdiab.common.plugins.HealthService
 import org.javafreedom.kdiab.common.plugins.configureCommonPlugins
+import org.javafreedom.kdiab.common.plugins.configureContentNegotiation
+import org.javafreedom.kdiab.common.plugins.configureHealth
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 
 private val logger = KotlinLogging.logger {}
@@ -66,18 +68,20 @@ fun Application.module(
         }
     }
 
+    // Always emit null fields so the frontend receives `null` instead of `undefined`
+    // when optional DeviceUsageResult fields have no data (e.g. no battery events).
+    configureContentNegotiation { explicitNulls = true }
+
+    // Build the shared Json instance for the HTTP client (must match server serialisation).
     val prettyPrint = environment.config.propertyOrNull("json.prettyPrint")
         ?.getString()?.toBoolean() ?: false
     val json = Json {
         this.prettyPrint = prettyPrint
         ignoreUnknownKeys = true
-        // Always emit null fields so the frontend receives `null` instead of `undefined`
-        // when optional DeviceUsageResult fields have no data (e.g. no battery events).
         explicitNulls = true
     }
 
     install(Resources)
-    install(ContentNegotiation) { json(json) }
 
     val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
         ?.getString()?.split(",")?.map { it.trim() }
@@ -164,24 +168,23 @@ fun Application.module(
         resolvedTreatmentsClient = realTreatmentsClient
     }
 
+    // Upstream-aware health check: verify all upstream /healthz endpoints when running in prod mode.
+    val capturedHealthClient = healthClient
+    val capturedUrls = upstreamHealthUrls
+    configureHealth(HealthService {
+        if (capturedHealthClient == null || capturedUrls.isEmpty()) {
+            true
+        } else {
+            capturedUrls.all { url ->
+                runCatching { capturedHealthClient.get(url).status.isSuccess() }.getOrDefault(false)
+            }
+        }
+    })
+
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
 
     routing {
         get("/") { call.respondText("kdiab BFF is running!") }
-        get("/healthz") { call.respond(HttpStatusCode.OK) }
-        get("/readyz") {
-            val client = healthClient
-            if (client == null || upstreamHealthUrls.isEmpty()) {
-                call.respond(HttpStatusCode.OK)
-            } else {
-                val allReady = upstreamHealthUrls.all { url ->
-                    runCatching { client.get(url).status.isSuccess() }
-                        .getOrDefault(false)
-                }
-                if (allReady) call.respond(HttpStatusCode.OK)
-                else call.respond(HttpStatusCode.ServiceUnavailable)
-            }
-        }
 
         route("/api/v1") {
             bffRoutes(

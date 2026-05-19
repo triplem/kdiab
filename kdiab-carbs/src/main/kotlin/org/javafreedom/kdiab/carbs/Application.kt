@@ -1,11 +1,7 @@
 package org.javafreedom.kdiab.carbs
 
 import io.ktor.http.*
-import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.engine.*
-import io.ktor.server.netty.*
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.swagger.*
@@ -14,13 +10,15 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.javafreedom.kdiab.carbs.adapters.inbound.web.foodEntryRoutes
 import org.javafreedom.kdiab.carbs.application.service.FoodEntryService
 import org.javafreedom.kdiab.carbs.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.carbs.infrastructure.persistence.ExposedFoodEntryRepository
+import org.javafreedom.kdiab.common.plugins.DefaultHealthService
 import org.javafreedom.kdiab.common.plugins.configureCommonPlugins
+import org.javafreedom.kdiab.common.plugins.configureContentNegotiation
+import org.javafreedom.kdiab.common.plugins.configureHealth
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
@@ -32,16 +30,7 @@ fun Application.module(
 ) {
     configureCommonPlugins()
     configureStatusPages()
-    val prettyPrint = environment.config.propertyOrNull("json.prettyPrint")
-        ?.getString()?.toBoolean() ?: false
-    install(ContentNegotiation) {
-        json(
-            Json {
-                this.prettyPrint = prettyPrint
-                ignoreUnknownKeys = true
-            }
-        )
-    }
+    configureContentNegotiation()
     install(Resources)
     val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
         ?.getString()?.split(",")?.map { it.trim() }
@@ -69,18 +58,17 @@ fun Application.module(
         DatabaseFactory.init(environment.config, createSchema = createSchema)
     }
 
+    configureHealth(DefaultHealthService {
+        withContext(Dispatchers.IO) {
+            transaction { exec("SELECT 1") }
+            true
+        }
+    })
+
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
 
     routing {
         get("/") { call.respondText("T1D Carbs Service is running!") }
-        get("/healthz") { call.respond(io.ktor.http.HttpStatusCode.OK) }
-        get("/readyz") {
-            val ready = withContext(Dispatchers.IO) {
-                runCatching { transaction { exec("SELECT 1") } }.isSuccess
-            }
-            if (ready) call.respond(HttpStatusCode.OK)
-            else call.respond(HttpStatusCode.ServiceUnavailable)
-        }
 
         route("/api/v1") {
             foodEntryRoutes(foodEntryService)
