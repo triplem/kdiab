@@ -466,6 +466,8 @@ ON CONFLICT (profile_id) DO NOTHING;
 \c "kdiab-users"
 
 -- ── User Settings ─────────────────────────────────────────────────────────────
+-- ISO 8601 helper: produces '2025-11-19T12:34:56.789012Z' — required because
+-- the created_at/updated_at columns are varchar(50) and Instant.parse() expects T not space.
 INSERT INTO user_settings(user_id, timezone, language, time_format, glucose_unit, weight_unit,
                           alarm_urgent_high, alarm_high, alarm_low, alarm_urgent_low,
                           created_at, updated_at)
@@ -473,23 +475,28 @@ VALUES
   -- sarah: mg/dL, European defaults, German locale
   ('11111111-1111-1111-1111-111111111111', 'Europe/Berlin', 'de', 24, 'mg/dL', 'kg',
    250, 180, 70, 54,
-   NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days'),
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')),
   -- mike: mmol/L, US defaults, English locale
   ('22222222-2222-2222-2222-222222222222', 'America/New_York', 'en', 12, 'mmol/L', 'lb',
    13, 10, 3.9, 3,
-   NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days'),
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')),
   -- dr_house
   ('33333333-3333-3333-3333-333333333333', 'America/New_York', 'en', 12, 'mg/dL', 'lb',
    NULL, NULL, NULL, NULL,
-   NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days'),
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')),
   -- dr_cameron
   ('44444444-4444-4444-4444-444444444444', 'America/New_York', 'en', 12, 'mg/dL', 'lb',
    NULL, NULL, NULL, NULL,
-   NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days'),
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')),
   -- admin
   ('55555555-5555-5555-5555-555555555555', 'UTC', 'en', 24, 'mg/dL', 'kg',
    NULL, NULL, NULL, NULL,
-   NOW() - INTERVAL '90 days', NOW() - INTERVAL '90 days')
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'))
 ON CONFLICT (user_id) DO NOTHING;
 
 -- ── Doctor–Patient Assignments ────────────────────────────────────────────────
@@ -497,8 +504,8 @@ INSERT INTO doctor_patient(doctor_id, patient_id, created_at)
 VALUES
   -- dr_house is assigned to sarah
   ('33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111',
-   NOW() - INTERVAL '90 days'),
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')),
   -- dr_cameron is assigned to mike
   ('44444444-4444-4444-4444-444444444444', '22222222-2222-2222-2222-222222222222',
-   NOW() - INTERVAL '90 days')
+   TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'))
 ON CONFLICT (doctor_id, patient_id) DO NOTHING;

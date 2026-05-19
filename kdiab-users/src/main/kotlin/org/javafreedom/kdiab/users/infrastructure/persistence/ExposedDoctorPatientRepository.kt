@@ -4,7 +4,6 @@ package org.javafreedom.kdiab.users.infrastructure.persistence
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
@@ -38,7 +37,7 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
                         DoctorPatientRelation(
                             doctorId = doctorId,
                             patientId = Uuid.parse(row[DoctorPatientTable.patientId]),
-                            createdAt = Instant.parse(row[DoctorPatientTable.createdAt]),
+                            createdAt = row[DoctorPatientTable.createdAt].parseInstant(),
                         )
                     }
             }
