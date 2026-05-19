@@ -1,4 +1,4 @@
-package org.javafreedom.kdiab.analyze.adapters.outbound.http
+package org.javafreedom.kdiab.common.plugins
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.util.concurrent.atomic.AtomicBoolean
@@ -30,6 +30,7 @@ class CircuitBreaker(
     val name: String,
     private val failureThreshold: Int = DEFAULT_FAILURE_THRESHOLD,
     private val resetTimeoutMs: Long = DEFAULT_RESET_TIMEOUT_MS,
+    private val isInfrastructureFailure: (Exception) -> Boolean = { true },
 ) {
     private enum class State { CLOSED, OPEN, HALF_OPEN }
 
@@ -68,8 +69,9 @@ class CircuitBreaker(
             result
         } catch (e: CircuitBreakerOpenException) {
             throw e
-        } catch (e: Exception) {
-            onFailure(e)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            if (isInfrastructureFailure(e)) onFailure(e)
+            else probeInFlight.set(false)
             throw e
         }
     }

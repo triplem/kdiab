@@ -27,7 +27,7 @@ import org.javafreedom.kdiab.analyze.application.service.TimelineOperation
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.plugins.statuspages.*
-import org.javafreedom.kdiab.analyze.adapters.outbound.http.CircuitBreakerOpenException
+import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
 import org.javafreedom.kdiab.common.plugins.HTTP_CONNECT_TIMEOUT_MS_DEFAULT
