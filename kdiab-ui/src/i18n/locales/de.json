@@ -80,6 +80,7 @@
     "userId": "Benutzer-ID",
     "recordedAt": "Erfasst am",
     "dataPayload": "Datenpayload",
+    "source": "Quelle",
     "notes": "Notizen",
     "showArchived": "Archivierte anzeigen",
     "showActive": "Aktive anzeigen",
@@ -525,6 +526,15 @@
   "measureSource": {
     "MANUAL": "Manuell",
     "NIGHTSCOUT": "Nightscout",
+    "GOOGLE_FIT": "Google Fit",
+    "APPLE_HEALTH": "Apple Health"
+  },
+  "treatmentSource": {
+    "MANUAL": "Manuell",
+    "NIGHTSCOUT": "Nightscout",
+    "PUMP": "Pumpe",
+    "CGM": "CGM",
+    "LOOP": "Loop",
     "GOOGLE_FIT": "Google Fit",
     "APPLE_HEALTH": "Apple Health"
   },

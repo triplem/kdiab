@@ -409,6 +409,11 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                     >
                       {t(`treatmentModal.types.${tr.type}`, { defaultValue: tr.type })}
                     </span>
+                    {tr.source && (
+                      <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                        {t(`treatmentSource.${tr.source}`, { defaultValue: tr.source })}
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '12px 8px' }} onClick={(e) => e.stopPropagation()}>
                     <div style={{ display: 'flex', gap: '0.4rem' }}>
@@ -486,6 +491,12 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                           <p>
                             <strong>{t('list.recordedAt')}:</strong> {formatDate(tr.createdAt)}
                           </p>
+                          {tr.source && (
+                            <p>
+                              <strong>{t('list.source')}:</strong>{' '}
+                              {t(`treatmentSource.${tr.source}`, { defaultValue: tr.source })}
+                            </p>
+                          )}
                           {tr.notes && (
                             <p>
                               <strong>{t('list.notes')}:</strong> {tr.notes}

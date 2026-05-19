@@ -8,6 +8,7 @@ export interface TreatmentResponse {
   treatedAt: string
   createdAt: string
   type: string
+  source?: string
   status: string
   notes?: string
   data: Record<string, unknown>
