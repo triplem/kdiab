@@ -1,3 +1,5 @@
 databaseChangeLog:
   - include:
       file: db/changelog/changes/001-ddl.yaml
+  - include:
+      file: db/changelog/changes/002-hba1c-to-measures.yaml

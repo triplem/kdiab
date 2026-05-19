@@ -13,8 +13,6 @@ security:
 tags:
   - name: Measures
     description: Health measurement management
-  - name: HbA1c
-    description: HbA1c lab-entry management
 
 paths:
   /users/{userId}/measures:
@@ -226,95 +224,6 @@ paths:
       responses:
         '200':
           description: Measures deleted successfully
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /users/{userId}/hba1c:
-    get:
-      summary: List HbA1c entries for a user
-      description: Returns all lab-measured or CGM-estimated HbA1c entries for the given user, optionally filtered by date range.
-      operationId: listHba1cEntries
-      tags:
-        - HbA1c
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          description: The target user's UUID
-          schema:
-            type: string
-            format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
-        - name: from
-          in: query
-          required: false
-          description: Filter entries on or after this timestamp (ISO-8601)
-          schema:
-            type: string
-            format: date-time
-            example: "2026-01-01T00:00:00Z"
-        - name: to
-          in: query
-          required: false
-          description: Filter entries on or before this timestamp (ISO-8601)
-          schema:
-            type: string
-            format: date-time
-            example: "2026-12-31T23:59:59Z"
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: List of HbA1c entries
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/HbA1cEntryResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-    post:
-      summary: Create a manual lab HbA1c entry
-      description: Records a manually entered lab HbA1c result or a CGM-estimated value for the given user.
-      operationId: createHba1cEntry
-      tags:
-        - HbA1c
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          description: The target user's UUID
-          schema:
-            type: string
-            format: uuid
-            example: "550e8400-e29b-41d4-a716-446655440000"
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateHba1cEntryRequest'
-      responses:
-        '201':
-          description: HbA1c entry created
-          headers:
-            Location:
-              schema:
-                type: string
-              description: URL of the created resource
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HbA1cEntryResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -567,6 +476,7 @@ components:
         - PULSE: Heart rate in bpm (e.g. `{"value": 72}`)
         - BG_CHECK: Manual blood glucose check, stored in mg/dL (e.g. `{"value": 100}`)
         - KETONE_CHECK: Blood or urine ketone measurement in mmol/L (e.g. `{"value": 1.5, "method": "blood"}`). `method` is `blood` or `urine`.
+        - GLYCOSYLATED_HEMOGLOBIN: HbA1c value in percent (e.g. `{"value": 7.2, "unit": "%"}`). Replaces the former dedicated HbA1c endpoint.
       enum:
         - CGM
         - BGM
@@ -575,6 +485,7 @@ components:
         - PULSE
         - BG_CHECK
         - KETONE_CHECK
+        - GLYCOSYLATED_HEMOGLOBIN
 
     MeasureSource:
       type: string
@@ -584,87 +495,14 @@ components:
         - NIGHTSCOUT
         - GOOGLE_FIT
         - APPLE_HEALTH
+        - LAB
+        - ESTIMATED
 
     MeasureStatus:
       type: string
       enum:
         - ACTIVE
         - ARCHIVED
-
-    HbA1cEntryResponse:
-      type: object
-      description: A lab-measured or CGM-estimated HbA1c entry
-      required:
-        - id
-        - userId
-        - measuredAt
-        - valuePercent
-        - source
-        - createdAt
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Unique identifier for the entry
-          example: "550e8400-e29b-41d4-a716-446655440000"
-        userId:
-          type: string
-          format: uuid
-          description: The user this entry belongs to
-          example: "550e8400-e29b-41d4-a716-446655440001"
-        measuredAt:
-          type: string
-          format: date-time
-          description: When the HbA1c was measured (ISO-8601)
-          example: "2026-03-15T09:00:00Z"
-        valuePercent:
-          type: number
-          format: double
-          description: HbA1c value as a percentage (e.g. 7.2 means 7.2%)
-          example: 7.2
-        source:
-          $ref: '#/components/schemas/HbA1cSource'
-        notes:
-          type: ["string", "null"]
-          description: Optional notes about the measurement
-          example: "Fasting lab result from GP visit"
-        createdAt:
-          type: string
-          format: date-time
-          description: When this record was created
-          example: "2026-03-15T10:00:00Z"
-
-    CreateHba1cEntryRequest:
-      type: object
-      description: Request body for recording a manual HbA1c lab result
-      required:
-        - measuredAt
-        - valuePercent
-      properties:
-        measuredAt:
-          type: string
-          format: date-time
-          description: When the HbA1c was measured (ISO-8601)
-          example: "2026-03-15T09:00:00Z"
-        valuePercent:
-          type: number
-          format: double
-          description: HbA1c value as a percentage
-          example: 7.2
-        source:
-          $ref: '#/components/schemas/HbA1cSource'
-        notes:
-          type: ["string", "null"]
-          description: Optional notes
-          example: "GP lab result"
-
-    HbA1cSource:
-      type: string
-      description: Origin of the HbA1c value
-      enum:
-        - LAB
-        - CGM_ESTIMATED
-      example: LAB
 
     ErrorResponse:
       type: object

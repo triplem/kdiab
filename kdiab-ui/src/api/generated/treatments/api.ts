@@ -155,6 +155,10 @@ export interface DeviceAgeResponse {
      * When the CGM sensor was last inserted (SENSOR_INSERT)
      */
     'sensorInsertedAt'?: string | null;
+    /**
+     * When the pump battery was last replaced (PUMP_BATTERY_CHANGE)
+     */
+    'batteryChangedAt'?: string | null;
 }
 /**
  * Pump and uploader device status snapshot (DEVICE_STATUS). Sent periodically by APS clients (AAPS, xDrip+, Juggluco) to report pump reservoir, battery, and client identity.
@@ -384,7 +388,7 @@ export const TreatmentResponseStatusEnum = {
 export type TreatmentResponseStatusEnum = typeof TreatmentResponseStatusEnum[keyof typeof TreatmentResponseStatusEnum];
 
 /**
- * The type of treatment, which defines the expected structure of the data payload. Mapped to Nightscout eventType values where applicable: - BOLUS: Rapid-acting insulin dose (\"Meal Bolus\" / \"Bolus\") - BASAL: Long-acting basal insulin (\"Basal\") - CARBS: Carbohydrate intake only (\"Carbs Only\") - CORRECTION_BOLUS: Correction insulin dose (\"Correction Bolus\") - COMBO_BOLUS: Split bolus — part immediate, part extended (\"Combo Bolus\") - TEMP_BASAL: Temporary basal rate change (\"Temp Basal\") - EXERCISE: Physical activity (\"Exercise\") - NOTE: Free-text note (\"Note\") - PUMP_SUSPEND: Insulin pump suspended (\"Pump Suspend\") - SITE_CHANGE: Infusion site/cannula replacement (\"Site Change\") - SENSOR_INSERT: CGM sensor insertion (\"Sensor Insert\") - INSULIN_CHANGE: Insulin cartridge/pen replacement (\"Insulin Change\") - ACTIVITY: Physical activity log with name, duration (minutes), and intensity level (low/moderate/high) - HYPO_TREATMENT: Emergency fast-acting carbohydrate intake to correct hypoglycaemia (juice, dextrose) - DEVICE_STATUS: Pump and uploader status snapshot (reservoir units, battery level, client name) 
+ * The type of treatment, which defines the expected structure of the data payload. Mapped to Nightscout eventType values where applicable: - BOLUS: Rapid-acting insulin dose (\"Meal Bolus\" / \"Bolus\") - BASAL: Long-acting basal insulin (\"Basal\") - CARBS: Carbohydrate intake only (\"Carbs Only\") - CORRECTION_BOLUS: Correction insulin dose (\"Correction Bolus\") - COMBO_BOLUS: Split bolus — part immediate, part extended (\"Combo Bolus\") - TEMP_BASAL: Temporary basal rate change (\"Temp Basal\") - EXERCISE: Physical activity (\"Exercise\") - NOTE: Free-text note (\"Note\") - PUMP_SUSPEND: Insulin pump suspended (\"Pump Suspend\") - SITE_CHANGE: Infusion site/cannula replacement (\"Site Change\") - SENSOR_INSERT: CGM sensor insertion (\"Sensor Insert\") - INSULIN_CHANGE: Insulin cartridge/pen replacement (\"Insulin Change\") - ACTIVITY: Physical activity log with name, duration (minutes), and intensity level (low/moderate/high) - HYPO_TREATMENT: Emergency fast-acting carbohydrate intake to correct hypoglycaemia (juice, dextrose) - DEVICE_STATUS: Pump and uploader status snapshot (reservoir units, battery level, client name) - PUMP_BATTERY_CHANGE: Pump battery replacement 
  */
 
 export const TreatmentType = {
@@ -403,6 +407,7 @@ export const TreatmentType = {
     Activity: 'ACTIVITY',
     HypoTreatment: 'HYPO_TREATMENT',
     DeviceStatus: 'DEVICE_STATUS',
+    PumpBatteryChange: 'PUMP_BATTERY_CHANGE',
 } as const;
 
 export type TreatmentType = typeof TreatmentType[keyof typeof TreatmentType];

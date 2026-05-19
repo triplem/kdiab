@@ -1,0 +1,31 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/db.changelog-root.yaml
+  - changeSet:
+      id: 002
+      author: javafreedom
+      dbms: postgresql
+      comment: Migrate hba1c_entries into measures table as GLYCOSYLATED_HEMOGLOBIN type; drop hba1c_entries
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO measures (id, user_id, measured_at, created_at, type, source, data, status)
+              SELECT
+                id,
+                user_id,
+                measured_at,
+                created_at,
+                'GLYCOSYLATED_HEMOGLOBIN',
+                CASE source
+                  WHEN 'LAB'           THEN 'LAB'
+                  WHEN 'CGM_ESTIMATED' THEN 'ESTIMATED'
+                  ELSE 'MANUAL'
+                END,
+                jsonb_build_object(
+                  'value', value_percent,
+                  'unit',  '%',
+                  'notes', notes
+                ),
+                'ACTIVE'
+              FROM hba1c_entries;
+        - dropTable:
+            tableName: hba1c_entries

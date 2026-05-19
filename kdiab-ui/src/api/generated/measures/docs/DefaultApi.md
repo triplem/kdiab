@@ -119,7 +119,7 @@ const { status, data } = await apiInstance.createMeasure(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**201** | Measure created successfully |  -  |
+|**201** | Measure created successfully |  * Location - URL of the created resource <br>  |
 |**400** | Bad Request |  -  |
 |**401** | Unauthorized |  -  |
 |**403** | Forbidden |  -  |

@@ -12,4 +12,8 @@ The origin of the measurement data
 
 * `AppleHealth` (value: `'APPLE_HEALTH'`)
 
+* `Lab` (value: `'LAB'`)
+
+* `Estimated` (value: `'ESTIMATED'`)
+
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

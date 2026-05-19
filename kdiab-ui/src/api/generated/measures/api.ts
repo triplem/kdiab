@@ -84,26 +84,6 @@ export const CgmDataTrendEnum = {
 
 export type CgmDataTrendEnum = typeof CgmDataTrendEnum[keyof typeof CgmDataTrendEnum];
 
-/**
- * Request body for recording a manual HbA1c lab result
- */
-export interface CreateHba1cEntryRequest {
-    /**
-     * When the HbA1c was measured (ISO-8601)
-     */
-    'measuredAt': string;
-    /**
-     * HbA1c value as a percentage
-     */
-    'valuePercent': number;
-    'source'?: HbA1cSource;
-    /**
-     * Optional notes
-     */
-    'notes'?: string | null;
-}
-
-
 export interface CreateMeasureRequest {
     'measuredAt': string;
     'type': MeasureType;
@@ -125,50 +105,6 @@ export interface ErrorResponse {
      */
     'message': string;
 }
-/**
- * A lab-measured or CGM-estimated HbA1c entry
- */
-export interface HbA1cEntryResponse {
-    /**
-     * Unique identifier for the entry
-     */
-    'id': string;
-    /**
-     * The user this entry belongs to
-     */
-    'userId': string;
-    /**
-     * When the HbA1c was measured (ISO-8601)
-     */
-    'measuredAt': string;
-    /**
-     * HbA1c value as a percentage (e.g. 7.2 means 7.2%)
-     */
-    'valuePercent': number;
-    'source': HbA1cSource;
-    /**
-     * Optional notes about the measurement
-     */
-    'notes'?: string | null;
-    /**
-     * When this record was created
-     */
-    'createdAt': string;
-}
-
-
-/**
- * Origin of the HbA1c value
- */
-
-export const HbA1cSource = {
-    Lab: 'LAB',
-    CgmEstimated: 'CGM_ESTIMATED',
-} as const;
-
-export type HbA1cSource = typeof HbA1cSource[keyof typeof HbA1cSource];
-
-
 /**
  * Blood or urine ketone measurement
  */
@@ -217,6 +153,8 @@ export const MeasureSource = {
     Nightscout: 'NIGHTSCOUT',
     GoogleFit: 'GOOGLE_FIT',
     AppleHealth: 'APPLE_HEALTH',
+    Lab: 'LAB',
+    Estimated: 'ESTIMATED',
 } as const;
 
 export type MeasureSource = typeof MeasureSource[keyof typeof MeasureSource];
@@ -232,7 +170,7 @@ export type MeasureStatus = typeof MeasureStatus[keyof typeof MeasureStatus];
 
 
 /**
- * The type of health measurement, which defines the expected structure of the data payload: - CGM: Continuous Glucose Monitor reading in mg/dL (e.g. `{\"value\": 120, \"trend\": \"Flat\"}`) - BGM: Blood Glucose Meter reading in mg/dL (e.g. `{\"value\": 110}`) - BLOOD_PRESSURE: (e.g. `{\"systolic\": 120, \"diastolic\": 80}`) — two values, both in mmHg - WEIGHT: (e.g. `{\"value\": 75.5, \"unit\": \"kg\"}`) - PULSE: Heart rate in bpm (e.g. `{\"value\": 72}`) - BG_CHECK: Manual blood glucose check, stored in mg/dL (e.g. `{\"value\": 100}`) - KETONE_CHECK: Blood or urine ketone measurement in mmol/L (e.g. `{\"value\": 1.5, \"method\": \"blood\"}`). `method` is `blood` or `urine`. 
+ * The type of health measurement, which defines the expected structure of the data payload: - CGM: Continuous Glucose Monitor reading in mg/dL (e.g. `{\"value\": 120, \"trend\": \"Flat\"}`) - BGM: Blood Glucose Meter reading in mg/dL (e.g. `{\"value\": 110}`) - BLOOD_PRESSURE: (e.g. `{\"systolic\": 120, \"diastolic\": 80}`) — two values, both in mmHg - WEIGHT: (e.g. `{\"value\": 75.5, \"unit\": \"kg\"}`) - PULSE: Heart rate in bpm (e.g. `{\"value\": 72}`) - BG_CHECK: Manual blood glucose check, stored in mg/dL (e.g. `{\"value\": 100}`) - KETONE_CHECK: Blood or urine ketone measurement in mmol/L (e.g. `{\"value\": 1.5, \"method\": \"blood\"}`). `method` is `blood` or `urine`. - GLYCOSYLATED_HEMOGLOBIN: HbA1c value in percent (e.g. `{\"value\": 7.2, \"unit\": \"%\"}`). Replaces the former dedicated HbA1c endpoint. 
  */
 
 export const MeasureType = {
@@ -243,6 +181,7 @@ export const MeasureType = {
     Pulse: 'PULSE',
     BgCheck: 'BG_CHECK',
     KetoneCheck: 'KETONE_CHECK',
+    GlycosylatedHemoglobin: 'GLYCOSYLATED_HEMOGLOBIN',
 } as const;
 
 export type MeasureType = typeof MeasureType[keyof typeof MeasureType];
@@ -848,210 +787,5 @@ export const ListMeasuresStatusEnum = {
     Archived: 'ARCHIVED',
 } as const;
 export type ListMeasuresStatusEnum = typeof ListMeasuresStatusEnum[keyof typeof ListMeasuresStatusEnum];
-
-
-/**
- * HbA1cApi - axios parameter creator
- */
-export const HbA1cApiAxiosParamCreator = function (configuration?: Configuration) {
-    return {
-        /**
-         * Records a manually entered lab HbA1c result or a CGM-estimated value for the given user.
-         * @summary Create a manual lab HbA1c entry
-         * @param {string} userId The target user\&#39;s UUID
-         * @param {CreateHba1cEntryRequest} createHba1cEntryRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        createHba1cEntry: async (userId: string, createHba1cEntryRequest: CreateHba1cEntryRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'userId' is not null or undefined
-            assertParamExists('createHba1cEntry', 'userId', userId)
-            // verify required parameter 'createHba1cEntryRequest' is not null or undefined
-            assertParamExists('createHba1cEntry', 'createHba1cEntryRequest', createHba1cEntryRequest)
-            const localVarPath = `/users/{userId}/hba1c`
-                .replace('{userId}', encodeURIComponent(String(userId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-            localVarHeaderParameter['Accept'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(createHba1cEntryRequest, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
-         * Returns all lab-measured or CGM-estimated HbA1c entries for the given user, optionally filtered by date range.
-         * @summary List HbA1c entries for a user
-         * @param {string} userId The target user\&#39;s UUID
-         * @param {string} [from] Filter entries on or after this timestamp (ISO-8601)
-         * @param {string} [to] Filter entries on or before this timestamp (ISO-8601)
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        listHba1cEntries: async (userId: string, from?: string, to?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'userId' is not null or undefined
-            assertParamExists('listHba1cEntries', 'userId', userId)
-            const localVarPath = `/users/{userId}/hba1c`
-                .replace('{userId}', encodeURIComponent(String(userId)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication bearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            if (from !== undefined) {
-                localVarQueryParameter['from'] = (from as any instanceof Date) ?
-                    (from as any).toISOString() :
-                    from;
-            }
-
-            if (to !== undefined) {
-                localVarQueryParameter['to'] = (to as any instanceof Date) ?
-                    (to as any).toISOString() :
-                    to;
-            }
-
-            localVarHeaderParameter['Accept'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-    }
-};
-
-/**
- * HbA1cApi - functional programming interface
- */
-export const HbA1cApiFp = function(configuration?: Configuration) {
-    const localVarAxiosParamCreator = HbA1cApiAxiosParamCreator(configuration)
-    return {
-        /**
-         * Records a manually entered lab HbA1c result or a CGM-estimated value for the given user.
-         * @summary Create a manual lab HbA1c entry
-         * @param {string} userId The target user\&#39;s UUID
-         * @param {CreateHba1cEntryRequest} createHba1cEntryRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async createHba1cEntry(userId: string, createHba1cEntryRequest: CreateHba1cEntryRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<HbA1cEntryResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.createHba1cEntry(userId, createHba1cEntryRequest, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['HbA1cApi.createHba1cEntry']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
-         * Returns all lab-measured or CGM-estimated HbA1c entries for the given user, optionally filtered by date range.
-         * @summary List HbA1c entries for a user
-         * @param {string} userId The target user\&#39;s UUID
-         * @param {string} [from] Filter entries on or after this timestamp (ISO-8601)
-         * @param {string} [to] Filter entries on or before this timestamp (ISO-8601)
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async listHba1cEntries(userId: string, from?: string, to?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<HbA1cEntryResponse>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.listHba1cEntries(userId, from, to, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['HbA1cApi.listHba1cEntries']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-    }
-};
-
-/**
- * HbA1cApi - factory interface
- */
-export const HbA1cApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
-    const localVarFp = HbA1cApiFp(configuration)
-    return {
-        /**
-         * Records a manually entered lab HbA1c result or a CGM-estimated value for the given user.
-         * @summary Create a manual lab HbA1c entry
-         * @param {string} userId The target user\&#39;s UUID
-         * @param {CreateHba1cEntryRequest} createHba1cEntryRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        createHba1cEntry(userId: string, createHba1cEntryRequest: CreateHba1cEntryRequest, options?: RawAxiosRequestConfig): AxiosPromise<HbA1cEntryResponse> {
-            return localVarFp.createHba1cEntry(userId, createHba1cEntryRequest, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * Returns all lab-measured or CGM-estimated HbA1c entries for the given user, optionally filtered by date range.
-         * @summary List HbA1c entries for a user
-         * @param {string} userId The target user\&#39;s UUID
-         * @param {string} [from] Filter entries on or after this timestamp (ISO-8601)
-         * @param {string} [to] Filter entries on or before this timestamp (ISO-8601)
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        listHba1cEntries(userId: string, from?: string, to?: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<HbA1cEntryResponse>> {
-            return localVarFp.listHba1cEntries(userId, from, to, options).then((request) => request(axios, basePath));
-        },
-    };
-};
-
-/**
- * HbA1cApi - object-oriented interface
- */
-export class HbA1cApi extends BaseAPI {
-    /**
-     * Records a manually entered lab HbA1c result or a CGM-estimated value for the given user.
-     * @summary Create a manual lab HbA1c entry
-     * @param {string} userId The target user\&#39;s UUID
-     * @param {CreateHba1cEntryRequest} createHba1cEntryRequest 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public createHba1cEntry(userId: string, createHba1cEntryRequest: CreateHba1cEntryRequest, options?: RawAxiosRequestConfig) {
-        return HbA1cApiFp(this.configuration).createHba1cEntry(userId, createHba1cEntryRequest, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * Returns all lab-measured or CGM-estimated HbA1c entries for the given user, optionally filtered by date range.
-     * @summary List HbA1c entries for a user
-     * @param {string} userId The target user\&#39;s UUID
-     * @param {string} [from] Filter entries on or after this timestamp (ISO-8601)
-     * @param {string} [to] Filter entries on or before this timestamp (ISO-8601)
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     */
-    public listHba1cEntries(userId: string, from?: string, to?: string, options?: RawAxiosRequestConfig) {
-        return HbA1cApiFp(this.configuration).listHba1cEntries(userId, from, to, options).then((request) => request(this.axios, this.basePath));
-    }
-}
-
 
 

@@ -48,6 +48,9 @@ export const renderDataSummary = (m: MeasureResponse): string => {
       const method = typeof d.method === 'string' ? ` (${d.method})` : ''
       return d.value != null ? `${d.value as number} ${unit}${method}` : JSON.stringify(d)
     }
+    case 'GLYCOSYLATED_HEMOGLOBIN': {
+      return d.value != null ? `${d.value as number}%` : JSON.stringify(d)
+    }
     default:
       return JSON.stringify(d)
   }

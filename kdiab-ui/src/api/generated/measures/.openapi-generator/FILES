@@ -9,13 +9,9 @@ docs/BgmData.md
 docs/BloodPressureData.md
 docs/BulkMeasureRequest.md
 docs/CgmData.md
-docs/CreateHba1cEntryRequest.md
 docs/CreateMeasureRequest.md
 docs/DefaultApi.md
 docs/ErrorResponse.md
-docs/HbA1cApi.md
-docs/HbA1cEntryResponse.md
-docs/HbA1cSource.md
 docs/KetoneCheckData.md
 docs/MeasurePayload.md
 docs/MeasureResponse.md
