@@ -233,9 +233,7 @@ kover {
             excludes {
                 classes(
                     // Entry point -- no logic to measure
-                    "org.javafreedom.kdiab.profiles.ApplicationKt*",
-                    // DB factory -- requires a live Postgres; covered by integration tests
-                    "org.javafreedom.kdiab.profiles.infrastructure.persistence.DatabaseFactory*"
+                    "org.javafreedom.kdiab.profiles.ApplicationKt*"
                 )
                 packages(
                     // Generated OpenAPI stubs -- not hand-written, excluded by convention

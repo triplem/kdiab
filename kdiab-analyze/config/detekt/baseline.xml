@@ -2,10 +2,6 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>MaxLineLength:AnalyticsService.kt$AnalyticsService$logger.warn(e) { "analytics_service action=getAgp status=upstream_error userId=$userId — returning empty result" }</ID>
-    <ID>MaxLineLength:AnalyticsService.kt$AnalyticsService$logger.warn(e) { "analytics_service action=getHba1c status=upstream_error userId=$userId — returning empty result" }</ID>
-    <ID>MaxLineLength:BffMapper.kt$tir = TirBreakdownDto(tir.veryLowCount, tir.belowCount, tir.inRangeCount, tir.aboveCount, tir.highCount, tir.totalCount)</ID>
-    <ID>MaxLineLength:CircuitBreaker.kt$CircuitBreaker$logger.warn { "circuit_breaker service=$name failures=$count threshold=$failureThreshold reason=${cause.message}" }</ID>
     <ID>ReturnCount:AnalyticsService.kt$AnalyticsService$@Suppress("LongParameterList") suspend fun getHba1c( userId: String, from: String, to: String, authorization: String, glucoseUnit: String, correlationId: String, tirLow: Double = TIR_LOW, tirHigh: Double = TIR_HIGH, ): Hba1cResult</ID>
     <ID>TooGenericExceptionCaught:AnalyticsService.kt$AnalyticsService$e: Exception</ID>
     <ID>TooGenericExceptionCaught:CircuitBreaker.kt$CircuitBreaker$e: Exception</ID>

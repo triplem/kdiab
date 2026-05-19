@@ -16,12 +16,16 @@ import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.javatime.timestamp
 
+private const val VALUE_PERCENT_PRECISION = 5
+private const val VALUE_PERCENT_SCALE = 2
+private const val SOURCE_MAX_LENGTH = 20
+
 object HbA1cEntriesTable : Table("hba1c_entries") {
     val id = uuid("id")
     val userId = uuid("user_id")
     val measuredAt = timestamp("measured_at")
-    val valuePercent = decimal("value_percent", precision = 5, scale = 2)
-    val sourceField = varchar("source", 20).default("LAB")
+    val valuePercent = decimal("value_percent", precision = VALUE_PERCENT_PRECISION, scale = VALUE_PERCENT_SCALE)
+    val sourceField = varchar("source", SOURCE_MAX_LENGTH).default("LAB")
     val notes = text("notes").nullable()
     val createdAt = timestamp("created_at")
 
@@ -37,11 +41,13 @@ class ExposedHbA1cEntryRepository(
             HbA1cEntriesTable.insert {
                 it[HbA1cEntriesTable.id] = entry.id
                 it[HbA1cEntriesTable.userId] = entry.userId
-                it[HbA1cEntriesTable.measuredAt] = java.time.Instant.ofEpochMilli(entry.measuredAt.toEpochMilliseconds())
+                it[HbA1cEntriesTable.measuredAt] =
+                    java.time.Instant.ofEpochMilli(entry.measuredAt.toEpochMilliseconds())
                 it[HbA1cEntriesTable.valuePercent] = entry.valuePercent.toBigDecimal()
                 it[HbA1cEntriesTable.sourceField] = entry.source.name
                 it[HbA1cEntriesTable.notes] = entry.notes
-                it[HbA1cEntriesTable.createdAt] = java.time.Instant.ofEpochMilli(entry.createdAt.toEpochMilliseconds())
+                it[HbA1cEntriesTable.createdAt] =
+                    java.time.Instant.ofEpochMilli(entry.createdAt.toEpochMilliseconds())
             }
             entry
         }

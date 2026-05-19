@@ -23,10 +23,14 @@ fun Route.hba1cEntryRoutes(hbA1cEntryService: HbA1cEntryService) {
     }
 }
 
+// UnreachableCode: detekt false positive — `?: throw` inside a lambda body causes detekt to
+// flag all subsequent statements as unreachable; they are not.
+@Suppress("UnreachableCode")
 private fun Route.listHba1cEntries(hbA1cEntryService: HbA1cEntryService) {
     get("/users/{userId}/hba1c") {
         val principal = call.principal<UserPrincipal>()
-        val targetUserId = parseUuid(call.parameters["userId"] ?: throw BusinessValidationException("userId is required"))
+        val rawUserId = call.parameters["userId"] ?: throw BusinessValidationException("userId is required")
+        val targetUserId = parseUuid(rawUserId)
 
         val from = call.request.queryParameters["from"]?.let {
             runCatching { Instant.parse(it) }.getOrElse {
@@ -45,10 +49,14 @@ private fun Route.listHba1cEntries(hbA1cEntryService: HbA1cEntryService) {
     }
 }
 
+// UnreachableCode: detekt false positive — `?: throw` inside a lambda body causes detekt to
+// flag all subsequent statements as unreachable; they are not.
+@Suppress("UnreachableCode")
 private fun Route.createHba1cEntry(hbA1cEntryService: HbA1cEntryService) {
     post("/users/{userId}/hba1c") {
         val principal = call.principal<UserPrincipal>()
-        val targetUserId = parseUuid(call.parameters["userId"] ?: throw BusinessValidationException("userId is required"))
+        val rawUserId = call.parameters["userId"] ?: throw BusinessValidationException("userId is required")
+        val targetUserId = parseUuid(rawUserId)
 
         val request = call.receive<CreateHba1cEntryRequest>()
         val entry = request.toDomain(targetUserId)
