@@ -9,12 +9,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.treatments.domain.model.Treatment
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
 import org.javafreedom.kdiab.treatments.domain.repository.TreatmentRepository
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.*
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.javatime.timestamp
@@ -38,18 +40,28 @@ class ExposedTreatmentRepository(
 ) : TreatmentRepository {
 
     override suspend fun save(treatment: Treatment): Treatment = withContext(ioDispatcher) {
-        suspendTransaction {
-            TreatmentsTable.insert {
-                it[TreatmentsTable.id] = treatment.id
-                it[TreatmentsTable.userId] = treatment.userId
-                it[TreatmentsTable.treatedAt] = java.time.Instant.ofEpochMilli(treatment.treatedAt.toEpochMilliseconds())
-                it[TreatmentsTable.createdAt] = java.time.Instant.ofEpochMilli(treatment.createdAt.toEpochMilliseconds())
-                it[TreatmentsTable.type] = treatment.type.name
-                it[TreatmentsTable.data] = treatment.data
-                it[TreatmentsTable.notes] = treatment.notes
-                it[TreatmentsTable.status] = treatment.status.name
+        try {
+            suspendTransaction {
+                TreatmentsTable.insert {
+                    it[TreatmentsTable.id] = treatment.id
+                    it[TreatmentsTable.userId] = treatment.userId
+                    it[TreatmentsTable.treatedAt] = java.time.Instant.ofEpochMilli(treatment.treatedAt.toEpochMilliseconds())
+                    it[TreatmentsTable.createdAt] = java.time.Instant.ofEpochMilli(treatment.createdAt.toEpochMilliseconds())
+                    it[TreatmentsTable.type] = treatment.type.name
+                    it[TreatmentsTable.data] = treatment.data
+                    it[TreatmentsTable.notes] = treatment.notes
+                    it[TreatmentsTable.status] = treatment.status.name
+                }
+                treatment
             }
-            treatment
+        } catch (ex: ExposedSQLException) {
+            // SQL state 23505 = unique_violation; wrap in domain exception so callers
+            // only need to handle domain exceptions, not infrastructure-level SQL errors.
+            val sqlState = ex.cause?.let { (it as? java.sql.SQLException)?.sqlState }
+            if (sqlState == "23505") {
+                throw ConflictException("Treatment already exists: ${treatment.id}", ex)
+            }
+            throw ex
         }
     }
 

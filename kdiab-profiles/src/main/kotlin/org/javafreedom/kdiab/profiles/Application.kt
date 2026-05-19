@@ -8,6 +8,8 @@ import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
+import io.ktor.server.plugins.swagger.*
+import io.ktor.server.resources.Resources
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
@@ -15,25 +17,17 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.javafreedom.kdiab.profiles.adapters.inbound.web.auditRoutes
-import org.javafreedom.kdiab.profiles.adapters.inbound.web.profileRoutes
 import org.javafreedom.kdiab.profiles.adapters.inbound.web.insulinRoutes
+import org.javafreedom.kdiab.profiles.adapters.inbound.web.profileRoutes
 import org.javafreedom.kdiab.profiles.application.service.InsulinService
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedAuditLogRepository
-import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedProfileRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedInsulinRepository
-import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.server.plugins.statuspages.*
-import io.ktor.server.plugins.swagger.*
-import io.ktor.server.resources.Resources
-import org.javafreedom.kdiab.common.plugins.ErrorResponse
+import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedProfileRepository
 import org.javafreedom.kdiab.common.plugins.configureCommonPlugins
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
-import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
-
-private val logger = KotlinLogging.logger {}
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -44,20 +38,7 @@ fun Application.module(
         initDatabase: Boolean = true
 ) {
     configureCommonPlugins()
-    configureStatusPages {
-        exception<ExposedSQLException> { call, cause ->
-            val sqlState = cause.cause?.let { (it as? java.sql.SQLException)?.sqlState }
-            if (sqlState == "23505") {
-                logger.warn(cause) { "Unique constraint violation" }
-                call.respond(HttpStatusCode.Conflict,
-                    ErrorResponse(HttpStatusCode.Conflict.value, cause.message ?: "Conflict"))
-            } else {
-                logger.error(cause) { "Database error (SQL state: $sqlState)" }
-                call.respond(HttpStatusCode.InternalServerError,
-                    ErrorResponse(HttpStatusCode.InternalServerError.value, "Internal Server Error"))
-            }
-        }
-    }
+    configureStatusPages()
     val prettyPrint = environment.config.propertyOrNull("json.prettyPrint")
         ?.getString()?.toBoolean() ?: false
     install(ContentNegotiation) {

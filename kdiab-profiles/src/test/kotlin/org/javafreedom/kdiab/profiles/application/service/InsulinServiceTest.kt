@@ -55,8 +55,9 @@ class InsulinServiceTest {
 
     @Test
     fun `create - duplicate name throws ConflictException`() = runBlocking {
+        // The repository translates ExposedSQLException to ConflictException; service propagates it.
         coEvery { repository.create("Fiasp") } throws
-            io.mockk.mockk<org.jetbrains.exposed.v1.exceptions.ExposedSQLException>(relaxed = true)
+            ConflictException("An insulin with that name already exists")
 
         assertFailsWith<ConflictException> {
             service.create("Fiasp")
@@ -79,8 +80,9 @@ class InsulinServiceTest {
     @Test
     fun `update - duplicate name throws ConflictException`() = runBlocking {
         val id = Uuid.random()
+        // The repository translates ExposedSQLException to ConflictException; service propagates it.
         coEvery { repository.update(id, "Fiasp") } throws
-            io.mockk.mockk<org.jetbrains.exposed.v1.exceptions.ExposedSQLException>(relaxed = true)
+            ConflictException("An insulin with that name already exists")
 
         assertFailsWith<ConflictException> {
             service.update(id, "Fiasp")

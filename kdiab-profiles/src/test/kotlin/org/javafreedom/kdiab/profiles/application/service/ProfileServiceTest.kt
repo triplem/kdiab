@@ -231,7 +231,7 @@ class ProfileServiceTest {
                 }
 
         @Test
-        fun `activateProfile converts ExposedSQLException to ConflictException`() = runBlocking {
+        fun `activateProfile propagates ConflictException from repository`() = runBlocking {
                 val userId = Uuid.random()
                 val profileId = Uuid.random()
                 val profile =
@@ -250,11 +250,10 @@ class ProfileServiceTest {
 
                 coEvery { repository.findById(profileId) } returns profile
                 coEvery { repository.findActiveByUserId(userId) } returns null
-                // Simulate the DB unique-index violation that occurs on a concurrent activation
+                // The repository translates a DB unique-index violation to ConflictException;
+                // the service propagates it unchanged.
                 coEvery { repository.activateProfile(any(), any()) } throws
-                        io.mockk.mockk<org.jetbrains.exposed.v1.exceptions.ExposedSQLException>(
-                                relaxed = true
-                        )
+                        ConflictException("Only one profile can be active at a time")
 
                 assertFailsWith<ConflictException> {
                         service.activateProfile(userId, profileId)
@@ -262,7 +261,7 @@ class ProfileServiceTest {
         }
 
         @Test
-        fun `acceptProposedProfile converts ExposedSQLException to ConflictException`() = runBlocking {
+        fun `acceptProposedProfile propagates ConflictException from repository`() = runBlocking {
                 val userId = Uuid.random()
                 val profileId = Uuid.random()
                 val profile =
@@ -281,10 +280,10 @@ class ProfileServiceTest {
 
                 coEvery { repository.findById(profileId) } returns profile
                 coEvery { repository.findActiveByUserId(userId) } returns null
+                // The repository translates a DB unique-index violation to ConflictException;
+                // the service propagates it unchanged.
                 coEvery { repository.activateProfile(any(), any()) } throws
-                        io.mockk.mockk<org.jetbrains.exposed.v1.exceptions.ExposedSQLException>(
-                                relaxed = true
-                        )
+                        ConflictException("Only one profile can be active at a time")
 
                 assertFailsWith<ConflictException> {
                         service.acceptProposedProfile(userId, profileId)

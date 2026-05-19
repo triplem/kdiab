@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.measures.domain.model.Measure
 import org.javafreedom.kdiab.measures.domain.model.MeasureSource
 import org.javafreedom.kdiab.measures.domain.model.MeasureStatus
@@ -16,6 +17,7 @@ import org.javafreedom.kdiab.measures.domain.model.MeasureType
 import org.javafreedom.kdiab.measures.domain.repository.MeasureRepository
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.*
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.jetbrains.exposed.v1.javatime.timestamp
@@ -39,18 +41,28 @@ class ExposedMeasureRepository(
 ) : MeasureRepository {
 
     override suspend fun save(measure: Measure): Measure = withContext(ioDispatcher) {
-        suspendTransaction {
-            MeasuresTable.insert {
-                it[MeasuresTable.id] = measure.id
-                it[MeasuresTable.userId] = measure.userId
-                it[MeasuresTable.measuredAt] = java.time.Instant.ofEpochMilli(measure.measuredAt.toEpochMilliseconds())
-                it[MeasuresTable.createdAt] = java.time.Instant.ofEpochMilli(measure.createdAt.toEpochMilliseconds())
-                it[MeasuresTable.type] = measure.type.name
-                it[MeasuresTable.sourceField] = measure.source.name
-                it[MeasuresTable.data] = measure.data
-                it[MeasuresTable.status] = measure.status.name
+        try {
+            suspendTransaction {
+                MeasuresTable.insert {
+                    it[MeasuresTable.id] = measure.id
+                    it[MeasuresTable.userId] = measure.userId
+                    it[MeasuresTable.measuredAt] = java.time.Instant.ofEpochMilli(measure.measuredAt.toEpochMilliseconds())
+                    it[MeasuresTable.createdAt] = java.time.Instant.ofEpochMilli(measure.createdAt.toEpochMilliseconds())
+                    it[MeasuresTable.type] = measure.type.name
+                    it[MeasuresTable.sourceField] = measure.source.name
+                    it[MeasuresTable.data] = measure.data
+                    it[MeasuresTable.status] = measure.status.name
+                }
+                measure
             }
-            measure
+        } catch (ex: ExposedSQLException) {
+            // SQL state 23505 = unique_violation; wrap in domain exception so callers
+            // only need to handle domain exceptions, not infrastructure-level SQL errors.
+            val sqlState = ex.cause?.let { (it as? java.sql.SQLException)?.sqlState }
+            if (sqlState == "23505") {
+                throw ConflictException("Measure already exists: ${measure.id}", ex)
+            }
+            throw ex
         }
     }
 
