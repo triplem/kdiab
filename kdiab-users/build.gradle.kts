@@ -97,11 +97,37 @@ testing {
                 resources { setSrcDirs(listOf("src/integration-test/resources")) }
             }
         }
+
+        val e2eTest by registering(JvmTestSuite::class) {
+            useJUnitJupiter()
+
+            dependencies {
+                implementation(project())
+                implementation(libs.kotest.runner.junit5)
+                implementation(libs.kotest.assertions.core)
+                implementation(libs.ktor.client.content.negotiation)
+                implementation(libs.ktor.server.test.host)
+            }
+
+            targets {
+                all {
+                    testTask.configure {
+                        shouldRunAfter(testing.suites.named("integrationTest"))
+                    }
+                }
+            }
+
+            sources {
+                kotlin { setSrcDirs(listOf("src/e2e-test/kotlin")) }
+                resources { setSrcDirs(listOf("src/e2e-test/resources")) }
+            }
+        }
     }
 }
 
 tasks.named("check") {
     dependsOn(testing.suites.named("integrationTest"))
+    dependsOn(testing.suites.named("e2eTest"))
     dependsOn("koverVerify")
 }
 
@@ -115,6 +141,11 @@ tasks.withType<Test> {
 }
 
 configurations.named("integrationTestImplementation") {
+    extendsFrom(configurations.implementation.get())
+    extendsFrom(configurations.testImplementation.get())
+}
+
+configurations.named("e2eTestImplementation") {
     extendsFrom(configurations.implementation.get())
     extendsFrom(configurations.testImplementation.get())
 }
