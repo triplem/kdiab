@@ -24,8 +24,6 @@ const inputStyle: React.CSSProperties = {
   fontSize: '0.9rem',
   width: '100%',
   boxSizing: 'border-box',
-  background: 'var(--bg-surface, #fff)',
-  color: 'var(--text-primary, #1e293b)',
 }
 
 const errorStyle: React.CSSProperties = {
