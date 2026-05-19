@@ -185,11 +185,11 @@ kover {
         filters {
             excludes {
                 classes(
-                    // Entry point — no logic to measure
+                    // Entry point -- no logic to measure
                     "org.javafreedom.kdiab.nightscout.ApplicationKt*"
                 )
                 packages(
-                    // Generated upstream client models — not hand-written, excluded by convention
+                    // Generated upstream client models -- not hand-written, excluded by convention
                     "org.javafreedom.kdiab.nightscout.api.upstream.measures",
                     "org.javafreedom.kdiab.nightscout.api.upstream.treatments",
                     // Adapters require live Ktor test engine or running upstream services;
@@ -255,18 +255,18 @@ tasks.asciidoctor {
 
 tasks.register("buildAll") {
     group = "build"
-    description = "Alias for 'build' — used by root composite aggregate task."
+    description = "Alias for 'build' -- used by root composite aggregate task."
     dependsOn(tasks.named("build"))
 }
 
 tasks.register("checkAll") {
     group = "verification"
-    description = "Alias for 'check' — used by root composite aggregate task."
+    description = "Alias for 'check' -- used by root composite aggregate task."
     dependsOn(tasks.named("check"))
 }
 
 tasks.register("cleanAll") {
     group = "build"
-    description = "Alias for 'clean' — used by root composite aggregate task."
+    description = "Alias for 'clean' -- used by root composite aggregate task."
     dependsOn(tasks.named("clean"))
 }

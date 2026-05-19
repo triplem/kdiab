@@ -1,12 +1,12 @@
 -- =============================================================================
--- kdiab seed data — realistic 30-day dataset for testing and development
+-- kdiab seed data -- realistic 30-day dataset for testing and development
 --
 -- Users (from Keycloak realm):
 --   sarah  (11111111-...) PATIENT  glucose_unit=mg/dL
 --   mike   (22222222-...) PATIENT  glucose_unit=mmol/L
 --
 -- Each user gets:
---   - 30 days of CGM readings every 5 minutes (sarah: 70–200 mg/dL range,
+--   - 30 days of CGM readings every 5 minutes (sarah: 70-200 mg/dL range,
 --     mike: similar but stored in mg/dL, displayed in mmol/L via frontend)
 --   - BGM checks (3-5 per day)
 --   - Bolus + carbs treatment pairs (3 per day)
@@ -14,14 +14,14 @@
 --   - DEVICE_STATUS treatments (pump snapshot every 5 min for 30 days)
 --   - user_settings row (timezone, language, units, alarm thresholds)
 --
--- Doctor–patient assignments (kdiab-users):
+-- Doctor-patient assignments (kdiab-users):
 --   dr_house   (33333333-...) DOCTOR → sarah
 --   dr_cameron (44444444-...) DOCTOR → mike
 -- =============================================================================
 
 \c "kdiab-measures"
 
--- ── Measures (CGM + BGM) ──────────────────────────────────────────────────────
+-- -- Measures (CGM + BGM) ------------------------------------------------------
 -- Generate ~8640 CGM readings per user (30 days × 288 per day, sampled here
 -- as representative data using generate_series).
 
@@ -38,7 +38,7 @@ BEGIN
   -- Skip if already seeded (idempotent re-run guard)
   IF EXISTS (SELECT 1 FROM measures LIMIT 1) THEN RETURN; END IF;
 
-  -- Sarah — CGM readings every 5 minutes for 30 days
+  -- Sarah -- CGM readings every 5 minutes for 30 days
   FOR i IN 0..8639 LOOP
     t       := base_ts + (i * INTERVAL '5 minutes');
     -- Simulate a realistic CGM curve: mostly in-range with some excursions
@@ -57,7 +57,7 @@ BEGIN
     );
   END LOOP;
 
-  -- Sarah — BGM spot checks (~4 per day, clustered around meals)
+  -- Sarah -- BGM spot checks (~4 per day, clustered around meals)
   FOR i IN 0..119 LOOP
     t       := base_ts + (i * INTERVAL '6 hours') + (INTERVAL '30 minutes' * (i % 3));
     glucose := 85 + (i * 7 % 100);
@@ -69,7 +69,7 @@ BEGIN
     );
   END LOOP;
 
-  -- Mike — CGM readings every 5 minutes for 30 days (slightly different profile)
+  -- Mike -- CGM readings every 5 minutes for 30 days (slightly different profile)
   FOR i IN 0..8639 LOOP
     t       := base_ts + (i * INTERVAL '5 minutes');
     glucose := 115 + ROUND(
@@ -87,7 +87,7 @@ BEGIN
     );
   END LOOP;
 
-  -- Mike — BGM spot checks
+  -- Mike -- BGM spot checks
   FOR i IN 0..119 LOOP
     t       := base_ts + (i * INTERVAL '6 hours') + (INTERVAL '15 minutes' * (i % 4));
     glucose := 90 + (i * 11 % 90);
@@ -101,7 +101,7 @@ BEGIN
 
 END $$;
 
--- ── Treatments ────────────────────────────────────────────────────────────────
+-- -- Treatments ----------------------------------------------------------------
 
 \c "kdiab-treatments"
 
@@ -119,7 +119,7 @@ BEGIN
 
   -- 3 bolus+carbs pairs per day per user for 30 days (breakfast, lunch, dinner)
   FOR day IN 0..29 LOOP
-    -- Breakfast ~08:00  (carbs 10–30 g, bolus 1.0–3.0 U, ICR ~10)
+    -- Breakfast ~08:00  (carbs 10-30 g, bolus 1.0-3.0 U, ICR ~10)
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '8 hours';
     carbs := 10 + (day % 21);
     units := ROUND((carbs / 10.0)::NUMERIC, 1);
@@ -130,7 +130,7 @@ BEGIN
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Frühstücksbolus');
 
-    -- Lunch ~13:00  (carbs 20–45 g, bolus 2.0–4.5 U)
+    -- Lunch ~13:00  (carbs 20-45 g, bolus 2.0-4.5 U)
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '13 hours';
     carbs := 20 + (day % 26);
     units := ROUND((carbs / 10.0)::NUMERIC, 1);
@@ -141,7 +141,7 @@ BEGIN
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Mittagsbolus');
 
-    -- Dinner ~19:00  (carbs 5–35 g, bolus 0.5–3.5 U)
+    -- Dinner ~19:00  (carbs 5-35 g, bolus 0.5-3.5 U)
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '19 hours';
     carbs := 5 + (day % 31);
     units := GREATEST(ROUND((carbs / 10.0)::NUMERIC, 1), 0.5);
@@ -152,7 +152,7 @@ BEGIN
     VALUES (gen_random_uuid(), sarah_id, t + INTERVAL '5 minutes', 'BOLUS',
             jsonb_build_object('insulin', units, 'insulinType', 'Humalog'), 'Abendbolus');
 
-    -- Mike — same meal structure
+    -- Mike -- same meal structure
     t := base_ts + (day * INTERVAL '1 day') + INTERVAL '7 hours' + INTERVAL '30 minutes';
     carbs := 15 + (day % 21);
     units := ROUND((carbs / 10.0)::NUMERIC, 1);
@@ -257,7 +257,7 @@ BEGIN
       t := base_ts + (day * INTERVAL '1 day') + INTERVAL '21 hours';
       INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
       VALUES (gen_random_uuid(), mike_id, t, 'NOTE',
-              jsonb_build_object('text', 'Travel day — meals irregular'), NULL);
+              jsonb_build_object('text', 'Travel day -- meals irregular'), NULL);
     END IF;
 
     -- Site change every 3 days for sarah
@@ -335,7 +335,7 @@ BEGIN
           jsonb_build_object('name', 'Schwimmen', 'duration', 45, 'intensity', 'high'), 'Abendtraining');
 END $$;
 
--- ── Device Status (pump snapshots every 5 minutes for 30 days) ───────────────
+-- -- Device Status (pump snapshots every 5 minutes for 30 days) ---------------
 -- Reservoir drains from ~300 U to ~0 U over 3 days, then refills (site change).
 -- Battery drains from 100% to ~20% over 7 days, then recharges.
 
@@ -367,7 +367,7 @@ SELECT
   true
 FROM generate_series(0, 8639) AS s;
 
--- ── Profiles ──────────────────────────────────────────────────────────────────
+-- -- Profiles ------------------------------------------------------------------
 
 \c "kdiab-profiles"
 
@@ -380,7 +380,7 @@ INSERT INTO insulins(id, name) VALUES
   ('0195a850-2527-7cdb-8fde-6cd2e9122fb5', 'Apidra')
 ON CONFLICT DO NOTHING;
 
--- Sarah — archived profile from 60 days ago, active profile from 30 days ago
+-- Sarah -- archived profile from 60 days ago, active profile from 30 days ago
 INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
 VALUES (
   'aaaa0001-0000-0000-0000-000000000001',
@@ -430,7 +430,7 @@ VALUES (
 )
 ON CONFLICT (profile_id) DO NOTHING;
 
--- Mike — one active profile
+-- Mike -- one active profile
 INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
 VALUES (
   'bbbb0001-0000-0000-0000-000000000001',
@@ -458,15 +458,15 @@ ON CONFLICT (profile_id) DO NOTHING;
 -- =============================================================================
 -- kdiab-users seed data
 --
--- user_settings: sarah (mg/dL), dr_house, dr_cameron, admin — mike intentionally omitted
+-- user_settings: sarah (mg/dL), dr_house, dr_cameron, admin -- mike intentionally omitted
 --   so that mike's first login exercises the "new user" path (no settings row exists yet).
 -- doctor_patient: dr_house→sarah, dr_cameron→mike (mirrors Keycloak assignments)
 -- =============================================================================
 
 \c "kdiab-users"
 
--- ── User Settings ─────────────────────────────────────────────────────────────
--- ISO 8601 helper: produces '2025-11-19T12:34:56.789012Z' — required because
+-- -- User Settings -------------------------------------------------------------
+-- ISO 8601 helper: produces '2025-11-19T12:34:56.789012Z' -- required because
 -- the created_at/updated_at columns are varchar(50) and Instant.parse() expects T not space.
 INSERT INTO user_settings(user_id, timezone, language, time_format, glucose_unit, weight_unit,
                           alarm_urgent_high, alarm_high, alarm_low, alarm_urgent_low,
@@ -499,7 +499,7 @@ VALUES
    TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'))
 ON CONFLICT (user_id) DO NOTHING;
 
--- ── Doctor–Patient Assignments ────────────────────────────────────────────────
+-- -- Doctor-Patient Assignments ------------------------------------------------
 INSERT INTO doctor_patient(doctor_id, patient_id, created_at)
 VALUES
   -- dr_house is assigned to sarah

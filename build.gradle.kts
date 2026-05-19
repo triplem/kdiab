@@ -1,7 +1,7 @@
-// ── Service list ──────────────────────────────────────────────────────────────
+// -- Service list --------------------------------------------------------------
 // The eight backend services that produce runnable JARs and Docker images.
 // kdiab-common is a shared library included automatically as a substituted
-// dependency — it does not need its own build/check/clean invocation here.
+// dependency -- it does not need its own build/check/clean invocation here.
 // (#600) Use a single list so adding/removing a service updates all tasks at once.
 val serviceBuilds = listOf(
     "kdiab-measures",
@@ -14,7 +14,7 @@ val serviceBuilds = listOf(
     "kdiab-users",
 )
 
-// ── Frontend (kdiab-ui npm) ────────────────────────────────────────────────────
+// -- Frontend (kdiab-ui npm) ----------------------------------------------------
 val buildFrontend by tasks.registering(Exec::class) {
     group = "build"
     description = "Builds the kdiab-ui React frontend (npm ci + npm run build)."
@@ -22,28 +22,28 @@ val buildFrontend by tasks.registering(Exec::class) {
     commandLine("bash", "-c", "npm ci --silent && npm run build")
 }
 
-// ── Backend aggregate (no frontend) ───────────────────────────────────────────
+// -- Backend aggregate (no frontend) -------------------------------------------
 val buildBackends by tasks.registering {
     group = "build"
     description = "Builds all eight service backends via Gradle (no frontend)."
     dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":buildAll") })
 }
 
-// ── Full build (backends + frontend) ──────────────────────────────────────────
+// -- Full build (backends + frontend) ------------------------------------------
 tasks.register("build") {
     group = "build"
     description = "Builds all service backends and the kdiab-ui frontend."
     dependsOn(buildBackends, buildFrontend)
 }
 
-// ── Full check (all tests, detekt, kover) ─────────────────────────────────────
+// -- Full check (all tests, detekt, kover) -------------------------------------
 tasks.register("check") {
     group = "verification"
     description = "Runs all tests, detekt, and kover for all service backends."
     dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":checkAll") })
 }
 
-// ── Clean ─────────────────────────────────────────────────────────────────────
+// -- Clean ---------------------------------------------------------------------
 val cleanFrontend by tasks.registering(Exec::class) {
     group = "build"
     description = "Deletes kdiab-ui Vite build outputs (dist/ and node_modules/.vite cache)."
@@ -58,7 +58,7 @@ tasks.register("clean") {
     dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":cleanAll") })
 }
 
-// ── Docker ────────────────────────────────────────────────────────────────────
+// -- Docker --------------------------------------------------------------------
 // (#613) Docker images are built sequentially in a single podman compose call to avoid
 // running multiple compose build processes in parallel, which can exhaust available RAM.
 // For a full sequential build use: ./gradlew clean dockerBuild --no-parallel

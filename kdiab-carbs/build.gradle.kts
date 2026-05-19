@@ -92,7 +92,7 @@ testing {
             dependencies {
                 implementation(project())
                 // LiquibaseTestHelper runs migrations against H2 in integration tests.
-                // Not needed at runtime — the liquibase-carbs container handles production migrations.
+                // Not needed at runtime -- the liquibase-carbs container handles production migrations.
                 implementation(libs.liquibase.core)
             }
 
@@ -200,7 +200,7 @@ openApiGenerate {
         "dateLibrary" to "java8",
         "serializationLibrary" to "kotlinx_serialization"
     ))
-    // Shared template dir — all services use the same mustache overrides (#603)
+    // Shared template dir -- all services use the same mustache overrides (#603)
     templateDir.set(rootDir.parentFile.resolve("config/openapi-templates").path)
 }
 
@@ -221,9 +221,9 @@ kover {
         filters {
             excludes {
                 classes(
-                    // Entry point — no logic to measure
+                    // Entry point -- no logic to measure
                     "org.javafreedom.kdiab.carbs.ApplicationKt*",
-                    // DB factory — requires a live Postgres; covered by integration tests
+                    // DB factory -- requires a live Postgres; covered by integration tests
                     "org.javafreedom.kdiab.carbs.infrastructure.persistence.DatabaseFactory*",
                     // DB-layer classes require a live database; covered by integration tests (#599)
                     "org.javafreedom.kdiab.carbs.infrastructure.persistence.ExposedFoodEntryRepository*",
@@ -231,7 +231,7 @@ kover {
                     // Route handlers require auth+DB; covered by integration/e2e tests (#599)
                     "org.javafreedom.kdiab.carbs.adapters.inbound.web.FoodEntryRoutesKt*",
                     "org.javafreedom.kdiab.carbs.adapters.inbound.web.PagedFoodResponseDto*",
-                    // Plugin infrastructure — Ktor plugins require a running server; tested via integration
+                    // Plugin infrastructure -- Ktor plugins require a running server; tested via integration
                     "org.javafreedom.kdiab.carbs.plugins.StatusPagesKt*",
                     "org.javafreedom.kdiab.carbs.plugins.SecurityKt*",
                     "org.javafreedom.kdiab.carbs.plugins.UserPrincipal*",
@@ -241,7 +241,7 @@ kover {
                     "org.javafreedom.kdiab.carbs.domain.model.Role*"
                 )
                 packages(
-                    // Generated OpenAPI stubs — not hand-written, excluded by convention
+                    // Generated OpenAPI stubs -- not hand-written, excluded by convention
                     "org.javafreedom.kdiab.carbs.api"
                 )
             }
@@ -302,21 +302,21 @@ tasks.asciidoctor {
 
 // Using default CycloneDX configuration for now
 
-// ── Composite build aliases (used by root aggregate tasks) ────────────────────
+// -- Composite build aliases (used by root aggregate tasks) --------------------
 tasks.register("buildAll") {
     group = "build"
-    description = "Alias for 'build' — used by root composite aggregate task."
+    description = "Alias for 'build' -- used by root composite aggregate task."
     dependsOn(tasks.named("build"))
 }
 
 tasks.register("checkAll") {
     group = "verification"
-    description = "Alias for 'check' — used by root composite aggregate task."
+    description = "Alias for 'check' -- used by root composite aggregate task."
     dependsOn(tasks.named("check"))
 }
 
 tasks.register("cleanAll") {
     group = "build"
-    description = "Alias for 'clean' — used by root composite aggregate task."
+    description = "Alias for 'clean' -- used by root composite aggregate task."
     dependsOn(tasks.named("clean"))
 }

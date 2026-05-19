@@ -1,4 +1,4 @@
-// ── Constants ──────────────────────────────────────────────────────────────────
+// -- Constants ------------------------------------------------------------------
 
 const MGDL_TO_MMOL = 1 / 18.0
 
@@ -33,7 +33,7 @@ export interface BasalBlock {
   state: 'SCHEDULED' | 'ABOVE' | 'BELOW' | 'SUSPENDED'
 }
 
-// ── Pure helper functions ──────────────────────────────────────────────────────
+// -- Pure helper functions ------------------------------------------------------
 
 export function toDisplay(mgdl: number, unit: string): number {
   return unit === 'mmol/L'
@@ -52,13 +52,13 @@ export function trendArrow(trend: unknown): string {
 }
 
 export function daysSince(iso: string | undefined): string {
-  if (!iso) return '—'
+  if (!iso) return '--'
   const d = (Date.now() - new Date(iso).getTime()) / 86400000
   return `${d.toFixed(1)} d`
 }
 
 export function sensorExpiryLabel(insertedAt: string | undefined, durationHours: number): string {
-  if (!insertedAt) return '—'
+  if (!insertedAt) return '--'
   const remainingMs = new Date(insertedAt).getTime() + durationHours * 3600000 - Date.now()
   const remainingHours = Math.round(remainingMs / 3600000)
   return remainingHours <= 0 ? 'expired' : `exp ${remainingHours}h`
