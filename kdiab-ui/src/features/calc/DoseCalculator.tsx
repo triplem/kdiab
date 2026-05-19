@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { calcApi, type DoseResponse } from '../../api/calcApi'
 import { measuresApi } from '../../api/measuresApi'
 import { treatmentsApi } from '../../api/treatmentsApi'
@@ -33,6 +33,7 @@ function nowIso(): string {
 
 export function DoseCalculator({ userId, glucoseUnit }: Props) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [currentBg, setCurrentBg] = useState('')
   const [trend, setTrend] = useState('FLAT')
   const [carbsGrams, setCarbsGrams] = useState('0')
@@ -129,6 +130,8 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
     },
     onSuccess: () => {
       setLogSuccess(true)
+      setCarbsGrams('0')
+      void queryClient.invalidateQueries({ queryKey: ['latestCgm', userId] })
     },
   })
 
@@ -154,81 +157,86 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
   }
 
   return (
-    <div style={{ maxWidth: '480px' }}>
+    <div>
       <h2>{t('doseCalc.title')}</h2>
 
-      {cgmAgeMin !== null && cgmAgeMin <= CGM_STALE_MIN && (
-        <div style={{ ...cgmBannerStyle, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: 'var(--accent-success)' }}>
-          {t('doseCalc.cgmPrefilled', { age: cgmAgeMin })}
-        </div>
-      )}
-      {cgmAgeMin !== null && cgmAgeMin > CGM_STALE_MIN && (
-        <div style={{ ...cgmBannerStyle, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--accent-warning)' }}>
-          {t('doseCalc.cgmStale', { age: cgmAgeMin })}
-        </div>
-      )}
+      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        {/* Left column: input form */}
+        <div style={{ flex: '0 0 320px', minWidth: '280px' }}>
+          {cgmAgeMin !== null && cgmAgeMin <= CGM_STALE_MIN && (
+            <div style={{ ...cgmBannerStyle, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', color: 'var(--accent-success)' }}>
+              {t('doseCalc.cgmPrefilled', { age: cgmAgeMin })}
+            </div>
+          )}
+          {cgmAgeMin !== null && cgmAgeMin > CGM_STALE_MIN && (
+            <div style={{ ...cgmBannerStyle, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--accent-warning)' }}>
+              {t('doseCalc.cgmStale', { age: cgmAgeMin })}
+            </div>
+          )}
 
-      <form onSubmit={(e) => void handleSubmit(e)} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
-        <div>
-          <label htmlFor="currentBg">{t('doseCalc.currentBg')}</label>
-          <input
-            id="currentBg"
-            type="number"
-            step="0.1"
-            value={currentBg}
-            onChange={(e) => setCurrentBg(e.target.value)}
-            required
-            style={{ width: '100%', marginTop: '0.25rem' }}
-          />
+          <form onSubmit={(e) => void handleSubmit(e)} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
+            <div>
+              <label htmlFor="currentBg">{t('doseCalc.currentBg')}</label>
+              <input
+                id="currentBg"
+                type="number"
+                step="0.1"
+                value={currentBg}
+                onChange={(e) => setCurrentBg(e.target.value)}
+                required
+                style={{ width: '100%', marginTop: '0.25rem' }}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="trend">{t('doseCalc.trend')}</label>
+              <select
+                id="trend"
+                value={trend}
+                onChange={(e) => setTrend(e.target.value)}
+                style={{ width: '100%', marginTop: '0.25rem' }}
+              >
+                {CGM_TRENDS.map((tr) => (
+                  <option key={tr.value} value={tr.value}>
+                    {t(tr.labelKey)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="carbsGrams">{t('doseCalc.carbsGrams')}</label>
+              <input
+                id="carbsGrams"
+                type="number"
+                step="1"
+                min="0"
+                value={carbsGrams}
+                onChange={(e) => setCarbsGrams(e.target.value)}
+                style={{ width: '100%', marginTop: '0.25rem' }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="primary"
+              disabled={calcMutation.isPending || !currentBg}
+              style={{ padding: '0.6rem 1.5rem' }}
+            >
+              {calcMutation.isPending ? t('doseCalc.calculating') : t('doseCalc.calculate')}
+            </button>
+          </form>
+
+          {calcError && (
+            <div role="alert" aria-live="assertive" style={{ color: 'var(--color-error, #dc2626)', marginTop: '1rem' }}>
+              {calcError}
+            </div>
+          )}
         </div>
 
-        <div>
-          <label htmlFor="trend">{t('doseCalc.trend')}</label>
-          <select
-            id="trend"
-            value={trend}
-            onChange={(e) => setTrend(e.target.value)}
-            style={{ width: '100%', marginTop: '0.25rem' }}
-          >
-            {CGM_TRENDS.map((tr) => (
-              <option key={tr.value} value={tr.value}>
-                {t(tr.labelKey)}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label htmlFor="carbsGrams">{t('doseCalc.carbsGrams')}</label>
-          <input
-            id="carbsGrams"
-            type="number"
-            step="1"
-            min="0"
-            value={carbsGrams}
-            onChange={(e) => setCarbsGrams(e.target.value)}
-            style={{ width: '100%', marginTop: '0.25rem' }}
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="primary"
-          disabled={calcMutation.isPending || !currentBg}
-          style={{ padding: '0.6rem 1.5rem' }}
-        >
-          {calcMutation.isPending ? t('doseCalc.calculating') : t('doseCalc.calculate')}
-        </button>
-      </form>
-
-      {calcError && (
-        <div role="alert" aria-live="assertive" style={{ color: 'var(--color-error, #dc2626)', marginTop: '1rem' }}>
-          {calcError}
-        </div>
-      )}
-
-      {result && (
-        <div style={{ marginTop: '1.5rem', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+        {/* Right column: result panel */}
+        {result && (
+        <div style={{ flex: '1 1 300px', padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
           <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
             <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t('doseCalc.totalDose')}</p>
             <p style={{ margin: 0, fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--color-primary)' }}>
@@ -333,6 +341,7 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }
