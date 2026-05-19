@@ -64,9 +64,10 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.h2)
     
-    // Infrastructure — Liquibase is used only in integration tests (LiquibaseTestHelper / H2 schema setup).
-    // Production migrations run in a dedicated Docker container; the app user has DML-only privileges.
-    testImplementation(libs.liquibase.core)
+    // Liquibase is used in production (behind a runMigrations config flag) to run migrations
+    // in test environments (H2 in-memory). Production Docker containers run Liquibase separately
+    // via a dedicated container; the flag is set to false in application.conf.
+    implementation(libs.liquibase.core)
     testImplementation(libs.kotlinx.coroutines.test)
 }
 

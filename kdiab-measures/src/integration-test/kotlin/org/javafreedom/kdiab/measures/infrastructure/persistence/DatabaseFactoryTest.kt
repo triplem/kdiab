@@ -28,6 +28,8 @@ class DatabaseFactoryTest {
             "storage.maximumPoolSize" to "3",
             "storage.isAutoCommit" to "false",
             "storage.transactionIsolation" to "TRANSACTION_REPEATABLE_READ",
+            // LiquibaseTestHelper already ran migrations above — skip to avoid "table already exists".
+            "db.runMigrations" to "false",
         )
 
         DatabaseFactory.init(config)
