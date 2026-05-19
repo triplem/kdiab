@@ -3,6 +3,7 @@ databaseChangeLog:
   - changeSet:
       id: 002
       author: javafreedom
+      dbms: postgresql
       comment: Migrate hba1c_entries into measures table as GLYCOSYLATED_HEMOGLOBIN type; drop hba1c_entries
       changes:
         - sql:
