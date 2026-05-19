@@ -12,6 +12,14 @@
           {
             "path": "backend-image.tar",
             "label": "Backend Docker Image"
+          },
+          {
+            "path": "bom.json",
+            "label": "Backend SBOM (CycloneDX)"
+          },
+          {
+            "path": "api/openapi.yaml",
+            "label": "OpenAPI Specification"
           }
         ]
       }

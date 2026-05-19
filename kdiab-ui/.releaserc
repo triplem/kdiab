@@ -12,6 +12,10 @@
           {
             "path": "kdiab-ui-image.tar",
             "label": "Frontend Docker Image"
+          },
+          {
+            "path": "bom.json",
+            "label": "Frontend SBOM (CycloneDX)"
           }
         ]
       }
