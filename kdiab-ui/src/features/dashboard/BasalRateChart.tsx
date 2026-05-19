@@ -7,6 +7,7 @@ import {
   YAxis,
   CartesianGrid,
   ReferenceArea,
+  Tooltip,
   ResponsiveContainer,
 } from 'recharts'
 import { type BasalBlock, BASAL_COLORS } from './basalUtils'
@@ -14,6 +15,15 @@ import { type BasalBlock, BASAL_COLORS } from './basalUtils'
 interface BasalProfilePoint {
   time: number
   sched: number
+}
+
+interface BasalHoverPoint {
+  time: number
+  delivered: number
+  scheduled: number
+  state: string
+  startMs: number
+  endMs: number
 }
 
 interface BasalRateChartProps {
@@ -34,6 +44,15 @@ export function BasalRateChart({
   const { t } = useTranslation()
   const { formatTime } = useTimeFormat()
 
+  const basalHoverPoints: BasalHoverPoint[] = basalBlocks.map((b) => ({
+    time: Math.round((b.startMs + b.endMs) / 2),
+    delivered: b.deliveredRate,
+    scheduled: b.scheduledRate,
+    state: b.state,
+    startMs: b.startMs,
+    endMs: b.endMs,
+  }))
+
   return (
     <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
       <h3 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '1rem' }}>
@@ -50,6 +69,31 @@ export function BasalRateChart({
           <ResponsiveContainer width="100%" height={120}>
             <ComposedChart data={basalProfileLine} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <Tooltip
+                labelFormatter={(ms: unknown) => {
+                  if (typeof ms !== 'number') return ''
+                  const pt = basalHoverPoints.find(
+                    (p) => ms >= p.startMs && ms <= p.endMs
+                  ) ?? basalHoverPoints.find((p) => p.time === ms)
+                  if (!pt) return formatTime(new Date(ms).toISOString())
+                  return `${formatTime(new Date(pt.startMs).toISOString())} – ${formatTime(new Date(pt.endMs).toISOString())}`
+                }}
+                formatter={(v: unknown, name: unknown, entry: { payload?: BasalHoverPoint }) => {
+                  if (name !== 'delivered' || typeof v !== 'number') return null
+                  const pt = entry.payload
+                  if (!pt) return [`${v.toFixed(2)} U/h`, '']
+                  const state = pt.state === 'ABOVE' ? t('dashboard.basalAbove', { defaultValue: 'Temp above' })
+                             : pt.state === 'BELOW' ? t('dashboard.basalBelow', { defaultValue: 'Temp below' })
+                             : pt.state === 'SUSPENDED' ? t('dashboard.basalSuspended', { defaultValue: 'Suspended' })
+                             : t('dashboard.basalScheduled', { defaultValue: 'Scheduled' })
+                  const diff = pt.delivered !== pt.scheduled
+                    ? ` (sched ${pt.scheduled.toFixed(2)})`
+                    : ''
+                  return [`${v.toFixed(2)} U/h${diff}`, state]
+                }}
+                contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
+                wrapperStyle={{ outline: 'none' }}
+              />
               <XAxis
                 dataKey="time"
                 type="number"
@@ -76,6 +120,16 @@ export function BasalRateChart({
                   ifOverflow="extendDomain"
                 />
               ))}
+              <Line
+                data={basalHoverPoints}
+                dataKey="delivered"
+                name="delivered"
+                stroke="none"
+                strokeWidth={0}
+                dot={false}
+                activeDot={false}
+                isAnimationActive={false}
+              />
               <Line
                 dataKey="sched"
                 stroke="var(--text-secondary)"
