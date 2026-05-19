@@ -347,8 +347,15 @@
     "hba1cError": "Could not load HbA1c data",
     "agpError": "Could not load AGP data",
     "profilesError": "Could not load profiles",
+    "timelineError": "Could not load treatment data",
     "basedOnReadings": "Based on {{count}} CGM readings",
-    "lowReadingCountWarning": "Low reading count — estimate may be unreliable"
+    "lowReadingCountWarning": "Low reading count — estimate may be unreliable",
+    "basalAvg": "Basal Rate Average (Hourly)",
+    "basalAvgHelp": "Average temporary basal rate (U/hr) delivered per hour of the day over the selected period. Based on TEMP_BASAL treatment events. Hours with no data are omitted.",
+    "basalAvgRate": "Avg rate",
+    "bolusAvg": "Bolus Average (Hourly)",
+    "bolusAvgHelp": "Average bolus dose (U) per hour of the day over the selected period. Includes meal boluses and correction boluses. Hours with no data are omitted.",
+    "bolusAvgDose": "Avg dose"
   },
   "profile": {
     "id": "Profile ID",

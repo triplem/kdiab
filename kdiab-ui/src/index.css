@@ -46,6 +46,7 @@
   --chart-cgm: #38bdf8;
   --chart-bgm: #a78bfa;
   --chart-bolus: #f59e0b;
+  --chart-basal: #10b981;
   --chart-p10-p90: rgba(56, 189, 248, 0.15);
   --chart-p25-p75: rgba(56, 189, 248, 0.3);
   --chart-median: #38bdf8;
