@@ -1,0 +1,21 @@
+= kdiab-analyze Developer Documentation
+:toc: left
+:icons: font
+:source-highlighter: rouge
+
+Welcome to the kdiab-analyze documentation hub.
+`kdiab-analyze` is a stateless Backend-for-Frontend that aggregates health data from
+`kdiab-measures`, `kdiab-profiles`, and `kdiab-treatments` and computes clinical analytics
+(timeline, HbA1c, AGP) for the unified frontend.
+
+== Core Documents
+
+* link:requirements.html[Service Requirements]
+* link:device-usage-reference.html[Device Usage Reference]
+
+== Architecture Decision Records
+
+Platform ADRs relevant to kdiab-analyze:
+
+* link:../../docs/adr/ADR-004-bff-stateless-aggregator.html[ADR-004 BFF Stateless Aggregator]
+* link:../../docs/adr/ADR-005-api-first-openapi-codegen.html[ADR-005 API-First OpenAPI Codegen]

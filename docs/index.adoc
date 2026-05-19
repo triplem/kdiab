@@ -2,7 +2,7 @@
 :toc: left
 :icons: font
 
-*kdiab* is a Type 1 Diabetes (T1D) management platform consisting of four services hosted in a single monorepo.
+*kdiab* is a Type 1 Diabetes (T1D) management platform — a monorepo of seven services.
 
 == Services
 
@@ -19,8 +19,17 @@
 | link:../treatments/index.html[kdiab-treatments]
 | Treatment event tracking — bolus, basal, carbs, corrections
 
-| kdiab-analyze
-| Stateless Backend-for-Frontend: aggregates data from all three services and provides a unified analytics dashboard (timeline, HbA1c, AGP, profiles)
+| link:../analyze/index.html[kdiab-analyze]
+| Stateless Backend-for-Frontend: aggregates data and computes analytics (timeline, HbA1c, AGP)
+
+| link:../users/index.html[kdiab-users]
+| User lifecycle, settings, and doctor–patient relationship management
+
+| kdiab-carbs
+| Food / carbohydrate database and entry tracking
+
+| kdiab-calc
+| Stateless dose calculator: bolus recommendation from profile + CGM trend
 |===
 
 == Platform Documents
@@ -30,6 +39,7 @@
 * link:keycloak-setup.html[Keycloak Setup]
 * link:deployment.html[Deployment Guide]
 * link:glossary.html[T1D Glossary]
+* link:ai-development.html[AI Development Prompts]
 
 == Architecture Decision Records
 

@@ -1,0 +1,77 @@
+= kdiab-users Service Requirements
+:toc: left
+
+== 1. System Overview
+
+`kdiab-users` manages user lifecycle, personal settings (glucose unit, weight unit), and
+doctor–patient relationships for the kdiab platform. It is the only service that writes to
+Keycloak — all other services treat Keycloak as read-only identity provider.
+
+== 2. Functional Requirements
+
+=== 2.1 User Self-Registration
+
+* Accept a registration request containing username, email, password, and optional role.
+* Create a Keycloak account and assign the requested role (PATIENT by default).
+* Return HTTP 201 Created on success; 409 Conflict if the username or email is taken.
+
+=== 2.2 User Settings
+
+* Allow a PATIENT to read and update their own settings:
+** `glucoseUnit` — `mg/dL` or `mmol/L`
+** `weightUnit` — `kg` or `lbs`
+* Persist settings in the `user_settings` PostgreSQL table (not Keycloak attributes).
+* Return the current settings on GET; apply partial updates on PATCH.
+
+=== 2.3 Doctor–Patient Relationships
+
+* Allow a DOCTOR to request access to a PATIENT's data.
+* Allow a PATIENT to approve or reject a doctor's access request.
+* Persist relationships in `doctor_patient_relationships` table.
+* Approved relationships grant the DOCTOR read access across all patient data services.
+
+=== 2.4 User Lookup (admin)
+
+* Allow an ADMIN to retrieve any user by ID.
+* Allow a DOCTOR to list their approved patients.
+
+== 3. Non-Functional Requirements
+
+=== 3.1 Authentication & Authorisation
+
+* All endpoints require a valid JWT Bearer token.
+* PATIENT endpoints enforce `principal.userId == targetUserId` (self-only access).
+* DOCTOR endpoints enforce the doctor–patient relationship check.
+* ADMIN role grants access to all user records.
+
+=== 3.2 Keycloak Integration
+
+* User creation writes to Keycloak via Admin REST API.
+* A circuit breaker protects the Keycloak Admin API call (fail-fast on Keycloak downtime).
+* JWT claims are verified against the Keycloak JWKS endpoint.
+
+=== 3.3 Persistence
+
+* PostgreSQL database `kdiab-users` managed by Liquibase migrations.
+* Migrations run in a dedicated Liquibase init container; the application uses a DML-only role.
+
+=== 3.4 Security
+
+* Passwords are never stored — Keycloak owns the credential store.
+* No PII is logged in plaintext; log entries reference `userId` (UUID) only.
+
+== 4. API Endpoints
+
+All endpoints are under `/api/v1/` and require a Bearer JWT unless noted.
+
+[cols="1,2,3"]
+|===
+| Method | Path | Description
+
+| POST | `/users`                          | Register a new user (public)
+| GET  | `/users/{userId}`                 | Get user details (self / doctor / admin)
+| GET  | `/users/{userId}/settings`        | Get user settings (self / admin)
+| PATCH | `/users/{userId}/settings`       | Update user settings (self / admin)
+| POST | `/users/{userId}/doctor-requests` | DOCTOR requests access to PATIENT
+| PUT  | `/users/{userId}/doctor-requests/{doctorId}` | PATIENT approves/rejects access
+|===

@@ -10,8 +10,7 @@ Welcome to the KDiab Measures project documentation hub. Use the links below to 
 * link:architecture.html[Architecture & Design]
 * link:how-to-run.html[How to Run]
 * link:requirements.html[System Requirements]
-* link:prompts.html[AI Development Prompts]
-* link:ai-agents.html[AI Agent Personas]
+* link:../../docs/ai-development.html[AI Development Prompts] (platform-wide)
 
 == Architecture Decision Records (ADR)
 
