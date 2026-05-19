@@ -2,8 +2,10 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>MagicNumber:ExposedHbA1cEntryRepository.kt$HbA1cEntriesTable$20</ID>
-    <ID>MaxLineLength:ExposedHbA1cEntryRepository.kt$ExposedHbA1cEntryRepository$it[HbA1cEntriesTable.measuredAt] = java.time.Instant.ofEpochMilli(entry.measuredAt.toEpochMilliseconds())</ID>
-    <ID>MaxLineLength:HbA1cEntryRoutes.kt$val targetUserId = parseUuid(call.parameters["userId"] ?: throw BusinessValidationException("userId is required"))</ID>
+    <!--
+      Application.kt: readyz health check uses withContext(Dispatchers.IO) directly because
+      there is no suitable injection point for a one-off blocking DB probe in the health endpoint.
+    -->
+    <ID>InjectDispatcher:Application.kt$IO</ID>
   </CurrentIssues>
 </SmellBaseline>

@@ -155,7 +155,14 @@ fun Hba1cResult.toResponse() = Hba1cResponseDto(
     hba1c = hba1c,
     meanGlucose = meanGlucose,
     readingCount = readingCount,
-    tir = TirBreakdownDto(tir.veryLowCount, tir.belowCount, tir.inRangeCount, tir.aboveCount, tir.highCount, tir.totalCount),
+    tir = TirBreakdownDto(
+        veryLowCount = tir.veryLowCount,
+        belowCount = tir.belowCount,
+        inRangeCount = tir.inRangeCount,
+        aboveCount = tir.aboveCount,
+        highCount = tir.highCount,
+        totalCount = tir.totalCount,
+    ),
     warnings = warnings,
 )
 

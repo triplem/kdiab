@@ -87,7 +87,9 @@ class CircuitBreaker(
         probeInFlight.set(false)
         lastFailureTime.set(System.currentTimeMillis())
         val count = failureCount.incrementAndGet()
-        logger.warn { "circuit_breaker service=$name failures=$count threshold=$failureThreshold reason=${cause.message}" }
+        logger.warn {
+            "circuit_breaker service=$name failures=$count threshold=$failureThreshold reason=${cause.message}"
+        }
         if (count >= failureThreshold) {
             if (state.compareAndSet(State.CLOSED, State.OPEN) ||
                 state.compareAndSet(State.HALF_OPEN, State.OPEN)

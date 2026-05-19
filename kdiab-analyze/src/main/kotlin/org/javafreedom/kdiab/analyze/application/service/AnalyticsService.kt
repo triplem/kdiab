@@ -113,7 +113,9 @@ class AnalyticsService(
         val fetchResult = runCatching {
             fetchCgmReadings(userId, from, to, authorization, glucoseUnit, correlationId)
         }.getOrElse { e ->
-            logger.warn(e) { "analytics_service action=getHba1c status=upstream_error userId=$userId — returning empty result" }
+            logger.warn(e) {
+                "analytics_service action=getHba1c status=upstream_error userId=$userId — returning empty result"
+            }
             null
         }
 
@@ -173,7 +175,9 @@ class AnalyticsService(
         val allMeasures = try {
             getMeasuresCached(userId, from, to, authorization, correlationId)
         } catch (e: Exception) {
-            logger.warn(e) { "analytics_service action=getAgp status=upstream_error userId=$userId — returning empty result" }
+            logger.warn(e) {
+                "analytics_service action=getAgp status=upstream_error userId=$userId — returning empty result"
+            }
             return AgpResult(
                 hourlyData = (0 until HOURS_IN_DAY).map { hour ->
                     AgpHourlyData(hour = hour, p10 = null, p25 = null, median = null, p75 = null, p90 = null, count = 0)
