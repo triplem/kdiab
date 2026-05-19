@@ -141,21 +141,23 @@ export function UserSettings() {
               <Controller
                 name="timeFormat"
                 control={control}
-                render={({ field }) =>
-                  ([12, 24] as const).map((v) => (
-                    <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-                      <input
-                        type="radio"
-                        value={v}
-                        checked={field.value === v}
-                        onChange={() => field.onChange(v)}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                      />
-                      {v}h
-                    </label>
-                  ))
-                }
+                render={({ field }) => (
+                  <>
+                    {([12, 24] as const).map((v) => (
+                      <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                        <input
+                          type="radio"
+                          value={v}
+                          checked={field.value === v}
+                          onChange={() => field.onChange(v)}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                        />
+                        {v}h
+                      </label>
+                    ))}
+                  </>
+                )}
               />
             </div>
           </fieldset>
