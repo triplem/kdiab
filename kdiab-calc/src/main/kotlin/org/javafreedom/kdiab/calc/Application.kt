@@ -5,7 +5,6 @@ import io.ktor.client.engine.cio.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.swagger.*
@@ -26,7 +25,10 @@ import org.javafreedom.kdiab.common.plugins.HTTP_RETRY_MAX_DELAY_MS_DEFAULT
 import org.javafreedom.kdiab.common.plugins.HTTP_RETRY_MAX_RETRIES_DEFAULT
 import org.javafreedom.kdiab.common.plugins.HTTP_SERVER_ERROR_STATUS
 import org.javafreedom.kdiab.common.plugins.HTTP_SOCKET_TIMEOUT_MS_DEFAULT
+import org.javafreedom.kdiab.common.plugins.HealthService
 import org.javafreedom.kdiab.common.plugins.configureCommonPlugins
+import org.javafreedom.kdiab.common.plugins.configureContentNegotiation
+import org.javafreedom.kdiab.common.plugins.configureHealth
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 
 private val logger = KotlinLogging.logger {}
@@ -46,6 +48,9 @@ fun Application.module(
         }
     }
 
+    configureContentNegotiation()
+
+    // Build the shared Json instance for the HTTP client.
     val prettyPrint = environment.config.propertyOrNull("json.prettyPrint")
         ?.getString()?.toBoolean() ?: false
     val json = Json {
@@ -53,7 +58,6 @@ fun Application.module(
         ignoreUnknownKeys = true
     }
 
-    install(ContentNegotiation) { json(json) }
     install(Resources)
 
     val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
@@ -117,12 +121,13 @@ fun Application.module(
         resolvedService = DoseCalculationService(profilesClient)
     }
 
+    // kdiab-calc is stateless (no DB) — always ready once the process is running.
+    configureHealth(HealthService { true })
+
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
 
     routing {
         get("/") { call.respondText("kdiab-calc is running!") }
-        get("/healthz") { call.respond(HttpStatusCode.OK) }
-        get("/readyz") { call.respond(HttpStatusCode.OK) }
 
         route("/api/v1") {
             calcRoutes(resolvedService)
