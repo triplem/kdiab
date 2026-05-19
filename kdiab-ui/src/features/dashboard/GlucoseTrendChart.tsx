@@ -29,6 +29,35 @@ function treatmentAppearance(type: string): { color: string; shape: string } {
   return { color: '#6366f1', shape: '▼' }
 }
 
+// BGM dot — large transparent hit target ensures Tooltip fires reliably on hover.
+function BgmDot(props: unknown) {
+  const p = props as Record<string, unknown>
+  const cx = (p['cx'] as number) ?? 0
+  const cy = (p['cy'] as number) ?? 0
+  const eventProps: Record<string, unknown> = {}
+  for (const key of Object.keys(p)) {
+    if (key.startsWith('on')) eventProps[key] = p[key]
+  }
+  return (
+    <g {...eventProps} style={{ cursor: 'crosshair' }}>
+      <circle cx={cx} cy={cy} r={12} fill="transparent" pointerEvents="all" />
+      <circle cx={cx} cy={cy} r={5} fill="#ef4444" stroke="#fff" strokeWidth={1.5} />
+    </g>
+  )
+}
+
+function BgmActiveDot(props: unknown) {
+  const p = props as Record<string, unknown>
+  const cx = (p['cx'] as number) ?? 0
+  const cy = (p['cy'] as number) ?? 0
+  return (
+    <g>
+      <circle cx={cx} cy={cy} r={12} fill="#ef4444" fillOpacity={0.2} stroke="#ef4444" strokeWidth={1} />
+      <circle cx={cx} cy={cy} r={6} fill="#ef4444" stroke="#fff" strokeWidth={1.5} />
+    </g>
+  )
+}
+
 // Treatment marker shape — `unknown` satisfies Recharts' contravariant dot prop type; cast internally.
 function TreatmentDot(props: unknown) {
   const p = props as Record<string, unknown>
@@ -156,8 +185,8 @@ export function GlucoseTrendChart({
                 name="bgm"
                 stroke="none"
                 strokeWidth={0}
-                dot={{ fill: '#ef4444', stroke: '#fff', strokeWidth: 1.5, r: 5 }}
-                activeDot={{ fill: '#ef4444', stroke: '#fff', strokeWidth: 1.5, r: 7 }}
+                dot={(props: object) => <BgmDot {...props} />}
+                activeDot={(props: object) => <BgmActiveDot {...props} />}
                 isAnimationActive={false}
                 connectNulls={false}
               />
