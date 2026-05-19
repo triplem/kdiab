@@ -58,15 +58,15 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation(libs.kotlinx.coroutines.core)
 
-    // Infrastructure
-    implementation(libs.liquibase.core)
-
     testImplementation(kotlin("test-junit5"))
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.client.content.negotiation)
     testImplementation(libs.mockk)
     testImplementation(libs.h2)
     testImplementation(libs.kotlinx.coroutines.test)
+    // Liquibase is used only in integration tests (LiquibaseTestHelper / H2 schema setup).
+    // Production migrations run in a dedicated Docker container; the app user has DML-only privileges.
+    testImplementation(libs.liquibase.core)
 }
 
 kotlin {

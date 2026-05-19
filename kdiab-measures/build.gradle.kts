@@ -64,8 +64,9 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.h2)
     
-    // Infrastructure
-    implementation(libs.liquibase.core)
+    // Infrastructure — Liquibase is used only in integration tests (LiquibaseTestHelper / H2 schema setup).
+    // Production migrations run in a dedicated Docker container; the app user has DML-only privileges.
+    testImplementation(libs.liquibase.core)
     testImplementation(libs.kotlinx.coroutines.test)
 }
 

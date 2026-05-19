@@ -4,10 +4,6 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.config.ApplicationConfig
-import liquibase.Liquibase
-import liquibase.database.DatabaseFactory as LiquibaseDatabaseFactory
-import liquibase.database.jvm.JdbcConnection
-import liquibase.resource.ClassLoaderResourceAccessor
 import org.jetbrains.exposed.v1.jdbc.Database
 
 private val logger = KotlinLogging.logger {}
@@ -43,17 +39,7 @@ object DatabaseFactory {
             validate()
         }
 
-        // Run Liquibase migrations before handing connections to the application.
-        // Tables are managed exclusively by Liquibase — SchemaUtils.create is not used.
-        logger.info { "Running Liquibase migrations on $jdbcUrl" }
-        java.sql.DriverManager.getConnection(jdbcUrl, username, password).use { conn ->
-            val lbDatabase = LiquibaseDatabaseFactory.getInstance()
-                .findCorrectDatabaseImplementation(JdbcConnection(conn))
-            Liquibase("db/changelog/db.changelog-root.yaml", ClassLoaderResourceAccessor(), lbDatabase)
-                .update("")
-        }
-        logger.info { "Liquibase migrations completed" }
-
+        logger.info { "Connecting to database $jdbcUrl" }
         val dataSource = HikariDataSource(hikariConfig)
         Database.connect(dataSource)
     }
