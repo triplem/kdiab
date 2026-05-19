@@ -15,8 +15,8 @@
 --   - user_settings row (timezone, language, units, alarm thresholds)
 --
 -- Doctor-patient assignments (kdiab-users):
---   dr_house   (33333333-...) DOCTOR → sarah
---   dr_cameron (44444444-...) DOCTOR → mike
+--   dr_house   (33333333-...) DOCTOR -> sarah
+--   dr_cameron (44444444-...) DOCTOR -> mike
 -- =============================================================================
 
 \c "kdiab-measures"
@@ -460,7 +460,7 @@ ON CONFLICT (profile_id) DO NOTHING;
 --
 -- user_settings: sarah (mg/dL), dr_house, dr_cameron, admin -- mike intentionally omitted
 --   so that mike's first login exercises the "new user" path (no settings row exists yet).
--- doctor_patient: dr_house→sarah, dr_cameron→mike (mirrors Keycloak assignments)
+-- doctor_patient: dr_house->sarah, dr_cameron->mike (mirrors Keycloak assignments)
 -- =============================================================================
 
 \c "kdiab-users"
