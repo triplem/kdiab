@@ -6,11 +6,10 @@ on:
     paths:
       - 'docs/**'
       - 'kdiab-measures/docs/**'
-      - 'kdiab-measures/backend/docs/**'
       - 'kdiab-profiles/docs/**'
-      - 'kdiab-profiles/backend/docs/**'
       - 'kdiab-treatments/docs/**'
-      - 'kdiab-treatments/backend/docs/**'
+      - 'kdiab-analyze/docs/**'
+      - 'kdiab-users/docs/**'
       - '.github/workflows/docs-pages.yml'
   workflow_dispatch:
 
@@ -52,18 +51,26 @@ jobs:
       - name: Build treatments docs
         run: cd kdiab-treatments && ./gradlew asciidoctor --no-configuration-cache
 
+      - name: Build analyze docs
+        run: cd kdiab-analyze && ./gradlew asciidoctor --no-configuration-cache
+
+      - name: Build users docs
+        run: cd kdiab-users && ./gradlew asciidoctor --no-configuration-cache
+
       - name: Build root docs
         run: |
           mkdir -p pages/root pages/root/adr
-          asciidoctor -D pages/root       docs/index.adoc docs/architecture.adoc docs/how-to-run.adoc
+          asciidoctor -D pages/root       docs/index.adoc docs/architecture.adoc docs/deployment.adoc docs/glossary.adoc docs/how-to-run.adoc docs/keycloak-setup.adoc
           asciidoctor -D pages/root/adr   docs/adr/*.adoc
 
       - name: Assemble pages
         run: |
-          mkdir -p pages/measures pages/profiles pages/treatments
-          cp -r kdiab-measures/build/docs/asciidoc/. pages/measures/
+          mkdir -p pages/measures pages/profiles pages/treatments pages/analyze pages/users
+          cp -r kdiab-measures/build/docs/asciidoc/.  pages/measures/
           cp -r kdiab-profiles/build/docs/asciidoc/.  pages/profiles/
           cp -r kdiab-treatments/build/docs/asciidoc/. pages/treatments/
+          cp -r kdiab-analyze/build/docs/asciidoc/.   pages/analyze/
+          cp -r kdiab-users/build/docs/asciidoc/.     pages/users/
           cat > pages/index.html <<'EOF'
           <!DOCTYPE html>
           <html lang="en">
