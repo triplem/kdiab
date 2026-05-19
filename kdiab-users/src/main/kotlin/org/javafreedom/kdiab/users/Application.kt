@@ -24,7 +24,7 @@ import org.javafreedom.kdiab.users.application.service.DoctorPatientService
 import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakCircuitBreakerOpenException
+import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
@@ -66,7 +66,7 @@ fun Application.module(
     configureMetrics()
     configureSecurity()
     configureStatusPages {
-        exception<KeycloakCircuitBreakerOpenException> { call, cause ->
+        exception<CircuitBreakerOpenException> { call, cause ->
             val status = HttpStatusCode.ServiceUnavailable
             val msg = "Keycloak Admin API temporarily unavailable: ${cause.service}"
             call.respond(status, ErrorResponse(status.value, msg))

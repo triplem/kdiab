@@ -1,6 +1,7 @@
 package org.javafreedom.kdiab.analyze.adapters.outbound.http
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.plugins.HttpRequestRetry

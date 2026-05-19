@@ -1,5 +1,7 @@
 package org.javafreedom.kdiab.analyze.adapters.outbound.http
 
+import org.javafreedom.kdiab.common.plugins.CircuitBreaker
+import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay

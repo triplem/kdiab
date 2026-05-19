@@ -22,6 +22,7 @@ import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
+import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 
 private val logger = KotlinLogging.logger {}
 
