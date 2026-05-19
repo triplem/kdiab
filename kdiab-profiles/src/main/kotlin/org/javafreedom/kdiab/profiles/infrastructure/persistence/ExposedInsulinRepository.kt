@@ -4,10 +4,12 @@ package org.javafreedom.kdiab.profiles.infrastructure.persistence
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.profiles.domain.model.Insulin
 import org.javafreedom.kdiab.profiles.domain.repository.InsulinRepository
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.*
+import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
@@ -38,22 +40,38 @@ class ExposedInsulinRepository(
     }
 
     override suspend fun create(name: String): Insulin = withContext(ioDispatcher) {
-        suspendTransaction {
-            val newId = Uuid.random()
-            Insulins.insert {
-                it[Insulins.id] = newId
-                it[Insulins.name] = name
+        try {
+            suspendTransaction {
+                val newId = Uuid.random()
+                Insulins.insert {
+                    it[Insulins.id] = newId
+                    it[Insulins.name] = name
+                }
+                Insulin(id = newId, name = name)
             }
-            Insulin(id = newId, name = name)
+        } catch (ex: ExposedSQLException) {
+            val sqlState = ex.cause?.let { (it as? java.sql.SQLException)?.sqlState }
+            if (sqlState == "23505") {
+                throw ConflictException("An insulin with that name already exists", ex)
+            }
+            throw ex
         }
     }
 
     override suspend fun update(id: Uuid, name: String): Insulin? = withContext(ioDispatcher) {
-        suspendTransaction {
-            val updated = Insulins.update({ Insulins.id eq id }) {
-                it[Insulins.name] = name
+        try {
+            suspendTransaction {
+                val updated = Insulins.update({ Insulins.id eq id }) {
+                    it[Insulins.name] = name
+                }
+                if (updated > 0) Insulin(id = id, name = name) else null
             }
-            if (updated > 0) Insulin(id = id, name = name) else null
+        } catch (ex: ExposedSQLException) {
+            val sqlState = ex.cause?.let { (it as? java.sql.SQLException)?.sqlState }
+            if (sqlState == "23505") {
+                throw ConflictException("An insulin with that name already exists", ex)
+            }
+            throw ex
         }
     }
 
