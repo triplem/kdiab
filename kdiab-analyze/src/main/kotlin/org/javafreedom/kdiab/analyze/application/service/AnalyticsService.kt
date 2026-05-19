@@ -110,10 +110,14 @@ class AnalyticsService(
         tirLow: Double,
         tirHigh: Double,
     ): Hba1cResult {
-        val fetchResult = try {
+        val fetchResult = runCatching {
             fetchCgmReadings(userId, from, to, authorization, glucoseUnit, correlationId)
-        } catch (e: Exception) {
+        }.getOrElse { e ->
             logger.warn(e) { "analytics_service action=getHba1c status=upstream_error userId=$userId — returning empty result" }
+            null
+        }
+
+        if (fetchResult == null) {
             return Hba1cResult(
                 hba1c = null,
                 meanGlucose = 0.0,
@@ -122,8 +126,8 @@ class AnalyticsService(
                 warnings = listOf("Glucose data is temporarily unavailable. Please try again later."),
             )
         }
-        val readings = fetchResult.readings
 
+        val readings = fetchResult.readings
         val warnings = buildList {
             if (readings.isEmpty()) {
                 add("No CGM readings found in the selected timeframe.")
@@ -140,15 +144,13 @@ class AnalyticsService(
             }
         }
 
-        if (readings.isEmpty()) {
-            return Hba1cResult(
-                hba1c = null, meanGlucose = 0.0, readingCount = 0, tir = TirBreakdown(), warnings = warnings
-            )
+        val (hba1c, mean) = if (readings.isEmpty()) {
+            null to 0.0
+        } else {
+            val m = readings.average()
+            (m + DCCT_ADDEND) / DCCT_DIVISOR to m
         }
-
-        val mean = readings.average()
-        val hba1c = (mean + DCCT_ADDEND) / DCCT_DIVISOR
-        val tir = computeTir(readings, tirLow, tirHigh)
+        val tir = if (readings.isEmpty()) TirBreakdown() else computeTir(readings, tirLow, tirHigh)
 
         return Hba1cResult(
             hba1c = hba1c, meanGlucose = mean, readingCount = readings.size, tir = tir, warnings = warnings
