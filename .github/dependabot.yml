@@ -1,7 +1,7 @@
 version: 2
 updates:
 
-  # ── GitHub Actions ──────────────────────────────────────────────────────────
+  # -- GitHub Actions ----------------------------------------------------------
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -11,7 +11,7 @@ updates:
       github-actions:
         patterns: ["*"]
 
-  # ── kdiab-measures ──────────────────────────────────────────────────────────
+  # -- kdiab-measures ----------------------------------------------------------
   - package-ecosystem: "gradle"
     directory: "/kdiab-measures"
     schedule:
@@ -31,7 +31,7 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  # ── kdiab-profiles ──────────────────────────────────────────────────────────
+  # -- kdiab-profiles ----------------------------------------------------------
   - package-ecosystem: "gradle"
     directory: "/kdiab-profiles"
     schedule:
@@ -53,7 +53,7 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  # ── kdiab-treatments ────────────────────────────────────────────────────────
+  # -- kdiab-treatments --------------------------------------------------------
   - package-ecosystem: "gradle"
     directory: "/kdiab-treatments"
     schedule:
@@ -73,7 +73,7 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  # ── kdiab-analyze ───────────────────────────────────────────────────────────
+  # -- kdiab-analyze -----------------------------------------------------------
   - package-ecosystem: "gradle"
     directory: "/kdiab-analyze"
     schedule:
@@ -93,7 +93,7 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  # ── kdiab-carbs ─────────────────────────────────────────────────────────────
+  # -- kdiab-carbs -------------------------------------------------------------
   - package-ecosystem: "gradle"
     directory: "/kdiab-carbs"
     schedule:
@@ -113,7 +113,7 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  # ── kdiab-calc ──────────────────────────────────────────────────────────────
+  # -- kdiab-calc --------------------------------------------------------------
   - package-ecosystem: "gradle"
     directory: "/kdiab-calc"
     schedule:
@@ -133,7 +133,7 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  # ── kdiab-users ─────────────────────────────────────────────────────────────
+  # -- kdiab-users -------------------------------------------------------------
   - package-ecosystem: "gradle"
     directory: "/kdiab-users"
     schedule:
@@ -153,7 +153,7 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  # ── kdiab-nightscout ────────────────────────────────────────────────────────
+  # -- kdiab-nightscout --------------------------------------------------------
   - package-ecosystem: "gradle"
     directory: "/kdiab-nightscout"
     schedule:
@@ -173,7 +173,7 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  # ── kdiab-ui (unified SPA) ──────────────────────────────────────────────────
+  # -- kdiab-ui (unified SPA) --------------------------------------------------
   - package-ecosystem: "npm"
     directory: "/kdiab-ui"
     schedule:
@@ -195,7 +195,7 @@ updates:
         patterns: ["*"]
         update-types: ["patch"]
 
-  # ── Docker (root compose) ───────────────────────────────────────────────────
+  # -- Docker: root compose ----------------------------------------------------
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -204,6 +204,120 @@ updates:
     ignore:
       - dependency-name: "eclipse-temurin"
         versions: [">= 22"]
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # -- Docker: kdiab-measures --------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/kdiab-measures"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # -- Docker: kdiab-profiles --------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/kdiab-profiles"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # -- Docker: kdiab-treatments ------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/kdiab-treatments"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # -- Docker: kdiab-analyze ---------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/kdiab-analyze"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # -- Docker: kdiab-carbs -----------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/kdiab-carbs"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # -- Docker: kdiab-calc ------------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/kdiab-calc"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # -- Docker: kdiab-users -----------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/kdiab-users"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # -- Docker: kdiab-nightscout ------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/kdiab-nightscout"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        versions: [">= 22"]
+    groups:
+      docker:
+        patterns: ["*"]
+
+  # -- Docker: kdiab-ui --------------------------------------------------------
+  - package-ecosystem: "docker"
+    directory: "/kdiab-ui"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
     groups:
       docker:
         patterns: ["*"]
