@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
@@ -51,7 +51,7 @@ export function UserSettings() {
     queryFn: () => usersApi.getMe().then((r) => r.data),
   })
 
-  const { register, handleSubmit, watch, reset, formState: { errors, isDirty } } = useForm<FormData>({
+  const { register, handleSubmit, watch, reset, control, formState: { errors, isDirty } } = useForm<FormData>({
     resolver: zodResolver(schema),
     values: data?.settings
       ? {
@@ -138,12 +138,25 @@ export function UserSettings() {
           <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
             <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.timeFormat')}</legend>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              {([12, 24] as const).map((v) => (
-                <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-                  <input type="radio" value={v} {...register('timeFormat', { valueAsNumber: true })} />
-                  {v}h
-                </label>
-              ))}
+              <Controller
+                name="timeFormat"
+                control={control}
+                render={({ field }) =>
+                  ([12, 24] as const).map((v) => (
+                    <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                      <input
+                        type="radio"
+                        value={v}
+                        checked={field.value === v}
+                        onChange={() => field.onChange(v)}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
+                      {v}h
+                    </label>
+                  ))
+                }
+              />
             </div>
           </fieldset>
         </div>
