@@ -1,4 +1,4 @@
-= AI Development Prompts & Guidelines
+= kdiab AI Development Prompts & Guidelines
 :toc: left
 
 This document provides a set of reusable prompts and guidelines for AI agents working on the KDiab project. These prompts should be used to ensure consistency, quality, and adherence to the project's architectural principles.

@@ -9,6 +9,8 @@ on:
       - 'kdiab-profiles/docs/**'
       - 'kdiab-treatments/docs/**'
       - 'kdiab-analyze/docs/**'
+      - 'kdiab-carbs/docs/**'
+      - 'kdiab-calc/docs/**'
       - 'kdiab-users/docs/**'
       - '.github/workflows/docs-pages.yml'
   release:

@@ -1,0 +1,91 @@
+= kdiab-analyze Service Requirements
+:toc: left
+
+== 1. System Overview
+
+`kdiab-analyze` is a stateless Backend-for-Frontend (BFF) aggregator for the kdiab platform.
+It has no database of its own — it fetches data from `kdiab-measures`, `kdiab-profiles`, and
+`kdiab-treatments` in parallel, computes clinical analytics, and returns a unified response to
+the frontend in a single round-trip.
+
+== 2. Functional Requirements
+
+=== 2.1 Timeline Aggregation
+
+* Fetch all CGM readings and treatment events for a user within a requested time window.
+* Return a merged, chronologically ordered list of `TimelineMeasure` and `TimelineTreatment` entries.
+* Parallelize upstream calls to minimise latency (coroutineScope + async).
+
+=== 2.2 HbA1c Estimation
+
+* Compute a DCCT-formula HbA1c estimate from CGM readings in the requested window:
+  `HbA1c (%) = (mean_glucose_mg/dL + 46.7) / 28.7`
+* Convert mmol/L readings to mg/dL before averaging (multiply by 18.0).
+* Return `null` when no CGM readings exist in the timeframe.
+* Return Time In Range (TIR) breakdown alongside the estimate:
+
+[cols="1,2,1"]
+|===
+| Zone | Threshold (mg/dL) | Field
+
+| Very Low  | < 54           | `veryLowCount`
+| Below     | 54 – 70        | `belowCount`
+| In Range  | 70 – 180       | `inRangeCount`
+| Above     | 180 – 250      | `aboveCount`
+| High      | > 250          | `highCount`
+|===
+
+=== 2.3 Ambulatory Glucose Profile (AGP)
+
+* Group CGM readings by UTC hour (0–23) and compute p10/p25/p50/p75/p90 percentiles per bucket.
+* Return 24 `AgpHourlyData` objects; buckets with no readings have `null` percentile values.
+* Percentile computation uses linear interpolation on sorted values.
+
+=== 2.4 Active Profiles
+
+* Return the user's ACTIVE and most-recent ARCHIVED basal profiles from `kdiab-profiles`.
+
+== 3. Non-Functional Requirements
+
+=== 3.1 Stateless Operation
+
+* No database, no shared state — safe to scale horizontally.
+* Every request fetches fresh data from upstream services.
+
+=== 3.2 Authentication & Authorisation
+
+* Require a valid JWT Bearer token on every endpoint.
+* Forward the token unchanged to all upstream services.
+* Keycloak client (`kdiab-analyze-frontend`) must have audience mappers for all six backends so
+  a single token is accepted everywhere.
+
+=== 3.3 Performance
+
+* Upstream calls are made in parallel; total latency ≈ max(upstream latency) rather than their sum.
+* Target response time < 2 s for a 30-day window on average hardware.
+
+=== 3.4 Error Handling
+
+* Upstream HTTP errors (5xx) map to 502 Bad Gateway via `UpstreamException`.
+* 401/403 from upstream propagate unchanged to the client.
+
+=== 3.5 CORS
+
+* Configurable allowed origins via `CORS_ALLOWED_ORIGINS` environment variable.
+* Default: `http://localhost:3005` for local development.
+
+== 4. API Endpoints
+
+All endpoints are under `/api/v1/users/{userId}/` and require a Bearer JWT.
+
+[cols="1,2,3"]
+|===
+| Method | Path | Description
+
+| GET | `/users/{userId}/timeline`          | Combined measures + treatments
+| GET | `/users/{userId}/analytics/hba1c`   | HbA1c estimate + TIR breakdown
+| GET | `/users/{userId}/analytics/agp`     | AGP hourly percentiles (24 buckets)
+| GET | `/users/{userId}/profiles/active`   | Active and archived profiles
+|===
+
+All endpoints accept `from` and `to` query parameters (ISO-8601, required).
