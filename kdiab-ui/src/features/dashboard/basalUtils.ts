@@ -52,13 +52,13 @@ export function trendArrow(trend: unknown): string {
 }
 
 export function daysSince(iso: string | undefined): string {
-  if (!iso) return '--'
+  if (!iso) return '—'
   const d = (Date.now() - new Date(iso).getTime()) / 86400000
   return `${d.toFixed(1)} d`
 }
 
 export function sensorExpiryLabel(insertedAt: string | undefined, durationHours: number): string {
-  if (!insertedAt) return '--'
+  if (!insertedAt) return '—'
   const remainingMs = new Date(insertedAt).getTime() + durationHours * 3600000 - Date.now()
   const remainingHours = Math.round(remainingMs / 3600000)
   return remainingHours <= 0 ? 'expired' : `exp ${remainingHours}h`
