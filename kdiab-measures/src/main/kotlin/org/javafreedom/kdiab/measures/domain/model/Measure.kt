@@ -13,13 +13,16 @@ enum class MeasureType {
     PULSE,
     BG_CHECK,
     KETONE_CHECK,
+    GLYCOSYLATED_HEMOGLOBIN,
 }
 
 enum class MeasureSource {
     MANUAL,
     NIGHTSCOUT,
     GOOGLE_FIT,
-    APPLE_HEALTH
+    APPLE_HEALTH,
+    LAB,
+    ESTIMATED,
 }
 
 enum class MeasureStatus {

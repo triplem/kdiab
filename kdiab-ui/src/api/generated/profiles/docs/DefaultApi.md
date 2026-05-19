@@ -176,7 +176,7 @@ const { status, data } = await apiInstance.createInsulin(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**201** | Created insulin |  -  |
+|**201** | Created insulin |  * Location - URL of the created resource <br>  |
 |**400** | Invalid name (blank or too long) |  -  |
 |**401** | Unauthorized |  -  |
 |**409** | Insulin with that name already exists |  -  |
@@ -234,7 +234,7 @@ const { status, data } = await apiInstance.createProfile(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**201** | Profile created |  -  |
+|**201** | Profile created |  * Location - URL of the created resource <br>  |
 |**400** | Validation error |  -  |
 |**401** | Unauthorized |  -  |
 |**403** | Forbidden |  -  |

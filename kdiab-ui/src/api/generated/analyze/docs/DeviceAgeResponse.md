@@ -6,10 +6,9 @@ Most recent timestamp for each device-related treatment type. Null if that treat
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**catheterChangedAt** | **string** | When the infusion site/cannula was last replaced (SITE_CHANGE) | [optional] [default to undefined]
-**reservoirChangedAt** | **string** | When the insulin cartridge was last replaced (INSULIN_CHANGE) | [optional] [default to undefined]
-**sensorInsertedAt** | **string** | When the CGM sensor was last inserted (SENSOR_INSERT) | [optional] [default to undefined]
-**batteryChangedAt** | **string** | When the pump battery was last replaced (PUMP_BATTERY_CHANGE) | [optional] [default to undefined]
+**catheterChangedAt** | **string** | When the infusion site/cannula was last replaced (SITE_CHANGE). | [optional] [default to undefined]
+**reservoirChangedAt** | **string** | When the insulin cartridge was last replaced (INSULIN_CHANGE). | [optional] [default to undefined]
+**sensorInsertedAt** | **string** | When the CGM sensor was last inserted (SENSOR_INSERT). | [optional] [default to undefined]
 
 ## Example
 
@@ -20,7 +19,6 @@ const instance: DeviceAgeResponse = {
     catheterChangedAt,
     reservoirChangedAt,
     sensorInsertedAt,
-    batteryChangedAt,
 };
 ```
 

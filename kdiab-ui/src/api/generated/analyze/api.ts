@@ -47,6 +47,108 @@ export interface AgpResponse {
      */
     'warnings'?: Array<string>;
 }
+export interface BasalSegment {
+    /**
+     * Segment start time in HH:MM format.
+     */
+    'startTime': string;
+    /**
+     * Basal rate in U/h.
+     */
+    'value': number;
+}
+/**
+ * Most recent timestamp for each device-related treatment type. Null if that treatment type has never been recorded for the user.
+ */
+export interface DeviceAgeResponse {
+    /**
+     * When the infusion site/cannula was last replaced (SITE_CHANGE).
+     */
+    'catheterChangedAt'?: string;
+    /**
+     * When the insulin cartridge was last replaced (INSULIN_CHANGE).
+     */
+    'reservoirChangedAt'?: string;
+    /**
+     * When the CGM sensor was last inserted (SENSOR_INSERT).
+     */
+    'sensorInsertedAt'?: string;
+}
+/**
+ * Most recent pump and uploader device status snapshot for a user.
+ */
+export interface DeviceStatusResponse {
+    /**
+     * Unique identifier of the device status record.
+     */
+    'id': string;
+    /**
+     * User the status belongs to.
+     */
+    'userId': string;
+    /**
+     * When the status was recorded by the APS client.
+     */
+    'recordedAt': string;
+    /**
+     * Name and version of the uploading client application.
+     */
+    'device': string;
+    /**
+     * Pump model identifier as reported by the client.
+     */
+    'pumpName'?: string;
+    /**
+     * Insulin units remaining in the pump reservoir.
+     */
+    'reservoirUnits'?: number;
+    /**
+     * Pump battery level as a percentage (0–100).
+     */
+    'batteryLevel'?: number;
+    /**
+     * Whether the pump was connected at the time of the status report.
+     */
+    'pumpConnected'?: boolean;
+}
+export interface DeviceUsageResult {
+    /**
+     * The user this result belongs to
+     */
+    'userId': string;
+    /**
+     * Average sensor wear duration in days. Null if fewer than 2 SENSOR_INSERT events exist.
+     */
+    'avgSensorDays'?: number | null;
+    /**
+     * Population standard deviation of sensor wear duration in days.
+     */
+    'stddevSensorDays'?: number | null;
+    /**
+     * Average catheter/cannula wear duration in days. Null if fewer than 2 SITE_CHANGE events exist.
+     */
+    'avgCatheterDays'?: number | null;
+    /**
+     * Population standard deviation of catheter wear duration in days.
+     */
+    'stddevCatheterDays'?: number | null;
+    /**
+     * Average reservoir/insulin cartridge wear duration in days. Null if fewer than 2 INSULIN_CHANGE events exist.
+     */
+    'avgReservoirDays'?: number | null;
+    /**
+     * Population standard deviation of reservoir wear duration in days.
+     */
+    'stddevReservoirDays'?: number | null;
+    /**
+     * Average pump battery wear duration in days. Null if fewer than 2 PUMP_BATTERY_CHANGE events exist.
+     */
+    'avgBatteryDays'?: number | null;
+    /**
+     * Population standard deviation of battery wear duration in days.
+     */
+    'stddevBatteryDays'?: number | null;
+}
 /**
  * Standard error envelope returned by all error responses
  */
@@ -97,9 +199,57 @@ export interface ProfileSummary {
      * ISO-8601 timestamp of when the profile was archived.
      */
     'archivedAt'?: string | null;
+    /**
+     * Name of the insulin used (e.g. NovoRapid).
+     */
+    'insulinType'?: string;
+    /**
+     * Duration of insulin action in minutes.
+     */
+    'durationOfAction'?: number;
+    /**
+     * Basal rate schedule segments.
+     */
+    'basal'?: Array<BasalSegment>;
+    /**
+     * Insulin-to-carb ratio schedule.
+     */
+    'icr'?: Array<RatioSegment>;
+    /**
+     * Insulin sensitivity factor schedule.
+     */
+    'isf'?: Array<RatioSegment>;
+    /**
+     * Blood glucose target ranges.
+     */
+    'targets'?: Array<TargetSegment>;
 }
 export interface ProfilesResponse {
     'profiles': Array<ProfileSummary>;
+}
+export interface RatioSegment {
+    /**
+     * Segment start time in HH:MM format.
+     */
+    'startTime': string;
+    /**
+     * Ratio value (ICR in g/U; ISF in mg/dL/U or mmol/L/U depending on profile units).
+     */
+    'value': number;
+}
+export interface TargetSegment {
+    /**
+     * Segment start time in HH:MM format.
+     */
+    'startTime': string;
+    /**
+     * Lower bound of the target range.
+     */
+    'low': number;
+    /**
+     * Upper bound of the target range.
+     */
+    'high': number;
 }
 export interface TimelineMeasure {
     'id': string;
@@ -150,12 +300,125 @@ export interface TirBreakdown {
 }
 
 /**
+ * AnalyticsApi - axios parameter creator
+ */
+export const AnalyticsApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Computes average and standard deviation of device component wear durations from treatment history. Requires at least 2 events of each type to compute a duration.
+         * @summary Average device wear durations
+         * @param {string} userId 
+         * @param {number} [days] Number of days to look back (default 90)
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDeviceUsageAnalytics: async (userId: string, days?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('getDeviceUsageAnalytics', 'userId', userId)
+            const localVarPath = `/users/{userId}/analytics/device-usage`
+                .replace('{userId}', encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (days !== undefined) {
+                localVarQueryParameter['days'] = days;
+            }
+
+            localVarHeaderParameter['Accept'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * AnalyticsApi - functional programming interface
+ */
+export const AnalyticsApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = AnalyticsApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Computes average and standard deviation of device component wear durations from treatment history. Requires at least 2 events of each type to compute a duration.
+         * @summary Average device wear durations
+         * @param {string} userId 
+         * @param {number} [days] Number of days to look back (default 90)
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDeviceUsageAnalytics(userId: string, days?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<DeviceUsageResult>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDeviceUsageAnalytics(userId, days, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AnalyticsApi.getDeviceUsageAnalytics']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * AnalyticsApi - factory interface
+ */
+export const AnalyticsApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = AnalyticsApiFp(configuration)
+    return {
+        /**
+         * Computes average and standard deviation of device component wear durations from treatment history. Requires at least 2 events of each type to compute a duration.
+         * @summary Average device wear durations
+         * @param {string} userId 
+         * @param {number} [days] Number of days to look back (default 90)
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDeviceUsageAnalytics(userId: string, days?: number, options?: RawAxiosRequestConfig): AxiosPromise<DeviceUsageResult> {
+            return localVarFp.getDeviceUsageAnalytics(userId, days, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * AnalyticsApi - object-oriented interface
+ */
+export class AnalyticsApi extends BaseAPI {
+    /**
+     * Computes average and standard deviation of device component wear durations from treatment history. Requires at least 2 events of each type to compute a duration.
+     * @summary Average device wear durations
+     * @param {string} userId 
+     * @param {number} [days] Number of days to look back (default 90)
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getDeviceUsageAnalytics(userId: string, days?: number, options?: RawAxiosRequestConfig) {
+        return AnalyticsApiFp(this.configuration).getDeviceUsageAnalytics(userId, days, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
  * DefaultApi - axios parameter creator
  */
 export const DefaultApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
         /**
-         * 
+         * Returns the insulin pump profiles that were active or archived during the given time window, including segment data (basal, ICR, ISF, targets).
          * @summary Profiles active during a timeframe
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -211,7 +474,7 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
-         * 
+         * Groups CGM readings by UTC hour (0–23) and returns p10/p25/p50/p75/p90 percentiles for each bucket. Buckets with no readings have null percentile values.
          * @summary Ambulatory Glucose Profile — hourly percentiles
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -267,7 +530,45 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
-         * 
+         * Returns the most recent timestamp for each device-related treatment type (catheter, reservoir, CGM sensor). Proxied from kdiab-treatments.
+         * @summary Get device component ages (proxy to kdiab-treatments)
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDeviceAge: async (userId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('getDeviceAge', 'userId', userId)
+            const localVarPath = `/users/{userId}/device-age`
+                .replace('{userId}', encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Accept'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Computes an estimated HbA1c (DCCT formula) and time-in-range breakdown from CGM readings in the given window. Returns null hba1c if no CGM data is available.
          * @summary HbA1c estimation and time-in-range for a timeframe
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -323,7 +624,45 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
-         * 
+         * Returns the most recently recorded pump and uploader device status snapshot. Returns 204 if no status has been recorded yet. Proxied from kdiab-treatments.
+         * @summary Get latest pump/CGM device status (proxy to kdiab-treatments)
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getLatestDeviceStatus: async (userId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('getLatestDeviceStatus', 'userId', userId)
+            const localVarPath = `/users/{userId}/device-status`
+                .replace('{userId}', encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Accept'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Returns all CGM/BGM measures and treatment events for the user within the given time window, merged into a single chronological list.
          * @summary Combined measures and treatments for a timeframe
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -388,7 +727,7 @@ export const DefaultApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = DefaultApiAxiosParamCreator(configuration)
     return {
         /**
-         * 
+         * Returns the insulin pump profiles that were active or archived during the given time window, including segment data (basal, ICR, ISF, targets).
          * @summary Profiles active during a timeframe
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -403,7 +742,7 @@ export const DefaultApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * 
+         * Groups CGM readings by UTC hour (0–23) and returns p10/p25/p50/p75/p90 percentiles for each bucket. Buckets with no readings have null percentile values.
          * @summary Ambulatory Glucose Profile — hourly percentiles
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -418,7 +757,20 @@ export const DefaultApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * 
+         * Returns the most recent timestamp for each device-related treatment type (catheter, reservoir, CGM sensor). Proxied from kdiab-treatments.
+         * @summary Get device component ages (proxy to kdiab-treatments)
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDeviceAge(userId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<DeviceAgeResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDeviceAge(userId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['DefaultApi.getDeviceAge']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Computes an estimated HbA1c (DCCT formula) and time-in-range breakdown from CGM readings in the given window. Returns null hba1c if no CGM data is available.
          * @summary HbA1c estimation and time-in-range for a timeframe
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -433,7 +785,20 @@ export const DefaultApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * 
+         * Returns the most recently recorded pump and uploader device status snapshot. Returns 204 if no status has been recorded yet. Proxied from kdiab-treatments.
+         * @summary Get latest pump/CGM device status (proxy to kdiab-treatments)
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getLatestDeviceStatus(userId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<DeviceStatusResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getLatestDeviceStatus(userId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['DefaultApi.getLatestDeviceStatus']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Returns all CGM/BGM measures and treatment events for the user within the given time window, merged into a single chronological list.
          * @summary Combined measures and treatments for a timeframe
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -457,7 +822,7 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
     const localVarFp = DefaultApiFp(configuration)
     return {
         /**
-         * 
+         * Returns the insulin pump profiles that were active or archived during the given time window, including segment data (basal, ICR, ISF, targets).
          * @summary Profiles active during a timeframe
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -469,7 +834,7 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
             return localVarFp.getActiveProfiles(userId, from, to, options).then((request) => request(axios, basePath));
         },
         /**
-         * 
+         * Groups CGM readings by UTC hour (0–23) and returns p10/p25/p50/p75/p90 percentiles for each bucket. Buckets with no readings have null percentile values.
          * @summary Ambulatory Glucose Profile — hourly percentiles
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -481,7 +846,17 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
             return localVarFp.getAgp(userId, from, to, options).then((request) => request(axios, basePath));
         },
         /**
-         * 
+         * Returns the most recent timestamp for each device-related treatment type (catheter, reservoir, CGM sensor). Proxied from kdiab-treatments.
+         * @summary Get device component ages (proxy to kdiab-treatments)
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDeviceAge(userId: string, options?: RawAxiosRequestConfig): AxiosPromise<DeviceAgeResponse> {
+            return localVarFp.getDeviceAge(userId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Computes an estimated HbA1c (DCCT formula) and time-in-range breakdown from CGM readings in the given window. Returns null hba1c if no CGM data is available.
          * @summary HbA1c estimation and time-in-range for a timeframe
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -493,7 +868,17 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
             return localVarFp.getHba1c(userId, from, to, options).then((request) => request(axios, basePath));
         },
         /**
-         * 
+         * Returns the most recently recorded pump and uploader device status snapshot. Returns 204 if no status has been recorded yet. Proxied from kdiab-treatments.
+         * @summary Get latest pump/CGM device status (proxy to kdiab-treatments)
+         * @param {string} userId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getLatestDeviceStatus(userId: string, options?: RawAxiosRequestConfig): AxiosPromise<DeviceStatusResponse> {
+            return localVarFp.getLatestDeviceStatus(userId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns all CGM/BGM measures and treatment events for the user within the given time window, merged into a single chronological list.
          * @summary Combined measures and treatments for a timeframe
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -512,7 +897,7 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
  */
 export class DefaultApi extends BaseAPI {
     /**
-     * 
+     * Returns the insulin pump profiles that were active or archived during the given time window, including segment data (basal, ICR, ISF, targets).
      * @summary Profiles active during a timeframe
      * @param {string} userId 
      * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -525,7 +910,7 @@ export class DefaultApi extends BaseAPI {
     }
 
     /**
-     * 
+     * Groups CGM readings by UTC hour (0–23) and returns p10/p25/p50/p75/p90 percentiles for each bucket. Buckets with no readings have null percentile values.
      * @summary Ambulatory Glucose Profile — hourly percentiles
      * @param {string} userId 
      * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -538,7 +923,18 @@ export class DefaultApi extends BaseAPI {
     }
 
     /**
-     * 
+     * Returns the most recent timestamp for each device-related treatment type (catheter, reservoir, CGM sensor). Proxied from kdiab-treatments.
+     * @summary Get device component ages (proxy to kdiab-treatments)
+     * @param {string} userId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getDeviceAge(userId: string, options?: RawAxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).getDeviceAge(userId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Computes an estimated HbA1c (DCCT formula) and time-in-range breakdown from CGM readings in the given window. Returns null hba1c if no CGM data is available.
      * @summary HbA1c estimation and time-in-range for a timeframe
      * @param {string} userId 
      * @param {string} from Start of timeframe (ISO-8601 datetime)
@@ -551,7 +947,18 @@ export class DefaultApi extends BaseAPI {
     }
 
     /**
-     * 
+     * Returns the most recently recorded pump and uploader device status snapshot. Returns 204 if no status has been recorded yet. Proxied from kdiab-treatments.
+     * @summary Get latest pump/CGM device status (proxy to kdiab-treatments)
+     * @param {string} userId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getLatestDeviceStatus(userId: string, options?: RawAxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).getLatestDeviceStatus(userId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns all CGM/BGM measures and treatment events for the user within the given time window, merged into a single chronological list.
      * @summary Combined measures and treatments for a timeframe
      * @param {string} userId 
      * @param {string} from Start of timeframe (ISO-8601 datetime)
