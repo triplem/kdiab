@@ -226,8 +226,6 @@ kover {
                 classes(
                     // Entry point -- no logic to measure
                     "org.javafreedom.kdiab.treatments.ApplicationKt*",
-                    // DB factory -- requires a live Postgres; covered by integration tests
-                    "org.javafreedom.kdiab.treatments.infrastructure.persistence.DatabaseFactory*",
                     // DB-layer classes require a live database; covered by integration tests (#599)
                     "org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedTreatmentRepository*",
                     "org.javafreedom.kdiab.treatments.infrastructure.persistence.TreatmentsTable*",

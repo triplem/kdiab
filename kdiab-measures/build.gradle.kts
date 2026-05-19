@@ -230,8 +230,6 @@ kover {
                 classes(
                     // Entry point -- no logic to measure
                     "org.javafreedom.kdiab.measures.ApplicationKt*",
-                    // DB factory -- requires a live Postgres; covered by integration tests
-                    "org.javafreedom.kdiab.measures.infrastructure.persistence.DatabaseFactory*",
                     // DB-layer classes require a live database; covered by integration tests (#599)
                     "org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository*",
                     "org.javafreedom.kdiab.measures.infrastructure.persistence.MeasuresTable*",
