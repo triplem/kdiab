@@ -20,17 +20,16 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.plugins.statuspages.*
 import org.javafreedom.kdiab.calc.domain.exception.UpstreamException
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
+import org.javafreedom.kdiab.common.plugins.HTTP_CONNECT_TIMEOUT_MS_DEFAULT
+import org.javafreedom.kdiab.common.plugins.HTTP_REQUEST_TIMEOUT_MS_DEFAULT
+import org.javafreedom.kdiab.common.plugins.HTTP_RETRY_MAX_DELAY_MS_DEFAULT
+import org.javafreedom.kdiab.common.plugins.HTTP_RETRY_MAX_RETRIES_DEFAULT
+import org.javafreedom.kdiab.common.plugins.HTTP_SERVER_ERROR_STATUS
+import org.javafreedom.kdiab.common.plugins.HTTP_SOCKET_TIMEOUT_MS_DEFAULT
 import org.javafreedom.kdiab.common.plugins.configureCommonPlugins
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 
 private val logger = KotlinLogging.logger {}
-
-private const val HTTP_SERVER_ERROR_STATUS = 500
-private const val HTTP_CONNECT_TIMEOUT_MS_DEFAULT = 5_000L
-private const val HTTP_REQUEST_TIMEOUT_MS_DEFAULT = 10_000L
-private const val HTTP_SOCKET_TIMEOUT_MS_DEFAULT = 5_000L
-private const val HTTP_RETRY_MAX_RETRIES_DEFAULT = 3
-private const val HTTP_RETRY_MAX_DELAY_MS_DEFAULT = 8_000L
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
