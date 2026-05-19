@@ -6,6 +6,9 @@ import { HbA1cCard } from './HbA1cCard'
 import { TimeInRangeBar } from './TimeInRangeBar'
 import { AgpChart } from './AgpChart'
 import { ProfilesView } from './ProfilesView'
+import { BasalAvgChart } from './BasalAvgChart'
+import { BolusAvgChart } from './BolusAvgChart'
+import { computeBasalHourlyAvg, computeBolusHourlyAvg } from './insulinHourlyUtils'
 
 type Window = '1W' | '2W' | '1M' | '90D'
 
@@ -55,6 +58,23 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
     staleTime: 5 * 60 * 1000,
   })
 
+  const timelineQuery = useQuery({
+    queryKey: ['timeline', userId, activeWindow],
+    queryFn: () => analyzeApi.getTimeline(userId, from, to).then(r => r.data),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const basalHourlyAvg = useMemo(
+    () => (timelineQuery.data ? computeBasalHourlyAvg(timelineQuery.data) : null),
+    [timelineQuery.data],
+  )
+
+  const bolusHourlyAvg = useMemo(
+    () => (timelineQuery.data ? computeBolusHourlyAvg(timelineQuery.data) : null),
+    [timelineQuery.data],
+  )
+
   return (
     <div>
       {/* Shared window filter */}
@@ -100,6 +120,12 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
           <TimeInRangeBar tir={hba1cQuery.data.tir} glucoseUnit={glucoseUnit} />
         </>
       )}
+
+      {/* Basal & Bolus hourly averages — computed from timeline */}
+      {timelineQuery.isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
+      {timelineQuery.isError && <div className="error-banner" role="alert">{t('analytics.timelineError')}</div>}
+      {basalHourlyAvg && <BasalAvgChart hourlyAvg={basalHourlyAvg} />}
+      {bolusHourlyAvg && <BolusAvgChart hourlyAvg={bolusHourlyAvg} />}
 
       {/* Profiles — shares the same window */}
       <ProfilesView userId={userId} from={from} to={to} />

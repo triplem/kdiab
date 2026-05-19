@@ -347,8 +347,15 @@
     "hba1cError": "HbA1c-Daten konnten nicht geladen werden",
     "agpError": "AGP-Daten konnten nicht geladen werden",
     "profilesError": "Profile konnten nicht geladen werden",
+    "timelineError": "Behandlungsdaten konnten nicht geladen werden",
     "basedOnReadings": "Basierend auf {{count}} CGM-Messwerten",
-    "lowReadingCountWarning": "Wenige Messwerte — Schätzung möglicherweise unzuverlässig"
+    "lowReadingCountWarning": "Wenige Messwerte — Schätzung möglicherweise unzuverlässig",
+    "basalAvg": "Basalrate-Durchschnitt (stündlich)",
+    "basalAvgHelp": "Durchschnittliche temporäre Basalrate (E/h) pro Tagesstunde über den ausgewählten Zeitraum. Basiert auf TEMP_BASAL-Ereignissen. Stunden ohne Daten werden ausgelassen.",
+    "basalAvgRate": "Durchschnittsrate",
+    "bolusAvg": "Bolus-Durchschnitt (stündlich)",
+    "bolusAvgHelp": "Durchschnittliche Bolus-Dosis (E) pro Tagesstunde über den ausgewählten Zeitraum. Umfasst Mahlzeiten- und Korrekturbolus. Stunden ohne Daten werden ausgelassen.",
+    "bolusAvgDose": "Durchschnittsdosis"
   },
   "profile": {
     "id": "Profil-ID",
