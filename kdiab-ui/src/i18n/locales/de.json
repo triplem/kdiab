@@ -510,6 +510,24 @@
     "removeSuccess": "Patient entfernt.",
     "removeError": "Patient konnte nicht entfernt werden."
   },
+  "deviceUsage": {
+    "title": "Ø Gerät-Tragedauer",
+    "sensor": "Sensor",
+    "catheter": "Katheter / Stelle",
+    "reservoir": "Reservoir",
+    "battery": "Pumpenbatterie",
+    "days": "T",
+    "lookback": "{{days}} Tage",
+    "noData": "keine Daten",
+    "loading": "Wird geladen...",
+    "error": "Gerätedaten konnten nicht geladen werden."
+  },
+  "measureSource": {
+    "MANUAL": "Manuell",
+    "NIGHTSCOUT": "Nightscout",
+    "GOOGLE_FIT": "Google Fit",
+    "APPLE_HEALTH": "Apple Health"
+  },
   "registration": {
     "title": "Konto erstellen",
     "fieldName": "Vollständiger Name",

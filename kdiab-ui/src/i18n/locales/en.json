@@ -510,6 +510,24 @@
     "removeSuccess": "Patient removed.",
     "removeError": "Failed to remove patient."
   },
+  "deviceUsage": {
+    "title": "Avg Device Wear",
+    "sensor": "Sensor",
+    "catheter": "Catheter / site",
+    "reservoir": "Reservoir",
+    "battery": "Pump battery",
+    "days": "d",
+    "lookback": "{{days}} days",
+    "noData": "no data",
+    "loading": "Loading...",
+    "error": "Could not load device usage data."
+  },
+  "measureSource": {
+    "MANUAL": "Manual",
+    "NIGHTSCOUT": "Nightscout",
+    "GOOGLE_FIT": "Google Fit",
+    "APPLE_HEALTH": "Apple Health"
+  },
   "registration": {
     "title": "Create an account",
     "fieldName": "Full name",

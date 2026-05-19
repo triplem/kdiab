@@ -408,7 +408,7 @@ export const MeasureList: React.FC<MeasureListProps> = ({
                       {m.type}
                     </span>
                     <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                      {m.source}
+                      {t(`measureSource.${m.source}`, { defaultValue: m.source })}
                     </span>
                   </td>
                   <td style={{ padding: '12px 8px' }} onClick={(e) => e.stopPropagation()}>
