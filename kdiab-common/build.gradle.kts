@@ -33,21 +33,3 @@ kotlin {
     }
 }
 
-// -- Composite build aliases (used by root aggregate tasks) --------------------
-tasks.register("buildAll") {
-    group = "build"
-    description = "Alias for 'build' -- used by root composite aggregate task."
-    dependsOn(tasks.named("build"))
-}
-
-tasks.register("checkAll") {
-    group = "verification"
-    description = "Alias for 'check' -- used by root composite aggregate task."
-    dependsOn(tasks.named("check"))
-}
-
-tasks.register("cleanAll") {
-    group = "build"
-    description = "Alias for 'clean' -- used by root composite aggregate task."
-    dependsOn(tasks.named("clean"))
-}
