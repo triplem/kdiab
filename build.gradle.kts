@@ -26,7 +26,7 @@ val buildFrontend by tasks.registering(Exec::class) {
 val buildBackends by tasks.registering {
     group = "build"
     description = "Builds all eight service backends via Gradle (no frontend)."
-    dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":buildAll") })
+    dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":build") })
 }
 
 // -- Full build (backends + frontend) ------------------------------------------
@@ -40,7 +40,7 @@ tasks.register("build") {
 tasks.register("check") {
     group = "verification"
     description = "Runs all tests, detekt, and kover for all service backends."
-    dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":checkAll") })
+    dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":check") })
 }
 
 // -- Clean ---------------------------------------------------------------------
@@ -55,7 +55,7 @@ tasks.register("clean") {
     group = "build"
     description = "Deletes build outputs for all service backends and the kdiab-ui frontend."
     dependsOn(cleanFrontend)
-    dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":cleanAll") })
+    dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":clean") })
 }
 
 // -- Docker --------------------------------------------------------------------
