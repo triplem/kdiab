@@ -4,7 +4,6 @@ package org.javafreedom.kdiab.users.infrastructure.persistence
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.*
@@ -58,8 +57,8 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
                         alarmLow = row[UserSettingsTable.alarmLow],
                         alarmUrgentLow = row[UserSettingsTable.alarmUrgentLow],
                         sensorDurationHours = row[UserSettingsTable.sensorDurationHours],
-                        createdAt = Instant.parse(row[UserSettingsTable.createdAt]),
-                        updatedAt = Instant.parse(row[UserSettingsTable.updatedAt]),
+                        createdAt = row[UserSettingsTable.createdAt].parseInstant(),
+                        updatedAt = row[UserSettingsTable.updatedAt].parseInstant(),
                     )
                 }
         }
