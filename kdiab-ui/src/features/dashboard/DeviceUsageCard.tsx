@@ -16,7 +16,7 @@ interface WearRowProps {
 function WearRow({ label, avg, stddev }: WearRowProps) {
   const { t } = useTranslation()
 
-  if (avg === null) {
+  if (avg == null) {
     return (
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.25rem 0', borderBottom: '1px solid var(--border)' }}>
         <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{label}</span>
