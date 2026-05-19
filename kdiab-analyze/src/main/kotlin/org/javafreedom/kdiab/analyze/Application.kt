@@ -72,6 +72,9 @@ fun Application.module(
     val json = Json {
         this.prettyPrint = prettyPrint
         ignoreUnknownKeys = true
+        // Always emit null fields so the frontend receives `null` instead of `undefined`
+        // when optional DeviceUsageResult fields have no data (e.g. no battery events).
+        explicitNulls = true
     }
 
     install(Resources)
