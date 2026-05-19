@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <SmellBaseline>
   <ManuallySuppressedIssues/>
-  <CurrentIssues/>
+  <CurrentIssues>
+    <!--
+      ProfilesClient.getActiveProfile calls the generated DefaultApi which wraps Ktor's coroutine-based
+      HTTP client. Detekt cannot see through the generated layer and incorrectly reports `suspend` as
+      redundant. The modifier is required for correct coroutine dispatch.
+    -->
+    <ID>RedundantSuspendModifier:ProfilesClient.kt$ProfilesClient$suspend</ID>
+  </CurrentIssues>
 </SmellBaseline>

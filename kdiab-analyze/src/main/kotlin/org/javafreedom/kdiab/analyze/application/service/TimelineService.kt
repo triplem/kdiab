@@ -16,6 +16,9 @@ class TimelineService(
     private val measuresPort: MeasuresPort,
     private val treatmentsPort: TreatmentsPort,
 ) : TimelineOperation {
+    // UnreachableCode: detekt false positive — `return@mapNotNull null` guard clauses inside lambdas
+    // cause subsequent lambda body lines to be flagged as unreachable; they are not.
+    @Suppress("UnreachableCode")
     override suspend fun getTimeline(
         userId: String,
         from: String,
