@@ -157,7 +157,9 @@ class AnalyticsService(
         )
     }
 
-    @Suppress("LongParameterList", "UnusedParameter")
+    // UnreachableCode: detekt false positive — `return@forEach` / `return@mapNotNull` guard clauses
+    // inside lambdas cause subsequent lambda body lines to be flagged as unreachable; they are not.
+    @Suppress("LongParameterList", "UnusedParameter", "UnreachableCode")
     override suspend fun getAgp(
         userId: String,
         from: String,
@@ -234,7 +236,9 @@ class AnalyticsService(
         )
     }
 
-    @Suppress("LongParameterList")
+    // UnreachableCode: detekt false positive — `return@mapNotNull null` guard clauses inside lambdas
+    // cause subsequent lambda body lines to be flagged as unreachable; they are not.
+    @Suppress("LongParameterList", "UnreachableCode")
     private suspend fun fetchCgmReadings(
         userId: String,
         from: String,
