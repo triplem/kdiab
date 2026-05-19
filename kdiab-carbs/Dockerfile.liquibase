@@ -1,4 +1,4 @@
-FROM liquibase/liquibase:4.20
+FROM liquibase/liquibase:5.0
 
 # Kopiere den kompletten Ordner 'db', damit die relativen Pfade wie 'db/changelog/changes/...' in den Master-YAMLs stimmen
 COPY src/main/resources/db /liquibase/db
