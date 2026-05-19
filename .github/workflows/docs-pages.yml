@@ -11,6 +11,8 @@ on:
       - 'kdiab-analyze/docs/**'
       - 'kdiab-users/docs/**'
       - '.github/workflows/docs-pages.yml'
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
