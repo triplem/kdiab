@@ -1,4 +1,4 @@
-// ── Constants ──────────────────────────────────────────────────────────────────
+// -- Constants ------------------------------------------------------------------
 
 const MGDL_TO_MMOL = 1 / 18.0
 
@@ -33,7 +33,7 @@ export interface BasalBlock {
   state: 'SCHEDULED' | 'ABOVE' | 'BELOW' | 'SUSPENDED'
 }
 
-// ── Pure helper functions ──────────────────────────────────────────────────────
+// -- Pure helper functions ------------------------------------------------------
 
 export function toDisplay(mgdl: number, unit: string): number {
   return unit === 'mmol/L'

@@ -34,7 +34,7 @@ data class ProfileSegments(
 
 /**
  * Immutable profile data. Status is tracked separately in [ProfileStatuses].
- * Once written, rows in this table are never mutated — copy-on-write semantics
+ * Once written, rows in this table are never mutated -- copy-on-write semantics
  * ensure a new row is created on every effective change to an active profile.
  */
 object Profiles : Table("profiles") {
@@ -89,7 +89,7 @@ class ExposedProfileRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : ProfileRepository {
 
-    // ── Reads ─────────────────────────────────────────────────────────────────
+    // -- Reads -----------------------------------------------------------------
 
     override suspend fun findById(id: Uuid): Profile? = withContext(ioDispatcher) {
         suspendTransaction {
@@ -199,7 +199,7 @@ class ExposedProfileRepository(
             }
         }
 
-    // ── Writes ────────────────────────────────────────────────────────────────
+    // -- Writes ----------------------------------------------------------------
 
     override suspend fun save(profile: Profile): Profile = withContext(ioDispatcher) {
         suspendTransaction {
@@ -258,7 +258,7 @@ class ExposedProfileRepository(
     /**
      * Copy-on-Write update for ACTIVE profiles.
      * Archives the old profile (status-only change) and inserts the new version
-     * as a fresh profile + status row — both in the same transaction.
+     * as a fresh profile + status row -- both in the same transaction.
      */
     override suspend fun updateActiveProfile(oldProfile: Profile, newProfile: Profile): Profile =
         withContext(ioDispatcher) {
@@ -278,7 +278,7 @@ class ExposedProfileRepository(
      *
      * The DB unique constraint (PostgreSQL partial index / H2 generated column)
      * ensures at most one ACTIVE profile per user and will throw on concurrent
-     * activation races — the service layer converts that to a 409 Conflict.
+     * activation races -- the service layer converts that to a 409 Conflict.
      */
     override suspend fun activateProfile(oldActive: Profile?, newActive: Profile): Profile =
         withContext(ioDispatcher) {
@@ -303,7 +303,7 @@ class ExposedProfileRepository(
                 val sqlState = e.cause?.let { (it as? java.sql.SQLException)?.sqlState }
                 if (sqlState == "23505") {
                     throw ConflictException(
-                        "Only one profile can be active at a time — deactivate the current active profile first.",
+                        "Only one profile can be active at a time -- deactivate the current active profile first.",
                         e
                     )
                 }
@@ -311,7 +311,7 @@ class ExposedProfileRepository(
             }
         }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
+    // -- Private helpers -------------------------------------------------------
 
     private fun insertProfileInTx(profile: Profile) {
         Profiles.insert {

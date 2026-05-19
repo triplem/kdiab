@@ -66,7 +66,7 @@ data class Profile(
         if (durationOfAction < MIN_DURATION_OF_ACTION || durationOfAction > MAX_DURATION_OF_ACTION) {
             throw BusinessValidationException(
                 "Duration of action must be between $MIN_DURATION_OF_ACTION and " +
-                    "$MAX_DURATION_OF_ACTION minutes (2–8 hours)"
+                    "$MAX_DURATION_OF_ACTION minutes (2-8 hours)"
             )
         }
         if (basal.any { it.value < 0 }) {

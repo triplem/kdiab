@@ -196,7 +196,7 @@ openApiGenerate {
         "dateLibrary" to "java8",
         "serializationLibrary" to "kotlinx_serialization"
     ))
-    // Shared template dir — all services use the same mustache overrides (#603)
+    // Shared template dir -- all services use the same mustache overrides (#603)
     templateDir.set(rootDir.parentFile.resolve("config/openapi-templates").path)
 }
 
@@ -234,13 +234,13 @@ kover {
         filters {
             excludes {
                 classes(
-                    // Entry point — no logic to measure
+                    // Entry point -- no logic to measure
                     "org.javafreedom.kdiab.calc.ApplicationKt*"
                 )
                 packages(
-                    // Generated OpenAPI stubs — not hand-written, excluded by convention
+                    // Generated OpenAPI stubs -- not hand-written, excluded by convention
                     "org.javafreedom.kdiab.calc.api",
-                    // Generated upstream client models — not hand-written, excluded by convention
+                    // Generated upstream client models -- not hand-written, excluded by convention
                     "org.javafreedom.kdiab.calc.api.upstream.profiles.models",
                     // Adapters require live Ktor test engine or running upstream services;
                     // covered by integration/e2e tests, not unit tests (#599)
@@ -304,21 +304,21 @@ tasks.asciidoctor {
     )
 }
 
-// ── Composite build aliases (used by root aggregate tasks) ────────────────────
+// -- Composite build aliases (used by root aggregate tasks) --------------------
 tasks.register("buildAll") {
     group = "build"
-    description = "Alias for 'build' — used by root composite aggregate task."
+    description = "Alias for 'build' -- used by root composite aggregate task."
     dependsOn(tasks.named("build"))
 }
 
 tasks.register("checkAll") {
     group = "verification"
-    description = "Alias for 'check' — used by root composite aggregate task."
+    description = "Alias for 'check' -- used by root composite aggregate task."
     dependsOn(tasks.named("check"))
 }
 
 tasks.register("cleanAll") {
     group = "build"
-    description = "Alias for 'clean' — used by root composite aggregate task."
+    description = "Alias for 'clean' -- used by root composite aggregate task."
     dependsOn(tasks.named("clean"))
 }

@@ -18,7 +18,7 @@ import org.javafreedom.kdiab.profiles.api.models.Insulin as ApiInsulin
 import org.javafreedom.kdiab.profiles.domain.model.Insulin as DomainInsulin
 
 private const val INSULIN_NAME_MAX_LENGTH = 255
-private const val INVALID_NAME_MSG = "Insulin name must be 1–255 characters"
+private const val INVALID_NAME_MSG = "Insulin name must be 1-255 characters"
 
 private fun isValidInsulinName(name: String) = name.isNotBlank() && name.length <= INSULIN_NAME_MAX_LENGTH
 

@@ -74,7 +74,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
 
   const diaMinutes = activeProfile?.durationOfAction ?? 240
 
-  // ── CGM derived values (from recent 6h) ────────────────────────────────────
+  // -- CGM derived values (from recent 6h) ------------------------------------
 
   const recentCgm = (recentTimeline?.measures ?? [])
     .filter(m => m.type === 'CGM')
@@ -103,19 +103,19 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     ? Math.round((Date.now() - new Date(latestCgm.measuredAt).getTime()) / 60000)
     : null
 
-  // ── CGM staleness ──────────────────────────────────────────────────────────
+  // -- CGM staleness ----------------------------------------------------------
 
   const staleMs = latestCgm ? Date.now() - new Date(latestCgm.measuredAt).getTime() : 0
   const isStale = staleMs > STALE_WARN_MS
   const isVeryStale = staleMs > STALE_ERROR_MS
 
-  // ── IOB / COB (from recent treatments) ─────────────────────────────────────
+  // -- IOB / COB (from recent treatments) -------------------------------------
 
   const iob = calcIOB(recentTimeline?.treatments ?? [], diaMinutes)
   const cob = calcCOB(recentTimeline?.treatments ?? [])
   const basalRate = currentBasalRate(activeProfile?.basal ?? undefined)
 
-  // ── Device ages ────────────────────────────────────────────────────────────
+  // -- Device ages ------------------------------------------------------------
 
   const catheterDate = deviceAge?.catheterChangedAt ?? undefined
   const reservoirDate = deviceAge?.reservoirChangedAt ?? undefined
@@ -123,7 +123,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
   const sensorDurationHours = userMe?.settings?.sensorDurationHours ?? 240
   const batteryLevel = deviceStatus?.batteryLevel ?? null
 
-  // ── Chart data ──────────────────────────────────────────────────────────────
+  // -- Chart data --------------------------------------------------------------
 
   const yLabel = glucoseUnit === 'mmol/L' ? 'mmol/L' : 'mg/dL'
   const tirLow = toDisplay(70, glucoseUnit)
@@ -180,7 +180,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     [windowTimeline?.treatments, tirLow]
   )
 
-  // Combined dataset for ComposedChart root — enables tooltip cursor to find points
+  // Combined dataset for ComposedChart root -- enables tooltip cursor to find points
   const chartData = useMemo(
     () => [...cgmPoints, ...bgmPoints, ...treatmentMarkers].sort((a, b) => a.time - b.time),
     [cgmPoints, bgmPoints, treatmentMarkers]
@@ -212,13 +212,13 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     return { basalBlocks: blocks, basalProfileLine: line }
   }, [activeProfile?.basal, windowFrom, windowTo, windowTimeline?.treatments])
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // -- Render ------------------------------------------------------------------
 
   return (
     <div>
       <DeviceStatusWidget userId={userId} />
 
-      {/* ── Glucose hero ─────────────────────────────────────────────────── */}
+      {/* -- Glucose hero --------------------------------------------------- */}
       {latestSgv !== null && (
         <GlucoseHeroTile
           latestSgv={latestSgv}
@@ -233,7 +233,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         />
       )}
 
-      {/* ── Stat tiles row 1: IOB / COB / Basal / DIA ────────────────────── */}
+      {/* -- Stat tiles row 1: IOB / COB / Basal / DIA ---------------------- */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
         <StatTile label={t('dashboard.iob', { defaultValue: 'IOB' })} value={`${iob.toFixed(1)} U`} sub={t('dashboard.insulinOnBoard', { defaultValue: 'Insulin on Board' })} />
         <StatTile label={t('dashboard.cob', { defaultValue: 'COB' })} value={`${Math.round(cob)} g`} sub={t('dashboard.carbsOnBoard', { defaultValue: 'Carbs on Board' })} />
@@ -242,7 +242,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         {activeProfile && <StatTile label={t('dashboard.profile', { defaultValue: 'Profile' })} value={activeProfile.name} />}
       </div>
 
-      {/* ── Stat tiles row 2: device ages + battery ───────────────────────── */}
+      {/* -- Stat tiles row 2: device ages + battery ------------------------- */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
         <StatTile label={t('dashboard.catheter', { defaultValue: 'Catheter' })} value={daysSince(catheterDate)} sub={t('dashboard.age', { defaultValue: 'age' })} />
         <StatTile label={t('dashboard.reservoir', { defaultValue: 'Reservoir' })} value={daysSince(reservoirDate)} sub={t('dashboard.age', { defaultValue: 'age' })} />
@@ -256,7 +256,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         )}
       </div>
 
-      {/* ── Time window selector ──────────────────────────────────────────── */}
+      {/* -- Time window selector -------------------------------------------- */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
         <button
           onClick={() => setWindowEndOffset(o => o + windowMs / 2)}
@@ -288,7 +288,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         </span>
       </div>
 
-      {/* ── Combined glucose + treatment markers chart ────────────────────── */}
+      {/* -- Combined glucose + treatment markers chart ---------------------- */}
       <GlucoseTrendChart
         chartData={chartData}
         cgmPoints={cgmPoints}
@@ -303,7 +303,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         isLoading={isLoading}
       />
 
-      {/* ── Basal block chart ─────────────────────────────────────────────── */}
+      {/* -- Basal block chart ----------------------------------------------- */}
       <BasalRateChart
         activeProfile={activeProfile}
         basalBlocks={basalBlocks}
@@ -312,7 +312,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         windowTo={windowTo}
       />
 
-      {/* ── Device usage averages ─────────────────────────────────────────── */}
+      {/* -- Device usage averages ------------------------------------------- */}
       <DeviceUsageCard userId={userId} />
     </div>
   )
