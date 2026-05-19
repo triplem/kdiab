@@ -39,8 +39,9 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Install AsciiDoctor
-        run: sudo gem install asciidoctor
+      - name: Build root docs
+        # (#661) Uses root Gradle asciidoctor task (bundles JRuby + gem) — no system gem install needed.
+        run: ./gradlew asciidoctor --no-configuration-cache
 
       - name: Build measures docs
         run: cd kdiab-measures && ./gradlew asciidoctor --no-configuration-cache
@@ -57,15 +58,10 @@ jobs:
       - name: Build users docs
         run: cd kdiab-users && ./gradlew asciidoctor --no-configuration-cache
 
-      - name: Build root docs
-        run: |
-          mkdir -p pages/root pages/root/adr
-          asciidoctor -D pages/root       docs/index.adoc docs/architecture.adoc docs/deployment.adoc docs/glossary.adoc docs/how-to-run.adoc docs/keycloak-setup.adoc
-          asciidoctor -D pages/root/adr   docs/adr/*.adoc
-
       - name: Assemble pages
         run: |
-          mkdir -p pages/measures pages/profiles pages/treatments pages/analyze pages/users
+          mkdir -p pages/root pages/measures pages/profiles pages/treatments pages/analyze pages/users
+          cp -r build/docs/asciidoc/.                  pages/root/
           cp -r kdiab-measures/build/docs/asciidoc/.  pages/measures/
           cp -r kdiab-profiles/build/docs/asciidoc/.  pages/profiles/
           cp -r kdiab-treatments/build/docs/asciidoc/. pages/treatments/

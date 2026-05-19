@@ -1,3 +1,9 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = "kdiab"
 
 includeBuild("kdiab-common")

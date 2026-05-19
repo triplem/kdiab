@@ -1,3 +1,11 @@
+// -- Plugins -------------------------------------------------------------------
+// org.asciidoctor.jvm.convert bundles its own JRuby + Asciidoctor so no
+// system gem install is needed in CI. Registered here for the root docs task.
+// (#661)
+plugins {
+    id("org.asciidoctor.jvm.convert") version "4.0.5"
+}
+
 // -- Service list --------------------------------------------------------------
 // The eight backend services that produce runnable JARs and Docker images.
 // kdiab-common is a shared library included automatically as a substituted
@@ -56,6 +64,22 @@ tasks.register("clean") {
     description = "Deletes build outputs for all service backends and the kdiab-ui frontend."
     dependsOn(cleanFrontend)
     dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":cleanAll") })
+}
+
+// -- Root docs -----------------------------------------------------------------
+// (#661) Generates HTML from docs/ using the Gradle Asciidoctor plugin so that
+// the CI workflow does not depend on a separately installed system gem.
+tasks.asciidoctor {
+    baseDirFollowsSourceFile()
+    sourceDir(file("docs"))
+    setOutputDir(file("build/docs/asciidoc"))
+    attributes(
+        mapOf(
+            "toc" to "left",
+            "icons" to "font",
+            "source-highlighter" to "rouge"
+        )
+    )
 }
 
 // -- Docker --------------------------------------------------------------------
