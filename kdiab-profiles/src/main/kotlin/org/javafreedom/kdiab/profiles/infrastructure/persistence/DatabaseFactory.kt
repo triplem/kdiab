@@ -9,20 +9,19 @@ import liquibase.database.DatabaseFactory as LiquibaseDatabaseFactory
 import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.ClassLoaderResourceAccessor
 import org.jetbrains.exposed.v1.jdbc.Database
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 
 private val logger = KotlinLogging.logger {}
 
 /**
- * Initialises the database connection pool and runs Liquibase schema migrations.
+ * Initialises the database connection pool and optionally runs Liquibase schema migrations.
  *
- * Liquibase is used as the **single schema authority** for all environments — production
- * (PostgreSQL), E2E tests, and integration tests — so that:
- * - Every test runs against exactly the schema that production uses.
- * - Database-specific constructs (e.g. the PostgreSQL partial index and the H2 generated
- *   column for one-ACTIVE-per-user enforcement) are exercised consistently.
- * - `SchemaUtils.create` is *not* used here because it only reflects the current Exposed
- *   table definitions and would bypass Liquibase migration logic entirely.
+ * Migration behaviour is controlled by the `db.runMigrations` config key (default: `true`):
+ * - `true`  — run Liquibase before handing connections to the application; used in tests
+ *             (H2 in-memory DB) and local development where no external migration container
+ *             is present.
+ * - `false` — skip migrations; used in production where a dedicated Liquibase Docker container
+ *             runs migrations before the application starts and the app user has DML-only
+ *             privileges that would prevent DDL execution anyway.
  *
  * See ADR-113 for the full rationale.
  */
@@ -41,6 +40,7 @@ object DatabaseFactory {
         val maximumPoolSize = storageConfig.property("maximumPoolSize").getString().toInt()
         val isAutoCommit = storageConfig.property("isAutoCommit").getString().toBoolean()
         val transactionIsolation = storageConfig.property("transactionIsolation").getString()
+        val runMigrations = config.propertyOrNull("db.runMigrations")?.getString()?.toBoolean() ?: true
 
         val hikariConfig =
             HikariConfig().apply {
@@ -58,19 +58,24 @@ object DatabaseFactory {
                 validate()
             }
 
-        // Run Liquibase migrations *before* handing connections to the application.
-        // A direct DriverManager connection is used so that Liquibase manages its own
-        // transaction boundary independently of the HikariCP pool.
-        logger.info { "Running Liquibase migrations on $jdbcUrl" }
-        java.sql.DriverManager.getConnection(jdbcUrl, username, password).use { conn ->
-            val lbDatabase =
-                LiquibaseDatabaseFactory.getInstance()
-                    .findCorrectDatabaseImplementation(JdbcConnection(conn))
-            Liquibase("db/changelog/db.changelog-master.yaml", ClassLoaderResourceAccessor(), lbDatabase)
-                .update("")
+        if (runMigrations) {
+            // Run Liquibase migrations *before* handing connections to the application.
+            // A direct DriverManager connection is used so that Liquibase manages its own
+            // transaction boundary independently of the HikariCP pool.
+            logger.info { "Running Liquibase migrations on $jdbcUrl" }
+            java.sql.DriverManager.getConnection(jdbcUrl, username, password).use { conn ->
+                val lbDatabase =
+                    LiquibaseDatabaseFactory.getInstance()
+                        .findCorrectDatabaseImplementation(JdbcConnection(conn))
+                Liquibase("db/changelog/db.changelog-master.yaml", ClassLoaderResourceAccessor(), lbDatabase)
+                    .update("")
+            }
+            logger.info { "Liquibase migrations completed" }
+        } else {
+            logger.info { "Skipping Liquibase migrations (db.runMigrations=false)" }
         }
-        logger.info { "Liquibase migrations completed" }
 
+        logger.info { "Connecting to database $jdbcUrl" }
         val dataSource = HikariDataSource(hikariConfig)
         Database.connect(dataSource)
     }
