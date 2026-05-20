@@ -593,6 +593,158 @@ class ProfileApiTest {
                 }
         }
 
+        // PROPOSED profile state machine - response body verification
+
+        @Test
+        fun `doctor creates profile for patient - response body has PROPOSED status`() =
+            testApplication {
+                val profileService = mockk<ProfileService>()
+                setupApp(profileService)
+                val client = createClient { install(ContentNegotiation) { json() } }
+
+                val patientId = Uuid.random()
+                val doctorId = Uuid.random()
+                val token = generateToken(Role.DOCTOR, doctorId, allowedPatients = listOf(patientId))
+
+                val proposedProfile = Profile(
+                    id = Uuid.random(), userId = patientId,
+                    name = "Doctor Plan", status = ProfileStatus.PROPOSED,
+                    insulinType = "Fiasp", durationOfAction = 180,
+                    basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList(),
+                )
+                coEvery { profileService.createProfile(any()) } returns proposedProfile
+
+                val response = client.post("/api/v1/users/$patientId/profiles") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"name":"Doctor Plan","insulinType":"Fiasp","durationOfAction":180,"basal":[],"icr":[],"isf":[],"targets":[]}""")
+                }
+                assertEquals(HttpStatusCode.Created, response.status)
+                val body = response.body<org.javafreedom.kdiab.profiles.api.models.Profile>()
+                assertEquals("PROPOSED", body.status.value)
+            }
+
+        @Test
+        fun `patient accepts PROPOSED profile - response body has ACTIVE status`() =
+            testApplication {
+                val profileService = mockk<ProfileService>()
+                setupApp(profileService)
+                val client = createClient { install(ContentNegotiation) { json() } }
+
+                val patientId = Uuid.random()
+                val profileId = Uuid.random()
+                val token = generateToken(Role.PATIENT, patientId)
+
+                val activeProfile = Profile(
+                    id = profileId, userId = patientId,
+                    name = "Accepted Plan", status = ProfileStatus.ACTIVE,
+                    insulinType = "Fiasp", durationOfAction = 180,
+                    basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList(),
+                )
+                coEvery { profileService.acceptProposedProfile(patientId, profileId) } returns activeProfile
+
+                val response = client.post("/api/v1/users/$patientId/profiles/$profileId/accept") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+                assertEquals(HttpStatusCode.OK, response.status)
+                val body = response.body<org.javafreedom.kdiab.profiles.api.models.Profile>()
+                assertEquals("ACTIVE", body.status.value)
+            }
+
+        @Test
+        fun `patient rejects PROPOSED profile - response body has ARCHIVED status`() =
+            testApplication {
+                val profileService = mockk<ProfileService>()
+                setupApp(profileService)
+                val client = createClient { install(ContentNegotiation) { json() } }
+
+                val patientId = Uuid.random()
+                val profileId = Uuid.random()
+                val token = generateToken(Role.PATIENT, patientId)
+
+                val archivedProfile = Profile(
+                    id = profileId, userId = patientId,
+                    name = "Rejected Plan", status = ProfileStatus.ARCHIVED,
+                    insulinType = "Fiasp", durationOfAction = 180,
+                    basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList(),
+                )
+                coEvery { profileService.rejectProposedProfile(patientId, profileId, null) } returns archivedProfile
+
+                val response = client.post("/api/v1/users/$patientId/profiles/$profileId/reject") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+                assertEquals(HttpStatusCode.OK, response.status)
+                val body = response.body<org.javafreedom.kdiab.profiles.api.models.Profile>()
+                assertEquals("ARCHIVED", body.status.value)
+            }
+
+        @Test
+        fun `patient rejects PROPOSED profile with reason - reason forwarded to service`() =
+            testApplication {
+                val profileService = mockk<ProfileService>()
+                setupApp(profileService)
+                val client = createClient { install(ContentNegotiation) { json() } }
+
+                val patientId = Uuid.random()
+                val profileId = Uuid.random()
+                val token = generateToken(Role.PATIENT, patientId)
+                val reason = "Basal rate too high"
+
+                val archivedProfile = Profile(
+                    id = profileId, userId = patientId,
+                    name = "Rejected Plan", status = ProfileStatus.ARCHIVED,
+                    insulinType = "Fiasp", durationOfAction = 180,
+                    basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList(),
+                )
+                coEvery { profileService.rejectProposedProfile(patientId, profileId, reason) } returns archivedProfile
+
+                val response = client.post("/api/v1/users/$patientId/profiles/$profileId/reject") {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                    contentType(ContentType.Application.Json)
+                    setBody("""{"reason":"$reason"}""")
+                }
+                assertEquals(HttpStatusCode.OK, response.status)
+                io.mockk.coVerify { profileService.rejectProposedProfile(patientId, profileId, reason) }
+            }
+
+        @Test
+        fun `another patient cannot accept a PROPOSED profile - 403`() =
+            testApplication {
+                val profileService = mockk<ProfileService>()
+                setupApp(profileService)
+                val client = createClient { install(ContentNegotiation) { json() } }
+
+                val patientId = Uuid.random()
+                val otherPatientToken = generateToken(Role.PATIENT, Uuid.random())
+                val profileId = Uuid.random()
+
+                client.post("/api/v1/users/$patientId/profiles/$profileId/accept") {
+                    header(HttpHeaders.Authorization, "Bearer $otherPatientToken")
+                }.apply {
+                    assertEquals(HttpStatusCode.Forbidden, status)
+                    io.mockk.coVerify(exactly = 0) { profileService.acceptProposedProfile(any(), any()) }
+                }
+            }
+
+        @Test
+        fun `another patient cannot reject a PROPOSED profile - 403`() =
+            testApplication {
+                val profileService = mockk<ProfileService>()
+                setupApp(profileService)
+                val client = createClient { install(ContentNegotiation) { json() } }
+
+                val patientId = Uuid.random()
+                val otherPatientToken = generateToken(Role.PATIENT, Uuid.random())
+                val profileId = Uuid.random()
+
+                client.post("/api/v1/users/$patientId/profiles/$profileId/reject") {
+                    header(HttpHeaders.Authorization, "Bearer $otherPatientToken")
+                }.apply {
+                    assertEquals(HttpStatusCode.Forbidden, status)
+                    io.mockk.coVerify(exactly = 0) { profileService.rejectProposedProfile(any(), any(), any()) }
+                }
+            }
+
         private fun ApplicationTestBuilder.setupApp(service: ProfileService) {
                 environment {
                         config =
