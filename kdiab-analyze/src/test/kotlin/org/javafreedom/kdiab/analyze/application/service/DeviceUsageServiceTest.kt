@@ -4,9 +4,8 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
-import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentResponse
-import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamTreatment
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertNull
@@ -22,24 +21,23 @@ class DeviceUsageServiceTest {
     private val auth = "Bearer token"
     private val correlationId = "corr-1"
 
-    private fun treatment(type: TreatmentType, treatedAt: String) = TreatmentResponse(
+    private fun treatment(type: String, treatedAt: String) = UpstreamTreatment(
         id = "t-${treatedAt.hashCode()}",
         userId = userId,
         treatedAt = treatedAt,
-        createdAt = treatedAt,
         type = type,
         data = buildJsonObject {},
-        status = TreatmentResponse.Status.ACTIVE,
+        notes = null,
     )
 
-    private fun stubType(type: TreatmentType, treatments: List<TreatmentResponse>) {
+    private fun stubType(type: String, treatments: List<UpstreamTreatment>) {
         coEvery {
             treatmentsPort.getTreatmentsByType(userId, auth, correlationId, type, any(), any())
         } returns treatments
     }
 
     private fun stubAllEmpty() {
-        TreatmentType.entries.forEach { type ->
+        listOf("SENSOR_INSERT", "SITE_CHANGE", "INSULIN_CHANGE", "PUMP_BATTERY_CHANGE").forEach { type ->
             coEvery {
                 treatmentsPort.getTreatmentsByType(userId, auth, correlationId, type, any(), any())
             } returns emptyList()
@@ -65,8 +63,8 @@ class DeviceUsageServiceTest {
     @Test
     fun `returns null averages when only one event exists`() = runTest {
         stubAllEmpty()
-        stubType(TreatmentType.SENSOR_INSERT, listOf(
-            treatment(TreatmentType.SENSOR_INSERT, "2026-04-01T00:00:00Z"),
+        stubType("SENSOR_INSERT", listOf(
+            treatment("SENSOR_INSERT", "2026-04-01T00:00:00Z"),
         ))
 
         val result = service.compute(userId, 90, auth, correlationId)
@@ -78,9 +76,9 @@ class DeviceUsageServiceTest {
     @Test
     fun `returns correct avg for two sensor events 14 days apart`() = runTest {
         stubAllEmpty()
-        stubType(TreatmentType.SENSOR_INSERT, listOf(
-            treatment(TreatmentType.SENSOR_INSERT, "2026-04-01T00:00:00Z"),
-            treatment(TreatmentType.SENSOR_INSERT, "2026-04-15T00:00:00Z"),
+        stubType("SENSOR_INSERT", listOf(
+            treatment("SENSOR_INSERT", "2026-04-01T00:00:00Z"),
+            treatment("SENSOR_INSERT", "2026-04-15T00:00:00Z"),
         ))
 
         val result = service.compute(userId, 90, auth, correlationId)
@@ -96,10 +94,10 @@ class DeviceUsageServiceTest {
     fun `returns correct avg and stddev for multiple events`() = runTest {
         stubAllEmpty()
         // 3 events: gaps of 7, 14 days → avg=10.5, stddev=sqrt(((7-10.5)^2+(14-10.5)^2)/2)=3.5
-        stubType(TreatmentType.SITE_CHANGE, listOf(
-            treatment(TreatmentType.SITE_CHANGE, "2026-01-01T00:00:00Z"),
-            treatment(TreatmentType.SITE_CHANGE, "2026-01-08T00:00:00Z"),
-            treatment(TreatmentType.SITE_CHANGE, "2026-01-22T00:00:00Z"),
+        stubType("SITE_CHANGE", listOf(
+            treatment("SITE_CHANGE", "2026-01-01T00:00:00Z"),
+            treatment("SITE_CHANGE", "2026-01-08T00:00:00Z"),
+            treatment("SITE_CHANGE", "2026-01-22T00:00:00Z"),
         ))
 
         val result = service.compute(userId, 90, auth, correlationId)
@@ -113,9 +111,9 @@ class DeviceUsageServiceTest {
     @Test
     fun `battery events produce avg and stddev`() = runTest {
         stubAllEmpty()
-        stubType(TreatmentType.PUMP_BATTERY_CHANGE, listOf(
-            treatment(TreatmentType.PUMP_BATTERY_CHANGE, "2026-03-01T00:00:00Z"),
-            treatment(TreatmentType.PUMP_BATTERY_CHANGE, "2026-03-22T00:00:00Z"),
+        stubType("PUMP_BATTERY_CHANGE", listOf(
+            treatment("PUMP_BATTERY_CHANGE", "2026-03-01T00:00:00Z"),
+            treatment("PUMP_BATTERY_CHANGE", "2026-03-22T00:00:00Z"),
         ))
 
         val result = service.compute(userId, 90, auth, correlationId)
@@ -128,9 +126,9 @@ class DeviceUsageServiceTest {
     @Test
     fun `reservoir events produce correct averages`() = runTest {
         stubAllEmpty()
-        stubType(TreatmentType.INSULIN_CHANGE, listOf(
-            treatment(TreatmentType.INSULIN_CHANGE, "2026-02-01T00:00:00Z"),
-            treatment(TreatmentType.INSULIN_CHANGE, "2026-02-04T00:00:00Z"),
+        stubType("INSULIN_CHANGE", listOf(
+            treatment("INSULIN_CHANGE", "2026-02-01T00:00:00Z"),
+            treatment("INSULIN_CHANGE", "2026-02-04T00:00:00Z"),
         ))
 
         val result = service.compute(userId, 90, auth, correlationId)
@@ -152,11 +150,11 @@ class DeviceUsageServiceTest {
     fun `upstream failure for one type does not prevent other types from being computed`() = runTest {
         stubAllEmpty()
         coEvery {
-            treatmentsPort.getTreatmentsByType(userId, auth, correlationId, TreatmentType.SENSOR_INSERT, any(), any())
+            treatmentsPort.getTreatmentsByType(userId, auth, correlationId, "SENSOR_INSERT", any(), any())
         } throws RuntimeException("upstream down")
-        stubType(TreatmentType.SITE_CHANGE, listOf(
-            treatment(TreatmentType.SITE_CHANGE, "2026-03-01T00:00:00Z"),
-            treatment(TreatmentType.SITE_CHANGE, "2026-03-08T00:00:00Z"),
+        stubType("SITE_CHANGE", listOf(
+            treatment("SITE_CHANGE", "2026-03-01T00:00:00Z"),
+            treatment("SITE_CHANGE", "2026-03-08T00:00:00Z"),
         ))
 
         val result = service.compute(userId, 90, auth, correlationId)
@@ -167,8 +165,8 @@ class DeviceUsageServiceTest {
 
     @Test
     fun `all four device types are fetched in a single compute call`() = runTest {
-        val calledTypes = mutableListOf<TreatmentType>()
-        TreatmentType.entries.forEach { type ->
+        val calledTypes = mutableListOf<String>()
+        listOf("SENSOR_INSERT", "SITE_CHANGE", "INSULIN_CHANGE", "PUMP_BATTERY_CHANGE").forEach { type ->
             coEvery {
                 treatmentsPort.getTreatmentsByType(userId, auth, correlationId, type, any(), any())
             } answers {
@@ -179,12 +177,7 @@ class DeviceUsageServiceTest {
 
         service.compute(userId, 90, auth, correlationId)
 
-        val expectedTypes = setOf(
-            TreatmentType.SENSOR_INSERT,
-            TreatmentType.SITE_CHANGE,
-            TreatmentType.INSULIN_CHANGE,
-            TreatmentType.PUMP_BATTERY_CHANGE,
-        )
+        val expectedTypes = setOf("SENSOR_INSERT", "SITE_CHANGE", "INSULIN_CHANGE", "PUMP_BATTERY_CHANGE")
         assertTrue(calledTypes.toSet() == expectedTypes, "All four device types must be fetched")
     }
 }

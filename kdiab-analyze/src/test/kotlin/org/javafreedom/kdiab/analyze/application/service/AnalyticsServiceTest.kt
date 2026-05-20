@@ -8,11 +8,8 @@ import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
 import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
-import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
-import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureSource
-import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureStatus
-import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -30,26 +27,24 @@ class AnalyticsServiceTest {
     private val from = "2024-01-01T00:00:00Z"
     private val to = "2024-01-31T23:59:59Z"
 
-    private fun cgmDto(sgv: Double, measuredAt: String = "2024-01-15T12:00:00Z") = MeasureResponse(
+    private fun cgmDto(sgv: Double, measuredAt: String = "2024-01-15T12:00:00Z") = UpstreamMeasure(
         id = "m-1",
         userId = userId,
         measuredAt = measuredAt,
-        createdAt = measuredAt,
-        type = MeasureType.CGM,
-        source = MeasureSource.MANUAL,
-        `data` = buildJsonObject { put("value", sgv); put("unit", "mg/dL") },
-        status = MeasureStatus.ACTIVE,
+        type = "CGM",
+        source = "MANUAL",
+        data = buildJsonObject { put("value", sgv); put("unit", "mg/dL") },
+        status = "ACTIVE",
     )
 
-    private fun cgmDtoMmol(sgv: Double, measuredAt: String = "2024-01-15T12:00:00Z") = MeasureResponse(
+    private fun cgmDtoMmol(sgv: Double, measuredAt: String = "2024-01-15T12:00:00Z") = UpstreamMeasure(
         id = "m-2",
         userId = userId,
         measuredAt = measuredAt,
-        createdAt = measuredAt,
-        type = MeasureType.CGM,
-        source = MeasureSource.MANUAL,
-        `data` = buildJsonObject { put("value", sgv); put("unit", "mmol/L") },
-        status = MeasureStatus.ACTIVE,
+        type = "CGM",
+        source = "MANUAL",
+        data = buildJsonObject { put("value", sgv); put("unit", "mmol/L") },
+        status = "ACTIVE",
     )
 
     // ── HbA1c ────────────────────────────────────────────────────────────────
@@ -92,11 +87,10 @@ class AnalyticsServiceTest {
     fun `getHba1c ignores non-CGM readings`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(200.0),
-            MeasureResponse(
+            UpstreamMeasure(
                 id = "m-2", userId = userId, measuredAt = "2024-01-15T13:00:00Z",
-                createdAt = "2024-01-15T13:00:00Z",
-                type = MeasureType.BGM, source = MeasureSource.MANUAL,
-                `data` = buildJsonObject { put("value", 180.0) }, status = MeasureStatus.ACTIVE
+                type = "BGM", source = "MANUAL",
+                data = buildJsonObject { put("value", 180.0) }, status = "ACTIVE"
             ),
         )
         val result = service.getHba1c(userId, from, to, auth, "mg/dL", "")

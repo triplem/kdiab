@@ -16,6 +16,10 @@ import org.javafreedom.kdiab.analyze.api.upstream.profiles.DefaultApi
 import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
+import org.javafreedom.kdiab.analyze.domain.model.BasalSegment
+import org.javafreedom.kdiab.analyze.domain.model.RatioSegment
+import org.javafreedom.kdiab.analyze.domain.model.TargetSegment
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamProfile
 
 private val logger = KotlinLogging.logger {}
 
@@ -40,7 +44,11 @@ class ProfilesClient(
         }
     }
 
-    override suspend fun getProfiles(userId: String, authorization: String, correlationId: String): List<Profile> {
+    override suspend fun getProfiles(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+    ): List<UpstreamProfile> {
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",
@@ -51,7 +59,7 @@ class ProfilesClient(
             },
         ).apply { setBearerToken(token) }
 
-        val result = mutableListOf<Profile>()
+        val result = mutableListOf<UpstreamProfile>()
         var page = 0
         val totalStart = System.currentTimeMillis()
 
@@ -81,7 +89,7 @@ class ProfilesClient(
             }
             logger.info { "Fetched profiles page $page in ${pageMs}ms [status=${httpResponse.status}]" }
             val paged = httpResponse.body()
-            result.addAll(paged.items)
+            result.addAll(paged.items.map { it.toDomain() })
             page++
             if (paged.items.isEmpty() || result.size.toLong() >= paged.totalCount) break
         }
@@ -91,3 +99,23 @@ class ProfilesClient(
         return result
     }
 }
+
+private fun Profile.toDomain() = UpstreamProfile(
+    id = id,
+    userId = userId,
+    status = status.value,
+    name = name,
+    insulinType = insulinType,
+    durationOfAction = durationOfAction,
+    analysisLow = analysisLow,
+    analysisHigh = analysisHigh,
+    createdAt = createdAt,
+    validFrom = validFrom,
+    previousProfileId = previousProfileId,
+    activatedAt = activatedAt,
+    archivedAt = archivedAt,
+    basal = basal?.map { BasalSegment(it.startTime, it.value) },
+    icr = icr?.map { RatioSegment(it.startTime, it.value) },
+    isf = isf?.map { RatioSegment(it.startTime, it.value) },
+    targets = targets?.map { TargetSegment(it.startTime, it.low, it.high) },
+)

@@ -52,10 +52,10 @@ class TimelineService(
                     id = id,
                     userId = uId,
                     measuredAt = measuredAt,
-                    type = dto.type.value,
-                    source = dto.source.value,
+                    type = dto.type,
+                    source = dto.source,
                     data = dto.data,
-                    status = dto.status.value,
+                    status = dto.status,
                 )
             }
             .filter { it.measuredAt in fromInstant..toInstant }
@@ -69,7 +69,7 @@ class TimelineService(
                     id = id,
                     userId = uId,
                     treatedAt = treatedAt,
-                    type = dto.type.value,
+                    type = dto.type,
                     notes = dto.notes,
                     data = dto.data,
                 )

@@ -1,9 +1,8 @@
 package org.javafreedom.kdiab.analyze.application.port.outbound
 
-import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentResponse
-import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.analyze.domain.model.DeviceAge
 import org.javafreedom.kdiab.analyze.domain.model.DeviceStatus
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamTreatment
 
 interface TreatmentsPort {
     suspend fun getTreatments(
@@ -12,7 +11,7 @@ interface TreatmentsPort {
         correlationId: String,
         from: String? = null,
         to: String? = null,
-    ): List<TreatmentResponse>
+    ): List<UpstreamTreatment>
 
     // Six parameters are required: HTTP context (authorization, correlationId), resource owner (userId),
     // filter (type), and optional date range (from, to). Splitting the date range into a wrapper object
@@ -22,10 +21,10 @@ interface TreatmentsPort {
         userId: String,
         authorization: String,
         correlationId: String,
-        type: TreatmentType,
+        type: String,
         from: String? = null,
         to: String? = null,
-    ): List<TreatmentResponse>
+    ): List<UpstreamTreatment>
 
     suspend fun getDeviceAge(
         userId: String,

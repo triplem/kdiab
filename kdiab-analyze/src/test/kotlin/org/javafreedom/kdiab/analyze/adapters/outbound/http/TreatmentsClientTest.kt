@@ -3,7 +3,6 @@ package org.javafreedom.kdiab.analyze.adapters.outbound.http
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
-import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,7 +38,7 @@ class TreatmentsClientTest {
         val result = client.getTreatments(userId, auth, correlationId)
         assertEquals(2, result.size)
         assertEquals("t-1", result[0].id)
-        assertEquals("BOLUS", result[0].type.value)
+        assertEquals("BOLUS", result[0].type)
     }
 
     @Test
@@ -186,7 +185,7 @@ class TreatmentsClientTest {
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )
         }
-        val result = buildClient(engine).getTreatmentsByType(userId, auth, correlationId, TreatmentType.SENSOR_INSERT)
+        val result = buildClient(engine).getTreatmentsByType(userId, auth, correlationId, "SENSOR_INSERT")
         assertEquals(2, result.size)
         assertEquals(1, engine.requestHistory.size)
     }
@@ -200,7 +199,7 @@ class TreatmentsClientTest {
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )
         }
-        val result = buildClient(engine).getTreatmentsByType(userId, auth, correlationId, TreatmentType.SITE_CHANGE)
+        val result = buildClient(engine).getTreatmentsByType(userId, auth, correlationId, "SITE_CHANGE")
         assertEquals(0, result.size)
         assertEquals(1, engine.requestHistory.size)
     }
@@ -224,7 +223,7 @@ class TreatmentsClientTest {
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )
         }
-        val result = buildClient(engine).getTreatmentsByType(userId, auth, correlationId, TreatmentType.SENSOR_INSERT)
+        val result = buildClient(engine).getTreatmentsByType(userId, auth, correlationId, "SENSOR_INSERT")
         assertEquals(201, result.size)
         assertEquals(2, callCount)
     }
@@ -235,7 +234,7 @@ class TreatmentsClientTest {
             respond(content = """{"code":500,"message":"Internal Server Error"}""", status = HttpStatusCode.InternalServerError)
         }
         val ex = assertFailsWith<UpstreamException> {
-            buildClient(engine).getTreatmentsByType(userId, auth, correlationId, TreatmentType.SENSOR_INSERT)
+            buildClient(engine).getTreatmentsByType(userId, auth, correlationId, "SENSOR_INSERT")
         }
         assertEquals("treatments", ex.service)
         assertEquals(500, ex.statusCode)
@@ -257,7 +256,7 @@ class TreatmentsClientTest {
             }
         }
         assertFailsWith<UpstreamException> {
-            buildClient(engine).getTreatmentsByType(userId, auth, correlationId, TreatmentType.SENSOR_INSERT)
+            buildClient(engine).getTreatmentsByType(userId, auth, correlationId, "SENSOR_INSERT")
         }
     }
 
