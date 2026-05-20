@@ -73,25 +73,24 @@ class UserServiceTest {
     }
 
     @Test
-    fun `updateMySettings writes back to Keycloak when glucoseUnit changes`() = runTest {
+    fun `updateMySettings persists glucoseUnit to DB without Keycloak write-back`() = runTest {
         val principal = patientPrincipal()
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
-        coEvery { keycloak.getUser(userId) } returns kcUser()
-        coEvery { keycloak.updateUserAttributes(any(), any()) } returns Unit
         val patch = SettingsPatch(glucoseUnit = "mmol/L")
-        service.updateMySettings(principal, patch)
-        coVerify(exactly = 1) { keycloak.updateUserAttributes(userId, mapOf("glucose_unit" to listOf("mmol/L"))) }
+        val result = service.updateMySettings(principal, patch)
+        assertEquals("mmol/L", result.glucoseUnit)
+        coVerify(exactly = 0) { keycloak.updateUserAttributes(any(), any()) }
     }
 
     @Test
-    fun `updateMySettings does not call Keycloak when unit unchanged`() = runTest {
+    fun `updateMySettings persists weightUnit to DB without Keycloak write-back`() = runTest {
         val principal = patientPrincipal()
-        val existing = settings().copy(glucoseUnit = "mg/dL")
-        coEvery { settingsRepo.findByUserId(userId) } returns existing
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
-        val patch = SettingsPatch(glucoseUnit = "mg/dL", timezone = "UTC")
-        service.updateMySettings(principal, patch)
+        val patch = SettingsPatch(weightUnit = "lbs")
+        val result = service.updateMySettings(principal, patch)
+        assertEquals("lbs", result.weightUnit)
         coVerify(exactly = 0) { keycloak.updateUserAttributes(any(), any()) }
     }
 

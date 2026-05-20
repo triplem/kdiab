@@ -118,13 +118,13 @@ export const analyzeApi = {
     axiosInstance.get<TimelineResponse>(`${BASE}/users/${userId}/timeline`, {
       params: { from, to },
     }),
-  getHba1c: (userId: string, from: string, to: string) =>
+  getHba1c: (userId: string, from: string, to: string, glucoseUnit?: string) =>
     axiosInstance.get<Hba1cResponse>(`${BASE}/users/${userId}/analytics/hba1c`, {
-      params: { from, to },
+      params: { from, to, glucoseUnit },
     }),
-  getAgp: (userId: string, from: string, to: string) =>
+  getAgp: (userId: string, from: string, to: string, glucoseUnit?: string) =>
     axiosInstance.get<AgpResponse>(`${BASE}/users/${userId}/analytics/agp`, {
-      params: { from, to },
+      params: { from, to, glucoseUnit },
     }),
   getActiveProfiles: (userId: string, from: string, to: string) =>
     axiosInstance.get<ProfilesResponse>(`${BASE}/users/${userId}/profiles/active`, {

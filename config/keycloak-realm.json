@@ -56,15 +56,7 @@
       ],
       "realmRoles": [
         "PATIENT"
-      ],
-      "attributes": {
-        "glucose_unit": [
-          "mg/dL"
-        ],
-        "weight_unit": [
-          "kg"
-        ]
-      }
+      ]
     },
     {
       "id": "22222222-2222-2222-2222-222222222222",
@@ -83,15 +75,7 @@
       ],
       "realmRoles": [
         "PATIENT"
-      ],
-      "attributes": {
-        "glucose_unit": [
-          "mmol/L"
-        ],
-        "weight_unit": [
-          "lbs"
-        ]
-      }
+      ]
     },
     {
       "id": "33333333-3333-3333-3333-333333333333",
@@ -250,34 +234,6 @@
             "id.token.claim": "false",
             "access.token.claim": "true"
           }
-        },
-        {
-          "name": "glucose_unit",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "config": {
-            "user.attribute": "glucose_unit",
-            "claim.name": "glucose_unit",
-            "jsonType.label": "String",
-            "multivalued": "false",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "false"
-          }
-        },
-        {
-          "name": "weight_unit",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "config": {
-            "user.attribute": "weight_unit",
-            "claim.name": "weight_unit",
-            "jsonType.label": "String",
-            "multivalued": "false",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "false"
-          }
         }
       ]
     },
@@ -349,34 +305,6 @@
             "id.token.claim": "false",
             "access.token.claim": "true"
           }
-        },
-        {
-          "name": "glucose_unit",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "config": {
-            "user.attribute": "glucose_unit",
-            "claim.name": "glucose_unit",
-            "jsonType.label": "String",
-            "multivalued": "false",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "false"
-          }
-        },
-        {
-          "name": "weight_unit",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "config": {
-            "user.attribute": "weight_unit",
-            "claim.name": "weight_unit",
-            "jsonType.label": "String",
-            "multivalued": "false",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "false"
-          }
         }
       ]
     },
@@ -447,34 +375,6 @@
             "included.custom.audience": "treatment",
             "id.token.claim": "false",
             "access.token.claim": "true"
-          }
-        },
-        {
-          "name": "glucose_unit",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "config": {
-            "user.attribute": "glucose_unit",
-            "claim.name": "glucose_unit",
-            "jsonType.label": "String",
-            "multivalued": "false",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "false"
-          }
-        },
-        {
-          "name": "weight_unit",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "config": {
-            "user.attribute": "weight_unit",
-            "claim.name": "weight_unit",
-            "jsonType.label": "String",
-            "multivalued": "false",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "false"
           }
         }
       ]
@@ -574,34 +474,6 @@
             "included.custom.audience": "treatment",
             "id.token.claim": "false",
             "access.token.claim": "true"
-          }
-        },
-        {
-          "name": "glucose_unit",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "config": {
-            "user.attribute": "glucose_unit",
-            "claim.name": "glucose_unit",
-            "jsonType.label": "String",
-            "multivalued": "false",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "false"
-          }
-        },
-        {
-          "name": "weight_unit",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "config": {
-            "user.attribute": "weight_unit",
-            "claim.name": "weight_unit",
-            "jsonType.label": "String",
-            "multivalued": "false",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "false"
           }
         },
         {
@@ -766,34 +638,6 @@
           }
         },
         {
-          "name": "glucose_unit",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "config": {
-            "user.attribute": "glucose_unit",
-            "claim.name": "glucose_unit",
-            "jsonType.label": "String",
-            "multivalued": "false",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "false"
-          }
-        },
-        {
-          "name": "weight_unit",
-          "protocol": "openid-connect",
-          "protocolMapper": "oidc-usermodel-attribute-mapper",
-          "config": {
-            "user.attribute": "weight_unit",
-            "claim.name": "weight_unit",
-            "jsonType.label": "String",
-            "multivalued": "false",
-            "access.token.claim": "true",
-            "id.token.claim": "true",
-            "userinfo.token.claim": "false"
-          }
-        },
-        {
           "name": "audience-users",
           "protocol": "openid-connect",
           "protocolMapper": "oidc-audience-mapper",
@@ -813,7 +657,8 @@
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
-      "secret": "users-service-secret"
+      "secret": "users-service-secret",
+      "protocolMappers": []
     }
   ]
 }

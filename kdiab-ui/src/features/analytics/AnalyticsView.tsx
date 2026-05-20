@@ -45,15 +45,15 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
   const enabled = !!userId
 
   const agpQuery = useQuery({
-    queryKey: ['agp', userId, activeWindow],
-    queryFn: () => analyzeApi.getAgp(userId, from, to).then(r => r.data),
+    queryKey: ['agp', userId, activeWindow, glucoseUnit],
+    queryFn: () => analyzeApi.getAgp(userId, from, to, glucoseUnit).then(r => r.data),
     enabled,
     staleTime: 5 * 60 * 1000,
   })
 
   const hba1cQuery = useQuery({
-    queryKey: ['hba1c', userId, activeWindow],
-    queryFn: () => analyzeApi.getHba1c(userId, from, to).then(r => r.data),
+    queryKey: ['hba1c', userId, activeWindow, glucoseUnit],
+    queryFn: () => analyzeApi.getHba1c(userId, from, to, glucoseUnit).then(r => r.data),
     enabled,
     staleTime: 5 * 60 * 1000,
   })

@@ -52,6 +52,7 @@ fun Route.bffRoutes(
             val ctx = extractContext(call, params.userId)
             val (from, to) = validateDateRange(params.from, params.to)
             auditDoctorAccess(ctx, "analyze.hba1c")
+            val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
 
             val (tirLow, tirHigh) = analyticsService.getAnalysisThresholds(
                 userId = ctx.targetUserId.toString(),
@@ -64,7 +65,7 @@ fun Route.bffRoutes(
                 from = from,
                 to = to,
                 authorization = ctx.authorization,
-                glucoseUnit = ctx.principal.glucoseUnit,
+                glucoseUnit = glucoseUnit,
                 correlationId = ctx.correlationId,
                 tirLow = tirLow,
                 tirHigh = tirHigh,
@@ -76,6 +77,7 @@ fun Route.bffRoutes(
             val ctx = extractContext(call, params.userId)
             val (from, to) = validateDateRange(params.from, params.to)
             auditDoctorAccess(ctx, "analyze.agp")
+            val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
 
             val (tirLow, tirHigh) = analyticsService.getAnalysisThresholds(
                 userId = ctx.targetUserId.toString(),
@@ -88,7 +90,7 @@ fun Route.bffRoutes(
                 from = from,
                 to = to,
                 authorization = ctx.authorization,
-                glucoseUnit = ctx.principal.glucoseUnit,
+                glucoseUnit = glucoseUnit,
                 correlationId = ctx.correlationId,
                 tirLow = tirLow,
                 tirHigh = tirHigh,

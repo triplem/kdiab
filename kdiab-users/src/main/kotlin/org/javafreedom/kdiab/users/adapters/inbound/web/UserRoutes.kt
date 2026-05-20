@@ -17,8 +17,6 @@ import org.javafreedom.kdiab.users.application.service.UserService
 
 private val logger = KotlinLogging.logger {}
 
-private const val JWT_BACKED_NOTE =
-    "Glucose unit and weight unit changes take effect on your next login."
 private const val DEFAULT_PAGE_SIZE = 20
 
 fun Route.userRoutes(userService: UserService) {
@@ -40,8 +38,7 @@ private fun Route.selfRoutes(userService: UserService) {
         val req = call.receive<PatchSettingsRequest>()
         val patch = req.toPatch()
         val updated = userService.updateMySettings(principal, patch)
-        val note = if (req.glucoseUnit != null || req.weightUnit != null) JWT_BACKED_NOTE else null
-        call.respond(updated.toResponse(note))
+        call.respond(updated.toResponse(null))
     }
 }
 

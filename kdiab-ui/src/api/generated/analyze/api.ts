@@ -479,10 +479,11 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
          * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetAgpGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getAgp: async (userId: string, from: string, to: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getAgp: async (userId: string, from: string, to: string, glucoseUnit?: GetAgpGlucoseUnitEnum, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'userId' is not null or undefined
             assertParamExists('getAgp', 'userId', userId)
             // verify required parameter 'from' is not null or undefined
@@ -516,6 +517,10 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
                 localVarQueryParameter['to'] = (to as any instanceof Date) ?
                     (to as any).toISOString() :
                     to;
+            }
+
+            if (glucoseUnit !== undefined) {
+                localVarQueryParameter['glucoseUnit'] = glucoseUnit;
             }
 
             localVarHeaderParameter['Accept'] = 'application/json';
@@ -573,10 +578,11 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
          * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetHba1cGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHba1c: async (userId: string, from: string, to: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        getHba1c: async (userId: string, from: string, to: string, glucoseUnit?: GetHba1cGlucoseUnitEnum, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'userId' is not null or undefined
             assertParamExists('getHba1c', 'userId', userId)
             // verify required parameter 'from' is not null or undefined
@@ -610,6 +616,10 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
                 localVarQueryParameter['to'] = (to as any instanceof Date) ?
                     (to as any).toISOString() :
                     to;
+            }
+
+            if (glucoseUnit !== undefined) {
+                localVarQueryParameter['glucoseUnit'] = glucoseUnit;
             }
 
             localVarHeaderParameter['Accept'] = 'application/json';
@@ -747,11 +757,12 @@ export const DefaultApiFp = function(configuration?: Configuration) {
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
          * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetAgpGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getAgp(userId: string, from: string, to: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AgpResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getAgp(userId, from, to, options);
+        async getAgp(userId: string, from: string, to: string, glucoseUnit?: GetAgpGlucoseUnitEnum, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AgpResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAgp(userId, from, to, glucoseUnit, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['DefaultApi.getAgp']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -775,11 +786,12 @@ export const DefaultApiFp = function(configuration?: Configuration) {
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
          * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetHba1cGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async getHba1c(userId: string, from: string, to: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Hba1cResponse>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.getHba1c(userId, from, to, options);
+        async getHba1c(userId: string, from: string, to: string, glucoseUnit?: GetHba1cGlucoseUnitEnum, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Hba1cResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getHba1c(userId, from, to, glucoseUnit, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['DefaultApi.getHba1c']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -839,11 +851,12 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
          * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetAgpGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getAgp(userId: string, from: string, to: string, options?: RawAxiosRequestConfig): AxiosPromise<AgpResponse> {
-            return localVarFp.getAgp(userId, from, to, options).then((request) => request(axios, basePath));
+        getAgp(userId: string, from: string, to: string, glucoseUnit?: GetAgpGlucoseUnitEnum, options?: RawAxiosRequestConfig): AxiosPromise<AgpResponse> {
+            return localVarFp.getAgp(userId, from, to, glucoseUnit, options).then((request) => request(axios, basePath));
         },
         /**
          * Returns the most recent timestamp for each device-related treatment type (catheter, reservoir, CGM sensor). Proxied from kdiab-treatments.
@@ -861,11 +874,12 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
          * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetHba1cGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        getHba1c(userId: string, from: string, to: string, options?: RawAxiosRequestConfig): AxiosPromise<Hba1cResponse> {
-            return localVarFp.getHba1c(userId, from, to, options).then((request) => request(axios, basePath));
+        getHba1c(userId: string, from: string, to: string, glucoseUnit?: GetHba1cGlucoseUnitEnum, options?: RawAxiosRequestConfig): AxiosPromise<Hba1cResponse> {
+            return localVarFp.getHba1c(userId, from, to, glucoseUnit, options).then((request) => request(axios, basePath));
         },
         /**
          * Returns the most recently recorded pump and uploader device status snapshot. Returns 204 if no status has been recorded yet. Proxied from kdiab-treatments.
@@ -915,11 +929,12 @@ export class DefaultApi extends BaseAPI {
      * @param {string} userId 
      * @param {string} from Start of timeframe (ISO-8601 datetime)
      * @param {string} to End of timeframe (ISO-8601 datetime)
+     * @param {GetAgpGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public getAgp(userId: string, from: string, to: string, options?: RawAxiosRequestConfig) {
-        return DefaultApiFp(this.configuration).getAgp(userId, from, to, options).then((request) => request(this.axios, this.basePath));
+    public getAgp(userId: string, from: string, to: string, glucoseUnit?: GetAgpGlucoseUnitEnum, options?: RawAxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).getAgp(userId, from, to, glucoseUnit, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -939,11 +954,12 @@ export class DefaultApi extends BaseAPI {
      * @param {string} userId 
      * @param {string} from Start of timeframe (ISO-8601 datetime)
      * @param {string} to End of timeframe (ISO-8601 datetime)
+     * @param {GetHba1cGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public getHba1c(userId: string, from: string, to: string, options?: RawAxiosRequestConfig) {
-        return DefaultApiFp(this.configuration).getHba1c(userId, from, to, options).then((request) => request(this.axios, this.basePath));
+    public getHba1c(userId: string, from: string, to: string, glucoseUnit?: GetHba1cGlucoseUnitEnum, options?: RawAxiosRequestConfig) {
+        return DefaultApiFp(this.configuration).getHba1c(userId, from, to, glucoseUnit, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -971,5 +987,15 @@ export class DefaultApi extends BaseAPI {
     }
 }
 
+export const GetAgpGlucoseUnitEnum = {
+    MgDL: 'mg/dL',
+    MmolL: 'mmol/L',
+} as const;
+export type GetAgpGlucoseUnitEnum = typeof GetAgpGlucoseUnitEnum[keyof typeof GetAgpGlucoseUnitEnum];
+export const GetHba1cGlucoseUnitEnum = {
+    MgDL: 'mg/dL',
+    MmolL: 'mmol/L',
+} as const;
+export type GetHba1cGlucoseUnitEnum = typeof GetHba1cGlucoseUnitEnum[keyof typeof GetHba1cGlucoseUnitEnum];
 
 

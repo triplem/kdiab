@@ -45,6 +45,7 @@ paths:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
         - $ref: '#/components/parameters/to'
+        - $ref: '#/components/parameters/glucoseUnit'
       responses:
         '200':
           description: HbA1c analytics result
@@ -66,6 +67,7 @@ paths:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
         - $ref: '#/components/parameters/to'
+        - $ref: '#/components/parameters/glucoseUnit'
       responses:
         '200':
           description: AGP hourly data (24 buckets)
@@ -199,6 +201,16 @@ components:
       schema:
         type: string
         format: date-time
+    glucoseUnit:
+      name: glucoseUnit
+      in: query
+      required: false
+      description: Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+      schema:
+        type: string
+        enum: [mg/dL, mmol/L]
+        default: mg/dL
+        example: mg/dL
 
   responses:
     Unauthorized:
