@@ -52,13 +52,14 @@ class TreatmentE2ETest : BehaviorSpec({
 
     given("a running Treatments Service") {
         `when`("a patient manages their BOLUS treatments") {
-            then("they can create, list with type filter, and delete a treatment") {
+            then("they can create and list treatments; a doctor can delete them") {
                 testApplication {
                     environment { config = treatmentsConfig("e2e_treatments_patient") }
                     application { module() }
                     val client = createClient { install(ContentNegotiation) { json() } }
 
                     val sarahToken = token(SARAH_ID, listOf("PATIENT"))
+                    val doctorToken = token("33333333-3333-3333-3333-333333333333", listOf("DOCTOR"), listOf(SARAH_ID))
 
                     // 1. List — empty initially (returns PagedTreatmentResponse)
                     val list0 = client.get("/api/v1/users/$SARAH_ID/treatments") {
@@ -97,15 +98,23 @@ class TreatmentE2ETest : BehaviorSpec({
                     carbsPaged["items"]!!.jsonArray.size shouldBe 0
                     carbsPaged["totalCount"]!!.jsonPrimitive.content.toLong() shouldBe 0L
 
-                    // 5. Delete → 200
-                    val delete = client.post("/api/v1/users/$SARAH_ID/treatments/delete") {
+                    // 5. Patient delete → 403 (delete restricted to DOCTOR/ADMIN)
+                    val patientDelete = client.post("/api/v1/users/$SARAH_ID/treatments/delete") {
                         bearerAuth(sarahToken)
+                        contentType(ContentType.Application.Json)
+                        setBody("""{"treatmentIds":["$treatmentId"]}""")
+                    }
+                    patientDelete.status shouldBe HttpStatusCode.Forbidden
+
+                    // 6. Doctor delete → 200
+                    val delete = client.post("/api/v1/users/$SARAH_ID/treatments/delete") {
+                        bearerAuth(doctorToken)
                         contentType(ContentType.Application.Json)
                         setBody("""{"treatmentIds":["$treatmentId"]}""")
                     }
                     delete.status shouldBe HttpStatusCode.OK
 
-                    // 6. List → empty again
+                    // 7. List → empty again
                     val list2 = client.get("/api/v1/users/$SARAH_ID/treatments") {
                         bearerAuth(sarahToken)
                     }

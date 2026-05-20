@@ -321,14 +321,13 @@ class TreatmentRoutesTest {
     // ── POST /api/v1/users/{userId}/treatments/delete ─────────────────────────
 
     @Test
-    fun `delete treatments - 200 patient deletes own treatments`() = routeTest { repo ->
-        coEvery { repo.deleteAll(any(), any()) } just runs
+    fun `delete treatments - 403 patient cannot delete own treatments`() = routeTest { _ ->
         val resp = client.post("/api/v1/users/$SARAH_ID/treatments/delete") {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(bulkBody)
         }
-        assertEquals(HttpStatusCode.OK, resp.status)
+        assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 
     @Test
@@ -376,7 +375,7 @@ class TreatmentRoutesTest {
     @Test
     fun `delete treatments - 404 when empty treatment ids`() = routeTest { _ ->
         val resp = client.post("/api/v1/users/$SARAH_ID/treatments/delete") {
-            bearerAuth(sarahToken)
+            bearerAuth(doctorToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody("""{"treatmentIds":[]}""")
         }

@@ -23,10 +23,11 @@ export function TimeInRangeBar({ tir, glucoseUnit }: Props) {
   const meetsGoal = inRangePct >= TIR_GOAL
 
   const segments = [
-    { key: 'below',  count: tir.belowCount,   color: 'var(--tir-below)',  label: t('analytics.tirBelow',  { low: fmtThreshold(70, u), unit: u }),                                         descId: 'tir-desc-below' },
-    { key: 'target', count: tir.inRangeCount,  color: 'var(--tir-target)', label: t('analytics.tirTarget', { low: fmtThreshold(70, u), high: fmtThreshold(180, u), unit: u }),             descId: 'tir-desc-target' },
-    { key: 'above',  count: tir.aboveCount,    color: 'var(--tir-above)',  label: t('analytics.tirAbove',  { low: fmtThreshold(180, u), high: fmtThreshold(250, u), unit: u }),            descId: 'tir-desc-above' },
-    { key: 'high',   count: tir.highCount,     color: 'var(--tir-high)',   label: t('analytics.tirHigh',   { high: fmtThreshold(250, u), unit: u }),                                      descId: 'tir-desc-high' },
+    { key: 'veryLow', count: tir.veryLowCount,  color: '#B00020',           label: t('analytics.tirVeryLowBand', { high: fmtThreshold(54, u), unit: u }),                                 descId: 'tir-desc-verylow' },
+    { key: 'below',   count: tir.belowCount,    color: 'var(--tir-below)',  label: t('analytics.tirBelow',       { low: fmtThreshold(54, u), high: fmtThreshold(70, u), unit: u }),   descId: 'tir-desc-below' },
+    { key: 'target',  count: tir.inRangeCount,  color: 'var(--tir-target)', label: t('analytics.tirTarget',      { low: fmtThreshold(70, u), high: fmtThreshold(180, u), unit: u }),      descId: 'tir-desc-target' },
+    { key: 'above',   count: tir.aboveCount,    color: 'var(--tir-above)',  label: t('analytics.tirAbove',       { low: fmtThreshold(180, u), high: fmtThreshold(250, u), unit: u }),     descId: 'tir-desc-above' },
+    { key: 'high',    count: tir.highCount,     color: 'var(--tir-high)',   label: t('analytics.tirHigh',        { high: fmtThreshold(250, u), unit: u }),                                descId: 'tir-desc-high' },
   ]
 
   const goalLabel = meetsGoal ? t('analytics.tirGoalMet') : t('analytics.tirGoalNotMet')
@@ -113,7 +114,7 @@ export function TimeInRangeBar({ tir, glucoseUnit }: Props) {
         <dt>{t('analytics.tirInRange')}</dt>
         <dd>{inRangePct.toFixed(1)}%</dd>
         <dt>{t('analytics.tirLow')}</dt>
-        <dd>{((tir.belowCount / total) * 100).toFixed(1)}%</dd>
+        <dd>{(((tir.veryLowCount + tir.belowCount) / total) * 100).toFixed(1)}%</dd>
         <dt>{t('analytics.tirHigh2')}</dt>
         <dd>{(((tir.aboveCount + tir.highCount) / total) * 100).toFixed(1)}%</dd>
       </dl>

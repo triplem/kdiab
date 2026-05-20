@@ -5,6 +5,7 @@ import '../i18n'
 import type { TirBreakdown } from '../api/analyzeApi'
 
 const baseTir: TirBreakdown = {
+  veryLowCount: 0,
   belowCount: 5,
   inRangeCount: 70,
   aboveCount: 15,
@@ -22,6 +23,7 @@ describe('TimeInRangeBar', () => {
 
   test('shows zero values correctly without NaN text', () => {
     const zeroTir: TirBreakdown = {
+      veryLowCount: 0,
       belowCount: 0,
       inRangeCount: 0,
       aboveCount: 0,
@@ -60,6 +62,7 @@ describe('TimeInRangeBar', () => {
 
   test('shows goal-not-met indicator when in-range < 70%', () => {
     const lowTir: TirBreakdown = {
+      veryLowCount: 0,
       belowCount: 20,
       inRangeCount: 50,
       aboveCount: 20,
@@ -69,5 +72,25 @@ describe('TimeInRangeBar', () => {
     render(<TimeInRangeBar tir={lowTir} glucoseUnit="mg/dL" />)
     const goalEl = document.querySelector('.below-goal')
     expect(goalEl).not.toBeNull()
+  })
+
+  test('renders very low band when veryLowCount is non-zero', () => {
+    const tirWithVeryLow: TirBreakdown = {
+      veryLowCount: 3,
+      belowCount: 5,
+      inRangeCount: 70,
+      aboveCount: 12,
+      highCount: 10,
+      totalCount: 100,
+    }
+    render(<TimeInRangeBar tir={tirWithVeryLow} glucoseUnit="mg/dL" />)
+    expect(screen.getAllByText(/3\.0%/).length).toBeGreaterThan(0)
+  })
+
+  test('omits very low band from bar when veryLowCount is zero', () => {
+    render(<TimeInRangeBar tir={baseTir} glucoseUnit="mg/dL" />)
+    // veryLowCount=0 → segment has pct=0 and is not rendered in the bar
+    const bar = document.querySelector('[aria-describedby="tir-desc-verylow"]')
+    expect(bar).toBeNull()
   })
 })
