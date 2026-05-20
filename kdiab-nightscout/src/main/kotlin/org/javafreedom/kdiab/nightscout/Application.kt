@@ -26,7 +26,7 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
 import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
 import org.javafreedom.kdiab.nightscout.domain.model.NightscoutStatus
-import org.javafreedom.kdiab.nightscout.plugins.configureMetrics
+import org.javafreedom.kdiab.common.plugins.configureMetrics
 
 private val logger = KotlinLogging.logger {}
 
