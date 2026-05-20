@@ -41,7 +41,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: carbs-backend-image
-          path: .
+          path: kdiab-carbs
           run-id: ${{ steps.backend-run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -49,7 +49,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: carbs-backend-bom
-          path: .
+          path: kdiab-carbs
           run-id: ${{ steps.backend-run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 

@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "cyclonedx": "cyclonedx-npm --output-format JSON --output-file bom.json"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -32,6 +33,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@cyclonedx/cyclonedx-npm": "4.2.1",
     "@openapitools/openapi-generator-cli": "^2.33.1",
     "@eslint/js": "^9.29.0",
     "@testing-library/jest-dom": "^6.6.3",

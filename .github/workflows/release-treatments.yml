@@ -51,7 +51,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: treatments-backend-image
-          path: .
+          path: kdiab-treatments
           run-id: ${{ steps.backend-run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -59,7 +59,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: treatments-backend-bom
-          path: .
+          path: kdiab-treatments
           run-id: ${{ steps.backend-run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -67,7 +67,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: treatments-frontend-image
-          path: .
+          path: kdiab-treatments
           run-id: ${{ steps.frontend-run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -75,7 +75,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: treatments-frontend-bom
-          path: .
+          path: kdiab-treatments
           run-id: ${{ steps.frontend-run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
