@@ -32,7 +32,7 @@ import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedDoctorPatientRepository
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedUserSettingsRepository
-import org.javafreedom.kdiab.users.plugins.configureMetrics
+import org.javafreedom.kdiab.common.plugins.configureMetrics
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
