@@ -24,11 +24,13 @@ import org.javafreedom.kdiab.users.adapters.inbound.web.userRoutes
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
 import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
+import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
+import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
+import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
+import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakIdentityProviderAdapter
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
-import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
-import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedDoctorPatientRepository
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedUserSettingsRepository
@@ -70,6 +72,8 @@ fun Application.module(initDatabase: Boolean = true) {
         )
         monitor.subscribe(ApplicationStopping) { keycloak.close() }
 
+        val identityProvider: IdentityProviderPort = KeycloakIdentityProviderAdapter(keycloak)
+
         val requiresApproval = environment.config
             .propertyOrNull("registration.requiresApproval")?.getString()?.toBoolean() ?: false
 
@@ -79,16 +83,17 @@ fun Application.module(initDatabase: Boolean = true) {
         install(DI) { }
         dependencies {
             provide<KeycloakAdminClient> { keycloak }
+            provide<IdentityProviderPort> { identityProvider }
             provide<UserSettingsRepository> { settingsRepo }
             provide<DoctorPatientRepository> { doctorPatientRepo }
             provide<UserService> {
-                UserService(keycloak, settingsRepo, doctorPatientRepo)
+                UserService(identityProvider, settingsRepo, doctorPatientRepo)
             }
             provide<DoctorPatientService> {
-                DoctorPatientService(doctorPatientRepo, keycloak)
+                DoctorPatientService(doctorPatientRepo, identityProvider)
             }
             provide<RegistrationService> {
-                RegistrationService(keycloak, settingsRepo, requiresApproval)
+                RegistrationService(identityProvider, settingsRepo, requiresApproval)
             }
         }
     }

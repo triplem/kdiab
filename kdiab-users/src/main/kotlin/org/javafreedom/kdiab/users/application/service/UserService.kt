@@ -15,12 +15,10 @@ import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.users.domain.model.User
 import org.javafreedom.kdiab.users.domain.model.UserSettings
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
+import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
+import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
+import org.javafreedom.kdiab.users.domain.repository.PasswordCredential
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakCredential
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakRole
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakUser
-import org.javafreedom.kdiab.users.infrastructure.keycloak.toKeycloakName
 
 private val logger = KotlinLogging.logger {}
 
@@ -36,15 +34,15 @@ private const val IDX_LOW = 2
 private const val IDX_URGENT_LOW = 3
 
 class UserService(
-    private val keycloak: KeycloakAdminClient,
+    private val identityProvider: IdentityProviderPort,
     private val settingsRepo: UserSettingsRepository,
     private val doctorPatientRepo: DoctorPatientRepository,
 ) {
     suspend fun getMe(principal: UserPrincipal): User {
-        val kcUser = keycloak.getUser(principal.userId)
+        val profile = identityProvider.getUserProfile(principal.userId)
         val settings = settingsRepo.findByUserId(principal.userId)
             ?: defaultSettings(principal.userId).also { settingsRepo.save(it) }
-        return kcUser.toDomain(settings, principal.roles)
+        return profile.toDomain(settings, principal.roles)
     }
 
     suspend fun updateMySettings(
@@ -87,21 +85,21 @@ class UserService(
 
     suspend fun listUsers(principal: UserPrincipal, search: String?, page: Int, size: Int): List<User> {
         requireAdmin(principal)
-        val kcUsers = keycloak.listUsers(search, first = page * size, max = size)
-        val validUsers = kcUsers.mapNotNull { kcUser ->
-            kcUser.id?.let {
-                runCatching { Uuid.parse(it) to kcUser }.getOrElse {
-                    logger.warn { "listUsers skipping user with unparseable id='${kcUser.id}'" }
+        val profiles = identityProvider.listUserProfiles(search, first = page * size, max = size)
+        val validProfiles = profiles.mapNotNull { profile ->
+            profile.id?.let {
+                runCatching { Uuid.parse(it) to profile }.getOrElse {
+                    logger.warn { "listUsers skipping user with unparseable id='${profile.id}'" }
                     null
                 }
             }
         }
         return coroutineScope {
-            validUsers.map { (userId, kcUser) ->
+            validProfiles.map { (userId, profile) ->
                 async {
-                    val roles = keycloak.getUserRoles(userId).toDomainRoles()
+                    val roles = identityProvider.getUserRoles(userId)
                     val settings = settingsRepo.findByUserId(userId)
-                    kcUser.toDomain(settings, roles)
+                    profile.toDomain(settings, roles)
                 }
             }.awaitAll()
         }
@@ -116,25 +114,24 @@ class UserService(
     ): User {
         requireAdmin(principal)
         val (firstName, lastName) = splitDisplayName(displayName)
-        val kcUser = KeycloakUser(
+        val profile = IdentityUserProfile(
             username = email,
             email = email,
             firstName = firstName,
             lastName = lastName,
             enabled = true,
             emailVerified = true,
-            credentials = listOf(KeycloakCredential(value = password, temporary = false)),
+            passwordCredential = PasswordCredential(value = password, temporary = false),
         )
-        val newUserId = keycloak.createUser(kcUser)
-        val roleRep = keycloak.getRealmRole(role.toKeycloakName())
-        keycloak.assignRoles(newUserId, listOf(roleRep))
+        val newUserId = identityProvider.createUser(profile)
+        identityProvider.assignRoles(newUserId, setOf(role))
         val now = Clock.System.now()
         val settings = defaultSettings(newUserId, now)
         try {
             settingsRepo.save(settings)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             logger.error(e) { "admin_create_user db_fail rolling_back userId=$newUserId" }
-            runCatching { keycloak.deleteUser(newUserId) }.onFailure { re ->
+            runCatching { identityProvider.deleteUser(newUserId) }.onFailure { re ->
                 logger.error(re) { "admin_create_user rollback_failed userId=$newUserId" }
             }
             throw e
@@ -148,10 +145,10 @@ class UserService(
 
     suspend fun getUser(principal: UserPrincipal, targetUserId: Uuid): User {
         if (!principal.canAccess(targetUserId)) throw AuthorizationException("Access denied")
-        val kcUser = keycloak.getUser(targetUserId)
-        val roles = keycloak.getUserRoles(targetUserId).toDomainRoles()
+        val profile = identityProvider.getUserProfile(targetUserId)
+        val roles = identityProvider.getUserRoles(targetUserId)
         val settings = settingsRepo.findByUserId(targetUserId)
-        return kcUser.toDomain(settings, roles)
+        return profile.toDomain(settings, roles)
     }
 
     suspend fun updateUser(
@@ -161,29 +158,28 @@ class UserService(
         role: Role?,
     ): User {
         requireAdmin(principal)
-        val existing = keycloak.getUser(targetUserId)
+        val existing = identityProvider.getUserProfile(targetUserId)
         if (displayName != null) {
             val (firstName, lastName) = splitDisplayName(displayName)
-            keycloak.updateUser(targetUserId, existing.copy(firstName = firstName, lastName = lastName))
+            identityProvider.updateUser(targetUserId, existing.copy(firstName = firstName, lastName = lastName))
         }
         val updatedRoles: Set<Role>
         if (role != null) {
-            val currentRoles = keycloak.getUserRoles(targetUserId)
-            if (currentRoles.isNotEmpty()) keycloak.removeRoles(targetUserId, currentRoles)
-            val newRole = keycloak.getRealmRole(role.toKeycloakName())
-            keycloak.assignRoles(targetUserId, listOf(newRole))
+            val currentRoles = identityProvider.getUserRoles(targetUserId)
+            if (currentRoles.isNotEmpty()) identityProvider.removeRoles(targetUserId, currentRoles)
+            identityProvider.assignRoles(targetUserId, setOf(role))
             updatedRoles = setOf(role)
         } else {
-            updatedRoles = keycloak.getUserRoles(targetUserId).toDomainRoles()
+            updatedRoles = identityProvider.getUserRoles(targetUserId)
         }
-        val updated = keycloak.getUser(targetUserId)
+        val updated = identityProvider.getUserProfile(targetUserId)
         val settings = settingsRepo.findByUserId(targetUserId)
         return updated.toDomain(settings, updatedRoles)
     }
 
     suspend fun deleteUser(principal: UserPrincipal, targetUserId: Uuid) {
         requireAdmin(principal)
-        keycloak.deleteUser(targetUserId)
+        identityProvider.deleteUser(targetUserId)
         settingsRepo.delete(targetUserId)
         doctorPatientRepo.deleteByUserId(targetUserId)
         logger.info { "admin_delete_user admin=${principal.userId} deletedUser=$targetUserId" }
@@ -249,11 +245,8 @@ data class SettingsPatch(
     val sensorDurationHours: Int? = null,
 )
 
-private fun KeycloakUser.toDomain(settings: UserSettings?, roles: Set<Role>): User {
-    val userId = Uuid.parse(requireNotNull(id) { "Keycloak user missing id" })
+private fun IdentityUserProfile.toDomain(settings: UserSettings?, roles: Set<Role>): User {
+    val userId = Uuid.parse(requireNotNull(id) { "Identity provider user missing id" })
     val displayName = listOfNotNull(firstName, lastName).joinToString(" ").ifBlank { username ?: email.orEmpty() }
     return User(userId = userId, email = email.orEmpty(), displayName = displayName, roles = roles, settings = settings)
 }
-
-private fun List<KeycloakRole>.toDomainRoles(): Set<Role> =
-    mapNotNull { kcRole -> Role.entries.firstOrNull { it.toKeycloakName() == kcRole.name } }.toSet()

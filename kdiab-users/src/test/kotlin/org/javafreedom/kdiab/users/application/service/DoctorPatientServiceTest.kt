@@ -7,7 +7,6 @@ import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.test.runTest
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
@@ -15,16 +14,14 @@ import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
-import org.javafreedom.kdiab.users.domain.model.DoctorPatientRelation
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakRole
+import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 
 class DoctorPatientServiceTest {
 
     private val repo = mockk<DoctorPatientRepository>()
-    private val keycloak = mockk<KeycloakAdminClient>()
-    private val service = DoctorPatientService(repo, keycloak)
+    private val identityProvider = mockk<IdentityProviderPort>()
+    private val service = DoctorPatientService(repo, identityProvider)
 
     private val adminId = Uuid.parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
     private val doctorId = Uuid.parse("dddddddd-dddd-dddd-dddd-dddddddddddd")
@@ -63,24 +60,26 @@ class DoctorPatientServiceTest {
     }
 
     @Test
-    fun `assignPatient saves relation and syncs Keycloak`() = runTest {
-        coEvery { keycloak.getUserRoles(doctorId) } returns listOf(KeycloakRole("d", "DOCTOR"))
-        coEvery { keycloak.getUserRoles(patientId) } returns listOf(KeycloakRole("p", "PATIENT"))
+    fun `assignPatient saves relation and syncs identity provider`() = runTest {
+        coEvery { identityProvider.getUserRoles(doctorId) } returns setOf(Role.DOCTOR)
+        coEvery { identityProvider.getUserRoles(patientId) } returns setOf(Role.PATIENT)
         coEvery { repo.save(any()) } answers { firstArg() }
         coEvery { repo.findAllPatientIdsByDoctorId(doctorId) } returns listOf(patientId)
-        coEvery { keycloak.updateUserAttributes(any(), any()) } returns Unit
+        coEvery { identityProvider.updateUserAttributes(any(), any()) } returns Unit
 
         val relation = service.assignPatient(adminPrincipal(), doctorId, patientId)
 
         assertEquals(doctorId, relation.doctorId)
         assertEquals(patientId, relation.patientId)
-        coVerify(exactly = 1) { keycloak.updateUserAttributes(doctorId, mapOf("allowed_patients" to listOf(patientId.toString()))) }
+        coVerify(exactly = 1) {
+            identityProvider.updateUserAttributes(doctorId, mapOf("allowed_patients" to listOf(patientId.toString())))
+        }
     }
 
     @Test
     fun `assignPatient throws BusinessValidationException when doctor lacks DOCTOR role`() = runTest {
-        coEvery { keycloak.getUserRoles(doctorId) } returns listOf(KeycloakRole("p", "PATIENT"))
-        coEvery { keycloak.getUserRoles(patientId) } returns listOf(KeycloakRole("p", "PATIENT"))
+        coEvery { identityProvider.getUserRoles(doctorId) } returns setOf(Role.PATIENT)
+        coEvery { identityProvider.getUserRoles(patientId) } returns setOf(Role.PATIENT)
         assertFailsWith<BusinessValidationException> {
             service.assignPatient(adminPrincipal(), doctorId, patientId)
         }
@@ -88,20 +87,20 @@ class DoctorPatientServiceTest {
 
     @Test
     fun `assignPatient throws BusinessValidationException when patient lacks PATIENT role`() = runTest {
-        coEvery { keycloak.getUserRoles(doctorId) } returns listOf(KeycloakRole("d", "DOCTOR"))
-        coEvery { keycloak.getUserRoles(patientId) } returns listOf(KeycloakRole("d", "DOCTOR"))
+        coEvery { identityProvider.getUserRoles(doctorId) } returns setOf(Role.DOCTOR)
+        coEvery { identityProvider.getUserRoles(patientId) } returns setOf(Role.DOCTOR)
         assertFailsWith<BusinessValidationException> {
             service.assignPatient(adminPrincipal(), doctorId, patientId)
         }
     }
 
     @Test
-    fun `assignPatient rolls back DB row when KC sync fails`() = runTest {
-        coEvery { keycloak.getUserRoles(doctorId) } returns listOf(KeycloakRole("d", "DOCTOR"))
-        coEvery { keycloak.getUserRoles(patientId) } returns listOf(KeycloakRole("p", "PATIENT"))
+    fun `assignPatient rolls back DB row when identity provider sync fails`() = runTest {
+        coEvery { identityProvider.getUserRoles(doctorId) } returns setOf(Role.DOCTOR)
+        coEvery { identityProvider.getUserRoles(patientId) } returns setOf(Role.PATIENT)
         coEvery { repo.save(any()) } answers { firstArg() }
         coEvery { repo.findAllPatientIdsByDoctorId(doctorId) } returns listOf(patientId)
-        coEvery { keycloak.updateUserAttributes(any(), any()) } throws RuntimeException("KC unavailable")
+        coEvery { identityProvider.updateUserAttributes(any(), any()) } throws RuntimeException("KC unavailable")
         coEvery { repo.delete(doctorId, patientId) } returns true
 
         assertFailsWith<RuntimeException> {
@@ -118,15 +117,17 @@ class DoctorPatientServiceTest {
     }
 
     @Test
-    fun `removePatient deletes relation and syncs Keycloak`() = runTest {
+    fun `removePatient deletes relation and syncs identity provider`() = runTest {
         coEvery { repo.delete(doctorId, patientId) } returns true
         coEvery { repo.findAllPatientIdsByDoctorId(doctorId) } returns emptyList()
-        coEvery { keycloak.updateUserAttributes(any(), any()) } returns Unit
+        coEvery { identityProvider.updateUserAttributes(any(), any()) } returns Unit
 
         service.removePatient(adminPrincipal(), doctorId, patientId)
 
         coVerify(exactly = 1) { repo.delete(doctorId, patientId) }
-        coVerify(exactly = 1) { keycloak.updateUserAttributes(doctorId, mapOf("allowed_patients" to emptyList())) }
+        coVerify(exactly = 1) {
+            identityProvider.updateUserAttributes(doctorId, mapOf("allowed_patients" to emptyList()))
+        }
     }
 
     @Test
