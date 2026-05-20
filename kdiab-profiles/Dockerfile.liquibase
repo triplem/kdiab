@@ -1,4 +1,4 @@
-FROM liquibase/liquibase:4.20
+FROM liquibase/liquibase:5.0
 
 # Copy the full db directory so that relative paths in the master changelog resolve correctly
 COPY src/main/resources/db /liquibase/db
