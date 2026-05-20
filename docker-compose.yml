@@ -108,8 +108,8 @@ services:
       --url=jdbc:postgresql://postgres:5432/kdiab-measures
       --username=${POSTGRES_USER:-postgres}
       --password=${POSTGRES_PASSWORD}
-      --searchPath=/liquibase
-      --changeLogFile=db/changelog/db.changelog-root.yaml
+      --search-path=/liquibase
+      --changelog-file=db/changelog/db.changelog-root.yaml
       update
     depends_on:
       postgres:
@@ -132,8 +132,8 @@ services:
       --url=jdbc:postgresql://postgres:5432/kdiab-profiles
       --username=${POSTGRES_USER:-postgres}
       --password=${POSTGRES_PASSWORD}
-      --searchPath=/liquibase
-      --changeLogFile=db/changelog/db.changelog-master.yaml
+      --search-path=/liquibase
+      --changelog-file=db/changelog/db.changelog-master.yaml
       update
     depends_on:
       postgres:
@@ -156,8 +156,8 @@ services:
       --url=jdbc:postgresql://postgres:5432/kdiab-treatments
       --username=${POSTGRES_USER:-postgres}
       --password=${POSTGRES_PASSWORD}
-      --searchPath=/liquibase
-      --changeLogFile=db/changelog/db.changelog-root.yaml
+      --search-path=/liquibase
+      --changelog-file=db/changelog/db.changelog-root.yaml
       update
     depends_on:
       postgres:
@@ -180,8 +180,8 @@ services:
       --url=jdbc:postgresql://postgres:5432/kdiab-carbs
       --username=${POSTGRES_USER:-postgres}
       --password=${POSTGRES_PASSWORD}
-      --searchPath=/liquibase
-      --changeLogFile=db/changelog/db.changelog-root.yaml
+      --search-path=/liquibase
+      --changelog-file=db/changelog/db.changelog-root.yaml
       update
     depends_on:
       postgres:
@@ -204,8 +204,8 @@ services:
       --url=jdbc:postgresql://postgres:5432/kdiab-users
       --username=${POSTGRES_USER:-postgres}
       --password=${POSTGRES_PASSWORD}
-      --searchPath=/liquibase
-      --changeLogFile=db/changelog/db.changelog-root.yaml
+      --search-path=/liquibase
+      --changelog-file=db/changelog/db.changelog-root.yaml
       update
     depends_on:
       postgres:
