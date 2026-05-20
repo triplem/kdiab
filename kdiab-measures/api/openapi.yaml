@@ -367,6 +367,7 @@ components:
         - $ref: '#/components/schemas/PulseData'
         - $ref: '#/components/schemas/BgCheckData'
         - $ref: '#/components/schemas/KetoneCheckData'
+        - $ref: '#/components/schemas/GlycosylatedHemoglobinData'
 
     CgmData:
       type: object
@@ -464,6 +465,22 @@ components:
           description: Measurement method
           enum: [blood, urine]
           example: blood
+
+    GlycosylatedHemoglobinData:
+      type: object
+      description: HbA1c (glycated haemoglobin) lab result (GLYCOSYLATED_HEMOGLOBIN)
+      required: [value]
+      properties:
+        value:
+          type: number
+          format: double
+          description: HbA1c value in percent
+          example: 7.2
+        unit:
+          type: string
+          description: Unit of measurement (always %)
+          enum: ["%"]
+          example: "%"
 
     MeasureType:
       type: string
