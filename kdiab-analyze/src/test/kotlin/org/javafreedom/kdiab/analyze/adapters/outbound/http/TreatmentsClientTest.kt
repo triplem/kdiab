@@ -3,6 +3,7 @@ package org.javafreedom.kdiab.analyze.adapters.outbound.http
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
 import kotlinx.coroutines.test.runTest
+import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -171,6 +172,93 @@ class TreatmentsClientTest {
         assertEquals(1, capturedParams.size)
         assertEquals(null, capturedParams[0].first)
         assertEquals(null, capturedParams[0].second)
+    }
+
+    // ── getTreatmentsByType ───────────────────────────────────────────────────
+
+    @Test
+    fun `getTreatmentsByType returns list from single-page response`() = runTest {
+        val body = pagedJson("${treatmentJson("s-1")},${treatmentJson("s-2")}", 2)
+        val engine = MockEngine { _ ->
+            respond(
+                content = body,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val result = buildClient(engine).getTreatmentsByType(userId, auth, correlationId, TreatmentType.SENSOR_INSERT)
+        assertEquals(2, result.size)
+        assertEquals(1, engine.requestHistory.size)
+    }
+
+    @Test
+    fun `getTreatmentsByType returns empty list when first page is empty`() = runTest {
+        val engine = MockEngine { _ ->
+            respond(
+                content = emptyPagedJson(),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val result = buildClient(engine).getTreatmentsByType(userId, auth, correlationId, TreatmentType.SITE_CHANGE)
+        assertEquals(0, result.size)
+        assertEquals(1, engine.requestHistory.size)
+    }
+
+    @Test
+    fun `getTreatmentsByType fetches multiple pages in parallel`() = runTest {
+        // totalCount=201 forces 2 pages (ceil(201/200)=2)
+        val page0Items = (1..200).joinToString(",") { treatmentJson("s-$it") }
+        val page1Items = treatmentJson("s-201")
+        var callCount = 0
+        val engine = MockEngine { request ->
+            callCount++
+            val page = request.url.parameters["page"]?.toInt() ?: 0
+            val body = if (page == 0)
+                """{"items":[$page0Items],"page":0,"size":200,"totalCount":201}"""
+            else
+                """{"items":[$page1Items],"page":1,"size":200,"totalCount":201}"""
+            respond(
+                content = body,
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val result = buildClient(engine).getTreatmentsByType(userId, auth, correlationId, TreatmentType.SENSOR_INSERT)
+        assertEquals(201, result.size)
+        assertEquals(2, callCount)
+    }
+
+    @Test
+    fun `getTreatmentsByType throws UpstreamException when first page returns 500`() = runTest {
+        val engine = MockEngine { _ ->
+            respond(content = """{"code":500,"message":"Internal Server Error"}""", status = HttpStatusCode.InternalServerError)
+        }
+        val ex = assertFailsWith<UpstreamException> {
+            buildClient(engine).getTreatmentsByType(userId, auth, correlationId, TreatmentType.SENSOR_INSERT)
+        }
+        assertEquals("treatments", ex.service)
+        assertEquals(500, ex.statusCode)
+    }
+
+    @Test
+    fun `getTreatmentsByType throws UpstreamException when second page returns 502`() = runTest {
+        val page0Items = (1..200).joinToString(",") { treatmentJson("s-$it") }
+        var requestPage = 0
+        val engine = MockEngine { _ ->
+            if (requestPage++ == 0) {
+                respond(
+                    content = """{"items":[$page0Items],"page":0,"size":200,"totalCount":201}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+                )
+            } else {
+                respond(content = "", status = HttpStatusCode.BadGateway)
+            }
+        }
+        assertFailsWith<UpstreamException> {
+            buildClient(engine).getTreatmentsByType(userId, auth, correlationId, TreatmentType.SENSOR_INSERT)
+        }
     }
 
     // ── getDeviceAge ──────────────────────────────────────────────────────────

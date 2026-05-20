@@ -167,39 +167,108 @@ class TreatmentsClient(
     ): List<TreatmentResponse> {
         val token = authorization.removePrefix("Bearer ").trim()
         val api = buildApi(token, correlationId)
-        val result = mutableListOf<TreatmentResponse>()
-        var page = 0
+        val totalStart = System.currentTimeMillis()
 
-        while (true) {
-            val pageStart = System.currentTimeMillis()
-            val httpResponse = circuitBreaker.execute {
-                api.listTreatments(
-                    userId = userId, type = type, from = from, to = to,
-                    status = null, page = page, size = PAGE_SIZE,
-                )
+        val firstPageStart = System.currentTimeMillis()
+        val firstHttpResponse = circuitBreaker.execute {
+            api.listTreatments(
+                userId = userId, type = type, from = from, to = to,
+                status = null, page = 0, size = PAGE_SIZE,
+            )
+        }
+        val firstPageMs = System.currentTimeMillis() - firstPageStart
+        if (!firstHttpResponse.success) {
+            val requestUrl = firstHttpResponse.response.request.url.toString()
+            logger.warn {
+                "Upstream treatments by type $type page 0 returned " +
+                    "${firstHttpResponse.status} in ${firstPageMs}ms url=$requestUrl"
             }
-            val pageMs = System.currentTimeMillis() - pageStart
-            if (!httpResponse.success) {
-                val requestUrl = httpResponse.response.request.url.toString()
+            throw UpstreamException(
+                service = "treatments",
+                statusCode = firstHttpResponse.status,
+                message = firstHttpResponse.response.status.description,
+                responseBody = null,
+                url = requestUrl,
+            )
+        }
+        logger.info {
+            "Fetched treatments by type $type page 0 in ${firstPageMs}ms [status=${firstHttpResponse.status}]"
+        }
+        val firstPage = firstHttpResponse.body()
+        val totalCount = firstPage.totalCount
+
+        val result = mutableListOf<TreatmentResponse>()
+        result.addAll(firstPage.items)
+
+        if (result.size < totalCount && firstPage.items.isNotEmpty()) {
+            val totalPages = ((totalCount + PAGE_SIZE - 1) / PAGE_SIZE).toInt()
+            val cappedTotalPages = if (totalCount > MAX_TREATMENTS) {
                 logger.warn {
-                    "Upstream treatments page $page returned ${httpResponse.status} in ${pageMs}ms url=$requestUrl"
+                    "MAX_TREATMENTS limit ($MAX_TREATMENTS) would be exceeded for type=$type userId=$userId"
                 }
-                throw UpstreamException(
-                    service = "treatments",
-                    statusCode = httpResponse.status,
-                    message = httpResponse.response.status.description,
-                    responseBody = null,
-                    url = requestUrl,
-                )
+                ((MAX_TREATMENTS + PAGE_SIZE - 1) / PAGE_SIZE)
+            } else {
+                totalPages
             }
-            logger.info { "Fetched treatments by type $type page $page in ${pageMs}ms [status=${httpResponse.status}]" }
-            val body = httpResponse.body()
-            result.addAll(body.items)
-            if (result.size >= body.totalCount || body.items.isEmpty()) break
-            page++
+
+            if (cappedTotalPages > 1) {
+                val remainingPages = coroutineScope {
+                    (1 until cappedTotalPages).map { pageNum ->
+                        async { fetchTreatmentsByTypePage(api, userId, type, pageNum, from, to) }
+                    }.awaitAll()
+                }
+                remainingPages.forEach { result.addAll(it) }
+            }
         }
 
+        if (result.size > MAX_TREATMENTS) {
+            val totalMs = System.currentTimeMillis() - totalStart
+            logger.warn { "MAX_TREATMENTS limit reached — truncating at $MAX_TREATMENTS for type=$type userId=$userId" }
+            logger.info { "Fetched $MAX_TREATMENTS treatments by type $type (truncated) in ${totalMs}ms total" }
+            return result.take(MAX_TREATMENTS)
+        }
+
+        val totalMs = System.currentTimeMillis() - totalStart
+        val pagesFetched = ((result.size + PAGE_SIZE - 1) / PAGE_SIZE).coerceAtLeast(1)
+        logger.info { "Fetched ${result.size} treatments by type $type in $pagesFetched pages in ${totalMs}ms total" }
         return result
+    }
+
+    @Suppress("LongParameterList")
+    private suspend fun fetchTreatmentsByTypePage(
+        api: DefaultApi,
+        userId: String,
+        type: TreatmentType,
+        pageNum: Int,
+        from: String?,
+        to: String?,
+    ): List<TreatmentResponse> {
+        val pageStart = System.currentTimeMillis()
+        val httpResponse = circuitBreaker.execute {
+            api.listTreatments(
+                userId = userId, type = type, from = from, to = to,
+                status = null, page = pageNum, size = PAGE_SIZE,
+            )
+        }
+        val pageMs = System.currentTimeMillis() - pageStart
+        if (!httpResponse.success) {
+            val requestUrl = httpResponse.response.request.url.toString()
+            logger.warn {
+                "Upstream treatments by type $type page $pageNum " +
+                    "returned ${httpResponse.status} in ${pageMs}ms url=$requestUrl"
+            }
+            throw UpstreamException(
+                service = "treatments",
+                statusCode = httpResponse.status,
+                message = httpResponse.response.status.description,
+                responseBody = null,
+                url = requestUrl,
+            )
+        }
+        logger.info {
+            "Fetched treatments by type $type page $pageNum in ${pageMs}ms [status=${httpResponse.status}]"
+        }
+        return httpResponse.body().items
     }
 
     override suspend fun getDeviceAge(

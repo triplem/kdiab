@@ -4,6 +4,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.math.sqrt
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentResponse
 import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
@@ -33,13 +35,17 @@ class DeviceUsageService(
             TreatmentType.PUMP_BATTERY_CHANGE,
         )
 
-        val treatmentsByType = deviceTypes.associateWith { type ->
-            runCatching {
-                treatmentsPort.getTreatmentsByType(userId, authorization, correlationId, type, from, to)
-            }.getOrElse { ex ->
-                logger.warn(ex) { "Failed to fetch $type treatments for userId=$userId — treating as empty" }
-                emptyList()
-            }
+        val treatmentsByType = coroutineScope {
+            deviceTypes.associateWith { type ->
+                async {
+                    runCatching {
+                        treatmentsPort.getTreatmentsByType(userId, authorization, correlationId, type, from, to)
+                    }.getOrElse { ex ->
+                        logger.warn(ex) { "Failed to fetch $type treatments for userId=$userId — treating as empty" }
+                        emptyList()
+                    }
+                }
+            }.mapValues { it.value.await() }
         }
 
         return DeviceUsageResult(
