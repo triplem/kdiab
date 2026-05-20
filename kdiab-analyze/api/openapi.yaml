@@ -517,6 +517,12 @@ components:
           nullable: true
           description: When the CGM sensor was last inserted (SENSOR_INSERT).
           example: "2026-05-12T18:00:00Z"
+        batteryChangedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the pump battery was last replaced (PUMP_BATTERY_CHANGE).
+          example: "2026-05-10T14:00:00Z"
 
     DeviceStatusResponse:
       type: object

@@ -112,6 +112,7 @@ data class DeviceAgeResponseDto(
     val catheterChangedAt: String?,
     val reservoirChangedAt: String?,
     val sensorInsertedAt: String?,
+    val batteryChangedAt: String?,
 )
 
 @Serializable
@@ -226,6 +227,7 @@ fun DeviceAge.toResponse() = DeviceAgeResponseDto(
     catheterChangedAt = catheterChangedAt,
     reservoirChangedAt = reservoirChangedAt,
     sensorInsertedAt = sensorInsertedAt,
+    batteryChangedAt = batteryChangedAt,
 )
 
 fun DeviceStatus.toResponse() = DeviceStatusResponseDto(

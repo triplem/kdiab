@@ -265,7 +265,7 @@ class TreatmentsClientTest {
 
     @Test
     fun `getDeviceAge returns device age timestamps`() = runTest {
-        val body = """{"catheterChangedAt":"2026-05-14T10:30:00Z","reservoirChangedAt":"2026-05-13T08:00:00Z","sensorInsertedAt":"2026-05-12T18:00:00Z"}"""
+        val body = """{"catheterChangedAt":"2026-05-14T10:30:00Z","reservoirChangedAt":"2026-05-13T08:00:00Z","sensorInsertedAt":"2026-05-12T18:00:00Z","batteryChangedAt":"2026-05-10T14:00:00Z"}"""
         val engine = MockEngine { _ ->
             respond(
                 content = body,
@@ -277,6 +277,7 @@ class TreatmentsClientTest {
         assertEquals("2026-05-14T10:30:00Z", result.catheterChangedAt)
         assertEquals("2026-05-13T08:00:00Z", result.reservoirChangedAt)
         assertEquals("2026-05-12T18:00:00Z", result.sensorInsertedAt)
+        assertEquals("2026-05-10T14:00:00Z", result.batteryChangedAt)
     }
 
     @Test
@@ -293,6 +294,7 @@ class TreatmentsClientTest {
         assertEquals(null, result.catheterChangedAt)
         assertEquals(null, result.reservoirChangedAt)
         assertEquals(null, result.sensorInsertedAt)
+        assertEquals(null, result.batteryChangedAt)
     }
 
     @Test

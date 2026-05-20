@@ -76,6 +76,7 @@ data class DeviceAge(
     val catheterChangedAt: String?,
     val reservoirChangedAt: String?,
     val sensorInsertedAt: String?,
+    val batteryChangedAt: String?,
 )
 
 data class DeviceStatus(

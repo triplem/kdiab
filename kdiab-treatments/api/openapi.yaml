@@ -455,6 +455,7 @@ components:
         - $ref: '#/components/schemas/SiteChangeData'
         - $ref: '#/components/schemas/SensorInsertData'
         - $ref: '#/components/schemas/InsulinChangeData'
+        - $ref: '#/components/schemas/PumpBatteryChangeData'
         - $ref: '#/components/schemas/ActivityData'
         - $ref: '#/components/schemas/HypoTreatmentData'
         - $ref: '#/components/schemas/DeviceStatusData'
@@ -634,6 +635,15 @@ components:
           type: string
           description: New insulin type loaded
           example: NovoRapid
+
+    PumpBatteryChangeData:
+      type: object
+      description: Pump battery replacement (PUMP_BATTERY_CHANGE)
+      properties:
+        batteryType:
+          type: string
+          description: Battery model or type installed
+          example: AA
 
     ActivityData:
       type: object

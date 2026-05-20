@@ -298,6 +298,7 @@ class TreatmentsClient(
             catheterChangedAt = body.catheterChangedAt,
             reservoirChangedAt = body.reservoirChangedAt,
             sensorInsertedAt = body.sensorInsertedAt,
+            batteryChangedAt = body.batteryChangedAt,
         )
     }
 
