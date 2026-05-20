@@ -3,7 +3,7 @@ import { describe, test, expect } from 'vitest'
 import { HbA1cCard } from '../features/analytics/HbA1cCard'
 import '../i18n'
 
-const baseTir = { belowCount: 10, inRangeCount: 70, aboveCount: 15, highCount: 5, totalCount: 100 }
+const baseTir = { veryLowCount: 0, belowCount: 10, inRangeCount: 70, aboveCount: 15, highCount: 5, totalCount: 100 }
 
 describe('HbA1cCard', () => {
   test('shows hba1c value with % in mg/dL mode', () => {
