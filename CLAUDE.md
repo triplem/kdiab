@@ -6,13 +6,15 @@ All agent work is logged to `~/.claude/kdiab-sessions/<session_id>.jsonl` for tr
 
 ## Project Overview
 
-**kdiab** is a T1D (Type 1 Diabetes) management platform — a monorepo of seven components:
+**kdiab** is a T1D (Type 1 Diabetes) management platform — a monorepo of nine components:
 - **kdiab-measures** — health measurement tracking (CGM, BGM, blood pressure, weight, pulse)
 - **kdiab-profiles** — insulin pump basal profile management
 - **kdiab-treatments** — treatment event tracking (bolus, basal, carbs, corrections, etc.)
 - **kdiab-analyze** — stateless Backend-for-Frontend: aggregates data from all services into a unified analytics dashboard (timeline, HbA1c, AGP, profiles)
 - **kdiab-carbs** — food / carbohydrate database and entry tracking
 - **kdiab-calc** — stateless dose calculator: bolus recommendation from profile + CGM trend
+- **kdiab-users** — user management: Keycloak-backed registration, settings, doctor-patient relationships
+- **kdiab-nightscout** — Nightscout API v1 compatibility layer for AAPS, xDrip+, Juggluco
 - **kdiab-common** — shared Kotlin library: domain types (`Role`, `DomainExceptions`), Ktor plugins (`configureSecurity`, `configureLogging`, `configureStatusPages`), `UserPrincipal`
 
 Each service follows the same stack and architecture conventions. All commands below must be run from the service directory.
@@ -112,6 +114,8 @@ npm run test:e2e                 # Playwright e2e tests (requires running app)
 | kdiab-analyze backend / Swagger | http://localhost:8084 / http://localhost:8084/swagger |
 | kdiab-carbs backend / Swagger | http://localhost:8085 / http://localhost:8085/swagger |
 | kdiab-calc backend / Swagger | http://localhost:8086 / http://localhost:8086/swagger |
+| kdiab-nightscout backend / Swagger | http://localhost:8087 / http://localhost:8087/swagger |
+| kdiab-users backend / Swagger | http://localhost:8088 / http://localhost:8088/swagger |
 
 **Per-service compose (standalone):**
 - Frontend: http://localhost:3000
@@ -164,7 +168,7 @@ In tests, JWT uses HMAC256 symmetric signing (`jwt.test=true`, `jwt.secret` in c
 - Domain exceptions thrown instead of manual HTTP status codes — caught by `StatusPages`
 
 ### JWT Forwarding (kdiab-analyze)
-The BFF receives a user JWT and forwards it unchanged to all upstream services. For this to work, the Keycloak client used to log in must have audience mappers for all six audiences (`analyze`, `measure`, `profile`, `treatment`, `carbs`, `calc`). The root `config/keycloak-realm.json` configures the `kdiab-analyze-frontend` client with all six audience mappers so a single token is accepted by every upstream service.
+The BFF receives a user JWT and forwards it unchanged to all upstream services. For this to work, the Keycloak client used to log in must have audience mappers for all eight audiences (`analyze`, `measure`, `profile`, `treatment`, `carbs`, `calc`, `users`, `nightscout`). The root `config/keycloak-realm.json` configures the `kdiab-analyze-frontend` client with audience mappers so a single token is accepted by every upstream service.
 
 ### Test Suites (Backend)
 ```
@@ -194,7 +198,7 @@ Roles are parsed from the JWT access token directly (Keycloak's OIDC profile doe
 config/
   keycloak-realm.json          # Unified Keycloak realm "kdiab" used by root docker-compose.yml.
                                # Contains all clients, roles, and test users. The kdiab-analyze-frontend
-                               # client has 6 audience mappers (analyze, measure, profile, treatment, carbs, calc).
+                               # client has audience mappers for all backends (analyze, measure, profile, treatment, carbs, calc, users, nightscout).
                                # See config/keycloak-realm.README.md for the production vs test-data boundary.
   keycloak-realm.README.md     # Documents production config vs test-data boundary; explains why the realm
                                # is one file (Keycloak --import-realm does not support partial imports).
@@ -412,7 +416,100 @@ If `glucose_unit` JWT claim is `mmol/L`, multiply each value by 18.0 before aver
 - Parallel upstream calls — `TimelineService` uses `coroutineScope { async {} }` to minimise latency.
 - mmol/L conversion happens in `AnalyticsService` before HbA1c; AGP and TIR thresholds are always mg/dL.
 
-**JWT Forwarding:** The service forwards the user's `Authorization: Bearer <token>` unchanged to all upstream services. The root compose `kdiab-analyze-frontend` Keycloak client has audience mappers for all six backends — tokens are accepted everywhere. The standalone compose client only has the `analyze` audience; upstream services need a shared realm or separate configuration.
+**JWT Forwarding:** The service forwards the user's `Authorization: Bearer <token>` unchanged to all upstream services. The root compose `kdiab-analyze-frontend` Keycloak client has audience mappers for all backends — tokens are accepted everywhere. The standalone compose client only has the `analyze` audience; upstream services need a shared realm or separate configuration.
+
+---
+
+### kdiab-users
+
+Root package: `org.javafreedom.kdiab.users`
+
+**Package structure:**
+```
+adapters/inbound/web/
+  UserRoutes.kt            # My profile + settings endpoints
+  RegistrationRoutes.kt    # Self-registration (if enabled)
+  DoctorPatientRoutes.kt   # Doctor-patient relationship management
+  UserMapper.kt            # API ↔ domain mappers
+application/service/
+  UserService.kt           # Settings update with alarm validation
+  RegistrationService.kt   # User creation via Keycloak Admin API
+  DoctorPatientService.kt
+domain/model/
+  User.kt                  # User entity
+  UserSettings.kt          # Glucose unit, timezone, alarm thresholds
+  DoctorPatientRelation.kt
+domain/repository/
+  UserSettingsRepository.kt
+  DoctorPatientRepository.kt
+  IdentityProviderPort.kt  # Port for Keycloak Admin API operations
+infrastructure/keycloak/
+  KeycloakAdminClient.kt   # Keycloak Admin REST client
+  KeycloakIdentityProviderAdapter.kt  # Implements IdentityProviderPort
+infrastructure/persistence/
+  ExposedUserSettingsRepository.kt
+  ExposedDoctorPatientRepository.kt
+  DatabaseFactory.kt
+```
+
+**Environment variables:**
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `8088` | HTTP port |
+| `JWT_AUDIENCE` | `users` | Expected JWT audience |
+| `KEYCLOAK_ADMIN_URL` | — | Keycloak base URL for Admin API |
+| `KEYCLOAK_REALM` | `kdiab` | Realm name |
+| `KEYCLOAK_ADMIN_CLIENT_ID` | `kdiab-users-service` | M2M client ID |
+| `KEYCLOAK_ADMIN_CLIENT_SECRET` | — | M2M client secret (rotate post-deploy) |
+| `SELF_REGISTRATION_ENABLED` | `false` | Whether public self-registration is allowed |
+| `SELF_REGISTRATION_REQUIRES_APPROVAL` | `false` | Whether registrations need admin approval |
+| `JDBC_URL` | — | PostgreSQL JDBC URL for `kdiab-users` database |
+| `DB_USER` / `DB_PASSWORD` | — | Database credentials |
+
+**Domain rules:**
+- Alarm thresholds must satisfy `urgentHigh > high > low > urgentLow` (all four must be set or skipped).
+- `urgentLow ≥ 40 mg/dL`; `urgentHigh ≤ 400 mg/dL`.
+- Doctor-patient relationships control which patients a doctor can access via `UserPrincipal.canAccess()`.
+
+---
+
+### kdiab-nightscout
+
+Root package: `org.javafreedom.kdiab.nightscout`
+
+**Package structure:**
+```
+adapters/inbound/web/
+  NightscoutRoutes.kt      # GET /api/v1/entries.json, POST /api/v1/entries.json
+                           # GET /api/v1/treatments.json, POST /api/v1/treatments.json
+                           # GET /api/v1/status.json
+  NightscoutMapper.kt      # Nightscout format ↔ kdiab domain model
+adapters/outbound/http/
+  MeasuresClient.kt        # Ktor HTTP client → kdiab-measures
+  TreatmentsClient.kt      # Ktor HTTP client → kdiab-treatments
+  CircuitBreaker.kt        # Local circuit breaker for upstream calls
+application/service/
+  NightscoutService.kt     # Translates Nightscout requests to upstream calls
+domain/model/
+  NightscoutModels.kt      # Nightscout v1 data models (entries, treatments)
+domain/exception/
+  UpstreamException.kt
+```
+
+**Environment variables:**
+
+| Variable | Default | Description |
+|---|---|---|
+| `MEASURES_URL` | `http://localhost:8080` | kdiab-measures base URL |
+| `TREATMENTS_URL` | `http://localhost:8083` | kdiab-treatments base URL |
+| `JWT_AUDIENCE` | `nightscout` | Expected JWT audience |
+| `JWT_REALM` | `kdiab` | Keycloak realm name |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3005` | Allowed CORS origins |
+
+**API version:** Implements **Nightscout API v1** (paths under `/api/v1/`). The README and any docs referring to "v3" are incorrect — the live implementation uses v1 paths.
+
+**Compatible clients:** AAPS, xDrip+, Juggluco, and any app supporting Nightscout API v1.
 
 ---
 

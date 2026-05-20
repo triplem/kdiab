@@ -110,6 +110,8 @@ docker compose down -v           # Tear down and wipe volumes
 | kdiab-analyze backend / Swagger | http://localhost:8084 / http://localhost:8084/swagger |
 | kdiab-carbs backend / Swagger | http://localhost:8085 / http://localhost:8085/swagger |
 | kdiab-calc backend / Swagger | http://localhost:8086 / http://localhost:8086/swagger |
+| kdiab-nightscout backend / Swagger | http://localhost:8087 / http://localhost:8087/swagger |
+| kdiab-users backend / Swagger | http://localhost:8088 / http://localhost:8088/swagger |
 | Keycloak Admin | http://localhost:8081 (admin / from `.env`) |
 | pgAdmin | http://localhost:5050 — opt-in via `docker-compose.pgadmin.yml` |
 
