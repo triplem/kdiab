@@ -10,6 +10,7 @@ on:
       - 'kdiab-nightscout/build.gradle.kts'
       - 'kdiab-nightscout/settings.gradle.kts'
       - 'kdiab-nightscout/gradle.properties'
+      - 'kdiab-common/src/**'
       - '.github/workflows/ci-nightscout-backend.yml'
   pull_request:
     branches: [ "**" ]
@@ -20,6 +21,7 @@ on:
       - 'kdiab-nightscout/build.gradle.kts'
       - 'kdiab-nightscout/settings.gradle.kts'
       - 'kdiab-nightscout/gradle.properties'
+      - 'kdiab-common/src/**'
       - '.github/workflows/ci-nightscout-backend.yml'
 
 concurrency:
@@ -112,7 +114,8 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
-          exit-code: '0'
+          exit-code: '1'
+          ignore-unfixed: true
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v7
