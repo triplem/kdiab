@@ -65,7 +65,7 @@ class ProfileValidationTest {
 
     @Test
     fun `should fail when total daily basal exceeds 150 U per day`() {
-        // 24 hours * 7 U/h = 168 U/day — exceeds the 150 U/day clinical safety limit
+        // 24 hours * 7 U/h = 168 U/day -- exceeds the 150 U/day clinical safety limit
         val profile = createValidProfile().copy(
             basal = listOf(BasalSegment(LocalTime(0, 0), 7.0))
         )
@@ -74,7 +74,7 @@ class ProfileValidationTest {
 
     @Test
     fun `should pass validation when total daily basal is exactly 150 U per day`() {
-        // 24 hours * 6.25 U/h = 150.0 U/day — exactly at the boundary, must pass
+        // 24 hours * 6.25 U/h = 150.0 U/day -- exactly at the boundary, must pass
         val profile = createValidProfile().copy(
             basal = listOf(BasalSegment(LocalTime(0, 0), 6.25))
         )
@@ -83,7 +83,7 @@ class ProfileValidationTest {
 
     @Test
     fun `should fail when multi-segment basal sums to more than 150 U per day`() {
-        // 12 h * 10 U/h + 12 h * 3 U/h = 120 + 36 = 156 U/day — exceeds limit
+        // 12 h * 10 U/h + 12 h * 3 U/h = 120 + 36 = 156 U/day -- exceeds limit
         val profile = createValidProfile().copy(
             basal = listOf(
                 BasalSegment(LocalTime(0, 0), 10.0),
@@ -161,6 +161,91 @@ class ProfileValidationTest {
     @Test
     fun `should pass validation when carbAbsorptionRateGPerHour is null`() {
         val profile = createValidProfile().copy(carbAbsorptionRateGPerHour = null)
+        profile.validate()
+    }
+
+    // --- analysisLow / analysisHigh TIR threshold validation ---
+
+    @Test
+    fun `should pass validation when analysisLow and analysisHigh are null`() {
+        val profile = createValidProfile().copy(analysisLow = null, analysisHigh = null)
+        profile.validate()
+    }
+
+    @Test
+    fun `should pass validation for valid analysisLow and analysisHigh`() {
+        val profile = createValidProfile().copy(analysisLow = 70.0, analysisHigh = 180.0)
+        profile.validate()
+    }
+
+    @Test
+    fun `should pass validation when analysisLow is at minimum boundary`() {
+        val profile = createValidProfile().copy(analysisLow = 54.0, analysisHigh = 180.0)
+        profile.validate()
+    }
+
+    @Test
+    fun `should pass validation when analysisHigh is at maximum boundary`() {
+        val profile = createValidProfile().copy(analysisLow = 70.0, analysisHigh = 400.0)
+        profile.validate()
+    }
+
+    @Test
+    fun `should fail when analysisLow is below minimum of 54`() {
+        val profile = createValidProfile().copy(analysisLow = 53.9, analysisHigh = 180.0)
+        val ex = assertFailsWith<BusinessValidationException> { profile.validate() }
+        assert(ex.message?.contains("analysisLow") == true)
+    }
+
+    @Test
+    fun `should fail when analysisLow is far below minimum`() {
+        val profile = createValidProfile().copy(analysisLow = -999.0, analysisHigh = 180.0)
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
+    @Test
+    fun `should fail when analysisLow exceeds maximum of 180`() {
+        val profile = createValidProfile().copy(analysisLow = 180.1, analysisHigh = 300.0)
+        val ex = assertFailsWith<BusinessValidationException> { profile.validate() }
+        assert(ex.message?.contains("analysisLow") == true)
+    }
+
+    @Test
+    fun `should fail when analysisHigh is below minimum of 120`() {
+        val profile = createValidProfile().copy(analysisLow = 70.0, analysisHigh = 119.9)
+        val ex = assertFailsWith<BusinessValidationException> { profile.validate() }
+        assert(ex.message?.contains("analysisHigh") == true)
+    }
+
+    @Test
+    fun `should fail when analysisHigh exceeds maximum of 400`() {
+        val profile = createValidProfile().copy(analysisLow = 70.0, analysisHigh = 5000.0)
+        val ex = assertFailsWith<BusinessValidationException> { profile.validate() }
+        assert(ex.message?.contains("analysisHigh") == true)
+    }
+
+    @Test
+    fun `should fail when analysisLow equals analysisHigh`() {
+        val profile = createValidProfile().copy(analysisLow = 150.0, analysisHigh = 150.0)
+        val ex = assertFailsWith<BusinessValidationException> { profile.validate() }
+        assert(ex.message?.contains("analysisLow") == true)
+    }
+
+    @Test
+    fun `should fail when analysisLow is greater than analysisHigh`() {
+        val profile = createValidProfile().copy(analysisLow = 160.0, analysisHigh = 130.0)
+        assertFailsWith<BusinessValidationException> { profile.validate() }
+    }
+
+    @Test
+    fun `should pass validation when only analysisLow is set and within range`() {
+        val profile = createValidProfile().copy(analysisLow = 70.0, analysisHigh = null)
+        profile.validate()
+    }
+
+    @Test
+    fun `should pass validation when only analysisHigh is set and within range`() {
+        val profile = createValidProfile().copy(analysisLow = null, analysisHigh = 180.0)
         profile.validate()
     }
 
