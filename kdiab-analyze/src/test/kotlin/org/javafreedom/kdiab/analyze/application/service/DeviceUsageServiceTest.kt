@@ -147,4 +147,44 @@ class DeviceUsageServiceTest {
 
         assertTrue(result.userId == userId)
     }
+
+    @Test
+    fun `upstream failure for one type does not prevent other types from being computed`() = runTest {
+        stubAllEmpty()
+        coEvery {
+            treatmentsPort.getTreatmentsByType(userId, auth, correlationId, TreatmentType.SENSOR_INSERT, any(), any())
+        } throws RuntimeException("upstream down")
+        stubType(TreatmentType.SITE_CHANGE, listOf(
+            treatment(TreatmentType.SITE_CHANGE, "2026-03-01T00:00:00Z"),
+            treatment(TreatmentType.SITE_CHANGE, "2026-03-08T00:00:00Z"),
+        ))
+
+        val result = service.compute(userId, 90, auth, correlationId)
+
+        assertNull(result.avgSensorDays, "Failed type should yield null avg")
+        assertNotNull(result.avgCatheterDays, "Successful type should still compute avg")
+    }
+
+    @Test
+    fun `all four device types are fetched in a single compute call`() = runTest {
+        val calledTypes = mutableListOf<TreatmentType>()
+        TreatmentType.entries.forEach { type ->
+            coEvery {
+                treatmentsPort.getTreatmentsByType(userId, auth, correlationId, type, any(), any())
+            } answers {
+                calledTypes += type
+                emptyList()
+            }
+        }
+
+        service.compute(userId, 90, auth, correlationId)
+
+        val expectedTypes = setOf(
+            TreatmentType.SENSOR_INSERT,
+            TreatmentType.SITE_CHANGE,
+            TreatmentType.INSULIN_CHANGE,
+            TreatmentType.PUMP_BATTERY_CHANGE,
+        )
+        assertTrue(calledTypes.toSet() == expectedTypes, "All four device types must be fetched")
+    }
 }
