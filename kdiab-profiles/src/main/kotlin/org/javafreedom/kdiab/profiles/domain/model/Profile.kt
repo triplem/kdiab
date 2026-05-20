@@ -48,6 +48,7 @@ data class Profile(
         validateBasalRequirements()
         validateTimeSegments()
         validateUnitHeuristics()
+        validateAnalysisThresholds()
     }
 
     private fun validateTimeSegments() {
@@ -124,6 +125,28 @@ data class Profile(
         }
     }
 
+    private fun validateAnalysisThresholds() {
+        analysisLow?.let { low ->
+            if (low < ANALYSIS_LOW_MIN || low > ANALYSIS_LOW_MAX) {
+                throw BusinessValidationException(
+                    "analysisLow must be between $ANALYSIS_LOW_MIN and $ANALYSIS_LOW_MAX mg/dL"
+                )
+            }
+        }
+        analysisHigh?.let { high ->
+            if (high < ANALYSIS_HIGH_MIN || high > ANALYSIS_HIGH_MAX) {
+                throw BusinessValidationException(
+                    "analysisHigh must be between $ANALYSIS_HIGH_MIN and $ANALYSIS_HIGH_MAX mg/dL"
+                )
+            }
+        }
+        if (analysisLow != null && analysisHigh != null && analysisLow >= analysisHigh) {
+            throw BusinessValidationException(
+                "analysisLow ($analysisLow) must be less than analysisHigh ($analysisHigh)"
+            )
+        }
+    }
+
     private fun validateUnitHeuristics() {
         if (icr.any { it.value < MIN_ICR || it.value > MAX_ICR }) {
             throw BusinessValidationException("ICR values must be between $MIN_ICR and $MAX_ICR g/U")
@@ -161,6 +184,10 @@ data class Profile(
         const val MAX_CARB_ABSORPTION_RATE = 100.0
         const val MIN_DURATION_OF_ACTION = 120  // 2 hours in minutes
         const val MAX_DURATION_OF_ACTION = 480  // 8 hours in minutes
+        const val ANALYSIS_LOW_MIN = 54.0   // mg/dL -- clinical very-low threshold floor
+        const val ANALYSIS_LOW_MAX = 180.0  // mg/dL -- analysisLow may not exceed target high ceiling
+        const val ANALYSIS_HIGH_MIN = 120.0 // mg/dL -- analysisHigh minimum sensible threshold
+        const val ANALYSIS_HIGH_MAX = 400.0 // mg/dL -- clinical very-high threshold ceiling
     }
 }
 
