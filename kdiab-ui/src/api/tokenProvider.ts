@@ -50,18 +50,6 @@ export function parseAllowedPatientNamesFromToken(token: string): string[] {
   return Array.isArray(val) ? val.filter((v): v is string => typeof v === 'string') : []
 }
 
-export function parseGlucoseUnitFromToken(token: string): string {
-  const payload = decodeJwtPayload(token)
-  const val = payload['glucose_unit']
-  return typeof val === 'string' ? val : 'mg/dL'
-}
-
-export function parseWeightUnitFromToken(token: string): string {
-  const payload = decodeJwtPayload(token)
-  const val = payload['weight_unit']
-  return typeof val === 'string' ? val : 'kg'
-}
-
 export function configureAuthInterceptor(instance: AxiosInstance): void {
   instance.interceptors.request.use((config) => {
     if (accessToken) config.headers['Authorization'] = `Bearer ${accessToken}`

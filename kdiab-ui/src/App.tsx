@@ -6,9 +6,8 @@ import {
   parseRolesFromToken,
   parseAllowedPatientsFromToken,
   parseAllowedPatientNamesFromToken,
-  parseGlucoseUnitFromToken,
-  parseWeightUnitFromToken,
 } from './api/tokenProvider'
+import { usersApi } from './api/usersApi'
 import { LanguageSwitcher } from './components/LanguageSwitcher'
 import { PatientBanner } from './components/PatientBanner'
 import { MeasureList } from './features/measures/MeasureList'
@@ -82,8 +81,14 @@ export default function App() {
       setAllowedPatients(patients)
       const names = parseAllowedPatientNamesFromToken(token)
       setPatientNames(new Map(patients.map((id, i) => [id, names[i] ?? id])))
-      setGlucoseUnit(parseGlucoseUnitFromToken(token))
-      setWeightUnit(parseWeightUnitFromToken(token))
+
+      // Fetch glucose/weight units from users service (DB is the source of truth)
+      void usersApi.getMe().then(res => {
+        setGlucoseUnit(res.data.settings?.glucoseUnit ?? 'mg/dL')
+        setWeightUnit(res.data.settings?.weightUnit ?? 'kg')
+      }).catch(() => {
+        // Keep defaults on failure — they are already set to mg/dL / kg
+      })
 
       // Set locale from Keycloak profile
       const locale = auth.user.profile?.locale as string | undefined

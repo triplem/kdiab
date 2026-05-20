@@ -29,7 +29,6 @@ function makeSettings(overrides = {}) {
     alarmUrgentLow: 54,
     sensorDurationHours: 240,
     updatedAt: '2024-01-01T00:00:00Z',
-    jwtBackedNote: null,
     ...overrides,
   }
 }
@@ -104,15 +103,19 @@ describe('UserSettings', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/saved/i))
   })
 
-  test('shows jwt-backed hint when glucose unit changes', async () => {
+  test('includes glucoseUnit in PATCH payload when changed', async () => {
     mockedGetMe.mockResolvedValue({ data: makeUser({ glucoseUnit: 'mg/dL' }) } as never)
+    mockedPatch.mockResolvedValue({ data: makeSettings({ glucoseUnit: 'mmol/L' }) } as never)
     render(<UserSettings />, { wrapper })
     await waitFor(() => screen.getByText(/glucose unit/i))
 
     const mmolRadio = screen.getByDisplayValue('mmol/L')
     fireEvent.click(mmolRadio)
+    fireEvent.click(screen.getByRole('button', { name: /save/i }))
 
-    expect(screen.getByText(/next login/i)).toBeInTheDocument()
+    await waitFor(() => expect(mockedPatch).toHaveBeenCalledWith(
+      expect.objectContaining({ glucoseUnit: 'mmol/L' })
+    ))
   })
 
   test('shows alarm order validation error when urgentLow >= low', async () => {

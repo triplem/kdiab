@@ -39,10 +39,8 @@ private fun buildPrincipal(credential: JWTCredential, jwtAudience: String): User
         ?.mapNotNull { raw -> runCatching { Uuid.parse(raw) }.getOrNull() }
         ?.toSet()
         ?: emptySet()
-    val glucoseUnit = credential.payload.getClaim("glucose_unit").asString() ?: "mg/dL"
-    val weightUnit = credential.payload.getClaim("weight_unit").asString() ?: "kg"
     val audiences = credential.payload.audience ?: emptyList()
-    return UserPrincipal(userId, roles, allowedPatients, glucoseUnit, weightUnit, audiences)
+    return UserPrincipal(userId, roles, allowedPatients, audiences)
 }
 
 fun Application.configureSecurity() {
@@ -110,8 +108,6 @@ data class UserPrincipal(
     val userId: Uuid,
     val roles: Set<Role>,
     val allowedPatients: Set<Uuid>,
-    val glucoseUnit: String = "mg/dL",
-    val weightUnit: String = "kg",
     val audiences: List<String> = emptyList(),
 ) {
     fun isAdmin() = roles.contains(Role.ADMIN)

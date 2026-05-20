@@ -89,11 +89,13 @@ const apiInstance = new DefaultApi(configuration);
 let userId: string; // (default to undefined)
 let from: string; //Start of timeframe (ISO-8601 datetime) (default to undefined)
 let to: string; //End of timeframe (ISO-8601 datetime) (default to undefined)
+let glucoseUnit: 'mg/dL' | 'mmol/L'; //Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL. (optional) (default to 'mg/dL')
 
 const { status, data } = await apiInstance.getAgp(
     userId,
     from,
-    to
+    to,
+    glucoseUnit
 );
 ```
 
@@ -104,6 +106,7 @@ const { status, data } = await apiInstance.getAgp(
 | **userId** | [**string**] |  | defaults to undefined|
 | **from** | [**string**] | Start of timeframe (ISO-8601 datetime) | defaults to undefined|
 | **to** | [**string**] | End of timeframe (ISO-8601 datetime) | defaults to undefined|
+| **glucoseUnit** | [**&#39;mg/dL&#39; | &#39;mmol/L&#39;**]**Array<&#39;mg/dL&#39; &#124; &#39;mmol/L&#39;>** | Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL. | (optional) defaults to 'mg/dL'|
 
 
 ### Return type
@@ -201,11 +204,13 @@ const apiInstance = new DefaultApi(configuration);
 let userId: string; // (default to undefined)
 let from: string; //Start of timeframe (ISO-8601 datetime) (default to undefined)
 let to: string; //End of timeframe (ISO-8601 datetime) (default to undefined)
+let glucoseUnit: 'mg/dL' | 'mmol/L'; //Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL. (optional) (default to 'mg/dL')
 
 const { status, data } = await apiInstance.getHba1c(
     userId,
     from,
-    to
+    to,
+    glucoseUnit
 );
 ```
 
@@ -216,6 +221,7 @@ const { status, data } = await apiInstance.getHba1c(
 | **userId** | [**string**] |  | defaults to undefined|
 | **from** | [**string**] | Start of timeframe (ISO-8601 datetime) | defaults to undefined|
 | **to** | [**string**] | End of timeframe (ISO-8601 datetime) | defaults to undefined|
+| **glucoseUnit** | [**&#39;mg/dL&#39; | &#39;mmol/L&#39;**]**Array<&#39;mg/dL&#39; &#124; &#39;mmol/L&#39;>** | Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL. | (optional) defaults to 'mg/dL'|
 
 
 ### Return type

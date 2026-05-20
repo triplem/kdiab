@@ -51,7 +51,7 @@ export function UserSettings() {
     queryFn: () => usersApi.getMe().then((r) => r.data),
   })
 
-  const { register, handleSubmit, watch, reset, control, formState: { errors, isDirty } } = useForm<FormData>({
+  const { register, handleSubmit, reset, control, formState: { errors, isDirty } } = useForm<FormData>({
     resolver: zodResolver(schema),
     values: data?.settings
       ? {
@@ -70,14 +70,12 @@ export function UserSettings() {
   })
 
   const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null)
-  const [jwtNote, setJwtNote] = useState<string | null>(null)
 
   const mutation = useMutation({
     mutationFn: (body: PatchSettingsRequest) => usersApi.patchMySettings(body).then((r) => r.data),
-    onSuccess: (result) => {
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['user', 'me'] })
       setToast({ kind: 'success', msg: t('settings.savedSuccess') })
-      if (result.jwtBackedNote) setJwtNote(result.jwtBackedNote)
       setTimeout(() => setToast(null), 4000)
     },
     onError: () => {
@@ -90,24 +88,12 @@ export function UserSettings() {
     mutation.mutate(values as PatchSettingsRequest)
   }
 
-  const watchedGlucose = watch('glucoseUnit')
-  const watchedWeight = watch('weightUnit')
-  const prevGlucose = data?.settings?.glucoseUnit
-  const prevWeight = data?.settings?.weightUnit
-  const jwtBacked = (watchedGlucose !== prevGlucose) || (watchedWeight !== prevWeight)
-
   if (isLoading) return <p>{t('common.loading')}</p>
   if (error) return <p style={{ color: 'var(--danger)' }}>{t('common.unknownError')}</p>
 
   return (
     <div style={{ maxWidth: 540 }}>
       <h2>{t('settings.title')}</h2>
-
-      {jwtNote && (
-        <div className="banner info" role="alert" style={{ marginBottom: '1rem' }}>
-          {jwtNote}
-        </div>
-      )}
 
       {toast && (
         <div className={`banner ${toast.kind}`} role="status" style={{ marginBottom: '1rem' }}>
@@ -190,12 +176,6 @@ export function UserSettings() {
             </div>
           </fieldset>
         </div>
-
-        {jwtBacked && (
-          <p className="hint" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-            {t('settings.jwtBackedHint')}
-          </p>
-        )}
 
         <div className="form-group">
           <label htmlFor="sensorDurationHours">{t('settings.sensorDurationHours')}</label>

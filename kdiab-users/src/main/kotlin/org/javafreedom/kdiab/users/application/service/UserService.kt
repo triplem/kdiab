@@ -36,13 +36,7 @@ class UserService(
         val kcUser = keycloak.getUser(principal.userId)
         val settings = settingsRepo.findByUserId(principal.userId)
             ?: defaultSettings(principal.userId).also { settingsRepo.save(it) }
-        return kcUser.toDomain(
-            settings.copy(
-                glucoseUnit = principal.glucoseUnit,
-                weightUnit = principal.weightUnit,
-            ),
-            principal.roles,
-        )
+        return kcUser.toDomain(settings, principal.roles)
     }
 
     suspend fun updateMySettings(
@@ -77,22 +71,6 @@ class UserService(
             sensorDurationHours = patch.sensorDurationHours ?: existing.sensorDurationHours,
             updatedAt = now,
         )
-
-        // KC write first: JWT claims are the source of truth for glucose/weight units.
-        // If KC fails, DB is untouched (consistent). If KC succeeds but DB fails, the
-        // discrepancy resolves itself on the next successful settings save.
-        val jwtBackedUpdates = buildMap {
-            if (patch.glucoseUnit != null && patch.glucoseUnit != existing.glucoseUnit) {
-                put("glucose_unit", listOf(patch.glucoseUnit))
-            }
-            if (patch.weightUnit != null && patch.weightUnit != existing.weightUnit) {
-                put("weight_unit", listOf(patch.weightUnit))
-            }
-        }
-        if (jwtBackedUpdates.isNotEmpty()) {
-            logger.info { "user_settings jwt_backed_update userId=${principal.userId} fields=${jwtBackedUpdates.keys}" }
-            keycloak.updateUserAttributes(principal.userId, jwtBackedUpdates)
-        }
 
         settingsRepo.save(updated)
         return updated

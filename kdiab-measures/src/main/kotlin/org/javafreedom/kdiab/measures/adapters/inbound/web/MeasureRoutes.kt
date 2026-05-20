@@ -81,8 +81,8 @@ private fun Route.listMeasures(measureService: MeasureService, auditLogRepositor
                 throw BusinessValidationException("Invalid status value: $it. Must be ACTIVE or ARCHIVED")
             }
         } ?: MeasureStatus.ACTIVE
-        val glucoseUnit = principal?.glucoseUnit ?: "mg/dL"
-        val weightUnit = principal?.weightUnit ?: "kg"
+        val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
+        val weightUnit = call.request.queryParameters["weightUnit"] ?: "kg"
         val paged = measureService.getMeasures(targetUserId, page, size, from, to, status)
         call.respond(PagedMeasureResponse(
             items = paged.items.map { it.toApi(glucoseUnit, weightUnit) },
@@ -100,8 +100,8 @@ private fun Route.createMeasure(measureService: MeasureService, auditLogReposito
         checkWriteAccess(principal, targetUserId)
         auditIfDoctor(call, principal, targetUserId, "measures.create", auditLogRepository)
 
-        val glucoseUnit = principal?.glucoseUnit ?: "mg/dL"
-        val weightUnit = principal?.weightUnit ?: "kg"
+        val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
+        val weightUnit = call.request.queryParameters["weightUnit"] ?: "kg"
         val request = call.receive<CreateMeasureRequest>()
         val measure = request.toDomain(targetUserId)
         val saved = measureService.addMeasure(measure)
@@ -119,8 +119,8 @@ private fun Route.updateMeasure(measureService: MeasureService, auditLogReposito
         checkWriteAccess(principal, targetUserId)
         auditIfDoctor(call, principal, targetUserId, "measures.update", auditLogRepository)
 
-        val glucoseUnit = principal?.glucoseUnit ?: "mg/dL"
-        val weightUnit = principal?.weightUnit ?: "kg"
+        val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
+        val weightUnit = call.request.queryParameters["weightUnit"] ?: "kg"
         val request = call.receive<UpdateMeasureRequest>()
         val measuredAt = runCatching { Instant.parse(request.measuredAt) }.getOrElse {
             throw BusinessValidationException("Invalid measuredAt timestamp: '${request.measuredAt}'")

@@ -14,7 +14,6 @@ export interface UserSettings {
   alarmUrgentLow: number | null
   sensorDurationHours: number
   updatedAt: string
-  jwtBackedNote?: string | null
 }
 
 export interface UserResponse {

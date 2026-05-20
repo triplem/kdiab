@@ -2,8 +2,8 @@
 -- kdiab seed data -- realistic 30-day dataset for testing and development
 --
 -- Users (from Keycloak realm):
---   sarah  (11111111-...) PATIENT  glucose_unit=mg/dL
---   mike   (22222222-...) PATIENT  glucose_unit=mmol/L
+--   sarah  (11111111-...) PATIENT  glucose_unit=mg/dL  (stored in user_settings DB)
+--   mike   (22222222-...) PATIENT  glucose_unit=mmol/L (stored in user_settings DB)
 --
 -- Each user gets:
 --   - 30 days of CGM readings every 5 minutes (sarah: 70-200 mg/dL range,

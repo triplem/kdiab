@@ -2,8 +2,6 @@ import { describe, test, expect } from 'vitest'
 import {
   parseRolesFromToken,
   parseAllowedPatientsFromToken,
-  parseGlucoseUnitFromToken,
-  parseWeightUnitFromToken,
 } from '../api/tokenProvider'
 
 function buildJwt(payload: Record<string, unknown>): string {
@@ -42,26 +40,3 @@ describe('parseAllowedPatientsFromToken', () => {
   })
 })
 
-describe('parseGlucoseUnitFromToken', () => {
-  test('returns mmol/L when specified', () => {
-    const token = buildJwt({ glucose_unit: 'mmol/L' })
-    expect(parseGlucoseUnitFromToken(token)).toBe('mmol/L')
-  })
-
-  test('defaults to mg/dL when absent', () => {
-    const token = buildJwt({})
-    expect(parseGlucoseUnitFromToken(token)).toBe('mg/dL')
-  })
-})
-
-describe('parseWeightUnitFromToken', () => {
-  test('returns lbs when specified', () => {
-    const token = buildJwt({ weight_unit: 'lbs' })
-    expect(parseWeightUnitFromToken(token)).toBe('lbs')
-  })
-
-  test('defaults to kg when absent', () => {
-    const token = buildJwt({})
-    expect(parseWeightUnitFromToken(token)).toBe('kg')
-  })
-})
