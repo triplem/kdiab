@@ -1,0 +1,102 @@
+= kdiab-carbs: Architecture
+:toc: left
+
+== Overview
+
+`kdiab-carbs` is a CRUD service for tracking carbohydrate intake and a food/item database. It stores food entries per user (carbs consumed at a point in time) and provides lookup of pre-defined food items.
+
+== Technology Stack
+
+* **Language**: Kotlin
+* **Framework**: Ktor
+* **Build Tool**: Gradle Kotlin DSL
+* **Persistence**: PostgreSQL + Exposed ORM + HikariCP
+* **Schema migrations**: Liquibase
+* **Auth**: Keycloak JWT (shared realm `kdiab`)
+
+== Package Structure
+
+----
+org.javafreedom.kdiab.carbs
+├── adapters/
+│   └── inbound/web/
+│       ├── FoodEntryRoutes.kt    # HTTP route handlers
+│       └── FoodEntryMapper.kt    # API model ↔ domain model
+├── application/service/
+│   └── FoodEntryService.kt       # Business logic
+├── domain/
+│   ├── model/
+│   │   └── FoodEntry.kt          # Domain entities
+│   └── repository/
+│       └── FoodEntryRepository.kt  # Port interface
+└── infrastructure/persistence/
+    ├── ExposedFoodEntryRepository.kt
+    └── DatabaseFactory.kt
+----
+
+== Domain Model
+
+=== FoodEntry
+
+Represents a carbohydrate intake event for a user.
+
+|===
+| Field | Type | Description
+
+| `id`
+| UUID
+| Primary key
+
+| `userId`
+| UUID
+| Owner (from JWT `sub` claim — no Users table)
+
+| `consumedAt`
+| Instant
+| When the food was eaten
+
+| `carbsGrams`
+| Double
+| Carbohydrates in grams
+
+| `description`
+| String?
+| Optional human-readable description
+
+| `createdAt`
+| Instant
+| Record creation timestamp
+|===
+
+== API Design
+
+All endpoints are under `/api/v1/users/{userId}/carbs/` and require a Bearer JWT.
+
+Access control: a PATIENT may only access their own `userId`. A DOCTOR may access any patient in their `allowedPatients` list. ADMINs have full access.
+
+== Data Flow
+
+----
+HTTP Request
+  → FoodEntryRoutes (authenticate, checkReadAccess/checkWriteAccess)
+  → FoodEntryMapper.toDomain()
+  → FoodEntryService (business logic, throws domain exceptions)
+  → FoodEntryRepository → ExposedFoodEntryRepository
+HTTP Response ← FoodEntryMapper.toApi() ← StatusPages
+----
+
+== Database Schema
+
+----
+food_entries table:
+  id           UUID PRIMARY KEY
+  user_id      UUID NOT NULL
+  consumed_at  TIMESTAMP WITH TIME ZONE NOT NULL
+  carbs_grams  DOUBLE PRECISION NOT NULL
+  description  TEXT
+  created_at   TIMESTAMP WITH TIME ZONE NOT NULL
+----
+
+== Integration with kdiab-calc
+
+When a user submits a dose calculation request to `kdiab-calc`, the `carbsGrams` value comes directly from the user — not from food entries stored here. `kdiab-carbs` is the historical log; `kdiab-calc` accepts point-in-time input from the UI. The two services are independent.

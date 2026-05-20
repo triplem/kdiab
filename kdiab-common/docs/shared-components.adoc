@@ -1,0 +1,194 @@
+= kdiab-common: Shared Components Reference
+:toc: left
+
+== Overview
+
+`kdiab-common` is a shared Kotlin library depended upon by all kdiab services. It provides domain types, repository interfaces, Ktor plugins, and utilities that would otherwise be duplicated across every service.
+
+Services declare a project dependency: `implementation(project(":kdiab-common"))`.
+
+== Domain Types
+
+=== Role
+
+----
+org.javafreedom.kdiab.common.domain.model.Role
+----
+
+Enum with three values: `PATIENT`, `DOCTOR`, `ADMIN`. Parsed from the `roles` JWT claim.
+
+=== UserPrincipal
+
+----
+org.javafreedom.kdiab.common.plugins.UserPrincipal
+----
+
+Extracted from a validated JWT and installed as the Ktor `Principal`:
+
+|===
+| Field | Type | Source
+
+| `userId`
+| `kotlin.uuid.Uuid`
+| JWT `sub` claim
+
+| `roles`
+| `Set<Role>`
+| JWT `roles` claim
+
+| `allowedPatients`
+| `Set<Uuid>`
+| JWT `allowed_patients` claim (doctors only)
+|===
+
+`UserPrincipal.canAccess(targetUserId)` returns `true` if:
+
+* caller is ADMIN, OR
+* `targetUserId == userId` (self), OR
+* caller is DOCTOR AND `targetUserId` is in `allowedPatients`
+
+=== Domain Exceptions
+
+All services throw these and catch them via `StatusPages`:
+
+|===
+| Exception | HTTP status | When to throw
+
+| `AuthenticationException`
+| 401
+| Missing or invalid JWT
+
+| `AuthorizationException`
+| 403
+| Caller lacks access to the resource
+
+| `ResourceNotFoundException`
+| 404
+| Requested entity does not exist
+
+| `BusinessValidationException`
+| 422
+| Business rule violation (invalid input, clinical constraint)
+
+| `ConflictException`
+| 409
+| Duplicate resource (unique constraint violation)
+|===
+
+=== AuditLog
+
+----
+org.javafreedom.kdiab.common.domain.model.AuditLog
+----
+
+Records doctor actions on patient data. Fields: `id`, `doctorId`, `patientId`, `action`, `occurredAt`, `ipAddress`, `userAgent`, `detail`.
+
+=== AuditLogRepository
+
+----
+org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
+----
+
+Port interface:
+
+* `save(entry: AuditLog)`
+* `findByPatientId(patientId, from, to): List<AuditLog>`
+
+Each service with an audit log provides its own Exposed implementation.
+
+== Ktor Plugins
+
+All plugins are installed via extension functions on `Application`.
+
+=== configureSecurity
+
+----
+org.javafreedom.kdiab.common.plugins.Security.kt
+----
+
+Installs Ktor JWT authentication (`"auth-jwt"`). In production, validates against Keycloak JWKS. In tests, uses HMAC256 symmetric signing when `jwt.test = true` and `jwt.secret` is set in config.
+
+Extracts `UserPrincipal` from claims and sets it as the call principal.
+
+=== configureLogging
+
+----
+org.javafreedom.kdiab.common.plugins.Logging.kt
+----
+
+Installs Ktor `CallId` (generates or reads `X-Correlation-ID` header) and binds it to SLF4J MDC as `Correlation-ID`. All log entries emitted during a request carry the correlation ID automatically.
+
+=== configureTracing
+
+----
+org.javafreedom.kdiab.common.plugins.Tracing.kt
+----
+
+Initialises the OpenTelemetry SDK via autoconfigure and creates a server span per request. Propagates W3C trace context from inbound headers. Sets span attributes: `http.method`, `http.url`, `http.status_code`, `correlation.id`.
+
+Configuration via standard OTel environment variables:
+
+* `OTEL_SERVICE_NAME`
+* `OTEL_EXPORTER_OTLP_ENDPOINT`
+* `OTEL_TRACES_EXPORTER` (default `none` = no-op)
+
+When `OTEL_TRACES_EXPORTER=none` (the default in development and testing), this is a zero-overhead no-op. Duplicate SDK initialisation in tests is handled gracefully (logged at DEBUG).
+
+=== configureStatusPages
+
+----
+org.javafreedom.kdiab.common.plugins.StatusPages.kt
+----
+
+Maps domain exceptions to HTTP status codes (see Domain Exceptions table above). All error responses use the shared `ErrorResponse` JSON structure:
+
+[source,json]
+----
+{
+  "code": "RESOURCE_NOT_FOUND",
+  "message": "Profile abc123 not found"
+}
+----
+
+=== configureHealth
+
+----
+org.javafreedom.kdiab.common.plugins.Health.kt
+----
+
+Installs:
+
+* `GET /healthz` — liveness probe; always returns 200 with `{"status":"UP"}`
+* `GET /readyz` — readiness probe; calls the provided `HealthService` lambda; returns 200 if `true`, 503 if `false`
+
+Services that call upstream services implement the `HealthService` lambda to probe upstream `/healthz` endpoints.
+
+=== auditRoutes
+
+----
+org.javafreedom.kdiab.common.plugins.AuditRoutes.kt
+----
+
+Registers `GET /api/v1/users/{userId}/audit` to return the audit log for a patient. The caller must be the patient themselves or an authorised doctor.
+
+Helper functions available to route handlers:
+
+* `auditIfDoctor(call, principal, patientId, action, repository)` — records an audit entry when the caller is a DOCTOR
+* `auditDeletion(call, principal, targetUserId, ids, repository, action)` — records a bulk-deletion audit entry
+
+== Access Control Helpers
+
+----
+org.javafreedom.kdiab.common.plugins.Security.kt
+----
+
+* `checkReadAccess(principal, targetUserId)` — throws `AuthorizationException` if the caller cannot read the target user's data
+* `checkWriteAccess(principal, targetUserId)` — same for write operations (stricter: doctors cannot write patient data by default unless the route explicitly permits it)
+
+== Conventions for New Services
+
+1. Add `implementation(project(":kdiab-common"))` to `build.gradle.kts`
+2. Call `configureSecurity()`, `configureLogging()`, `configureStatusPages()`, `configureTracing()`, `configureHealth()` from `Application.module()`
+3. Use `UserPrincipal` from `call.principal<UserPrincipal>()` — never parse JWT claims manually
+4. Throw domain exceptions — never set HTTP status codes directly in route handlers
+5. If audit logging is required, implement `AuditLogRepository` (Exposed) and install `auditRoutes()`

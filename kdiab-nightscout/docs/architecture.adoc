@@ -1,0 +1,172 @@
+= kdiab-nightscout: Architecture
+:toc: left
+
+== Overview
+
+`kdiab-nightscout` is a Nightscout-compatible read-only gateway. It exposes the Nightscout **API v1** JSON endpoints so that third-party apps that speak Nightscout (xDrip+, Loop, Spike, Sugarmate, etc.) can consume kdiab data without modification.
+
+== API Version Clarification
+
+This service implements the **Nightscout API v1** format (`/api/v1/…`). This is *not* a version of the kdiab internal API — it is the Nightscout protocol version, which predates the newer Nightscout API v3. The v1 format is used because it has the broadest client support across CGM-adjacent apps.
+
+The endpoints exposed are:
+
+|===
+| Path | Description
+
+| `GET /api/v1/entries.json`
+| CGM/BGM readings (maps from kdiab-measures)
+
+| `GET /api/v1/treatments.json`
+| Treatment events (bolus, carbs, etc.; maps from kdiab-treatments)
+
+| `GET /api/v1/status.json`
+| Service status (no auth required)
+
+| `GET /healthz`
+| liveness probe
+
+| `GET /readyz`
+| readiness probe (checks upstream health)
+|===
+
+== Technology Stack
+
+* **Language**: Kotlin
+* **Framework**: Ktor
+* **Auth**: Keycloak JWT (shared realm `kdiab`)
+* **Upstreams**: `kdiab-measures`, `kdiab-treatments` (HTTP)
+* **No database** — stateless aggregator
+
+== Package Structure
+
+----
+org.javafreedom.kdiab.nightscout
+├── adapters/
+│   ├── inbound/web/
+│   │   ├── NightscoutRoutes.kt    # HTTP route handlers
+│   │   └── NightscoutMapper.kt    # domain model → Nightscout JSON
+│   └── outbound/http/
+│       ├── MeasuresClient.kt      # HTTP client → kdiab-measures
+│       └── TreatmentsClient.kt    # HTTP client → kdiab-treatments
+├── application/service/
+│   └── NightscoutService.kt       # Orchestration + format conversion
+└── domain/model/
+    └── NightscoutModels.kt        # NightscoutEntry, NightscoutTreatment, NightscoutStatus
+----
+
+== Data Flow
+
+----
+Nightscout client request (e.g. xDrip+, Loop)
+  → NightscoutRoutes (authenticate JWT, extract userId)
+  → NightscoutService
+      ├── MeasuresClient → kdiab-measures /api/v1/users/{userId}/measures
+      └── TreatmentsClient → kdiab-treatments /api/v1/users/{userId}/treatments
+  → NightscoutMapper: domain → NightscoutEntry / NightscoutTreatment
+  → JSON response in Nightscout v1 format
+----
+
+The JWT received from the Nightscout client is forwarded unchanged to both upstream services.
+
+== Nightscout Field Mapping
+
+=== Entries (`/api/v1/entries.json`)
+
+|===
+| Nightscout field | kdiab source | Notes
+
+| `type`
+| Always `"sgv"` for CGM
+|
+
+| `sgv`
+| `measure.data.sgv`
+| CGM glucose value in mg/dL
+
+| `date`
+| `measure.measuredAt` as epoch ms
+|
+
+| `dateString`
+| ISO-8601 string of `measuredAt`
+|
+
+| `trend`
+| Nightscout trend integer from `measure.data.trend`
+| See trend integer table below
+
+| `direction`
+| String form of trend arrow
+|
+
+| `_id`
+| `measure.id` (UUID string)
+|
+|===
+
+==== Trend Integer Mapping
+
+|===
+| Nightscout int | Arrow | Description
+
+| 1 | ↑↑ | DoubleUp
+| 2 | ↑ | SingleUp
+| 3 | ↗ | FortyFiveUp
+| 4 | → | Flat
+| 5 | ↘ | FortyFiveDown
+| 6 | ↓ | SingleDown
+| 7 | ↓↓ | DoubleDown
+|===
+
+=== Treatments (`/api/v1/treatments.json`)
+
+|===
+| Nightscout field | kdiab source
+
+| `eventType`
+| Mapped from `treatment.type` (BOLUS → "Correction Bolus", etc.)
+
+| `insulin`
+| `treatment.data.insulin` (for bolus types)
+
+| `carbs`
+| `treatment.data.carbs` (for carb treatments)
+
+| `created_at`
+| `treatment.treatedAt` ISO-8601 string
+
+| `_id`
+| `treatment.id` (UUID string)
+|===
+
+== Authentication
+
+The Nightscout client must send a standard Keycloak JWT (`Authorization: Bearer <token>`). The token is extracted and the `userId` claim (`sub`) is used to scope all upstream queries. There is no Nightscout API secret (`API_SECRET`) authentication — only JWT is supported.
+
+== Query Parameters
+
+Both `/entries.json` and `/treatments.json` accept:
+
+|===
+| Parameter | Type | Default | Description
+
+| `from`
+| ISO-8601 string
+| None (service default)
+| Inclusive start of time range
+
+| `to`
+| ISO-8601 string
+| None (service default)
+| Inclusive end of time range
+
+| `count`
+| Integer
+| 288
+| Maximum number of records to return (288 ≈ 24 h at 5-min intervals)
+|===
+
+== Readiness Probe
+
+`GET /readyz` checks that both `kdiab-measures` and `kdiab-treatments` are reachable by calling their `/healthz` endpoints. The probe returns HTTP 200 only if both upstreams respond successfully.
