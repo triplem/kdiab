@@ -14,11 +14,10 @@ import org.javafreedom.kdiab.users.domain.model.DoctorPatientRelation
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 
 object DoctorPatientTable : Table("doctor_patient") {
-    private const val UUID_LEN = 36
     private const val ISO_INSTANT_LEN = 50
 
-    val doctorId = varchar("doctor_id", UUID_LEN)
-    val patientId = varchar("patient_id", UUID_LEN)
+    val doctorId = uuid("doctor_id")
+    val patientId = uuid("patient_id")
     val createdAt = varchar("created_at", ISO_INSTANT_LEN)
 
     override val primaryKey = PrimaryKey(doctorId, patientId)
@@ -30,13 +29,13 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
         withContext(Dispatchers.IO) {
             suspendTransaction {
                 DoctorPatientTable.selectAll()
-                    .where { DoctorPatientTable.doctorId eq doctorId.toString() }
+                    .where { DoctorPatientTable.doctorId eq doctorId }
                     .orderBy(DoctorPatientTable.createdAt to SortOrder.ASC)
                     .limit(limit).offset(offset)
                     .map { row ->
                         DoctorPatientRelation(
                             doctorId = doctorId,
-                            patientId = Uuid.parse(row[DoctorPatientTable.patientId]),
+                            patientId = row[DoctorPatientTable.patientId],
                             createdAt = row[DoctorPatientTable.createdAt].parseInstant(),
                         )
                     }
@@ -51,8 +50,8 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
             try {
                 suspendTransaction {
                     DoctorPatientTable.insert {
-                        it[doctorId] = relation.doctorId.toString()
-                        it[patientId] = relation.patientId.toString()
+                        it[doctorId] = relation.doctorId
+                        it[patientId] = relation.patientId
                         it[createdAt] = relation.createdAt.toString()
                     }
                 }
@@ -66,8 +65,8 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
         withContext(Dispatchers.IO) {
             suspendTransaction {
                 DoctorPatientTable.deleteWhere {
-                    (DoctorPatientTable.doctorId eq doctorId.toString()) and
-                    (DoctorPatientTable.patientId eq patientId.toString())
+                    (DoctorPatientTable.doctorId eq doctorId) and
+                    (DoctorPatientTable.patientId eq patientId)
                 }
             } > 0
         }
@@ -75,10 +74,9 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
     override suspend fun deleteByUserId(userId: Uuid): Unit =
         withContext(Dispatchers.IO) {
             suspendTransaction {
-                val id = userId.toString()
                 DoctorPatientTable.deleteWhere {
-                    (DoctorPatientTable.doctorId eq id) or
-                    (DoctorPatientTable.patientId eq id)
+                    (DoctorPatientTable.doctorId eq userId) or
+                    (DoctorPatientTable.patientId eq userId)
                 }
             }
         }

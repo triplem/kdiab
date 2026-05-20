@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/db.changelog-root.yaml
+  - changeSet:
+      id: 004
+      author: javafreedom
+      dbms: postgresql
+      changes:
+        - sql:
+            sql: >-
+              ALTER TABLE user_settings ALTER COLUMN user_id TYPE uuid USING user_id::uuid;
+              ALTER TABLE doctor_patient ALTER COLUMN doctor_id TYPE uuid USING doctor_id::uuid;
+              ALTER TABLE doctor_patient ALTER COLUMN patient_id TYPE uuid USING patient_id::uuid;
+  - changeSet:
+      id: 004-h2
+      author: javafreedom
+      dbms: h2
+      changes:
+        - sql:
+            sql: >-
+              ALTER TABLE user_settings ALTER COLUMN user_id UUID;
+              ALTER TABLE doctor_patient ALTER COLUMN doctor_id UUID;
+              ALTER TABLE doctor_patient ALTER COLUMN patient_id UUID;

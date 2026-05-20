@@ -12,7 +12,6 @@ import org.javafreedom.kdiab.users.domain.model.UserSettings
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 
 object UserSettingsTable : Table("user_settings") {
-    private const val UUID_LEN = 36
     private const val TIMEZONE_LEN = 64
     private const val LANG_LEN = 8
     private const val UNIT_LEN = 16
@@ -20,7 +19,7 @@ object UserSettingsTable : Table("user_settings") {
     private const val DEFAULT_TIME_FORMAT = 24
     private const val DEFAULT_SENSOR_DURATION_HOURS = 240
 
-    val userId = varchar("user_id", UUID_LEN)
+    val userId = uuid("user_id")
     val timezone = varchar("timezone", TIMEZONE_LEN).default("UTC")
     val language = varchar("language", LANG_LEN).default("en")
     val timeFormat = integer("time_format").default(DEFAULT_TIME_FORMAT)
@@ -42,7 +41,7 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
     override suspend fun findByUserId(userId: Uuid): UserSettings? = withContext(Dispatchers.IO) {
         suspendTransaction {
             UserSettingsTable.selectAll()
-                .where { UserSettingsTable.userId eq userId.toString() }
+                .where { UserSettingsTable.userId eq userId }
                 .singleOrNull()
                 ?.let { row ->
                     UserSettings(
@@ -67,7 +66,7 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
     override suspend fun save(settings: UserSettings): UserSettings = withContext(Dispatchers.IO) {
         suspendTransaction {
             UserSettingsTable.upsert {
-                it[userId] = settings.userId.toString()
+                it[userId] = settings.userId
                 it[timezone] = settings.timezone
                 it[language] = settings.language
                 it[timeFormat] = settings.timeFormat
@@ -87,7 +86,7 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
 
     override suspend fun delete(userId: Uuid): Unit = withContext(Dispatchers.IO) {
         suspendTransaction {
-            UserSettingsTable.deleteWhere { UserSettingsTable.userId eq userId.toString() }
+            UserSettingsTable.deleteWhere { UserSettingsTable.userId eq userId }
         }
     }
 }

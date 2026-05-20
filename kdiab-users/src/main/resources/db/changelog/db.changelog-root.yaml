@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/changes/001-ddl.yaml
   - include:
       file: db/changelog/changes/002-add-sensor-duration-hours.yaml
+  - include:
+      file: db/changelog/changes/003-uuid-native-columns.yaml
