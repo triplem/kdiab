@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import org.javafreedom.kdiab.common.domain.SQL_UNIQUE_VIOLATION
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.treatments.domain.model.Treatment
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
@@ -55,10 +56,8 @@ class ExposedTreatmentRepository(
                 treatment
             }
         } catch (ex: ExposedSQLException) {
-            // SQL state 23505 = unique_violation; wrap in domain exception so callers
-            // only need to handle domain exceptions, not infrastructure-level SQL errors.
             val sqlState = ex.cause?.let { (it as? java.sql.SQLException)?.sqlState }
-            if (sqlState == "23505") {
+            if (sqlState == SQL_UNIQUE_VIOLATION) {
                 throw ConflictException("Treatment already exists: ${treatment.id}", ex)
             }
             throw ex

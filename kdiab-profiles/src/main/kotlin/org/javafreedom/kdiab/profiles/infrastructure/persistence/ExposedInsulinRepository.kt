@@ -4,6 +4,7 @@ package org.javafreedom.kdiab.profiles.infrastructure.persistence
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.javafreedom.kdiab.common.domain.SQL_UNIQUE_VIOLATION
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.profiles.domain.model.Insulin
 import org.javafreedom.kdiab.profiles.domain.repository.InsulinRepository
@@ -51,7 +52,7 @@ class ExposedInsulinRepository(
             }
         } catch (ex: ExposedSQLException) {
             val sqlState = ex.cause?.let { (it as? java.sql.SQLException)?.sqlState }
-            if (sqlState == "23505") {
+            if (sqlState == SQL_UNIQUE_VIOLATION) {
                 throw ConflictException("An insulin with that name already exists", ex)
             }
             throw ex
@@ -68,7 +69,7 @@ class ExposedInsulinRepository(
             }
         } catch (ex: ExposedSQLException) {
             val sqlState = ex.cause?.let { (it as? java.sql.SQLException)?.sqlState }
-            if (sqlState == "23505") {
+            if (sqlState == SQL_UNIQUE_VIOLATION) {
                 throw ConflictException("An insulin with that name already exists", ex)
             }
             throw ex
