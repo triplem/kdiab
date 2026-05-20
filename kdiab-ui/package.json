@@ -33,7 +33,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@cyclonedx/cyclonedx-npm": "^1.22.0",
+    "@cyclonedx/cyclonedx-npm": "4.2.1",
     "@openapitools/openapi-generator-cli": "^2.33.1",
     "@eslint/js": "^9.29.0",
     "@testing-library/jest-dom": "^6.6.3",
