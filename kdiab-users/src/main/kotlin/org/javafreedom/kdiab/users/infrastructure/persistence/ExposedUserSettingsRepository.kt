@@ -7,7 +7,7 @@ import kotlinx.coroutines.withContext
 import kotlin.uuid.Uuid
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.*
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.javafreedom.kdiab.users.domain.model.UserSettings
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 
@@ -40,7 +40,7 @@ object UserSettingsTable : Table("user_settings") {
 class ExposedUserSettingsRepository : UserSettingsRepository {
 
     override suspend fun findByUserId(userId: Uuid): UserSettings? = withContext(Dispatchers.IO) {
-        transaction {
+        suspendTransaction {
             UserSettingsTable.selectAll()
                 .where { UserSettingsTable.userId eq userId.toString() }
                 .singleOrNull()
@@ -65,7 +65,7 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
     }
 
     override suspend fun save(settings: UserSettings): UserSettings = withContext(Dispatchers.IO) {
-        transaction {
+        suspendTransaction {
             UserSettingsTable.upsert {
                 it[userId] = settings.userId.toString()
                 it[timezone] = settings.timezone
@@ -86,7 +86,7 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
     }
 
     override suspend fun delete(userId: Uuid): Unit = withContext(Dispatchers.IO) {
-        transaction {
+        suspendTransaction {
             UserSettingsTable.deleteWhere { UserSettingsTable.userId eq userId.toString() }
         }
     }

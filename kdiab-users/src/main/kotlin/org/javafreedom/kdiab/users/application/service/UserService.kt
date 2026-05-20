@@ -25,7 +25,15 @@ import org.javafreedom.kdiab.users.infrastructure.keycloak.toKeycloakName
 private val logger = KotlinLogging.logger {}
 
 private val VALID_GLUCOSE_UNITS = setOf("mg/dL", "mmol/L")
-private val VALID_WEIGHT_UNITS  = setOf("kg", "lbs")
+private val VALID_WEIGHT_UNITS = setOf("kg", "lbs")
+
+private const val ALARM_URGENT_HIGH_MAX = 400
+private const val ALARM_URGENT_LOW_MIN = 40
+private const val ALARM_THRESHOLD_COUNT = 4
+private const val IDX_URGENT_HIGH = 0
+private const val IDX_HIGH = 1
+private const val IDX_LOW = 2
+private const val IDX_URGENT_LOW = 3
 
 class UserService(
     private val keycloak: KeycloakAdminClient,
@@ -72,6 +80,7 @@ class UserService(
             updatedAt = now,
         )
 
+        validateAlarmThresholds(updated)
         settingsRepo.save(updated)
         return updated
     }
@@ -189,6 +198,42 @@ class UserService(
         createdAt = now,
         updatedAt = now,
     )
+
+    private fun validateAlarmThresholds(settings: UserSettings) {
+        val thresholds = listOfNotNull(
+            settings.alarmUrgentHigh,
+            settings.alarmHigh,
+            settings.alarmLow,
+            settings.alarmUrgentLow,
+        )
+        if (thresholds.size < ALARM_THRESHOLD_COUNT) return
+        val urgentHigh = thresholds[IDX_URGENT_HIGH]
+        val high = thresholds[IDX_HIGH]
+        val low = thresholds[IDX_LOW]
+        val urgentLow = thresholds[IDX_URGENT_LOW]
+        checkAlarmRange(urgentLow, urgentHigh)
+        checkAlarmOrder(urgentHigh, high, low, urgentLow)
+    }
+
+    private fun checkAlarmRange(urgentLow: Int, urgentHigh: Int) {
+        if (urgentLow < ALARM_URGENT_LOW_MIN)
+            throw BusinessValidationException(
+                "alarmUrgentLow must be at least $ALARM_URGENT_LOW_MIN mg/dL, got $urgentLow"
+            )
+        if (urgentHigh > ALARM_URGENT_HIGH_MAX)
+            throw BusinessValidationException(
+                "alarmUrgentHigh must be at most $ALARM_URGENT_HIGH_MAX mg/dL, got $urgentHigh"
+            )
+    }
+
+    private fun checkAlarmOrder(urgentHigh: Int, high: Int, low: Int, urgentLow: Int) {
+        val errorMessage = "Alarm thresholds must satisfy urgentHigh($urgentHigh) > " +
+            "high($high) > low($low) > urgentLow($urgentLow)"
+        if (urgentHigh <= high || high <= low)
+            throw BusinessValidationException(errorMessage)
+        if (low <= urgentLow)
+            throw BusinessValidationException(errorMessage)
+    }
 }
 
 data class SettingsPatch(

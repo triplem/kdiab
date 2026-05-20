@@ -11,6 +11,7 @@ import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.test.runTest
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.users.domain.model.UserSettings
@@ -161,6 +162,75 @@ class UserServiceTest {
         val otherId = Uuid.parse("33333333-3333-3333-3333-333333333333")
         assertFailsWith<AuthorizationException> {
             service.getUser(patientPrincipal(), otherId)
+        }
+    }
+
+    // --- Alarm threshold validation tests (Issue #759) ---
+
+    @Test
+    fun `updateMySettings accepts valid alarm order`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(
+            alarmUrgentHigh = 260, alarmHigh = 200, alarmLow = 75, alarmUrgentLow = 55,
+        )
+        val result = service.updateMySettings(principal, patch)
+        assertEquals(260, result.alarmUrgentHigh)
+        assertEquals(200, result.alarmHigh)
+        assertEquals(75, result.alarmLow)
+        assertEquals(55, result.alarmUrgentLow)
+    }
+
+    @Test
+    fun `updateMySettings throws when urgentLow greater than low`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(
+            alarmUrgentHigh = 260, alarmHigh = 200, alarmLow = 70, alarmUrgentLow = 90,
+        )
+        assertFailsWith<BusinessValidationException> {
+            service.updateMySettings(principal, patch)
+        }
+    }
+
+    @Test
+    fun `updateMySettings throws when high greater than urgentHigh`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(
+            alarmUrgentHigh = 200, alarmHigh = 260, alarmLow = 75, alarmUrgentLow = 55,
+        )
+        assertFailsWith<BusinessValidationException> {
+            service.updateMySettings(principal, patch)
+        }
+    }
+
+    @Test
+    fun `updateMySettings throws when urgentHigh exceeds clinical maximum`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(
+            alarmUrgentHigh = 450, alarmHigh = 200, alarmLow = 75, alarmUrgentLow = 55,
+        )
+        assertFailsWith<BusinessValidationException> {
+            service.updateMySettings(principal, patch)
+        }
+    }
+
+    @Test
+    fun `updateMySettings throws when urgentLow below clinical minimum`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(
+            alarmUrgentHigh = 260, alarmHigh = 200, alarmLow = 75, alarmUrgentLow = 30,
+        )
+        assertFailsWith<BusinessValidationException> {
+            service.updateMySettings(principal, patch)
         }
     }
 }
