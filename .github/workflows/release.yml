@@ -73,6 +73,12 @@ jobs:
           done
           echo "all_passed=$ALL_PASSED" >> "$GITHUB_OUTPUT"
 
+      - name: Fail if any CI workflow did not pass
+        if: steps.check-ci.outputs.all_passed != 'true'
+        run: |
+          echo "::error::Not all CI workflows passed on main — release skipped. Check CI status above."
+          exit 1
+
       - name: Resolve CI run IDs for artifact download
         if: steps.check-ci.outputs.all_passed == 'true'
         id: run-ids
