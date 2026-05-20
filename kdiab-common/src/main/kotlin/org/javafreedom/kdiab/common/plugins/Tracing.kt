@@ -9,6 +9,7 @@ import io.opentelemetry.context.propagation.TextMapGetter
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk
 import io.ktor.http.Headers
 import io.ktor.server.application.*
+import io.ktor.server.plugins.callid.*
 import io.ktor.server.request.*
 import io.ktor.util.*
 
@@ -69,6 +70,7 @@ fun Application.configureTracing() {
                 .setParent(parentContext)
                 .setAttribute("http.method", call.request.httpMethod.value)
                 .setAttribute("http.url", call.request.uri)
+                .setAttribute("correlation.id", call.callId ?: "")
                 .startSpan()
             call.attributes.put(tracingSpanKey, span)
         }

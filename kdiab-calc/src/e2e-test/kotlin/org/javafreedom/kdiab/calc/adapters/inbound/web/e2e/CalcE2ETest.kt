@@ -24,11 +24,11 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.javafreedom.kdiab.calc.adapters.outbound.http.ProfilesClient
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IcrSegment
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IsfSegment
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.Profile
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.TargetSegment
 import org.javafreedom.kdiab.calc.application.service.DoseCalculationService
+import org.javafreedom.kdiab.calc.domain.model.ActiveProfile
+import org.javafreedom.kdiab.calc.domain.model.GlucoseTarget
+import org.javafreedom.kdiab.calc.domain.model.IcrRatio
+import org.javafreedom.kdiab.calc.domain.model.IsfRatio
 import org.javafreedom.kdiab.calc.module
 
 private const val ISSUER = "http://localhost:8081/realms/kdiab"
@@ -58,16 +58,12 @@ private fun calcConfig() = MapApplicationConfig(
     "jwt.secret" to JWT_SECRET,
 )
 
-private val activeProfile = Profile(
+private val activeProfile = ActiveProfile(
     id = "e2e-profile-001",
-    userId = patientId.toString(),
-    name = "E2E Test Profile",
-    insulinType = "rapid",
-    durationOfAction = 240,
-    status = Profile.Status.ACTIVE,
-    isf = listOf(IsfSegment(startTime = "00:00", `value` = 40.0)),
-    icr = listOf(IcrSegment(startTime = "00:00", `value` = 10.0)),
-    targets = listOf(TargetSegment(startTime = "00:00", low = 90.0, high = 110.0)),
+    timeZone = null,
+    isf = listOf(IsfRatio(startTime = "00:00", value = 40.0)),
+    icr = listOf(IcrRatio(startTime = "00:00", value = 10.0)),
+    targets = listOf(GlucoseTarget(startTime = "00:00", low = 90.0, high = 110.0)),
 )
 
 // Top-level helper: installs mock DI bindings on the Application before module() runs.

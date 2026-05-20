@@ -2,6 +2,7 @@ package org.javafreedom.kdiab.nightscout
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.request.get
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -15,6 +16,8 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.plugins.statuspages.*
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
+import org.javafreedom.kdiab.common.plugins.HealthService
+import org.javafreedom.kdiab.common.plugins.configureHealth
 import org.javafreedom.kdiab.common.plugins.configureLogging
 import org.javafreedom.kdiab.common.plugins.configureSecurity
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
@@ -39,6 +42,9 @@ fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 fun Application.module() {
     val json = Json { ignoreUnknownKeys = true }
 
+    var healthClient: HttpClient? = null
+    var upstreamHealthUrls: List<String> = emptyList()
+
     // Install DI with production bindings only if not already installed by tests.
     // Tests install DI with mock overrides before calling module().
     if (pluginOrNull(DI) == null) {
@@ -61,6 +67,9 @@ fun Application.module() {
 
         val measuresUrl = environment.config.property("upstream.measuresUrl").getString()
         val treatmentsUrl = environment.config.property("upstream.treatmentsUrl").getString()
+
+        healthClient = httpClient
+        upstreamHealthUrls = listOf("$measuresUrl/healthz", "$treatmentsUrl/healthz")
 
         install(DI) { }
         dependencies {
@@ -110,11 +119,21 @@ fun Application.module() {
         header("X-Frame-Options", "DENY")
     }
 
+    val capturedHealthClient = healthClient
+    val capturedUrls = upstreamHealthUrls
+    configureHealth(HealthService {
+        if (capturedHealthClient == null || capturedUrls.isEmpty()) {
+            true
+        } else {
+            capturedUrls.all { url ->
+                runCatching { capturedHealthClient.get(url).status.isSuccess() }.getOrDefault(false)
+            }
+        }
+    })
+
     val nightscoutService: NightscoutService by dependencies
 
     routing {
-        get("/healthz") { call.respond(HttpStatusCode.OK) }
-        get("/readyz") { call.respond(HttpStatusCode.OK) }
 
         get("/api/v1/status.json") {
             val nowMs = System.currentTimeMillis()

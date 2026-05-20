@@ -22,11 +22,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.javafreedom.kdiab.calc.adapters.outbound.http.ProfilesClient
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IcrSegment
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IsfSegment
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.Profile
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.TargetSegment
 import org.javafreedom.kdiab.calc.application.service.DoseCalculationService
+import org.javafreedom.kdiab.calc.domain.model.ActiveProfile
+import org.javafreedom.kdiab.calc.domain.model.GlucoseTarget
+import org.javafreedom.kdiab.calc.domain.model.IcrRatio
+import org.javafreedom.kdiab.calc.domain.model.IsfRatio
 import org.javafreedom.kdiab.calc.module
 import java.util.Date
 
@@ -57,16 +57,12 @@ class CalcRoutesIntegrationTest {
     private val profilesClient = mockk<ProfilesClient>()
     private val service = DoseCalculationService(profilesClient)
 
-    private val testProfile = Profile(
+    private val testProfile = ActiveProfile(
         id = "profile-abc",
-        userId = userId.toString(),
-        name = "Integration Test Profile",
-        insulinType = "rapid",
-        durationOfAction = 180,
-        status = Profile.Status.ACTIVE,
-        isf = listOf(IsfSegment(startTime = "00:00", `value` = 50.0)),
-        icr = listOf(IcrSegment(startTime = "00:00", `value` = 15.0)),
-        targets = listOf(TargetSegment(startTime = "00:00", low = 100.0, high = 120.0)),
+        timeZone = null,
+        isf = listOf(IsfRatio(startTime = "00:00", value = 50.0)),
+        icr = listOf(IcrRatio(startTime = "00:00", value = 15.0)),
+        targets = listOf(GlucoseTarget(startTime = "00:00", low = 100.0, high = 120.0)),
     )
 
     private fun calcTestConfig() = MapApplicationConfig(
