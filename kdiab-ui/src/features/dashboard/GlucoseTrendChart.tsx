@@ -136,7 +136,10 @@ export function GlucoseTrendChart({
       </h3>
       {isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
       {cgmPoints.length > 0 && (
-        <div aria-label={t('dashboard.cgmChartAriaLabel', { defaultValue: 'Blood glucose over time chart' })}>
+        <figure role="img" aria-label={t('dashboard.cgmChartAriaLabel')} style={{ margin: 0 }}>
+          <figcaption style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+            {t('dashboard.cgmChartCaption')}
+          </figcaption>
         <ResponsiveContainer width="100%" height={220}>
           <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -205,7 +208,7 @@ export function GlucoseTrendChart({
             )}
           </ComposedChart>
         </ResponsiveContainer>
-        </div>
+        </figure>
       )}
       {!isLoading && cgmPoints.length === 0 && (
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>

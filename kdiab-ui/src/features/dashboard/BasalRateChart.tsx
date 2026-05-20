@@ -65,7 +65,10 @@ export function BasalRateChart({
       )}
       {activeProfile && (
         <>
-          <div aria-label={t('dashboard.basalChartAriaLabel', { defaultValue: 'Basal insulin delivery chart' })}>
+          <figure role="img" aria-label={t('dashboard.basalChartAriaLabel')} style={{ margin: 0 }}>
+            <figcaption style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+              {t('dashboard.basalChartCaption')}
+            </figcaption>
           <ResponsiveContainer width="100%" height={120}>
             <ComposedChart data={basalProfileLine} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -140,7 +143,7 @@ export function BasalRateChart({
               />
             </ComposedChart>
           </ResponsiveContainer>
-          </div>
+          </figure>
           {/* Legend */}
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             <span><span style={{ display: 'inline-block', width: 10, height: 10, background: BASAL_COLORS['SCHEDULED'], borderRadius: 2, marginRight: 3 }} />{t('dashboard.legendScheduled')}</span>
