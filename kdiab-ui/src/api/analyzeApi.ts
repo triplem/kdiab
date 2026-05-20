@@ -20,6 +20,7 @@ export interface TimelineResponse {
 }
 
 export interface TirBreakdown {
+  veryLowCount: number
   belowCount: number
   inRangeCount: number
   aboveCount: number

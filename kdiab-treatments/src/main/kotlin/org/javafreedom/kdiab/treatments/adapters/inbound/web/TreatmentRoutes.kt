@@ -23,6 +23,7 @@ import org.javafreedom.kdiab.treatments.api.models.TreatmentResponse
 import org.javafreedom.kdiab.treatments.api.models.UpdateTreatmentRequest
 import org.javafreedom.kdiab.treatments.application.service.DeviceStatusService
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
+import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
@@ -189,7 +190,11 @@ private fun Route.deleteTreatments(treatmentService: TreatmentService, auditLogR
     post<Paths.deleteTreatments> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
-        // Patients may delete their own; doctors for assigned patients; admins for all
+
+        if (principal == null || (!principal.isAdmin() && !principal.isDoctor())) {
+            logger.warn { "Delete denied: principalId=${principal?.userId} roles=${principal?.roles}" }
+            throw AuthorizationException("Only doctors and admins can permanently delete treatments")
+        }
         checkAccess(principal, targetUserId)
 
         val request = call.receive<BulkTreatmentRequest>()
@@ -200,4 +205,3 @@ private fun Route.deleteTreatments(treatmentService: TreatmentService, auditLogR
         call.respond(HttpStatusCode.OK)
     }
 }
-

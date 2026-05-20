@@ -313,6 +313,7 @@
     "hba1c": "Estimated HbA1c",
     "meanGlucose": "Mean Glucose",
     "tir": "Time In Range",
+    "tirVeryLowBand": "Very Low (<{{high}} {{unit}})",
     "tirBelow": "Below (<{{low}} {{unit}})",
     "tirTarget": "Target ({{low}}–{{high}} {{unit}})",
     "tirAbove": "Above ({{low}}–{{high}} {{unit}})",

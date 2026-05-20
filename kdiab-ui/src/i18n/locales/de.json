@@ -313,6 +313,7 @@
     "hba1c": "Geschätzter HbA1c",
     "meanGlucose": "Mittlere Glukose",
     "tir": "Zeit im Zielbereich",
+    "tirVeryLowBand": "Sehr niedrig (<{{high}} {{unit}})",
     "tirBelow": "Zu niedrig (<{{low}} {{unit}})",
     "tirTarget": "Zielbereich ({{low}}–{{high}} {{unit}})",
     "tirAbove": "Erhöht ({{low}}–{{high}} {{unit}})",
