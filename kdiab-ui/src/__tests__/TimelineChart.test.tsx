@@ -95,4 +95,12 @@ describe('TimelineChart', () => {
     }))
     wrap(<TimelineChart measures={bgmMeasures} treatments={[]} glucoseUnit="mg/dL" />)
   })
+
+  test('chart figure has role=img and a non-empty aria-label', () => {
+    const { getByRole } = wrap(
+      <TimelineChart measures={makeCgmMeasures(5)} treatments={[]} glucoseUnit="mg/dL" />,
+    )
+    const figure = getByRole('img')
+    expect(figure.getAttribute('aria-label')).toBeTruthy()
+  })
 })

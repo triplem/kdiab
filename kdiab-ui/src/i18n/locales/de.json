@@ -306,7 +306,9 @@
     "trendSingleDown": "Fällt",
     "trendDoubleDown": "Fällt schnell",
     "profileChanged": "Profil geändert",
-    "partialData": "Einige Datenquellen nicht verfügbar"
+    "partialData": "Einige Datenquellen nicht verfügbar",
+    "chartAriaLabel": "CGM- und Behandlungsverlauf-Diagramm",
+    "chartCaption": "Dieses Diagramm zeigt CGM-Glukosewerte und Behandlungsereignisse über den ausgewählten Zeitraum."
   },
   "analytics": {
     "title": "Analyse",
@@ -356,7 +358,13 @@
     "basalAvgRate": "Durchschnittsrate",
     "bolusAvg": "Bolus-Durchschnitt (stündlich)",
     "bolusAvgHelp": "Durchschnittliche Bolus-Dosis (E) pro Tagesstunde über den ausgewählten Zeitraum. Umfasst Mahlzeiten- und Korrekturbolus. Stunden ohne Daten werden ausgelassen.",
-    "bolusAvgDose": "Durchschnittsdosis"
+    "bolusAvgDose": "Durchschnittsdosis",
+    "agpChartAriaLabel": "Ambulantes Glukoseprofil mit Glukoseperzentilen nach Tagesstunde",
+    "agpChartCaption": "Dieses Diagramm zeigt Ihre CGM-Messwerte nach Tagesstunde über den ausgewählten Zeitraum.",
+    "bolusAvgChartAriaLabel": "Bolus-Durchschnitt nach Tagesstunde",
+    "bolusAvgChartCaption": "Dieses Diagramm zeigt die durchschnittliche Bolus-Dosis pro Tagesstunde über den ausgewählten Zeitraum.",
+    "basalAvgChartAriaLabel": "Basalrate-Durchschnitt nach Tagesstunde",
+    "basalAvgChartCaption": "Dieses Diagramm zeigt die durchschnittliche Basalrate pro Tagesstunde über den ausgewählten Zeitraum."
   },
   "profile": {
     "id": "Profil-ID",
@@ -453,7 +461,9 @@
     "legendBelow": "Unter Profil",
     "legendSuspended": "Unterbrochen",
     "cgmChartAriaLabel": "Glukoseverlauf-Diagramm",
-    "basalChartAriaLabel": "Basalinsulin-Diagramm"
+    "cgmChartCaption": "Dieses Diagramm zeigt Glukosemesswerte über das ausgewählte Zeitfenster.",
+    "basalChartAriaLabel": "Basalinsulin-Diagramm",
+    "basalChartCaption": "Dieses Diagramm zeigt geplante und abgegebene Basalinsulinraten über das ausgewählte Zeitfenster."
   },
   "settings": {
     "title": "Einstellungen",

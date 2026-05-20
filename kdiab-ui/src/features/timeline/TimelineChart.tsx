@@ -173,8 +173,12 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
     new Date(ts).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
 
   return (
-    <ResponsiveContainer width="100%" height={350}>
-      <ComposedChart margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+    <figure role="img" aria-label={t('timeline.chartAriaLabel')} style={{ margin: 0 }}>
+      <figcaption style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+        {t('timeline.chartCaption')}
+      </figcaption>
+      <ResponsiveContainer width="100%" height={350}>
+        <ComposedChart margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis
           dataKey="ts"
@@ -262,6 +266,7 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
           />
         )}
       </ComposedChart>
-    </ResponsiveContainer>
+      </ResponsiveContainer>
+    </figure>
   )
 }
