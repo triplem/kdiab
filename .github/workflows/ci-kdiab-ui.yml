@@ -99,3 +99,13 @@ jobs:
           name: kdiab-ui-image
           path: /tmp/kdiab-ui-image.tar
           retention-days: 7
+
+      - name: Generate SBOM
+        run: npm run cyclonedx
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v7
+        with:
+          name: kdiab-ui-bom
+          path: kdiab-ui/bom.json
+          retention-days: 7

@@ -4,7 +4,6 @@ on:
   workflow_run:
     workflows:
       - "kdiab-analyze / Backend CI"
-      - "kdiab-analyze / Frontend CI"
     branches: ["main"]
     types:
       - completed
@@ -39,28 +38,20 @@ jobs:
           RUN_ID=$(gh run list --workflow=ci-analyze-backend.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId')
           echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
 
-      - name: Get Frontend CI run ID
-        id: frontend-run
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          RUN_ID=$(gh run list --workflow=ci-analyze-frontend.yml --branch=main --status=success --limit=1 --json databaseId --jq '.[0].databaseId')
-          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
-
       - name: Download backend-image
         uses: actions/download-artifact@v8
         with:
           name: analyze-backend-image
-          path: .
+          path: kdiab-analyze
           run-id: ${{ steps.backend-run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download frontend-image
+      - name: Download backend-bom
         uses: actions/download-artifact@v8
         with:
-          name: analyze-frontend-image
-          path: .
-          run-id: ${{ steps.frontend-run.outputs.run_id }}
+          name: analyze-backend-bom
+          path: kdiab-analyze
+          run-id: ${{ steps.backend-run.outputs.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Semantic Release
