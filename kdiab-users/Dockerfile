@@ -4,6 +4,4 @@ USER ktor
 WORKDIR /app
 COPY --chown=ktor:ktor build/libs/kdiab-users-all.jar /app/kdiab-users-backend.jar
 EXPOSE 8088
-HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
-  CMD wget -qO- http://localhost:8088/healthz || exit 1
 ENTRYPOINT ["java", "-XX:+UseContainerSupport", "-jar", "/app/kdiab-users-backend.jar"]
