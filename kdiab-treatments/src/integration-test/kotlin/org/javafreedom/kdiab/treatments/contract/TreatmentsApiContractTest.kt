@@ -80,11 +80,12 @@ class TreatmentsApiContractTest {
                 .sign(Algorithm.HMAC256(JWT_SECRET))
 
         val testConfig = MapApplicationConfig(
-            "jwt.domain"   to ISSUER,
-            "jwt.audience" to AUDIENCE,
-            "jwt.realm"    to "kdiab-treatments",
-            "jwt.test"     to "true",
-            "jwt.secret"   to JWT_SECRET,
+            "jwt.domain"       to ISSUER,
+            "jwt.audience"     to AUDIENCE,
+            "jwt.realm"        to "kdiab-treatments",
+            "jwt.test"         to "true",
+            "jwt.secret"       to JWT_SECRET,
+            "app.initDatabase" to "false",
         )
     }
 
@@ -133,7 +134,7 @@ class TreatmentsApiContractTest {
             environment { config = testConfig }
             application {
                 installMocks(TreatmentService(repo), mockk(relaxed = true), mockk(relaxed = true))
-                module(initDatabase = false)
+                module()
             }
 
             val client = createClient { install(ContentNegotiation) { json() } }
@@ -165,7 +166,7 @@ class TreatmentsApiContractTest {
             environment { config = testConfig }
             application {
                 installMocks(TreatmentService(repo), mockk(relaxed = true), mockk(relaxed = true))
-                module(initDatabase = false)
+                module()
             }
 
             val client = createClient { install(ContentNegotiation) { json() } }
@@ -199,7 +200,7 @@ class TreatmentsApiContractTest {
             environment { config = testConfig }
             application {
                 installMocks(TreatmentService(repo), mockk(relaxed = true), mockk(relaxed = true))
-                module(initDatabase = false)
+                module()
             }
 
             val client = createClient { install(ContentNegotiation) { json() } }
@@ -225,7 +226,7 @@ class TreatmentsApiContractTest {
             environment { config = testConfig }
             application {
                 installMocks(TreatmentService(repo), mockk(relaxed = true), mockk(relaxed = true))
-                module(initDatabase = false)
+                module()
             }
 
             val client = createClient { install(ContentNegotiation) { json() } }
@@ -254,7 +255,7 @@ class TreatmentsApiContractTest {
             environment { config = testConfig }
             application {
                 installMocks(TreatmentService(repo), mockk(relaxed = true), mockk(relaxed = true))
-                module(initDatabase = false)
+                module()
             }
 
             val client = createClient { install(ContentNegotiation) { json() } }
@@ -297,7 +298,7 @@ class TreatmentsApiContractTest {
             environment { config = testConfig }
             application {
                 installMocks(TreatmentService(repo), mockk(relaxed = true), mockk(relaxed = true))
-                module(initDatabase = false)
+                module()
             }
 
             val client = createClient { install(ContentNegotiation) { json() } }
@@ -323,7 +324,7 @@ class TreatmentsApiContractTest {
             environment { config = testConfig }
             application {
                 installMocks(TreatmentService(repo), mockk(relaxed = true), mockk(relaxed = true))
-                module(initDatabase = false)
+                module()
             }
 
             assertEquals(

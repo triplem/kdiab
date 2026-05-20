@@ -128,11 +128,12 @@ class UserRoutesTest {
                     "storage.jdbcUrl"            to "jdbc:h2:mem:test",
                     "storage.username"           to "root",
                     "storage.password"           to "test",
+                    "app.initDatabase"           to "false",
                 )
             }
             application {
                 installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
-                module(initDatabase = false)
+                module()
             }
             block(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
         }

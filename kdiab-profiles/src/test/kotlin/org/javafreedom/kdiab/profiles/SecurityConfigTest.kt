@@ -19,14 +19,15 @@ class SecurityConfigTest {
             testApplication {
                 environment {
                     config = MapApplicationConfig(
-                        "jwt.audience" to "profile",
-                        "jwt.domain" to "https://example.com",
-                        "jwt.realm" to "kdiab-profiles",
-                        "jwt.test" to "true"
+                        "jwt.audience"     to "profile",
+                        "jwt.domain"       to "https://example.com",
+                        "jwt.realm"        to "kdiab-profiles",
+                        "jwt.test"         to "true",
+                        "app.initDatabase" to "false",
                         // jwt.secret intentionally omitted
                     )
                 }
-                application { module(initDatabase = false) }
+                application { module() }
                 startApplication()
             }
         }
@@ -44,14 +45,15 @@ class SecurityConfigTest {
     fun `application starts when jwt test mode has an explicit secret`() = testApplication {
         environment {
             config = MapApplicationConfig(
-                "jwt.audience" to "profile",
-                "jwt.domain" to "org.javafreedom.kdiab",
-                "jwt.realm" to "kdiab-profiles",
-                "jwt.secret" to "test-secret-value",
-                "jwt.test" to "true"
+                "jwt.audience"     to "profile",
+                "jwt.domain"       to "org.javafreedom.kdiab",
+                "jwt.realm"        to "kdiab-profiles",
+                "jwt.secret"       to "test-secret-value",
+                "jwt.test"         to "true",
+                "app.initDatabase" to "false",
             )
         }
-        application { module(initDatabase = false) }
+        application { module() }
         startApplication()
         // If we reach here the application started without exception
     }

@@ -91,6 +91,7 @@ class UserSettingsE2ETest :
             "storage.maximumPoolSize" to "3",
             "storage.isAutoCommit" to "false",
             "storage.transactionIsolation" to "TRANSACTION_REPEATABLE_READ",
+            "app.initDatabase" to "false",
         )
 
         given("A running Users Service") {
@@ -105,7 +106,7 @@ class UserSettingsE2ETest :
                         environment { config = buildConfig() }
                         application {
                             installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
-                            module(initDatabase = false)
+                            module()
                         }
 
                         val response = client.get("/healthz")
@@ -124,7 +125,7 @@ class UserSettingsE2ETest :
                         environment { config = buildConfig() }
                         application {
                             installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
-                            module(initDatabase = false)
+                            module()
                         }
 
                         val response = client.get("/api/v1/users/me")
@@ -151,7 +152,7 @@ class UserSettingsE2ETest :
                         environment { config = buildConfig() }
                         application {
                             installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
-                            module(initDatabase = false)
+                            module()
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
 
@@ -176,7 +177,7 @@ class UserSettingsE2ETest :
                         environment { config = buildConfig() }
                         application {
                             installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
-                            module(initDatabase = false)
+                            module()
                         }
 
                         val response = client.patch("/api/v1/users/me/settings") {
@@ -204,7 +205,7 @@ class UserSettingsE2ETest :
                         environment { config = buildConfig() }
                         application {
                             installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
-                            module(initDatabase = false)
+                            module()
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
 
@@ -237,7 +238,7 @@ class UserSettingsE2ETest :
                         environment { config = buildConfig() }
                         application {
                             installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
-                            module(initDatabase = false)
+                            module()
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
 
@@ -265,7 +266,7 @@ class UserSettingsE2ETest :
                         environment { config = buildConfig() }
                         application {
                             installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
-                            module(initDatabase = false)
+                            module()
                         }
 
                         val response = client.get("/api/v1/users/$mikeId") {
@@ -294,7 +295,7 @@ class UserSettingsE2ETest :
                         environment { config = buildConfig() }
                         application {
                             installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
-                            module(initDatabase = false)
+                            module()
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
 
