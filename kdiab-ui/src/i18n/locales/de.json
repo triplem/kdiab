@@ -410,6 +410,7 @@
     "trendSingleDown": "Fällt",
     "trendDoubleDown": "Fällt schnell",
     "trendNone": "Unbekannt",
+    "activeIob": "Aktives IOB:",
     "errorNoProfile": "Kein aktives Profil gefunden. Bitte zuerst ein Profil aktivieren.",
     "errorNoIsf": "Das aktive Profil enthält keine ISF-Segmente. Bitte das Profil ergänzen.",
     "errorNoIcr": "Das aktive Profil enthält keine ICR-Segmente. Bitte das Profil ergänzen.",

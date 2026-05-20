@@ -1,14 +1,21 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { calcApi, type DoseResponse } from '../../api/calcApi'
 import { measuresApi } from '../../api/measuresApi'
 import { treatmentsApi } from '../../api/treatmentsApi'
+import { calcIOB } from '../dashboard/basalUtils'
 
 interface Props {
   userId: string
   glucoseUnit: string
+  /** Pre-computed active IOB (units) from the dashboard. When omitted, the
+   *  component fetches recent treatments and computes IOB internally. */
+  activeIob?: number
 }
+
+/** Default DIA (minutes) used for IOB decay when no profile data is available. */
+const DEFAULT_DIA_MINUTES = 240
 
 const CGM_TRENDS = [
   { value: 'DOUBLE_UP', labelKey: 'doseCalc.trendDoubleUp' },
@@ -31,7 +38,7 @@ function nowIso(): string {
   return new Date().toISOString()
 }
 
-export function DoseCalculator({ userId, glucoseUnit }: Props) {
+export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }: Props) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [currentBg, setCurrentBg] = useState('')
@@ -49,6 +56,27 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
     queryFn: () => measuresApi.listMeasures(userId, 0, 10),
     staleTime: 60_000,
   })
+
+  // Fetch recent treatments (last 6 h) to compute active IOB when no prop is supplied
+  const { data: recentTreatmentsData } = useQuery({
+    queryKey: ['recentTreatmentsForIob', userId],
+    queryFn: () => treatmentsApi.listTreatments(userId, 'ACTIVE', 0, 100),
+    staleTime: 60_000,
+    enabled: activeIobProp === undefined,
+  })
+
+  const computedIob = useMemo(() => {
+    if (activeIobProp !== undefined) return activeIobProp
+    const items = recentTreatmentsData?.data?.items ?? []
+    return calcIOB(
+      items.map(t => ({
+        treatedAt: t.treatedAt,
+        type: t.type,
+        data: t.data as Record<string, unknown>,
+      })),
+      DEFAULT_DIA_MINUTES,
+    )
+  }, [activeIobProp, recentTreatmentsData])
 
   useEffect(() => {
     if (!cgmData?.data?.items) return
@@ -81,6 +109,7 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
         glucoseUnit,
         trend,
         carbsGrams: parseFloat(carbsGrams) || 0,
+        activeIob: computedIob,
       }),
     onSuccess: (response) => {
       setResult(response.data)
@@ -215,6 +244,13 @@ export function DoseCalculator({ userId, glucoseUnit }: Props) {
                 onChange={(e) => setCarbsGrams(e.target.value)}
                 style={{ width: '100%', marginTop: '0.25rem' }}
               />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+              <span>{t('doseCalc.activeIob')}</span>
+              <span style={{ fontWeight: 600, color: computedIob > 0 ? 'var(--color-primary)' : 'var(--text-secondary)' }}>
+                {computedIob.toFixed(2)} {t('doseCalc.units')}
+              </span>
             </div>
 
             <button
