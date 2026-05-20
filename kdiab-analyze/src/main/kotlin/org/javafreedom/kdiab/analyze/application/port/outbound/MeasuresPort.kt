@@ -1,6 +1,6 @@
 package org.javafreedom.kdiab.analyze.application.port.outbound
 
-import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
 
 interface MeasuresPort {
     suspend fun getMeasures(
@@ -9,5 +9,5 @@ interface MeasuresPort {
         correlationId: String,
         from: String? = null,
         to: String? = null,
-    ): List<MeasureResponse>
+    ): List<UpstreamMeasure>
 }

@@ -6,14 +6,18 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentResponse
-import org.javafreedom.kdiab.analyze.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.domain.model.DeviceUsageResult
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamTreatment
 
 private val logger = KotlinLogging.logger {}
 
 private const val SECONDS_PER_DAY = 86_400.0
+
+private const val SENSOR_INSERT = "SENSOR_INSERT"
+private const val SITE_CHANGE = "SITE_CHANGE"
+private const val INSULIN_CHANGE = "INSULIN_CHANGE"
+private const val PUMP_BATTERY_CHANGE = "PUMP_BATTERY_CHANGE"
 
 class DeviceUsageService(
     private val treatmentsPort: TreatmentsPort,
@@ -29,10 +33,10 @@ class DeviceUsageService(
         val to = now.toString()
 
         val deviceTypes = listOf(
-            TreatmentType.SENSOR_INSERT,
-            TreatmentType.SITE_CHANGE,
-            TreatmentType.INSULIN_CHANGE,
-            TreatmentType.PUMP_BATTERY_CHANGE,
+            SENSOR_INSERT,
+            SITE_CHANGE,
+            INSULIN_CHANGE,
+            PUMP_BATTERY_CHANGE,
         )
 
         val treatmentsByType = coroutineScope {
@@ -50,18 +54,18 @@ class DeviceUsageService(
 
         return DeviceUsageResult(
             userId = userId,
-            avgSensorDays     = avg(treatmentsByType[TreatmentType.SENSOR_INSERT] ?: emptyList()),
-            stddevSensorDays  = stddev(treatmentsByType[TreatmentType.SENSOR_INSERT] ?: emptyList()),
-            avgCatheterDays   = avg(treatmentsByType[TreatmentType.SITE_CHANGE] ?: emptyList()),
-            stddevCatheterDays = stddev(treatmentsByType[TreatmentType.SITE_CHANGE] ?: emptyList()),
-            avgReservoirDays  = avg(treatmentsByType[TreatmentType.INSULIN_CHANGE] ?: emptyList()),
-            stddevReservoirDays = stddev(treatmentsByType[TreatmentType.INSULIN_CHANGE] ?: emptyList()),
-            avgBatteryDays    = avg(treatmentsByType[TreatmentType.PUMP_BATTERY_CHANGE] ?: emptyList()),
-            stddevBatteryDays = stddev(treatmentsByType[TreatmentType.PUMP_BATTERY_CHANGE] ?: emptyList()),
+            avgSensorDays     = avg(treatmentsByType[SENSOR_INSERT] ?: emptyList()),
+            stddevSensorDays  = stddev(treatmentsByType[SENSOR_INSERT] ?: emptyList()),
+            avgCatheterDays   = avg(treatmentsByType[SITE_CHANGE] ?: emptyList()),
+            stddevCatheterDays = stddev(treatmentsByType[SITE_CHANGE] ?: emptyList()),
+            avgReservoirDays  = avg(treatmentsByType[INSULIN_CHANGE] ?: emptyList()),
+            stddevReservoirDays = stddev(treatmentsByType[INSULIN_CHANGE] ?: emptyList()),
+            avgBatteryDays    = avg(treatmentsByType[PUMP_BATTERY_CHANGE] ?: emptyList()),
+            stddevBatteryDays = stddev(treatmentsByType[PUMP_BATTERY_CHANGE] ?: emptyList()),
         )
     }
 
-    private fun durations(treatments: List<TreatmentResponse>): List<Double> {
+    private fun durations(treatments: List<UpstreamTreatment>): List<Double> {
         if (treatments.size < 2) return emptyList()
         val sorted = treatments
             .mapNotNull { runCatching { Instant.parse(it.treatedAt) }.getOrNull() }
@@ -71,12 +75,12 @@ class DeviceUsageService(
         }
     }
 
-    private fun avg(treatments: List<TreatmentResponse>): Double? {
+    private fun avg(treatments: List<UpstreamTreatment>): Double? {
         val d = durations(treatments)
         return if (d.isEmpty()) null else d.average()
     }
 
-    private fun stddev(treatments: List<TreatmentResponse>): Double? {
+    private fun stddev(treatments: List<UpstreamTreatment>): Double? {
         val d = durations(treatments)
         if (d.isEmpty()) return null
         val mean = d.average()

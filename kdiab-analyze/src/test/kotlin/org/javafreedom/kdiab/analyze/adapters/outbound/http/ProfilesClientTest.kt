@@ -35,8 +35,8 @@ class ProfilesClientTest {
         val result = client.getProfiles(userId, auth, correlationId)
         assertEquals(2, result.size)
         assertEquals("p-1", result[0].id)
-        assertEquals("ACTIVE", result[0].status.value)
-        assertEquals("ARCHIVED", result[1].status.value)
+        assertEquals("ACTIVE", result[0].status)
+        assertEquals("ARCHIVED", result[1].status)
     }
 
     @Test

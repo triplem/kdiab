@@ -19,6 +19,7 @@ import org.javafreedom.kdiab.analyze.api.upstream.measures.DefaultApi
 import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
 
 private val logger = KotlinLogging.logger {}
 
@@ -50,7 +51,7 @@ class MeasuresClient(
         correlationId: String,
         from: String?,
         to: String?,
-    ): List<MeasureResponse> {
+    ): List<UpstreamMeasure> {
         val token = authorization.removePrefix("Bearer ").trim()
         val api = buildApi(token, correlationId)
         val totalStart = System.currentTimeMillis()
@@ -78,8 +79,8 @@ class MeasuresClient(
         val firstPage = firstHttpResponse.body()
         val totalCount = firstPage.totalCount
 
-        val result = mutableListOf<MeasureResponse>()
-        result.addAll(firstPage.items)
+        val result = mutableListOf<UpstreamMeasure>()
+        result.addAll(firstPage.items.map { it.toDomain() })
 
         if (result.size < totalCount && firstPage.items.isNotEmpty()) {
             val totalPages = ((totalCount + PAGE_SIZE - 1) / PAGE_SIZE).toInt()
@@ -121,7 +122,7 @@ class MeasuresClient(
         pageNum: Int,
         from: String?,
         to: String?,
-    ): List<MeasureResponse> {
+    ): List<UpstreamMeasure> {
         val pageStart = System.currentTimeMillis()
         val httpResponse = circuitBreaker.execute {
             api.listMeasures(userId = userId, page = pageNum, size = PAGE_SIZE, from = from, to = to, status = null)
@@ -141,7 +142,7 @@ class MeasuresClient(
             )
         }
         logger.info { "Fetched measures page $pageNum in ${pageMs}ms [status=${httpResponse.status}]" }
-        return httpResponse.body().items
+        return httpResponse.body().items.map { it.toDomain() }
     }
 
     private fun buildApi(token: String, correlationId: String): DefaultApi =
@@ -154,3 +155,13 @@ class MeasuresClient(
             },
         ).apply { setBearerToken(token) }
 }
+
+private fun MeasureResponse.toDomain() = UpstreamMeasure(
+    id = id,
+    userId = userId,
+    measuredAt = measuredAt,
+    type = type.value,
+    source = source?.value,
+    data = `data`,
+    status = status.value,
+)

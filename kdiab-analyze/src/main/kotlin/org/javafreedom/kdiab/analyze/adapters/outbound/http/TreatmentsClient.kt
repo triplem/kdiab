@@ -25,6 +25,7 @@ import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import org.javafreedom.kdiab.analyze.domain.model.DeviceAge
 import org.javafreedom.kdiab.analyze.domain.model.DeviceStatus
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamTreatment
 
 private val logger = KotlinLogging.logger {}
 
@@ -56,7 +57,7 @@ class TreatmentsClient(
         correlationId: String,
         from: String?,
         to: String?,
-    ): List<TreatmentResponse> {
+    ): List<UpstreamTreatment> {
         val token = authorization.removePrefix("Bearer ").trim()
         val api = buildApi(token, correlationId)
         val totalStart = System.currentTimeMillis()
@@ -87,8 +88,8 @@ class TreatmentsClient(
         val firstPage = firstHttpResponse.body()
         val totalCount = firstPage.totalCount
 
-        val result = mutableListOf<TreatmentResponse>()
-        result.addAll(firstPage.items)
+        val result = mutableListOf<UpstreamTreatment>()
+        result.addAll(firstPage.items.map { it.toDomain() })
 
         if (result.size < totalCount && firstPage.items.isNotEmpty()) {
             val totalPages = ((totalCount + PAGE_SIZE - 1) / PAGE_SIZE).toInt()
@@ -130,7 +131,7 @@ class TreatmentsClient(
         pageNum: Int,
         from: String?,
         to: String?,
-    ): List<TreatmentResponse> {
+    ): List<UpstreamTreatment> {
         val pageStart = System.currentTimeMillis()
         val httpResponse = circuitBreaker.execute {
             api.listTreatments(
@@ -153,7 +154,7 @@ class TreatmentsClient(
             )
         }
         logger.info { "Fetched treatments page $pageNum in ${pageMs}ms [status=${httpResponse.status}]" }
-        return httpResponse.body().items
+        return httpResponse.body().items.map { it.toDomain() }
     }
 
     @Suppress("LongParameterList")
@@ -161,10 +162,11 @@ class TreatmentsClient(
         userId: String,
         authorization: String,
         correlationId: String,
-        type: TreatmentType,
+        type: String,
         from: String?,
         to: String?,
-    ): List<TreatmentResponse> {
+    ): List<UpstreamTreatment> {
+        val treatmentType = TreatmentType.valueOf(type)
         val token = authorization.removePrefix("Bearer ").trim()
         val api = buildApi(token, correlationId)
         val totalStart = System.currentTimeMillis()
@@ -172,7 +174,7 @@ class TreatmentsClient(
         val firstPageStart = System.currentTimeMillis()
         val firstHttpResponse = circuitBreaker.execute {
             api.listTreatments(
-                userId = userId, type = type, from = from, to = to,
+                userId = userId, type = treatmentType, from = from, to = to,
                 status = null, page = 0, size = PAGE_SIZE,
             )
         }
@@ -180,7 +182,7 @@ class TreatmentsClient(
         if (!firstHttpResponse.success) {
             val requestUrl = firstHttpResponse.response.request.url.toString()
             logger.warn {
-                "Upstream treatments by type $type page 0 returned " +
+                "Upstream treatments by type $treatmentType page 0 returned " +
                     "${firstHttpResponse.status} in ${firstPageMs}ms url=$requestUrl"
             }
             throw UpstreamException(
@@ -192,13 +194,13 @@ class TreatmentsClient(
             )
         }
         logger.info {
-            "Fetched treatments by type $type page 0 in ${firstPageMs}ms [status=${firstHttpResponse.status}]"
+            "Fetched treatments by type $treatmentType page 0 in ${firstPageMs}ms [status=${firstHttpResponse.status}]"
         }
         val firstPage = firstHttpResponse.body()
         val totalCount = firstPage.totalCount
 
-        val result = mutableListOf<TreatmentResponse>()
-        result.addAll(firstPage.items)
+        val result = mutableListOf<UpstreamTreatment>()
+        result.addAll(firstPage.items.map { it.toDomain() })
 
         if (result.size < totalCount && firstPage.items.isNotEmpty()) {
             val totalPages = ((totalCount + PAGE_SIZE - 1) / PAGE_SIZE).toInt()
@@ -214,7 +216,7 @@ class TreatmentsClient(
             if (cappedTotalPages > 1) {
                 val remainingPages = coroutineScope {
                     (1 until cappedTotalPages).map { pageNum ->
-                        async { fetchTreatmentsByTypePage(api, userId, type, pageNum, from, to) }
+                        async { fetchTreatmentsByTypePage(api, userId, treatmentType, pageNum, from, to) }
                     }.awaitAll()
                 }
                 remainingPages.forEach { result.addAll(it) }
@@ -223,14 +225,20 @@ class TreatmentsClient(
 
         if (result.size > MAX_TREATMENTS) {
             val totalMs = System.currentTimeMillis() - totalStart
-            logger.warn { "MAX_TREATMENTS limit reached — truncating at $MAX_TREATMENTS for type=$type userId=$userId" }
-            logger.info { "Fetched $MAX_TREATMENTS treatments by type $type (truncated) in ${totalMs}ms total" }
+            logger.warn {
+                "MAX_TREATMENTS limit reached — truncating at $MAX_TREATMENTS for type=$treatmentType userId=$userId"
+            }
+            logger.info {
+                "Fetched $MAX_TREATMENTS treatments by type $treatmentType (truncated) in ${totalMs}ms total"
+            }
             return result.take(MAX_TREATMENTS)
         }
 
         val totalMs = System.currentTimeMillis() - totalStart
         val pagesFetched = ((result.size + PAGE_SIZE - 1) / PAGE_SIZE).coerceAtLeast(1)
-        logger.info { "Fetched ${result.size} treatments by type $type in $pagesFetched pages in ${totalMs}ms total" }
+        logger.info {
+            "Fetched ${result.size} treatments by type $treatmentType in $pagesFetched pages in ${totalMs}ms total"
+        }
         return result
     }
 
@@ -242,7 +250,7 @@ class TreatmentsClient(
         pageNum: Int,
         from: String?,
         to: String?,
-    ): List<TreatmentResponse> {
+    ): List<UpstreamTreatment> {
         val pageStart = System.currentTimeMillis()
         val httpResponse = circuitBreaker.execute {
             api.listTreatments(
@@ -268,7 +276,7 @@ class TreatmentsClient(
         logger.info {
             "Fetched treatments by type $type page $pageNum in ${pageMs}ms [status=${httpResponse.status}]"
         }
-        return httpResponse.body().items
+        return httpResponse.body().items.map { it.toDomain() }
     }
 
     override suspend fun getDeviceAge(
@@ -371,3 +379,12 @@ class TreatmentsClient(
             },
         ).apply { setBearerToken(token) }
 }
+
+private fun TreatmentResponse.toDomain() = UpstreamTreatment(
+    id = id,
+    userId = userId,
+    treatedAt = treatedAt,
+    type = type.value,
+    notes = notes,
+    data = `data`,
+)

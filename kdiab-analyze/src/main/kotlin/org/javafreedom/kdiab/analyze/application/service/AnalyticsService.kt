@@ -1,11 +1,9 @@
 package org.javafreedom.kdiab.analyze.application.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.javafreedom.kdiab.analyze.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
 import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
-import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureResponse
-import org.javafreedom.kdiab.analyze.api.upstream.measures.models.MeasureType
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
 import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
@@ -52,7 +50,7 @@ private const val PERCENT_FACTOR = 100.0
 
 private data class CgmFetchResult(val readings: List<Double>, val mismatchCount: Int)
 private data class MeasuresCacheKey(val userId: String, val from: String, val to: String)
-private data class MeasuresCacheEntry(val measures: List<MeasureResponse>, val fetchedAt: Instant)
+private data class MeasuresCacheEntry(val measures: List<UpstreamMeasure>, val fetchedAt: Instant)
 
 class AnalyticsService(
     private val measuresPort: MeasuresPort,
@@ -70,7 +68,7 @@ class AnalyticsService(
     ): Pair<Double, Double> {
         val activeProfile = runCatching {
             profilesPort.getProfiles(userId, authorization, correlationId)
-                .firstOrNull { it.status == Profile.Status.ACTIVE }
+                .firstOrNull { it.status == "ACTIVE" }
         }.getOrNull()
         val tirLow = activeProfile?.analysisLow ?: TIR_LOW
         val tirHigh = activeProfile?.analysisHigh ?: TIR_HIGH
@@ -83,7 +81,7 @@ class AnalyticsService(
         to: String,
         authorization: String,
         correlationId: String,
-    ): List<MeasureResponse> {
+    ): List<UpstreamMeasure> {
         val key = MeasuresCacheKey(userId, from, to)
         val now = Clock.System.now()
         measuresCache[key]?.let { entry ->
@@ -191,7 +189,7 @@ class AnalyticsService(
         val byHour = Array(HOURS_IN_DAY) { mutableListOf<Double>() }
 
         allMeasures.forEach { dto ->
-            if (dto.type != MeasureType.CGM) return@forEach
+            if (dto.type != "CGM") return@forEach
             val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach
             val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach
             val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
@@ -202,7 +200,7 @@ class AnalyticsService(
         }
 
         val sensorWearDays = allMeasures.mapNotNull { dto ->
-            if (dto.type != MeasureType.CGM) return@mapNotNull null
+            if (dto.type != "CGM") return@mapNotNull null
             runCatching { Instant.parse(dto.measuredAt) }.getOrNull()
                 ?.toLocalDateTime(TimeZone.UTC)?.date
         }.toSet().size
@@ -253,7 +251,7 @@ class AnalyticsService(
     ): CgmFetchResult {
         var mismatchCount = 0
         val readings = getMeasuresCached(userId, from, to, authorization, correlationId)
-            .filter { dto -> dto.type == MeasureType.CGM }
+            .filter { dto -> dto.type == "CGM" }
             .mapNotNull { dto ->
                 val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
                 val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
