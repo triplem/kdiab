@@ -1,0 +1,232 @@
+= kdiab-calc: Dose Calculation Reference
+:toc: left
+
+== Overview
+
+`kdiab-calc` is a stateless bolus recommendation service. It receives the patient's current CGM reading, trend, and carbohydrate intake, fetches the patient's active profile from `kdiab-profiles`, and returns an insulin dose recommendation split into correction and carbohydrate components.
+
+== API Endpoint
+
+`POST /api/v1/users/{userId}/calc/dose`
+
+All endpoints require a Bearer JWT with the `PATIENT` role. A patient may only request calculations for their own `userId`.
+
+=== Request
+
+[source,json]
+----
+{
+  "currentBg": 180.0,
+  "glucoseUnit": "mg/dL",
+  "trend": "FLAT",
+  "carbsGrams": 30.0,
+  "activeIob": 0.5,
+  "useProfileTime": "2026-01-15T08:30:00Z"
+}
+----
+
+|===
+| Field | Type | Required | Description
+
+| `currentBg`
+| Double
+| Yes
+| Current blood glucose reading
+
+| `glucoseUnit`
+| String
+| Yes
+| `"mg/dL"` or `"mmol/L"`
+
+| `trend`
+| CgmTrend enum
+| Yes
+| CGM arrow direction (see below)
+
+| `carbsGrams`
+| Double
+| No (default 0)
+| Carbohydrates to be consumed (g)
+
+| `activeIob`
+| Double
+| No (default 0)
+| Active insulin-on-board from recent boluses (U)
+
+| `useProfileTime`
+| ISO-8601 string
+| No
+| Override the clock time used for segment lookup; defaults to `now()`
+|===
+
+=== Response
+
+[source,json]
+----
+{
+  "correctionDose": 1.8,
+  "carbDose": 3.0,
+  "trendAdjustment": 0.0,
+  "totalRecommended": 4.8,
+  "breakdown": {
+    "currentBgMgDl": 180.0,
+    "targetBgMgDl": 110.0,
+    "isf": 50.0,
+    "icr": 15.0,
+    "trend": "FLAT",
+    "carbsGrams": 30.0
+  },
+  "profileId": "abc123",
+  "warnings": []
+}
+----
+
+== Dose Calculation Formulas
+
+All calculations are performed in mg/dL. If `glucoseUnit` is `"mmol/L"` the `currentBg` is multiplied by `18.0` before any computation.
+
+=== 1. Profile Segment Lookup
+
+The profile contains three time-indexed segment lists (ISF, ICR, targets), each with a `startTime` in `HH:mm` format.
+
+The lookup algorithm finds the segment whose `startTime` is the greatest value ≤ `refTime`. If no segment satisfies this condition (e.g. `refTime` is before the earliest entry), the *last* segment (wrap-around for midnight) is used.
+
+`refTime` is either `now()` in the profile's timezone or the parsed `useProfileTime` parameter.
+
+=== 2. Target Blood Glucose
+
+----
+target = (segment.low + segment.high) / 2
+----
+
+=== 3. Correction Dose
+
+----
+rawCorrection = (bgMgDl - target) / ISF
+correctionDose = max(0, rawCorrection - activeIob)    ; 0 if hypoglycemic
+----
+
+IOB is subtracted from the raw correction to avoid stacking on existing insulin. `correctionDose` is floored at 0 (never negative).
+
+=== 4. Carbohydrate Dose
+
+----
+carbDose = carbsGrams / ICR    ; 0 if hypoglycemic or carbsGrams == 0
+----
+
+=== 5. Trend Adjustment
+
+Added to the total to anticipate rapidly-moving glucose:
+
+|===
+| Trend | Offset (mg/dL) | Adjustment (U)
+
+| `DOUBLE_UP`
+| +30
+| +30 / ISF
+
+| `SINGLE_UP`
+| +20
+| +20 / ISF
+
+| `FORTY_FIVE_UP`
+| +10
+| +10 / ISF
+
+| `FLAT`
+| 0
+| 0
+
+| `FORTY_FIVE_DOWN`
+| -10
+| -10 / ISF
+
+| `SINGLE_DOWN`
+| -20
+| -20 / ISF
+
+| `DOUBLE_DOWN`
+| -30
+| -30 / ISF
+
+| `NONE`
+| 0
+| 0
+|===
+
+Trend adjustment is 0 when BG is hypoglycemic.
+
+=== 6. Total Recommended
+
+----
+total = max(0, correctionDose + carbDose + trendAdjustment)    ; 0 if hypoglycemic
+----
+
+All dose values are rounded to 2 decimal places.
+
+=== Example
+
+Profile: ISF = 50 mg/dL/U, ICR = 15 g/U, target = 110 mg/dL (range 100–120)
+Request: BG = 200 mg/dL, trend = FLAT, carbs = 45 g, IOB = 0
+
+----
+rawCorrection = (200 - 110) / 50 = 1.8
+correctionDose = max(0, 1.8 - 0) = 1.8
+carbDose = 45 / 15 = 3.0
+trendAdj = 0 (FLAT)
+total = 1.8 + 3.0 + 0 = 4.8
+----
+
+== Safety Warnings
+
+The service appends human-readable warnings to the response. No warning blocks the calculation — the caller must surface these to the user.
+
+|===
+| Condition | Warning message
+
+| BG < 70 mg/dL
+| "BG is hypoglycemic — no correction dose recommended; treat hypo first"
+
+| BG below target but carbs entered
+| "BG is below target; carb dose only"
+
+| IOB covers full correction (correctionDose == 0 despite positive rawCorrection)
+| "IOB covers the full correction — no additional correction dose recommended"
+
+| total > 20 U
+| "Calculated dose is unusually high — please verify inputs"
+|===
+
+== Hypoglycemia Safety Lock
+
+When `bgMgDl < 70`, all dose components are forced to **0.0** regardless of inputs. The hypoglycemia warning is always emitted. This is a hard safety rule that cannot be overridden by the caller.
+
+== Error Responses
+
+|===
+| HTTP Status | Cause
+
+| 400 Bad Request
+| Invalid trend enum value; invalid `useProfileTime` format
+
+| 404 Not Found
+| No active profile found for the user in `kdiab-profiles`
+
+| 422 Unprocessable Entity
+| ISF ≤ 0; ICR ≤ 0 when carbs > 0; empty profile segments
+
+| 401 Unauthorized
+| Missing or invalid JWT
+
+| 403 Forbidden
+| Patient attempting to access another user's dose calculation
+
+| 502 Bad Gateway
+| `kdiab-profiles` returned an error
+|===
+
+== Architecture Notes
+
+* No database — purely stateless; each request fetches the active profile from `kdiab-profiles`.
+* The `ProfilesClient` is injected via Ktor DI. In tests, `ProfilesClient` is mocked and `DoseCalculationService` receives an `ActiveProfile` directly.
+* JWT forwarding: the Bearer token from the inbound request is forwarded unchanged to `kdiab-profiles`.
