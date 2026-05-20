@@ -2,6 +2,7 @@ package org.javafreedom.kdiab.calc
 
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.request.get
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
@@ -47,6 +48,9 @@ fun Application.module() {
         ignoreUnknownKeys = true
     }
 
+    var healthClient: HttpClient? = null
+    var upstreamHealthUrls: List<String> = emptyList()
+
     // Install DI with production bindings only if not already installed by tests.
     // Tests install DI with mock overrides before calling module().
     if (pluginOrNull(DI) == null) {
@@ -81,6 +85,9 @@ fun Application.module() {
         monitor.subscribe(ApplicationStopping) { httpClient.close() }
 
         val profilesUrl = environment.config.property("upstream.profilesUrl").getString()
+
+        healthClient = httpClient
+        upstreamHealthUrls = listOf("$profilesUrl/healthz")
 
         install(DI) { }
         dependencies {
@@ -125,8 +132,17 @@ fun Application.module() {
         header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     }
 
-    // kdiab-calc is stateless (no DB) — always ready once the process is running.
-    configureHealth(HealthService { true })
+    val capturedHealthClient = healthClient
+    val capturedUrls = upstreamHealthUrls
+    configureHealth(HealthService {
+        if (capturedHealthClient == null || capturedUrls.isEmpty()) {
+            true
+        } else {
+            capturedUrls.all { url ->
+                runCatching { capturedHealthClient.get(url).status.isSuccess() }.getOrDefault(false)
+            }
+        }
+    })
 
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
 

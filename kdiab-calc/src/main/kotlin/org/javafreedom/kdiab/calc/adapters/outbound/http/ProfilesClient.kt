@@ -25,7 +25,11 @@ class ProfilesClient(
     private val httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
 ) : ProfilesPort {
-    override suspend fun getActiveProfile(userId: String, authorization: String, correlationId: String): ActiveProfile? {
+    override suspend fun getActiveProfile(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+    ): ActiveProfile? {
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",
