@@ -60,9 +60,13 @@ internal fun validateConfig(config: io.ktor.server.config.ApplicationConfig) {
 fun Application.module(initDatabase: Boolean = true) {
     validateConfig(environment.config)
 
-    // Install DI with production bindings only if not already installed by tests.
-    // Tests install DI with mock overrides before calling module().
-    if (pluginOrNull(DI) == null) {
+    // In Ktor 3.4.x, PluginModuleParametersInjector accesses Application.dependencies to
+    // resolve module function parameters (e.g. initDatabase), which auto-installs an empty
+    // DI container before module() runs. This makes pluginOrNull(DI) == null return false,
+    // skipping production registrations entirely. Use jwt.test to distinguish test vs prod.
+    // This also prevents KeycloakAdminClient construction in tests (Keycloak not running).
+    val isTestMode = environment.config.propertyOrNull("jwt.test")?.getString()?.toBoolean() == true
+    if (!isTestMode) {
         val kcAdminCfg = environment.config.config("keycloakAdmin")
         val keycloak = KeycloakAdminClient(
             baseUrl = kcAdminCfg.property("url").getString(),
@@ -80,7 +84,7 @@ fun Application.module(initDatabase: Boolean = true) {
         val settingsRepo = ExposedUserSettingsRepository()
         val doctorPatientRepo = ExposedDoctorPatientRepository()
 
-        install(DI) { }
+        if (pluginOrNull(DI) == null) install(DI) { }
         dependencies {
             provide<KeycloakAdminClient> { keycloak }
             provide<IdentityProviderPort> { identityProvider }

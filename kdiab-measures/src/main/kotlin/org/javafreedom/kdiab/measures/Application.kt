@@ -28,14 +28,15 @@ import org.javafreedom.kdiab.common.plugins.configureStatusPages
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 fun Application.module(initDatabase: Boolean = true) {
-    // Install DI with production bindings only if not already installed by tests.
-    // Tests install DI with mock overrides before calling module().
-    if (pluginOrNull(DI) == null) {
-        install(DI) { }
-        dependencies {
-            provide<MeasureService> { MeasureService(ExposedMeasureRepository()) }
-            provide<AuditLogRepository> { ExposedAuditLogRepository() }
-        }
+    // In Ktor 3.4.x, PluginModuleParametersInjector accesses Application.dependencies to
+    // resolve module function parameters (e.g. initDatabase), which auto-installs an empty
+    // DI container before module() runs, making pluginOrNull(DI) == null return false.
+    // Fix: always register production providers; the test engine's IgnoreConflicts policy
+    // ensures pre-registered test mocks win (first registration wins).
+    if (pluginOrNull(DI) == null) install(DI) { }
+    dependencies {
+        provide<MeasureService> { MeasureService(ExposedMeasureRepository()) }
+        provide<AuditLogRepository> { ExposedAuditLogRepository() }
     }
 
     configureCommonPlugins()
