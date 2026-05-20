@@ -20,7 +20,7 @@ import org.javafreedom.kdiab.common.plugins.configureSecurity
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 import org.javafreedom.kdiab.common.plugins.configureTracing
 import org.javafreedom.kdiab.nightscout.adapters.inbound.web.nightscoutRoutes
-import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CircuitBreakerOpenException
+import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutService

@@ -13,6 +13,8 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.DefaultApi
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentResponse
+import org.javafreedom.kdiab.common.plugins.CircuitBreaker
+import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
 
 private val logger = KotlinLogging.logger {}
