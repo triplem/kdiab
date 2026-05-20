@@ -17,31 +17,31 @@ import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
+import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
 import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
+import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
+import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakRole
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakUser
 import org.javafreedom.kdiab.users.module
 
 // Top-level helper: installs mock DI bindings on the Application before module() runs.
 // Extracted to avoid implicit-receiver ambiguity when called inside testApplication lambdas.
 private fun Application.installMockDi(
-    mockKeycloak: KeycloakAdminClient,
+    mockIdentityProvider: IdentityProviderPort,
     mockSettingsRepo: UserSettingsRepository,
     mockDoctorRepo: DoctorPatientRepository,
 ) {
     install(DI) { }
     dependencies {
-        provide<KeycloakAdminClient> { mockKeycloak }
+        provide<IdentityProviderPort> { mockIdentityProvider }
         provide<UserSettingsRepository> { mockSettingsRepo }
         provide<DoctorPatientRepository> { mockDoctorRepo }
-        provide<UserService> { UserService(mockKeycloak, mockSettingsRepo, mockDoctorRepo) }
-        provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockKeycloak) }
-        provide<RegistrationService> { RegistrationService(mockKeycloak, mockSettingsRepo, false) }
+        provide<UserService> { UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo) }
+        provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
+        provide<RegistrationService> { RegistrationService(mockIdentityProvider, mockSettingsRepo, false) }
     }
 }
 
@@ -72,8 +72,8 @@ class UserRoutesTest {
         val mikeToken  get() = token(MIKE_ID,  listOf("PATIENT"))
         val adminToken get() = token(ADMIN_ID, listOf("ADMIN"))
 
-        // Keycloak test doubles
-        fun kcUser(id: String) = KeycloakUser(
+        // Identity provider test doubles
+        fun identityProfile(id: String) = IdentityUserProfile(
             id = id, email = "test@example.com",
             firstName = "Test", lastName = "User", enabled = true,
         )
@@ -82,33 +82,33 @@ class UserRoutesTest {
     // ── Test application setup ────────────────────────────────────────────────
 
     /**
-     * Starts a full Ktor test application with mocked Keycloak and repository dependencies.
-     * The [block] receives a pre-configured [KeycloakAdminClient] mock so individual tests
+     * Starts a full Ktor test application with mocked identity provider and repository dependencies.
+     * The [block] receives a pre-configured [IdentityProviderPort] mock so individual tests
      * can override specific call expectations.
      */
     private fun routeTest(
         block: suspend ApplicationTestBuilder.(
-            keycloak: KeycloakAdminClient,
+            identityProvider: IdentityProviderPort,
             settingsRepo: UserSettingsRepository,
             doctorPatientRepo: DoctorPatientRepository,
         ) -> Unit
     ) {
-        val mockKeycloak       = mockk<KeycloakAdminClient>(relaxed = true)
-        val mockSettingsRepo   = mockk<UserSettingsRepository>(relaxed = true)
-        val mockDoctorRepo     = mockk<DoctorPatientRepository>(relaxed = true)
+        val mockIdentityProvider = mockk<IdentityProviderPort>(relaxed = true)
+        val mockSettingsRepo     = mockk<UserSettingsRepository>(relaxed = true)
+        val mockDoctorRepo       = mockk<DoctorPatientRepository>(relaxed = true)
 
-        // Default stub: getUser returns a valid KeycloakUser for any UUID
-        coEvery { mockKeycloak.getUser(any()) } answers {
-            kcUser(firstArg<Uuid>().toString())
+        // Default stub: getUserProfile returns a valid profile for any UUID
+        coEvery { mockIdentityProvider.getUserProfile(any()) } answers {
+            identityProfile(firstArg<Uuid>().toString())
         }
-        // Default stub: getUserRoles returns empty list (PATIENT role comes from JWT claim)
-        coEvery { mockKeycloak.getUserRoles(any()) } returns emptyList()
-        // Default stub: listUsers returns empty list
-        coEvery { mockKeycloak.listUsers(any(), any(), any()) } returns emptyList()
+        // Default stub: getUserRoles returns empty set (PATIENT role comes from JWT claim)
+        coEvery { mockIdentityProvider.getUserRoles(any()) } returns emptySet()
+        // Default stub: listUserProfiles returns empty list
+        coEvery { mockIdentityProvider.listUserProfiles(any(), any(), any()) } returns emptyList()
         // Default stub: createUser returns a new UUID
-        coEvery { mockKeycloak.createUser(any()) } returns Uuid.parse("99999999-9999-9999-9999-999999999999")
-        // Default stub: getRealmRole returns a valid role
-        coEvery { mockKeycloak.getRealmRole(any()) } returns KeycloakRole("role-id", "PATIENT")
+        coEvery { mockIdentityProvider.createUser(any()) } returns Uuid.parse("99999999-9999-9999-9999-999999999999")
+        // Default stub: assignRoles is a no-op
+        coEvery { mockIdentityProvider.assignRoles(any(), any()) } returns Unit
         // Default stub: settingsRepo.findByUserId returns null (service will create default)
         coEvery { mockSettingsRepo.findByUserId(any()) } returns null
         coEvery { mockSettingsRepo.save(any()) } answers { firstArg() }
@@ -131,10 +131,10 @@ class UserRoutesTest {
                 )
             }
             application {
-                installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
                 module(initDatabase = false)
             }
-            block(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+            block(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
         }
     }
 

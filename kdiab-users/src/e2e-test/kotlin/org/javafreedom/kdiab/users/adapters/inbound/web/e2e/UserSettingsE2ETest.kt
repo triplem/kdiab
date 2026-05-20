@@ -19,30 +19,31 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import java.util.Date
 import kotlin.uuid.Uuid
+import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
 import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
+import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
+import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakUser
 import org.javafreedom.kdiab.users.module
 
 // Top-level helper: installs mock DI bindings on the Application before module() runs.
 // Extracted from the BehaviorSpec lambdas to avoid implicit-receiver ambiguity with Kotest DSL.
 private fun Application.installMockDi(
-    mockKeycloak: KeycloakAdminClient,
+    mockIdentityProvider: IdentityProviderPort,
     mockSettingsRepo: UserSettingsRepository,
     mockDoctorRepo: DoctorPatientRepository,
 ) {
     install(DI) { }
     dependencies {
-        provide<KeycloakAdminClient> { mockKeycloak }
+        provide<IdentityProviderPort> { mockIdentityProvider }
         provide<UserSettingsRepository> { mockSettingsRepo }
         provide<DoctorPatientRepository> { mockDoctorRepo }
-        provide<UserService> { UserService(mockKeycloak, mockSettingsRepo, mockDoctorRepo) }
-        provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockKeycloak) }
-        provide<RegistrationService> { RegistrationService(mockKeycloak, mockSettingsRepo, false) }
+        provide<UserService> { UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo) }
+        provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
+        provide<RegistrationService> { RegistrationService(mockIdentityProvider, mockSettingsRepo, false) }
     }
 }
 
@@ -64,7 +65,7 @@ class UserSettingsE2ETest :
             .withExpiresAt(Date(System.currentTimeMillis() + 60_000))
             .sign(Algorithm.HMAC256(jwtSecret))
 
-        fun kcUser(id: Uuid) = KeycloakUser(
+        fun identityProfile(id: Uuid) = IdentityUserProfile(
             id = id.toString(),
             email = "test@example.com",
             firstName = "Test",
@@ -96,14 +97,14 @@ class UserSettingsE2ETest :
 
             `when`("I request the health-check endpoint") {
                 then("It should return HTTP 200 OK") {
-                    val mockKeycloak = mockk<KeycloakAdminClient>(relaxed = true)
+                    val mockIdentityProvider = mockk<IdentityProviderPort>(relaxed = true)
                     val mockSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
                     val mockDoctorRepo = mockk<DoctorPatientRepository>(relaxed = true)
 
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
                             module(initDatabase = false)
                         }
 
@@ -115,14 +116,14 @@ class UserSettingsE2ETest :
 
             `when`("I call GET /api/v1/users/me without a token") {
                 then("It should return HTTP 401 Unauthorized") {
-                    val mockKeycloak = mockk<KeycloakAdminClient>(relaxed = true)
+                    val mockIdentityProvider = mockk<IdentityProviderPort>(relaxed = true)
                     val mockSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
                     val mockDoctorRepo = mockk<DoctorPatientRepository>(relaxed = true)
 
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
                             module(initDatabase = false)
                         }
 
@@ -137,19 +138,19 @@ class UserSettingsE2ETest :
                     val userId = Uuid.random()
                     val token = generateToken(userId)
 
-                    val mockKeycloak = mockk<KeycloakAdminClient>(relaxed = true)
+                    val mockIdentityProvider = mockk<IdentityProviderPort>(relaxed = true)
                     val mockSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
                     val mockDoctorRepo = mockk<DoctorPatientRepository>(relaxed = true)
 
-                    coEvery { mockKeycloak.getUser(userId) } returns kcUser(userId)
-                    coEvery { mockKeycloak.getUserRoles(userId) } returns emptyList()
+                    coEvery { mockIdentityProvider.getUserProfile(userId) } returns identityProfile(userId)
+                    coEvery { mockIdentityProvider.getUserRoles(userId) } returns emptySet()
                     coEvery { mockSettingsRepo.findByUserId(userId) } returns null
                     coEvery { mockSettingsRepo.save(any()) } answers { firstArg() }
 
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
                             module(initDatabase = false)
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
@@ -167,14 +168,14 @@ class UserSettingsE2ETest :
 
             `when`("I call PATCH /api/v1/users/me/settings without a token") {
                 then("It should return HTTP 401 Unauthorized") {
-                    val mockKeycloak = mockk<KeycloakAdminClient>(relaxed = true)
+                    val mockIdentityProvider = mockk<IdentityProviderPort>(relaxed = true)
                     val mockSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
                     val mockDoctorRepo = mockk<DoctorPatientRepository>(relaxed = true)
 
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
                             module(initDatabase = false)
                         }
 
@@ -192,7 +193,7 @@ class UserSettingsE2ETest :
                     val userId = Uuid.random()
                     val token = generateToken(userId)
 
-                    val mockKeycloak = mockk<KeycloakAdminClient>(relaxed = true)
+                    val mockIdentityProvider = mockk<IdentityProviderPort>(relaxed = true)
                     val mockSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
                     val mockDoctorRepo = mockk<DoctorPatientRepository>(relaxed = true)
 
@@ -202,7 +203,7 @@ class UserSettingsE2ETest :
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
                             module(initDatabase = false)
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
@@ -225,7 +226,7 @@ class UserSettingsE2ETest :
                     val userId = Uuid.random()
                     val token = generateToken(userId)
 
-                    val mockKeycloak = mockk<KeycloakAdminClient>(relaxed = true)
+                    val mockIdentityProvider = mockk<IdentityProviderPort>(relaxed = true)
                     val mockSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
                     val mockDoctorRepo = mockk<DoctorPatientRepository>(relaxed = true)
 
@@ -235,7 +236,7 @@ class UserSettingsE2ETest :
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
                             module(initDatabase = false)
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
@@ -256,14 +257,14 @@ class UserSettingsE2ETest :
                     val mikeId = Uuid.random()
                     val sarahToken = generateToken(sarahId)
 
-                    val mockKeycloak = mockk<KeycloakAdminClient>(relaxed = true)
+                    val mockIdentityProvider = mockk<IdentityProviderPort>(relaxed = true)
                     val mockSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
                     val mockDoctorRepo = mockk<DoctorPatientRepository>(relaxed = true)
 
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
                             module(initDatabase = false)
                         }
 
@@ -281,18 +282,18 @@ class UserSettingsE2ETest :
                     val patientId = Uuid.random()
                     val adminToken = generateToken(adminId, roles = listOf("ADMIN"))
 
-                    val mockKeycloak = mockk<KeycloakAdminClient>(relaxed = true)
+                    val mockIdentityProvider = mockk<IdentityProviderPort>(relaxed = true)
                     val mockSettingsRepo = mockk<UserSettingsRepository>(relaxed = true)
                     val mockDoctorRepo = mockk<DoctorPatientRepository>(relaxed = true)
 
-                    coEvery { mockKeycloak.getUser(patientId) } returns kcUser(patientId)
-                    coEvery { mockKeycloak.getUserRoles(patientId) } returns emptyList()
+                    coEvery { mockIdentityProvider.getUserProfile(patientId) } returns identityProfile(patientId)
+                    coEvery { mockIdentityProvider.getUserRoles(patientId) } returns emptySet()
                     coEvery { mockSettingsRepo.findByUserId(patientId) } returns null
 
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo)
                             module(initDatabase = false)
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }

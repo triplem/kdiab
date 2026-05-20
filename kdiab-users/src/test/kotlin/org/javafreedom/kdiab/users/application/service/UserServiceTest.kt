@@ -16,17 +16,16 @@ import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.users.domain.model.UserSettings
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
+import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
+import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakRole
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakUser
 
 class UserServiceTest {
 
-    private val keycloak = mockk<KeycloakAdminClient>()
+    private val identityProvider = mockk<IdentityProviderPort>()
     private val settingsRepo = mockk<UserSettingsRepository>()
     private val doctorPatientRepo = mockk<DoctorPatientRepository>()
-    private val service = UserService(keycloak, settingsRepo, doctorPatientRepo)
+    private val service = UserService(identityProvider, settingsRepo, doctorPatientRepo)
 
     private val adminId = Uuid.parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
     private val userId = Uuid.parse("11111111-1111-1111-1111-111111111111")
@@ -35,7 +34,7 @@ class UserServiceTest {
     private fun adminPrincipal() = UserPrincipal(adminId, setOf(Role.ADMIN), emptySet())
     private fun patientPrincipal(id: Uuid = userId) = UserPrincipal(id, setOf(Role.PATIENT), emptySet())
 
-    private fun kcUser(id: Uuid = userId) = KeycloakUser(
+    private fun identityProfile(id: Uuid = userId) = IdentityUserProfile(
         id = id.toString(), email = "test@example.com",
         firstName = "Test", lastName = "User", enabled = true,
     )
@@ -46,7 +45,7 @@ class UserServiceTest {
 
     @Test
     fun `getMe returns user with settings from repo`() = runTest {
-        coEvery { keycloak.getUser(userId) } returns kcUser()
+        coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
         val principal = patientPrincipal()
         val user = service.getMe(principal)
@@ -56,7 +55,7 @@ class UserServiceTest {
 
     @Test
     fun `getMe seeds default settings when none exist`() = runTest {
-        coEvery { keycloak.getUser(userId) } returns kcUser()
+        coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
         coEvery { settingsRepo.findByUserId(userId) } returns null
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
         service.getMe(patientPrincipal())
@@ -74,25 +73,25 @@ class UserServiceTest {
     }
 
     @Test
-    fun `updateMySettings persists glucoseUnit to DB without Keycloak write-back`() = runTest {
+    fun `updateMySettings persists glucoseUnit to DB without identity provider write-back`() = runTest {
         val principal = patientPrincipal()
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
         val patch = SettingsPatch(glucoseUnit = "mmol/L")
         val result = service.updateMySettings(principal, patch)
         assertEquals("mmol/L", result.glucoseUnit)
-        coVerify(exactly = 0) { keycloak.updateUserAttributes(any(), any()) }
+        coVerify(exactly = 0) { identityProvider.updateUserAttributes(any(), any()) }
     }
 
     @Test
-    fun `updateMySettings persists weightUnit to DB without Keycloak write-back`() = runTest {
+    fun `updateMySettings persists weightUnit to DB without identity provider write-back`() = runTest {
         val principal = patientPrincipal()
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
         val patch = SettingsPatch(weightUnit = "lbs")
         val result = service.updateMySettings(principal, patch)
         assertEquals("lbs", result.weightUnit)
-        coVerify(exactly = 0) { keycloak.updateUserAttributes(any(), any()) }
+        coVerify(exactly = 0) { identityProvider.updateUserAttributes(any(), any()) }
     }
 
     @Test
@@ -103,9 +102,9 @@ class UserServiceTest {
     }
 
     @Test
-    fun `listUsers calls keycloak for admin`() = runTest {
-        coEvery { keycloak.listUsers(any(), any(), any()) } returns listOf(kcUser())
-        coEvery { keycloak.getUserRoles(userId) } returns emptyList()
+    fun `listUsers calls identity provider for admin`() = runTest {
+        coEvery { identityProvider.listUserProfiles(any(), any(), any()) } returns listOf(identityProfile())
+        coEvery { identityProvider.getUserRoles(userId) } returns emptySet()
         coEvery { settingsRepo.findByUserId(any()) } returns null
         val results = service.listUsers(adminPrincipal(), null, 0, 20)
         assertEquals(1, results.size)
@@ -119,11 +118,10 @@ class UserServiceTest {
     }
 
     @Test
-    fun `createUser creates keycloak user and seeds settings`() = runTest {
+    fun `createUser creates identity provider user and seeds settings`() = runTest {
         val newId = Uuid.parse("22222222-2222-2222-2222-222222222222")
-        coEvery { keycloak.createUser(any()) } returns newId
-        coEvery { keycloak.getRealmRole(any()) } returns KeycloakRole("role-id", "PATIENT")
-        coEvery { keycloak.assignRoles(any(), any()) } returns Unit
+        coEvery { identityProvider.createUser(any()) } returns newId
+        coEvery { identityProvider.assignRoles(any(), any()) } returns Unit
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
         val user = service.createUser(adminPrincipal(), "new@example.com", "New User", "pass", Role.PATIENT)
         assertEquals(newId, user.userId)
@@ -138,20 +136,20 @@ class UserServiceTest {
     }
 
     @Test
-    fun `deleteUser removes user from keycloak and DB`() = runTest {
-        coEvery { keycloak.deleteUser(userId) } returns Unit
+    fun `deleteUser removes user from identity provider and DB`() = runTest {
+        coEvery { identityProvider.deleteUser(userId) } returns Unit
         coEvery { settingsRepo.delete(userId) } returns Unit
         coEvery { doctorPatientRepo.deleteByUserId(userId) } returns Unit
         service.deleteUser(adminPrincipal(), userId)
-        coVerify(exactly = 1) { keycloak.deleteUser(userId) }
+        coVerify(exactly = 1) { identityProvider.deleteUser(userId) }
         coVerify(exactly = 1) { settingsRepo.delete(userId) }
         coVerify(exactly = 1) { doctorPatientRepo.deleteByUserId(userId) }
     }
 
     @Test
     fun `getUser allows self access`() = runTest {
-        coEvery { keycloak.getUser(userId) } returns kcUser()
-        coEvery { keycloak.getUserRoles(userId) } returns listOf(KeycloakRole("r-id", "PATIENT"))
+        coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
+        coEvery { identityProvider.getUserRoles(userId) } returns setOf(Role.PATIENT)
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
         val user = service.getUser(patientPrincipal(), userId)
         assertEquals(userId, user.userId)

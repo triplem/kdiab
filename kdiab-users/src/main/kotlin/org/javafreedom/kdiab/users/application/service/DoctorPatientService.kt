@@ -9,10 +9,9 @@ import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
-import org.javafreedom.kdiab.users.infrastructure.keycloak.toKeycloakName
 import org.javafreedom.kdiab.users.domain.model.DoctorPatientRelation
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
-import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
+import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 
 private const val MAX_PAGE_SIZE = 100
 
@@ -20,7 +19,7 @@ private val logger = KotlinLogging.logger {}
 
 class DoctorPatientService(
     private val repo: DoctorPatientRepository,
-    private val keycloak: KeycloakAdminClient,
+    private val identityProvider: IdentityProviderPort,
 ) {
     suspend fun listPatients(
         principal: UserPrincipal,
@@ -65,19 +64,19 @@ class DoctorPatientService(
     }
 
     private suspend fun validateRoles(doctorId: Uuid, patientId: Uuid) {
-        val doctorRoles = keycloak.getUserRoles(doctorId).map { it.name }.toSet()
-        if (Role.DOCTOR.toKeycloakName() !in doctorRoles) {
+        val doctorRoles = identityProvider.getUserRoles(doctorId)
+        if (Role.DOCTOR !in doctorRoles) {
             throw BusinessValidationException("User $doctorId does not have the DOCTOR role")
         }
-        val patientRoles = keycloak.getUserRoles(patientId).map { it.name }.toSet()
-        if (Role.PATIENT.toKeycloakName() !in patientRoles) {
+        val patientRoles = identityProvider.getUserRoles(patientId)
+        if (Role.PATIENT !in patientRoles) {
             throw BusinessValidationException("User $patientId does not have the PATIENT role")
         }
     }
 
     private suspend fun syncAllowedPatients(doctorId: Uuid) {
         val patientIds = repo.findAllPatientIdsByDoctorId(doctorId).map { it.toString() }
-        keycloak.updateUserAttributes(doctorId, mapOf("allowed_patients" to patientIds))
+        identityProvider.updateUserAttributes(doctorId, mapOf("allowed_patients" to patientIds))
     }
 
     private fun requireAdmin(principal: UserPrincipal) {
