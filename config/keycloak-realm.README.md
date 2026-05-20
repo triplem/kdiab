@@ -58,6 +58,35 @@ tests. **These users must never be created in a production Keycloak instance.**
 To deploy to production: remove the `"users"` array from the realm JSON before importing,
 or use the Keycloak Admin UI to create real users separately.
 
+## M2M client secret rotation (required in production)
+
+The `kdiab-users-service` confidential client is imported with the placeholder secret
+`change-me-in-production`. Keycloak's `--import-realm` processes realm JSON as raw JSON
+and does **not** substitute environment variable expressions in the `secret` field.
+
+**After the first deploy**, rotate the secret via the Keycloak Admin API or Admin Console:
+
+```bash
+# Via Admin API (replace HOST, REALM, and CLIENT_ID as needed)
+KC_ADMIN_TOKEN=$(curl -s -X POST \
+  https://HOST/realms/master/protocol/openid-connect/token \
+  -d "client_id=admin-cli&grant_type=password&username=admin&password=ADMIN_PW" \
+  | jq -r .access_token)
+
+CLIENT_UUID=$(curl -s -H "Authorization: Bearer $KC_ADMIN_TOKEN" \
+  https://HOST/admin/realms/kdiab/clients?clientId=kdiab-users-service \
+  | jq -r '.[0].id')
+
+curl -s -X POST \
+  "https://HOST/admin/realms/kdiab/clients/$CLIENT_UUID/client-secret" \
+  -H "Authorization: Bearer $KC_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"type\":\"secret\",\"value\":\"$(openssl rand -base64 32)\"}"
+```
+
+Store the generated secret in your secrets manager and inject it into the kdiab-users
+service via `KC_CLIENT_SECRET` (or equivalent env var) — never commit it to source control.
+
 ## Keycloak theme
 
 The custom login theme lives at `config/keycloak-theme/` (mounted read-only into the

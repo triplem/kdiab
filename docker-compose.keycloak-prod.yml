@@ -12,6 +12,8 @@
 
 services:
   keycloak:
+    # --http-enabled=true is required: the reverse proxy terminates TLS and forwards plain
+    # HTTP to Keycloak on port 8080; TLS enforcement is handled at the proxy layer.
     command: >
       start
       --optimized
