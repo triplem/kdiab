@@ -42,9 +42,7 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
             Clock.System.now().toLocalDateTime(TimeZone.UTC).time
         }
 
-        val bgMgDl = if (request.glucoseUnit.equals("mmol/L", ignoreCase = true) ||
-            request.glucoseUnit.equals("mmol/l", ignoreCase = true)
-        ) {
+        val bgMgDl = if (request.glucoseUnit.equals("mmol/L", ignoreCase = true)) {
             request.currentBg * MMOL_TO_MGDL_FACTOR
         } else {
             request.currentBg
