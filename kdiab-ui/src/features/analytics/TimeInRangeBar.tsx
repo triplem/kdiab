@@ -24,7 +24,7 @@ export function TimeInRangeBar({ tir, glucoseUnit }: Props) {
 
   const segments = [
     { key: 'veryLow', count: tir.veryLowCount,  color: '#B00020',           label: t('analytics.tirVeryLowBand', { high: fmtThreshold(54, u), unit: u }),                                 descId: 'tir-desc-verylow' },
-    { key: 'below',   count: tir.belowCount,    color: 'var(--tir-below)',  label: t('analytics.tirBelow',       { low: fmtThreshold(54, u), unit: u }),                                   descId: 'tir-desc-below' },
+    { key: 'below',   count: tir.belowCount,    color: 'var(--tir-below)',  label: t('analytics.tirBelow',       { low: fmtThreshold(54, u), high: fmtThreshold(70, u), unit: u }),   descId: 'tir-desc-below' },
     { key: 'target',  count: tir.inRangeCount,  color: 'var(--tir-target)', label: t('analytics.tirTarget',      { low: fmtThreshold(70, u), high: fmtThreshold(180, u), unit: u }),      descId: 'tir-desc-target' },
     { key: 'above',   count: tir.aboveCount,    color: 'var(--tir-above)',  label: t('analytics.tirAbove',       { low: fmtThreshold(180, u), high: fmtThreshold(250, u), unit: u }),     descId: 'tir-desc-above' },
     { key: 'high',    count: tir.highCount,     color: 'var(--tir-high)',   label: t('analytics.tirHigh',        { high: fmtThreshold(250, u), unit: u }),                                descId: 'tir-desc-high' },

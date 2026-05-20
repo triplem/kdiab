@@ -314,7 +314,7 @@
     "meanGlucose": "Mittlere Glukose",
     "tir": "Zeit im Zielbereich",
     "tirVeryLowBand": "Sehr niedrig (<{{high}} {{unit}})",
-    "tirBelow": "Zu niedrig (<{{low}} {{unit}})",
+    "tirBelow": "Zu niedrig ({{low}}–{{high}} {{unit}})",
     "tirTarget": "Zielbereich ({{low}}–{{high}} {{unit}})",
     "tirAbove": "Erhöht ({{low}}–{{high}} {{unit}})",
     "tirHigh": "Sehr hoch (>{{high}} {{unit}})",
