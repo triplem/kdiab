@@ -84,58 +84,63 @@ export function AgpChart({ hourlyData, glucoseUnit, warnings, totalReadingCount,
           )}
         </p>
       )}
-      <ResponsiveContainer width="100%" height={320}>
-        <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="hour"
-            tickFormatter={formatHour}
-            label={{ value: t('analytics.agpHour'), position: 'insideBottom', offset: -5, fill: 'var(--text-secondary)' }}
-          />
-          <YAxis
-            label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 10, fill: 'var(--text-secondary)' }}
-          />
-          <Tooltip
-            labelFormatter={(h: unknown) => formatHour(typeof h === 'number' ? h : 0)}
-            formatter={(val: unknown, name: unknown) => {
-              if (Array.isArray(val)) return [`${String(val[0])}–${String(val[1])} ${yLabel}`, String(name ?? '')]
-              return [`${String(val)} ${yLabel}`, String(name ?? '')]
-            }}
-            contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
-            wrapperStyle={{ outline: 'none' }}
-          />
-          <Legend />
+      <figure role="img" aria-label={t('analytics.agpChartAriaLabel')} style={{ margin: 0 }}>
+        <figcaption style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+          {t('analytics.agpChartCaption')}
+        </figcaption>
+        <ResponsiveContainer width="100%" height={320}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="hour"
+              tickFormatter={formatHour}
+              label={{ value: t('analytics.agpHour'), position: 'insideBottom', offset: -5, fill: 'var(--text-secondary)' }}
+            />
+            <YAxis
+              label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 10, fill: 'var(--text-secondary)' }}
+            />
+            <Tooltip
+              labelFormatter={(h: unknown) => formatHour(typeof h === 'number' ? h : 0)}
+              formatter={(val: unknown, name: unknown) => {
+                if (Array.isArray(val)) return [`${String(val[0])}–${String(val[1])} ${yLabel}`, String(name ?? '')]
+                return [`${String(val)} ${yLabel}`, String(name ?? '')]
+              }}
+              contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
+              wrapperStyle={{ outline: 'none' }}
+            />
+            <Legend />
 
-          <ReferenceLine y={tirLow} stroke="#ef4444" strokeDasharray="4 4" />
-          <ReferenceLine y={tirHigh} stroke="#f59e0b" strokeDasharray="4 4" />
+            <ReferenceLine y={tirLow} stroke="#ef4444" strokeDasharray="4 4" />
+            <ReferenceLine y={tirHigh} stroke="#f59e0b" strokeDasharray="4 4" />
 
-          <Area
-            type="monotone"
-            dataKey="p10_p90"
-            name="p10–p90"
-            stroke="transparent"
-            fill="var(--chart-p10-p90)"
-          />
+            <Area
+              type="monotone"
+              dataKey="p10_p90"
+              name="p10–p90"
+              stroke="transparent"
+              fill="var(--chart-p10-p90)"
+            />
 
-          <Area
-            type="monotone"
-            dataKey="p25_p75"
-            name="p25–p75"
-            stroke="transparent"
-            fill="var(--chart-p25-p75)"
-          />
+            <Area
+              type="monotone"
+              dataKey="p25_p75"
+              name="p25–p75"
+              stroke="transparent"
+              fill="var(--chart-p25-p75)"
+            />
 
-          <Area
-            type="monotone"
-            dataKey="median"
-            name="Median"
-            stroke="var(--chart-median)"
-            fill="transparent"
-            strokeWidth={2}
-            dot={false}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+            <Area
+              type="monotone"
+              dataKey="median"
+              name="Median"
+              stroke="var(--chart-median)"
+              fill="transparent"
+              strokeWidth={2}
+              dot={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </figure>
     </div>
   )
 }

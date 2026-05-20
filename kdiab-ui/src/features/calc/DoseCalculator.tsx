@@ -311,6 +311,8 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
 
           {result.warnings.length > 0 && (
             <div
+              role="alert"
+              aria-live="assertive"
               style={{
                 marginTop: '1rem',
                 padding: '0.75rem',

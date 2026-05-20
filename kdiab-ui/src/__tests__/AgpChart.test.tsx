@@ -51,6 +51,12 @@ describe('AgpChart', () => {
     render(<AgpChart hourlyData={makePopulatedBuckets()} glucoseUnit="mg/dL" />)
   })
 
+  test('chart figure has role=img and a non-empty aria-label', () => {
+    const { getByRole } = render(<AgpChart hourlyData={makePopulatedBuckets()} glucoseUnit="mg/dL" />)
+    const figure = getByRole('img')
+    expect(figure.getAttribute('aria-label')).toBeTruthy()
+  })
+
   test('renders without crashing in mmol/L mode', () => {
     render(<AgpChart hourlyData={makePopulatedBuckets()} glucoseUnit="mmol/L" />)
   })

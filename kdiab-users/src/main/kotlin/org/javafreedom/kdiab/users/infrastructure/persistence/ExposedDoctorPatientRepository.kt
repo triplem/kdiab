@@ -8,7 +8,7 @@ import kotlin.uuid.Uuid
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
-import org.jetbrains.exposed.v1.jdbc.transactions.transaction
+import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.users.domain.model.DoctorPatientRelation
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
@@ -28,7 +28,7 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
 
     override suspend fun findByDoctorId(doctorId: Uuid, limit: Int, offset: Long): List<DoctorPatientRelation> =
         withContext(Dispatchers.IO) {
-            transaction {
+            suspendTransaction {
                 DoctorPatientTable.selectAll()
                     .where { DoctorPatientTable.doctorId eq doctorId.toString() }
                     .orderBy(DoctorPatientTable.createdAt to SortOrder.ASC)
@@ -49,7 +49,7 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
     override suspend fun save(relation: DoctorPatientRelation): DoctorPatientRelation =
         withContext(Dispatchers.IO) {
             try {
-                transaction {
+                suspendTransaction {
                     DoctorPatientTable.insert {
                         it[doctorId] = relation.doctorId.toString()
                         it[patientId] = relation.patientId.toString()
@@ -64,7 +64,7 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
 
     override suspend fun delete(doctorId: Uuid, patientId: Uuid): Boolean =
         withContext(Dispatchers.IO) {
-            transaction {
+            suspendTransaction {
                 DoctorPatientTable.deleteWhere {
                     (DoctorPatientTable.doctorId eq doctorId.toString()) and
                     (DoctorPatientTable.patientId eq patientId.toString())
@@ -74,7 +74,7 @@ class ExposedDoctorPatientRepository : DoctorPatientRepository {
 
     override suspend fun deleteByUserId(userId: Uuid): Unit =
         withContext(Dispatchers.IO) {
-            transaction {
+            suspendTransaction {
                 val id = userId.toString()
                 DoctorPatientTable.deleteWhere {
                     (DoctorPatientTable.doctorId eq id) or

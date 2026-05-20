@@ -136,6 +136,27 @@ describe('DoseCalculator', () => {
     })
   })
 
+  test('warnings container has role=alert and aria-live=assertive', async () => {
+    const doseResponse = makeDoseResponse({
+      warnings: ['BG is hypoglycemic — treat hypo first'],
+    })
+    mockedCalculateDose.mockResolvedValueOnce({ data: doseResponse } as never)
+
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" />)
+    fireEvent.change(screen.getByLabelText(/current blood glucose/i), { target: { value: '50' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('BG is hypoglycemic — treat hypo first')).toBeInTheDocument()
+    })
+
+    // The warnings container must be announced as an alert by screen readers
+    const alerts = screen.getAllByRole('alert')
+    const warningAlert = alerts.find(el => el.textContent?.includes('BG is hypoglycemic'))
+    expect(warningAlert).toBeDefined()
+    expect(warningAlert).toHaveAttribute('aria-live', 'assertive')
+  })
+
   test('passes carbsGrams to API when carbs field is filled', async () => {
     mockedCalculateDose.mockResolvedValueOnce({ data: makeDoseResponse() } as never)
 

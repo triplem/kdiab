@@ -41,31 +41,36 @@ export function BolusAvgChart({ hourlyAvg }: Props) {
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{t('analytics.noData')}</p>
       )}
       {hasData && (
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="hour"
-              tickFormatter={formatHour}
-              label={{ value: t('analytics.agpHour'), position: 'insideBottom', offset: -5, fill: 'var(--text-secondary)' }}
-            />
-            <YAxis
-              label={{ value: 'U', angle: -90, position: 'insideLeft', offset: 10, fill: 'var(--text-secondary)' }}
-            />
-            <Tooltip
-              labelFormatter={(h: unknown) => formatHour(typeof h === 'number' ? h : 0)}
-              formatter={(val: unknown) => [`${String(val)} U`, t('analytics.bolusAvgDose')]}
-              contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
-              wrapperStyle={{ outline: 'none' }}
-            />
-            <Bar
-              dataKey="avg"
-              name={t('analytics.bolusAvgDose')}
-              fill="var(--chart-bolus)"
-              radius={[2, 2, 0, 0]}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        <figure role="img" aria-label={t('analytics.bolusAvgChartAriaLabel')} style={{ margin: 0 }}>
+          <figcaption style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+            {t('analytics.bolusAvgChartCaption')}
+          </figcaption>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="hour"
+                tickFormatter={formatHour}
+                label={{ value: t('analytics.agpHour'), position: 'insideBottom', offset: -5, fill: 'var(--text-secondary)' }}
+              />
+              <YAxis
+                label={{ value: 'U', angle: -90, position: 'insideLeft', offset: 10, fill: 'var(--text-secondary)' }}
+              />
+              <Tooltip
+                labelFormatter={(h: unknown) => formatHour(typeof h === 'number' ? h : 0)}
+                formatter={(val: unknown) => [`${String(val)} U`, t('analytics.bolusAvgDose')]}
+                contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
+                wrapperStyle={{ outline: 'none' }}
+              />
+              <Bar
+                dataKey="avg"
+                name={t('analytics.bolusAvgDose')}
+                fill="var(--chart-bolus)"
+                radius={[2, 2, 0, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </figure>
       )}
     </div>
   )

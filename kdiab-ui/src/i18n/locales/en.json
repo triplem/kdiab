@@ -306,7 +306,9 @@
     "trendSingleDown": "Falling",
     "trendDoubleDown": "Falling rapidly",
     "profileChanged": "Profile changed",
-    "partialData": "Some data sources unavailable"
+    "partialData": "Some data sources unavailable",
+    "chartAriaLabel": "CGM and treatment timeline chart",
+    "chartCaption": "This chart shows CGM glucose readings and treatment events over the selected period."
   },
   "analytics": {
     "title": "Analytics",
@@ -356,7 +358,13 @@
     "basalAvgRate": "Avg rate",
     "bolusAvg": "Bolus Average (Hourly)",
     "bolusAvgHelp": "Average bolus dose (U) per hour of the day over the selected period. Includes meal boluses and correction boluses. Hours with no data are omitted.",
-    "bolusAvgDose": "Avg dose"
+    "bolusAvgDose": "Avg dose",
+    "agpChartAriaLabel": "Ambulatory Glucose Profile showing glucose percentiles by hour of day",
+    "agpChartCaption": "This chart shows your CGM readings grouped by hour of day over the selected period.",
+    "bolusAvgChartAriaLabel": "Bolus average by hour of day chart",
+    "bolusAvgChartCaption": "This chart shows the average bolus dose per hour of the day over the selected period.",
+    "basalAvgChartAriaLabel": "Basal rate average by hour of day chart",
+    "basalAvgChartCaption": "This chart shows the average basal rate per hour of the day over the selected period."
   },
   "profile": {
     "id": "Profile ID",
@@ -453,7 +461,9 @@
     "legendBelow": "Below profile",
     "legendSuspended": "Suspended",
     "cgmChartAriaLabel": "Blood glucose over time chart",
-    "basalChartAriaLabel": "Basal insulin delivery chart"
+    "cgmChartCaption": "This chart shows blood glucose readings over the selected time window.",
+    "basalChartAriaLabel": "Basal insulin delivery chart",
+    "basalChartCaption": "This chart shows scheduled and delivered basal insulin rates over the selected time window."
   },
   "settings": {
     "title": "Settings",
