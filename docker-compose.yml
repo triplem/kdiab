@@ -75,6 +75,7 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_USERS_SERVICE_SECRET: ${KEYCLOAK_USERS_SERVICE_SECRET:-change-me-in-production}
       KC_LOG_CONSOLE_OUTPUT: json
       KC_TRACING_ENABLED: ${KC_TRACING_ENABLED:-false}
       # KC_TRACING_ENDPOINT and sampler settings are only effective when KC_TRACING_ENABLED=true
