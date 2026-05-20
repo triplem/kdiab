@@ -5,16 +5,16 @@ import kotlin.time.Instant
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.javafreedom.kdiab.calc.adapters.outbound.http.ProfilesClient
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IcrSegment
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.IsfSegment
-import org.javafreedom.kdiab.calc.api.upstream.profiles.models.TargetSegment
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.calc.domain.model.CgmTrend
 import org.javafreedom.kdiab.calc.domain.model.DoseBreakdown
 import org.javafreedom.kdiab.calc.domain.model.DoseRequest
 import org.javafreedom.kdiab.calc.domain.model.DoseResult
+import org.javafreedom.kdiab.calc.domain.model.GlucoseTarget
+import org.javafreedom.kdiab.calc.domain.model.IcrRatio
+import org.javafreedom.kdiab.calc.domain.model.IsfRatio
+import org.javafreedom.kdiab.calc.domain.repository.ProfilesPort
 
 private const val MMOL_TO_MGDL_FACTOR = 18.0
 private const val HYPOGLYCEMIA_THRESHOLD = 70.0
@@ -25,7 +25,7 @@ private const val TREND_FORTY_FIVE_MGDL_OFFSET = 10.0
 private const val ROUND_TWO_DECIMAL_FACTOR = 100.0
 
 @Suppress("LongMethod")
-class DoseCalculationService(private val profilesClient: ProfilesClient) {
+class DoseCalculationService(private val profilesPort: ProfilesPort) {
 
     suspend fun calculateDose(
         userId: String,
@@ -33,7 +33,7 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
         authorization: String,
         correlationId: String,
     ): DoseResult {
-        val profile = profilesClient.getActiveProfile(userId, authorization, correlationId)
+        val profile = profilesPort.getActiveProfile(userId, authorization, correlationId)
             ?: throw ResourceNotFoundException("No active profile found for user")
 
         val profileTimeZone = profile.timeZone?.let { TimeZone.of(it) } ?: TimeZone.UTC
@@ -49,9 +49,9 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
             request.currentBg
         }
 
-        val isf = lookupIsfSegment(profile.isf.orEmpty(), refTime)
-        val icr = lookupIcrSegment(profile.icr.orEmpty(), refTime)
-        val target = lookupTargetSegment(profile.targets.orEmpty(), refTime)
+        val isf = lookupIsfSegment(profile.isf, refTime)
+        val icr = lookupIcrSegment(profile.icr, refTime)
+        val target = lookupTargetSegment(profile.targets, refTime)
 
         if (isf <= 0.0) throw BusinessValidationException("ISF value must be positive")
         if (request.carbsGrams > 0 && icr <= 0.0) {
@@ -97,29 +97,27 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
         )
     }
 
-    private fun lookupIsfSegment(segments: List<IsfSegment>, refTime: LocalTime): Double {
+    private fun lookupIsfSegment(segments: List<IsfRatio>, refTime: LocalTime): Double {
         if (segments.isEmpty()) throw BusinessValidationException("Profile has no ISF segments")
         val match = segments
             .filter { parseSegmentTime(it.startTime) <= refTime }
             .maxByOrNull { parseSegmentTime(it.startTime) }
             ?: segments.last()
-        val value = match.`value`
-        if (value <= 0.0) throw BusinessValidationException("ISF value must be positive")
-        return value
+        if (match.value <= 0.0) throw BusinessValidationException("ISF value must be positive")
+        return match.value
     }
 
-    private fun lookupIcrSegment(segments: List<IcrSegment>, refTime: LocalTime): Double {
+    private fun lookupIcrSegment(segments: List<IcrRatio>, refTime: LocalTime): Double {
         if (segments.isEmpty()) throw BusinessValidationException("Profile has no ICR segments")
         val match = segments
             .filter { parseSegmentTime(it.startTime) <= refTime }
             .maxByOrNull { parseSegmentTime(it.startTime) }
             ?: segments.last()
-        val value = match.`value`
-        if (value <= 0.0) throw BusinessValidationException("ICR value must be positive")
-        return value
+        if (match.value <= 0.0) throw BusinessValidationException("ICR value must be positive")
+        return match.value
     }
 
-    private fun lookupTargetSegment(segments: List<TargetSegment>, refTime: LocalTime): Double {
+    private fun lookupTargetSegment(segments: List<GlucoseTarget>, refTime: LocalTime): Double {
         if (segments.isEmpty()) throw BusinessValidationException("Profile has no target segments")
         val match = segments
             .filter { parseSegmentTime(it.startTime) <= refTime }

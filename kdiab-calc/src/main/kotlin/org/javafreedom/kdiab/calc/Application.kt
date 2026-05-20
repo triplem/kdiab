@@ -16,6 +16,7 @@ import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.calc.adapters.inbound.web.calcRoutes
 import org.javafreedom.kdiab.calc.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.calc.application.service.DoseCalculationService
+import org.javafreedom.kdiab.calc.domain.repository.ProfilesPort
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.plugins.statuspages.*
 import org.javafreedom.kdiab.calc.domain.exception.UpstreamException
@@ -83,8 +84,9 @@ fun Application.module() {
 
         install(DI) { }
         dependencies {
+            provide<ProfilesPort> { ProfilesClient(httpClient.engine, profilesUrl) }
             provide<DoseCalculationService> {
-                DoseCalculationService(ProfilesClient(httpClient.engine, profilesUrl))
+                DoseCalculationService(resolve<ProfilesPort>())
             }
         }
     }
