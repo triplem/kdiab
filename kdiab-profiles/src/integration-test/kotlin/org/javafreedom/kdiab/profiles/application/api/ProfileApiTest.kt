@@ -7,7 +7,9 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
 import io.ktor.server.config.*
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.*
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -18,12 +20,27 @@ import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
+import org.javafreedom.kdiab.profiles.application.service.InsulinService
 import org.javafreedom.kdiab.profiles.domain.model.PagedProfiles
 import org.javafreedom.kdiab.profiles.domain.model.Profile
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.profiles.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+private fun Application.installMockDi(
+    profileService: ProfileService,
+    insulinService: InsulinService,
+    auditLogRepository: AuditLogRepository,
+) {
+    install(DI) { }
+    dependencies {
+        provide<ProfileService> { profileService }
+        provide<InsulinService> { insulinService }
+        provide<AuditLogRepository> { auditLogRepository }
+    }
+}
 
 class ProfileApiTest {
 
@@ -588,11 +605,12 @@ class ProfileApiTest {
                                 )
                 }
                 application {
-                    module(
-                        profileService = service,
-                        auditLogRepository = mockk<AuditLogRepository>(relaxed = true),
-                        initDatabase = false,
+                    installMockDi(
+                        service,
+                        mockk(relaxed = true),
+                        mockk(relaxed = true),
                     )
+                    module(initDatabase = false)
                 }
         }
 }

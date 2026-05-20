@@ -38,14 +38,17 @@ val buildBackends by tasks.registering {
 }
 
 // -- Full build (backends + frontend) ------------------------------------------
-tasks.register("build") {
+// Use named() instead of register() because the asciidoctor plugin already
+// creates a 'build' lifecycle task via the base plugin it applies.
+tasks.named("build") {
     group = "build"
     description = "Builds all service backends and the kdiab-ui frontend."
     dependsOn(buildBackends, buildFrontend)
 }
 
 // -- Full check (all tests, detekt, kover) -------------------------------------
-tasks.register("check") {
+// Use named() for the same reason — asciidoctor's base plugin registers 'check'.
+tasks.named("check") {
     group = "verification"
     description = "Runs all tests, detekt, and kover for all service backends."
     dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":check") })
@@ -59,7 +62,7 @@ val cleanFrontend by tasks.registering(Exec::class) {
     commandLine("bash", "-c", "rm -rf dist node_modules/.vite")
 }
 
-tasks.register("clean") {
+tasks.named("clean") {
     group = "build"
     description = "Deletes build outputs for all service backends and the kdiab-ui frontend."
     dependsOn(cleanFrontend)

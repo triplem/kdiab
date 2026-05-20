@@ -6,7 +6,9 @@ import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.config.MapApplicationConfig
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -22,6 +24,21 @@ import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
 import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.treatments.domain.repository.TreatmentRepository
 import org.javafreedom.kdiab.treatments.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted to avoid implicit-receiver ambiguity when called inside testApplication lambdas.
+private fun Application.installMockDi(
+    treatmentService: TreatmentService,
+    deviceStatusService: DeviceStatusService,
+    auditLogRepository: AuditLogRepository,
+) {
+    install(DI) { }
+    dependencies {
+        provide<TreatmentService> { treatmentService }
+        provide<DeviceStatusService> { deviceStatusService }
+        provide<AuditLogRepository> { auditLogRepository }
+    }
+}
 
 class DeviceAgeRoutesTest {
 
@@ -58,12 +75,12 @@ class DeviceAgeRoutesTest {
                 )
             }
             application {
-                module(
-                    treatmentService = TreatmentService(mockTreatmentRepo),
-                    deviceStatusService = DeviceStatusService(mockk(relaxed = true)),
-                    auditLogRepository = mockk<AuditLogRepository>(relaxed = true),
-                    initDatabase = false,
+                installMockDi(
+                    TreatmentService(mockTreatmentRepo),
+                    mockk(relaxed = true),
+                    mockk(relaxed = true),
                 )
+                module(initDatabase = false)
             }
             block(mockTreatmentRepo)
         }

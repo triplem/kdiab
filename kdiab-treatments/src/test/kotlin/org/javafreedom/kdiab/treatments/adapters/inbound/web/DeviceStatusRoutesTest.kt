@@ -6,7 +6,9 @@ import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.server.application.*
 import io.ktor.server.config.MapApplicationConfig
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -23,6 +25,21 @@ import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.treatments.domain.repository.DeviceStatusRepository
 import org.javafreedom.kdiab.treatments.domain.repository.TreatmentRepository
 import org.javafreedom.kdiab.treatments.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted to avoid implicit-receiver ambiguity when called inside testApplication lambdas.
+private fun Application.installMockDi(
+    treatmentService: TreatmentService,
+    deviceStatusService: DeviceStatusService,
+    auditLogRepository: AuditLogRepository,
+) {
+    install(DI) { }
+    dependencies {
+        provide<TreatmentService> { treatmentService }
+        provide<DeviceStatusService> { deviceStatusService }
+        provide<AuditLogRepository> { auditLogRepository }
+    }
+}
 
 class DeviceStatusRoutesTest {
 
@@ -59,12 +76,12 @@ class DeviceStatusRoutesTest {
                 )
             }
             application {
-                module(
-                    treatmentService = TreatmentService(mockk<TreatmentRepository>(relaxed = true)),
-                    deviceStatusService = DeviceStatusService(mockDeviceRepo),
-                    auditLogRepository = mockk<AuditLogRepository>(relaxed = true),
-                    initDatabase = false,
+                installMockDi(
+                    TreatmentService(mockk(relaxed = true)),
+                    DeviceStatusService(mockDeviceRepo),
+                    mockk(relaxed = true),
                 )
+                module(initDatabase = false)
             }
             block(mockDeviceRepo)
         }

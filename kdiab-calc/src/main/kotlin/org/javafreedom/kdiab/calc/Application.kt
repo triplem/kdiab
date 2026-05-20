@@ -7,6 +7,7 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
+import io.ktor.server.plugins.di.*
 import io.ktor.server.plugins.swagger.*
 import io.ktor.server.resources.Resources
 import io.ktor.server.response.*
@@ -36,20 +37,7 @@ private val logger = KotlinLogging.logger {}
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @Suppress("LongMethod")
-fun Application.module(
-    doseCalculationService: DoseCalculationService? = null,
-) {
-    configureCommonPlugins()
-    configureStatusPages {
-        exception<UpstreamException> { call, cause ->
-            logger.error(cause) { "Upstream service error: ${cause.service}" }
-            val status = HttpStatusCode.BadGateway
-            call.respond(status, ErrorResponse(status.value, "Upstream service unavailable: ${cause.service}"))
-        }
-    }
-
-    configureContentNegotiation()
-
+fun Application.module() {
     // Build the shared Json instance for the HTTP client.
     val prettyPrint = environment.config.propertyOrNull("json.prettyPrint")
         ?.getString()?.toBoolean() ?: false
@@ -58,34 +46,9 @@ fun Application.module(
         ignoreUnknownKeys = true
     }
 
-    install(Resources)
-
-    val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
-        ?.getString()?.split(",")?.map { it.trim() }
-        ?: listOf("http://localhost:3000")
-    install(CORS) {
-        corsOrigins.forEach { origin ->
-            val scheme = if (origin.startsWith("https://")) "https" else "http"
-            val host = origin.removePrefix("https://").removePrefix("http://")
-            allowHost(host, schemes = listOf(scheme))
-        }
-        allowHeader(HttpHeaders.ContentType)
-        allowHeader(HttpHeaders.Authorization)
-        allowMethod(HttpMethod.Post)
-        allowMethod(HttpMethod.Get)
-    }
-    install(DefaultHeaders) {
-        header("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none'")
-        header("X-Content-Type-Options", "nosniff")
-        header("X-Frame-Options", "DENY")
-        header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-    }
-
-    val resolvedService: DoseCalculationService
-
-    if (doseCalculationService != null) {
-        resolvedService = doseCalculationService
-    } else {
+    // Install DI with production bindings only if not already installed by tests.
+    // Tests install DI with mock overrides before calling module().
+    if (pluginOrNull(DI) == null) {
         val connectTimeoutMs = environment.config.propertyOrNull("http.connectTimeoutMs")
             ?.getString()?.toLong() ?: HTTP_CONNECT_TIMEOUT_MS_DEFAULT
         val requestTimeoutMs = environment.config.propertyOrNull("http.requestTimeoutMs")
@@ -117,8 +80,47 @@ fun Application.module(
         monitor.subscribe(ApplicationStopping) { httpClient.close() }
 
         val profilesUrl = environment.config.property("upstream.profilesUrl").getString()
-        val profilesClient = ProfilesClient(httpClient.engine, profilesUrl)
-        resolvedService = DoseCalculationService(profilesClient)
+
+        install(DI) { }
+        dependencies {
+            provide<DoseCalculationService> {
+                DoseCalculationService(ProfilesClient(httpClient.engine, profilesUrl))
+            }
+        }
+    }
+
+    configureCommonPlugins()
+    configureStatusPages {
+        exception<UpstreamException> { call, cause ->
+            logger.error(cause) { "Upstream service error: ${cause.service}" }
+            val status = HttpStatusCode.BadGateway
+            call.respond(status, ErrorResponse(status.value, "Upstream service unavailable: ${cause.service}"))
+        }
+    }
+
+    configureContentNegotiation()
+
+    install(Resources)
+
+    val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
+        ?.getString()?.split(",")?.map { it.trim() }
+        ?: listOf("http://localhost:3000")
+    install(CORS) {
+        corsOrigins.forEach { origin ->
+            val scheme = if (origin.startsWith("https://")) "https" else "http"
+            val host = origin.removePrefix("https://").removePrefix("http://")
+            allowHost(host, schemes = listOf(scheme))
+        }
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Authorization)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Get)
+    }
+    install(DefaultHeaders) {
+        header("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none'")
+        header("X-Content-Type-Options", "nosniff")
+        header("X-Frame-Options", "DENY")
+        header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     }
 
     // kdiab-calc is stateless (no DB) — always ready once the process is running.
@@ -126,11 +128,13 @@ fun Application.module(
 
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
 
+    val doseCalculationService: DoseCalculationService by dependencies
+
     routing {
         get("/") { call.respondText("kdiab-calc is running!") }
 
         route("/api/v1") {
-            calcRoutes(resolvedService)
+            calcRoutes(doseCalculationService)
         }
 
         if (swaggerEnabled) {

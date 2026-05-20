@@ -12,7 +12,9 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 
+import io.ktor.server.application.*
 import io.ktor.server.config.MapApplicationConfig
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
@@ -35,6 +37,24 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted to avoid implicit-receiver ambiguity when called inside testApplication lambdas.
+private fun Application.installMockDi(
+    timelineService: TimelineOperation,
+    analyticsService: AnalyticsOperation,
+    profilesService: ProfilesOperation,
+    deviceUsageService: DeviceUsageOperation,
+) {
+    install(DI) { }
+    dependencies {
+        provide<TimelineOperation> { timelineService }
+        provide<AnalyticsOperation> { analyticsService }
+        provide<ProfilesOperation> { profilesService }
+        provide<DeviceUsageOperation> { deviceUsageService }
+        provide<TreatmentsClient> { mockk(relaxed = true) }
+    }
+}
 
 class BffAnalyticsIntegrationTest {
 
@@ -127,7 +147,15 @@ class BffAnalyticsIntegrationTest {
                 "jwt.secret" to JWT_SECRET,
             )
         }
-        application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
+        application {
+            installMockDi(
+                timelineService ?: mockk(relaxed = true),
+                analyticsService ?: mockk(relaxed = true),
+                profilesService ?: mockk(relaxed = true),
+                deviceUsageService ?: mockk(relaxed = true),
+            )
+            module()
+        }
     }
 
     @Test

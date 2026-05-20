@@ -8,7 +8,9 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
 import io.ktor.server.config.*
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.*
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -27,6 +29,15 @@ import org.javafreedom.kdiab.calc.api.upstream.profiles.models.TargetSegment
 import org.javafreedom.kdiab.calc.application.service.DoseCalculationService
 import org.javafreedom.kdiab.calc.module
 import java.util.Date
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted to avoid implicit-receiver ambiguity when called inside testApplication lambdas.
+private fun Application.installMockDi(service: DoseCalculationService) {
+    install(DI) { }
+    dependencies {
+        provide<DoseCalculationService> { service }
+    }
+}
 
 /**
  * Integration tests for [CalcRoutes] using Ktor's embedded test engine.
@@ -79,7 +90,7 @@ class CalcRoutesIntegrationTest {
     fun `POST calculateDose - returns 200 with computed dose for authenticated patient`() =
         testApplication {
             environment { config = calcTestConfig() }
-            application { module(doseCalculationService = service) }
+            application { installMockDi(service); module() }
 
             coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
 
@@ -113,7 +124,7 @@ class CalcRoutesIntegrationTest {
     fun `POST calculateDose - returns 400 for invalid trend value`() =
         testApplication {
             environment { config = calcTestConfig() }
-            application { module(doseCalculationService = service) }
+            application { installMockDi(service); module() }
 
             val client = createClient { install(ContentNegotiation) { json() } }
 
@@ -144,7 +155,7 @@ class CalcRoutesIntegrationTest {
     fun `POST calculateDose - returns 401 when no auth token`() =
         testApplication {
             environment { config = calcTestConfig() }
-            application { module(doseCalculationService = service) }
+            application { installMockDi(service); module() }
 
             val client = createClient { install(ContentNegotiation) { json() } }
 
@@ -160,7 +171,7 @@ class CalcRoutesIntegrationTest {
     fun `POST calculateDose - returns 403 when patient accesses another user`() =
         testApplication {
             environment { config = calcTestConfig() }
-            application { module(doseCalculationService = service) }
+            application { installMockDi(service); module() }
 
             val anotherUserId = Uuid.parse("22222222-2222-2222-2222-222222222222")
             val client = createClient { install(ContentNegotiation) { json() } }
@@ -178,7 +189,7 @@ class CalcRoutesIntegrationTest {
     fun `GET healthz - returns 200 without auth`() =
         testApplication {
             environment { config = calcTestConfig() }
-            application { module(doseCalculationService = service) }
+            application { installMockDi(service); module() }
 
             val response = client.get("/healthz")
 

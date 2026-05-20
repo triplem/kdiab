@@ -31,11 +31,35 @@ import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
 import io.mockk.mockk
+import io.ktor.server.application.*
+import io.ktor.server.plugins.di.*
+import org.javafreedom.kdiab.analyze.application.service.AnalyticsOperation
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsService
+import org.javafreedom.kdiab.analyze.application.service.DeviceUsageOperation
 import org.javafreedom.kdiab.analyze.application.service.DeviceUsageService
+import org.javafreedom.kdiab.analyze.application.service.ProfilesOperation
 import org.javafreedom.kdiab.analyze.application.service.ProfilesService
+import org.javafreedom.kdiab.analyze.application.service.TimelineOperation
 import org.javafreedom.kdiab.analyze.application.service.TimelineService
 import org.javafreedom.kdiab.analyze.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted to avoid implicit-receiver ambiguity when called inside testApplication/BehaviorSpec lambdas.
+private fun Application.installMockDi(
+    timelineService: TimelineOperation,
+    analyticsService: AnalyticsOperation,
+    profilesService: ProfilesOperation,
+    deviceUsageService: DeviceUsageOperation,
+) {
+    install(DI) { }
+    dependencies {
+        provide<TimelineOperation> { timelineService }
+        provide<AnalyticsOperation> { analyticsService }
+        provide<ProfilesOperation> { profilesService }
+        provide<DeviceUsageOperation> { deviceUsageService }
+        provide<TreatmentsClient> { mockk(relaxed = true) }
+    }
+}
 
 class BffE2ETest : BehaviorSpec({
 
@@ -159,7 +183,7 @@ class BffE2ETest : BehaviorSpec({
             then("the response contains the CGM measure and BOLUS treatment") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
+                    application { installMockDi(timelineService, analyticsService, profilesService, deviceUsageService); module() }
                     val resp = client.get("/api/v1/users/$sarahId/timeline?from=$from&to=$to") {
                         bearerAuth(sarahToken)
                     }
@@ -179,7 +203,7 @@ class BffE2ETest : BehaviorSpec({
             then("hba1c is computed and readingCount matches") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
+                    application { installMockDi(timelineService, analyticsService, profilesService, deviceUsageService); module() }
                     val resp = client.get("/api/v1/users/$sarahId/analytics/hba1c?from=$from&to=$to") {
                         bearerAuth(sarahToken)
                     }
@@ -196,7 +220,7 @@ class BffE2ETest : BehaviorSpec({
             then("the ACTIVE profile is listed with validFrom") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
+                    application { installMockDi(timelineService, analyticsService, profilesService, deviceUsageService); module() }
                     val resp = client.get("/api/v1/users/$sarahId/profiles/active?from=$from&to=$to") {
                         bearerAuth(sarahToken)
                     }
@@ -214,7 +238,7 @@ class BffE2ETest : BehaviorSpec({
             then("401 is returned") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
+                    application { installMockDi(timelineService, analyticsService, profilesService, deviceUsageService); module() }
                     val resp = client.get("/api/v1/users/$sarahId/timeline?from=$from&to=$to")
                     resp.status shouldBe HttpStatusCode.Unauthorized
                 }
@@ -245,7 +269,7 @@ class BffE2ETest : BehaviorSpec({
 
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(agpServices.first, agpServices.second, agpServices.third, deviceUsageService) }
+                    application { installMockDi(agpServices.first, agpServices.second, agpServices.third, deviceUsageService); module() }
                     val resp = client.get("/api/v1/users/$sarahId/analytics/agp?from=$from&to=$to") {
                         bearerAuth(sarahToken)
                     }
@@ -265,7 +289,7 @@ class BffE2ETest : BehaviorSpec({
             then("403 is returned") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
+                    application { installMockDi(timelineService, analyticsService, profilesService, deviceUsageService); module() }
                     // sarah's token used to request mike's userId — access must be denied
                     val resp = client.get("/api/v1/users/$mikeId/timeline?from=$from&to=$to") {
                         bearerAuth(sarahToken)
@@ -279,7 +303,7 @@ class BffE2ETest : BehaviorSpec({
             then("403 is returned") {
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
+                    application { installMockDi(timelineService, analyticsService, profilesService, deviceUsageService); module() }
                     val resp = client.get("/api/v1/users/$sarahId/timeline?from=$from&to=$to") {
                         bearerAuth(drCameronToken)
                     }
@@ -319,7 +343,7 @@ class BffE2ETest : BehaviorSpec({
 
                 testApplication {
                     environment { config = MapApplicationConfig(*jwtConfig.toList().toTypedArray()) }
-                    application { module(failingTimelineService, analyticsService, profilesService, deviceUsageService) }
+                    application { installMockDi(failingTimelineService, analyticsService, profilesService, deviceUsageService); module() }
                     val resp = client.get("/api/v1/users/$sarahId/timeline?from=$from&to=$to") {
                         bearerAuth(sarahToken)
                     }

@@ -37,6 +37,7 @@ dependencies {
     implementation(libs.ktor.server.hsts)
     implementation(libs.ktor.server.default.headers)
     implementation(libs.ktor.server.status.pages)
+    implementation(libs.ktor.server.di)
 
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)
