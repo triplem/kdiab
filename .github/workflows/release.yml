@@ -1,0 +1,293 @@
+name: Monorepo Release
+
+on:
+  workflow_run:
+    workflows:
+      - "kdiab-measures / Backend CI"
+      - "kdiab-profiles / Backend CI"
+      - "kdiab-treatments / Backend CI"
+      - "kdiab-calc / Backend CI"
+      - "kdiab-carbs / Backend CI"
+      - "kdiab-analyze / Backend CI"
+      - "kdiab-users / Backend CI"
+      - "kdiab-nightscout / Backend CI"
+      - "kdiab-ui / CI"
+    branches: ["main"]
+    types:
+      - completed
+
+concurrency:
+  group: monorepo-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+
+      - name: Check all CI workflows passed for this commit
+        id: check-ci
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          WORKFLOWS=(
+            "ci-measures-backend.yml"
+            "ci-profiles-backend.yml"
+            "ci-treatments-backend.yml"
+            "ci-calc-backend.yml"
+            "ci-carbs-backend.yml"
+            "ci-analyze-backend.yml"
+            "ci-users-backend.yml"
+            "ci-nightscout-backend.yml"
+            "ci-kdiab-ui.yml"
+          )
+          ALL_PASSED=true
+          for wf in "${WORKFLOWS[@]}"; do
+            CONCLUSION=$(gh run list \
+              --workflow="$wf" \
+              --branch=main \
+              --limit=10 \
+              --json headSha,conclusion \
+              --jq ".[] | select(.headSha == \"$HEAD_SHA\") | .conclusion" 2>/dev/null | head -1)
+            echo "$wf → ${CONCLUSION:-not found}"
+            if [ "$CONCLUSION" != "success" ]; then
+              ALL_PASSED=false
+            fi
+          done
+          echo "all_passed=$ALL_PASSED" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve CI run IDs for artifact download
+        if: steps.check-ci.outputs.all_passed == 'true'
+        id: run-ids
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          get_run_id() {
+            gh run list --workflow="$1" --branch=main --limit=10 \
+              --json headSha,databaseId,conclusion \
+              --jq ".[] | select(.headSha == \"$HEAD_SHA\" and .conclusion == \"success\") | .databaseId" \
+              2>/dev/null | head -1
+          }
+          echo "measures=$(get_run_id ci-measures-backend.yml)"       >> "$GITHUB_OUTPUT"
+          echo "profiles=$(get_run_id ci-profiles-backend.yml)"       >> "$GITHUB_OUTPUT"
+          echo "treatments=$(get_run_id ci-treatments-backend.yml)"   >> "$GITHUB_OUTPUT"
+          echo "calc=$(get_run_id ci-calc-backend.yml)"               >> "$GITHUB_OUTPUT"
+          echo "carbs=$(get_run_id ci-carbs-backend.yml)"             >> "$GITHUB_OUTPUT"
+          echo "analyze=$(get_run_id ci-analyze-backend.yml)"         >> "$GITHUB_OUTPUT"
+          echo "users=$(get_run_id ci-users-backend.yml)"             >> "$GITHUB_OUTPUT"
+          echo "nightscout=$(get_run_id ci-nightscout-backend.yml)"   >> "$GITHUB_OUTPUT"
+          echo "ui=$(get_run_id ci-kdiab-ui.yml)"                     >> "$GITHUB_OUTPUT"
+
+      - name: Download kdiab-measures artifacts
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: measures-backend-image
+          path: artifacts/measures
+          run-id: ${{ steps.run-ids.outputs.measures }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-measures SBOM
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: measures-backend-bom
+          path: artifacts/measures
+          run-id: ${{ steps.run-ids.outputs.measures }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-profiles artifacts
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: profiles-backend-image
+          path: artifacts/profiles
+          run-id: ${{ steps.run-ids.outputs.profiles }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-profiles SBOM
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: profiles-backend-bom
+          path: artifacts/profiles
+          run-id: ${{ steps.run-ids.outputs.profiles }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-treatments artifacts
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: treatments-backend-image
+          path: artifacts/treatments
+          run-id: ${{ steps.run-ids.outputs.treatments }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-treatments SBOM
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: treatments-backend-bom
+          path: artifacts/treatments
+          run-id: ${{ steps.run-ids.outputs.treatments }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-calc artifacts
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: calc-backend-image
+          path: artifacts/calc
+          run-id: ${{ steps.run-ids.outputs.calc }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-calc SBOM
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: calc-backend-bom
+          path: artifacts/calc
+          run-id: ${{ steps.run-ids.outputs.calc }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-carbs artifacts
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: carbs-backend-image
+          path: artifacts/carbs
+          run-id: ${{ steps.run-ids.outputs.carbs }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-carbs SBOM
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: carbs-backend-bom
+          path: artifacts/carbs
+          run-id: ${{ steps.run-ids.outputs.carbs }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-analyze artifacts
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: analyze-backend-image
+          path: artifacts/analyze
+          run-id: ${{ steps.run-ids.outputs.analyze }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-analyze SBOM
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: analyze-backend-bom
+          path: artifacts/analyze
+          run-id: ${{ steps.run-ids.outputs.analyze }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-users artifacts
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: users-backend-image
+          path: artifacts/users
+          run-id: ${{ steps.run-ids.outputs.users }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-users SBOM
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: users-backend-bom
+          path: artifacts/users
+          run-id: ${{ steps.run-ids.outputs.users }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-nightscout artifacts
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: nightscout-backend-image
+          path: artifacts/nightscout
+          run-id: ${{ steps.run-ids.outputs.nightscout }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-nightscout SBOM
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: nightscout-backend-bom
+          path: artifacts/nightscout
+          run-id: ${{ steps.run-ids.outputs.nightscout }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-ui artifacts
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: kdiab-ui-image
+          path: artifacts/ui
+          run-id: ${{ steps.run-ids.outputs.ui }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download kdiab-ui SBOM
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: kdiab-ui-bom
+          path: artifacts/ui
+          run-id: ${{ steps.run-ids.outputs.ui }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rename artifacts to unique release asset names
+        if: steps.check-ci.outputs.all_passed == 'true'
+        run: |
+          mv artifacts/measures/backend-image.tar  artifacts/kdiab-measures-image.tar
+          mv artifacts/measures/bom.json           artifacts/kdiab-measures-bom.json
+          mv artifacts/profiles/backend-image.tar  artifacts/kdiab-profiles-image.tar
+          mv artifacts/profiles/bom.json           artifacts/kdiab-profiles-bom.json
+          mv artifacts/treatments/backend-image.tar artifacts/kdiab-treatments-image.tar
+          mv artifacts/treatments/bom.json         artifacts/kdiab-treatments-bom.json
+          mv artifacts/calc/backend-image.tar      artifacts/kdiab-calc-image.tar
+          mv artifacts/calc/bom.json               artifacts/kdiab-calc-bom.json
+          mv artifacts/carbs/backend-image.tar     artifacts/kdiab-carbs-image.tar
+          mv artifacts/carbs/bom.json              artifacts/kdiab-carbs-bom.json
+          mv artifacts/analyze/backend-image.tar   artifacts/kdiab-analyze-image.tar
+          mv artifacts/analyze/bom.json            artifacts/kdiab-analyze-bom.json
+          mv artifacts/users/backend-image.tar     artifacts/kdiab-users-image.tar
+          mv artifacts/users/bom.json              artifacts/kdiab-users-bom.json
+          mv artifacts/nightscout/backend-image.tar artifacts/kdiab-nightscout-image.tar
+          mv artifacts/nightscout/bom.json         artifacts/kdiab-nightscout-bom.json
+          mv artifacts/ui/kdiab-ui-image.tar       artifacts/kdiab-ui-image.tar
+          mv artifacts/ui/bom.json                 artifacts/kdiab-ui-bom.json
+
+      - name: Semantic Release
+        if: steps.check-ci.outputs.all_passed == 'true'
+        uses: cycjimmy/semantic-release-action@v6
+        with:
+          extra_plugins: |
+            @semantic-release/github
+            @semantic-release/commit-analyzer
+            @semantic-release/release-notes-generator
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
