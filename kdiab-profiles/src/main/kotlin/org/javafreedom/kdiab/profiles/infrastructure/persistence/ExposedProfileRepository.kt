@@ -11,6 +11,7 @@ import kotlinx.datetime.IllegalTimeZoneException
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import org.javafreedom.kdiab.common.domain.SQL_UNIQUE_VIOLATION
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.profiles.domain.model.*
 import org.javafreedom.kdiab.profiles.domain.repository.ProfileRepository
@@ -301,7 +302,7 @@ class ExposedProfileRepository(
                 }
             } catch (e: org.jetbrains.exposed.v1.exceptions.ExposedSQLException) {
                 val sqlState = e.cause?.let { (it as? java.sql.SQLException)?.sqlState }
-                if (sqlState == "23505") {
+                if (sqlState == SQL_UNIQUE_VIOLATION) {
                     throw ConflictException(
                         "Only one profile can be active at a time -- deactivate the current active profile first.",
                         e

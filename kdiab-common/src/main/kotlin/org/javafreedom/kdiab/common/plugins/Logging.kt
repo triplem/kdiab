@@ -17,7 +17,11 @@ fun Application.configureLogging() {
     install(CallId) {
         header("X-Correlation-ID")
         generate { UUID.randomUUID().toString() }
-        verify { callId: String -> callId.isNotEmpty() }
+        verify { callId: String ->
+            callId.isNotEmpty() &&
+                callId.length <= 64 &&
+                callId.matches(Regex("[a-zA-Z0-9\\-_]+"))
+        }
         replyToHeader("X-Correlation-ID")
     }
 
