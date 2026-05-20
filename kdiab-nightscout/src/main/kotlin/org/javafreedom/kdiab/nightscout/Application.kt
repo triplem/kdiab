@@ -8,6 +8,7 @@ import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
+import io.ktor.server.plugins.di.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -35,46 +36,12 @@ private const val HTTP_SOCKET_TIMEOUT_MS_DEFAULT = 5_000L
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
-fun Application.module(nightscoutService: NightscoutService? = null) {
-    configureTracing()
-    configureLogging()
-    configureMetrics()
-    configureSecurity()
-    configureStatusPages {
-        exception<CircuitBreakerOpenException> { call, cause ->
-            logger.warn { "circuit_breaker service=${cause.service} state=OPEN returning 503" }
-            val status = HttpStatusCode.ServiceUnavailable
-            call.respond(status, ErrorResponse(status.value, "Service temporarily unavailable: ${cause.service}"))
-        }
-        exception<UpstreamException> { call, cause ->
-            logger.error(cause) { "Upstream service error: ${cause.service}" }
-            val status = HttpStatusCode.BadGateway
-            call.respond(status, ErrorResponse(status.value, "Upstream service unavailable: ${cause.service}"))
-        }
-    }
-
+fun Application.module() {
     val json = Json { ignoreUnknownKeys = true }
-    install(ContentNegotiation) { json(json) }
 
-    val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
-        ?.getString()?.split(",")?.map { it.trim() }
-        ?: listOf("http://localhost:3000")
-    install(CORS) {
-        corsOrigins.forEach { origin ->
-            val scheme = if (origin.startsWith("https://")) "https" else "http"
-            val host = origin.removePrefix("https://").removePrefix("http://")
-            allowHost(host, schemes = listOf(scheme))
-        }
-        allowHeader(HttpHeaders.ContentType)
-        allowHeader(HttpHeaders.Authorization)
-        allowMethod(HttpMethod.Get)
-    }
-    install(DefaultHeaders) {
-        header("X-Content-Type-Options", "nosniff")
-        header("X-Frame-Options", "DENY")
-    }
-
-    val resolvedService: NightscoutService = nightscoutService ?: run {
+    // Install DI with production bindings only if not already installed by tests.
+    // Tests install DI with mock overrides before calling module().
+    if (pluginOrNull(DI) == null) {
         val connectTimeoutMs = environment.config.propertyOrNull("http.connectTimeoutMs")
             ?.getString()?.toLong() ?: HTTP_CONNECT_TIMEOUT_MS_DEFAULT
         val requestTimeoutMs = environment.config.propertyOrNull("http.requestTimeoutMs")
@@ -95,11 +62,55 @@ fun Application.module(nightscoutService: NightscoutService? = null) {
         val measuresUrl = environment.config.property("upstream.measuresUrl").getString()
         val treatmentsUrl = environment.config.property("upstream.treatmentsUrl").getString()
 
-        NightscoutService(
-            measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
-            treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
-        )
+        install(DI) { }
+        dependencies {
+            provide<NightscoutService> {
+                NightscoutService(
+                    measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
+                    treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
+                )
+            }
+        }
     }
+
+    configureTracing()
+    configureLogging()
+    configureMetrics()
+    configureSecurity()
+    configureStatusPages {
+        exception<CircuitBreakerOpenException> { call, cause ->
+            logger.warn { "circuit_breaker service=${cause.service} state=OPEN returning 503" }
+            val status = HttpStatusCode.ServiceUnavailable
+            call.respond(status, ErrorResponse(status.value, "Service temporarily unavailable: ${cause.service}"))
+        }
+        exception<UpstreamException> { call, cause ->
+            logger.error(cause) { "Upstream service error: ${cause.service}" }
+            val status = HttpStatusCode.BadGateway
+            call.respond(status, ErrorResponse(status.value, "Upstream service unavailable: ${cause.service}"))
+        }
+    }
+
+    install(ContentNegotiation) { json(json) }
+
+    val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
+        ?.getString()?.split(",")?.map { it.trim() }
+        ?: listOf("http://localhost:3000")
+    install(CORS) {
+        corsOrigins.forEach { origin ->
+            val scheme = if (origin.startsWith("https://")) "https" else "http"
+            val host = origin.removePrefix("https://").removePrefix("http://")
+            allowHost(host, schemes = listOf(scheme))
+        }
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Authorization)
+        allowMethod(HttpMethod.Get)
+    }
+    install(DefaultHeaders) {
+        header("X-Content-Type-Options", "nosniff")
+        header("X-Frame-Options", "DENY")
+    }
+
+    val nightscoutService: NightscoutService by dependencies
 
     routing {
         get("/healthz") { call.respond(HttpStatusCode.OK) }
@@ -118,6 +129,6 @@ fun Application.module(nightscoutService: NightscoutService? = null) {
             )
         }
 
-        nightscoutRoutes(resolvedService)
+        nightscoutRoutes(nightscoutService)
     }
 }

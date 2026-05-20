@@ -5,7 +5,9 @@ import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import io.ktor.client.request.*
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.*
 import io.ktor.server.config.MapApplicationConfig
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -13,6 +15,7 @@ import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
+import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsOperation
 import org.javafreedom.kdiab.analyze.application.service.DeviceUsageOperation
 import org.javafreedom.kdiab.analyze.application.service.ProfilesOperation
@@ -25,6 +28,24 @@ import org.javafreedom.kdiab.analyze.domain.model.ProfilesResult
 import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
 import org.javafreedom.kdiab.analyze.domain.model.Timeline
 import org.javafreedom.kdiab.analyze.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted to avoid implicit-receiver ambiguity when called inside testApplication lambdas.
+private fun Application.installMockDi(
+    timelineService: TimelineOperation,
+    analyticsService: AnalyticsOperation,
+    profilesService: ProfilesOperation,
+    deviceUsageService: DeviceUsageOperation,
+) {
+    install(DI) { }
+    dependencies {
+        provide<TimelineOperation> { timelineService }
+        provide<AnalyticsOperation> { analyticsService }
+        provide<ProfilesOperation> { profilesService }
+        provide<DeviceUsageOperation> { deviceUsageService }
+        provide<TreatmentsClient> { mockk(relaxed = true) }
+    }
+}
 
 class BffRoutesTest {
 
@@ -101,7 +122,10 @@ class BffRoutesTest {
                     "jwt.secret"   to JWT_SECRET,
                 )
             }
-            application { module(timelineService, analyticsService, profilesService, deviceUsageService) }
+            application {
+                installMockDi(timelineService, analyticsService, profilesService, deviceUsageService)
+                module()
+            }
             block(timelineService, analyticsService, profilesService, deviceUsageService)
         }
     }

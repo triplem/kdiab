@@ -6,7 +6,9 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
 import io.ktor.server.config.*
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.*
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -15,10 +17,26 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.profiles.application.service.InsulinService
+import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.profiles.domain.model.Insulin
 import org.javafreedom.kdiab.common.domain.model.Role
+import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.profiles.domain.repository.InsulinRepository
 import org.javafreedom.kdiab.profiles.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+private fun Application.installMockDi(
+    profileService: ProfileService,
+    insulinService: InsulinService,
+    auditLogRepository: AuditLogRepository,
+) {
+    install(DI) { }
+    dependencies {
+        provide<ProfileService> { profileService }
+        provide<InsulinService> { insulinService }
+        provide<AuditLogRepository> { auditLogRepository }
+    }
+}
 
 class InsulinApiTest {
 
@@ -40,7 +58,14 @@ class InsulinApiTest {
                 "jwt.test" to "true"
             )
         }
-        application { module(insulinService = InsulinService(repo), initDatabase = false) }
+        application {
+            installMockDi(
+                mockk(relaxed = true),
+                InsulinService(repo),
+                mockk(relaxed = true),
+            )
+            module(initDatabase = false)
+        }
     }
 
     // ── POST: non-admin → 403 ────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
+import io.ktor.server.plugins.di.*
 import io.ktor.server.plugins.swagger.*
 import io.ktor.server.resources.Resources
 import io.ktor.server.response.*
@@ -24,10 +25,18 @@ import org.javafreedom.kdiab.common.plugins.configureStatusPages
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 fun Application.module(
-    foodEntryService: FoodEntryService = FoodEntryService(ExposedFoodEntryRepository()),
     initDatabase: Boolean = true,
     createSchema: Boolean = false,
 ) {
+    // Install DI with production bindings only if not already installed by tests.
+    // Tests install DI with mock overrides before calling module().
+    if (pluginOrNull(DI) == null) {
+        install(DI) { }
+        dependencies {
+            provide<FoodEntryService> { FoodEntryService(ExposedFoodEntryRepository()) }
+        }
+    }
+
     configureCommonPlugins()
     configureStatusPages()
     configureContentNegotiation()
@@ -66,6 +75,8 @@ fun Application.module(
     })
 
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
+
+    val foodEntryService: FoodEntryService by dependencies
 
     routing {
         get("/") { call.respondText("T1D Carbs Service is running!") }

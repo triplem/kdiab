@@ -11,7 +11,9 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
 import io.ktor.server.config.*
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.*
 import io.mockk.coEvery
 import io.mockk.mockk
@@ -68,6 +70,15 @@ private val activeProfile = Profile(
     targets = listOf(TargetSegment(startTime = "00:00", low = 90.0, high = 110.0)),
 )
 
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted from the BehaviorSpec lambdas to avoid implicit-receiver ambiguity with Kotest DSL.
+private fun Application.installMockDi(service: DoseCalculationService) {
+    install(DI) { }
+    dependencies {
+        provide<DoseCalculationService> { service }
+    }
+}
+
 /**
  * E2E tests for the kdiab-calc dose calculation API.
  *
@@ -86,7 +97,10 @@ class CalcE2ETest : BehaviorSpec({
             then("GET /healthz returns 200 without authentication") {
                 testApplication {
                     environment { config = calcConfig() }
-                    application { module(doseCalculationService = service) }
+                    application {
+                        installMockDi(service)
+                        module()
+                    }
                     val response = client.get("/healthz")
                     response.status shouldBe HttpStatusCode.OK
                 }
@@ -97,7 +111,10 @@ class CalcE2ETest : BehaviorSpec({
             then("POST /calculate returns 200 with totalRecommended > 0 for high BG with carbs") {
                 testApplication {
                     environment { config = calcConfig() }
-                    application { module(doseCalculationService = service) }
+                    application {
+                        installMockDi(service)
+                        module()
+                    }
 
                     coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns activeProfile
 
@@ -125,7 +142,10 @@ class CalcE2ETest : BehaviorSpec({
             then("response includes a hypoglycemia warning when BG is below 70 mg/dL") {
                 testApplication {
                     environment { config = calcConfig() }
-                    application { module(doseCalculationService = service) }
+                    application {
+                        installMockDi(service)
+                        module()
+                    }
 
                     coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns activeProfile
 
@@ -152,7 +172,10 @@ class CalcE2ETest : BehaviorSpec({
             then("they receive 403 Forbidden") {
                 testApplication {
                     environment { config = calcConfig() }
-                    application { module(doseCalculationService = service) }
+                    application {
+                        installMockDi(service)
+                        module()
+                    }
 
                     val client = createClient { install(ContentNegotiation) { json() } }
                     val otherUserId = Uuid.parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
@@ -175,7 +198,10 @@ class CalcE2ETest : BehaviorSpec({
             then("they receive 401 Unauthorized") {
                 testApplication {
                     environment { config = calcConfig() }
-                    application { module(doseCalculationService = service) }
+                    application {
+                        installMockDi(service)
+                        module()
+                    }
 
                     val response = client.post("/api/v1/users/$patientId/calc/dose") {
                         contentType(ContentType.Application.Json)

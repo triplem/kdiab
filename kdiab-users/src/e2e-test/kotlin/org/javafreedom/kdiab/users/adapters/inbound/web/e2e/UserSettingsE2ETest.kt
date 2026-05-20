@@ -11,17 +11,40 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import io.ktor.server.application.*
 import io.ktor.server.config.MapApplicationConfig
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.*
 import io.mockk.coEvery
 import io.mockk.mockk
 import java.util.Date
 import kotlin.uuid.Uuid
+import org.javafreedom.kdiab.users.application.service.DoctorPatientService
+import org.javafreedom.kdiab.users.application.service.RegistrationService
+import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakUser
 import org.javafreedom.kdiab.users.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted from the BehaviorSpec lambdas to avoid implicit-receiver ambiguity with Kotest DSL.
+private fun Application.installMockDi(
+    mockKeycloak: KeycloakAdminClient,
+    mockSettingsRepo: UserSettingsRepository,
+    mockDoctorRepo: DoctorPatientRepository,
+) {
+    install(DI) { }
+    dependencies {
+        provide<KeycloakAdminClient> { mockKeycloak }
+        provide<UserSettingsRepository> { mockSettingsRepo }
+        provide<DoctorPatientRepository> { mockDoctorRepo }
+        provide<UserService> { UserService(mockKeycloak, mockSettingsRepo, mockDoctorRepo) }
+        provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockKeycloak) }
+        provide<RegistrationService> { RegistrationService(mockKeycloak, mockSettingsRepo, false) }
+    }
+}
 
 class UserSettingsE2ETest :
     BehaviorSpec({
@@ -80,12 +103,8 @@ class UserSettingsE2ETest :
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            module(
-                                keycloakAdminClient = mockKeycloak,
-                                settingsRepository = mockSettingsRepo,
-                                doctorPatientRepository = mockDoctorRepo,
-                                initDatabase = false,
-                            )
+                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            module(initDatabase = false)
                         }
 
                         val response = client.get("/healthz")
@@ -103,12 +122,8 @@ class UserSettingsE2ETest :
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            module(
-                                keycloakAdminClient = mockKeycloak,
-                                settingsRepository = mockSettingsRepo,
-                                doctorPatientRepository = mockDoctorRepo,
-                                initDatabase = false,
-                            )
+                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            module(initDatabase = false)
                         }
 
                         val response = client.get("/api/v1/users/me")
@@ -134,12 +149,8 @@ class UserSettingsE2ETest :
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            module(
-                                keycloakAdminClient = mockKeycloak,
-                                settingsRepository = mockSettingsRepo,
-                                doctorPatientRepository = mockDoctorRepo,
-                                initDatabase = false,
-                            )
+                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            module(initDatabase = false)
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
 
@@ -163,12 +174,8 @@ class UserSettingsE2ETest :
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            module(
-                                keycloakAdminClient = mockKeycloak,
-                                settingsRepository = mockSettingsRepo,
-                                doctorPatientRepository = mockDoctorRepo,
-                                initDatabase = false,
-                            )
+                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            module(initDatabase = false)
                         }
 
                         val response = client.patch("/api/v1/users/me/settings") {
@@ -195,12 +202,8 @@ class UserSettingsE2ETest :
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            module(
-                                keycloakAdminClient = mockKeycloak,
-                                settingsRepository = mockSettingsRepo,
-                                doctorPatientRepository = mockDoctorRepo,
-                                initDatabase = false,
-                            )
+                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            module(initDatabase = false)
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
 
@@ -232,12 +235,8 @@ class UserSettingsE2ETest :
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            module(
-                                keycloakAdminClient = mockKeycloak,
-                                settingsRepository = mockSettingsRepo,
-                                doctorPatientRepository = mockDoctorRepo,
-                                initDatabase = false,
-                            )
+                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            module(initDatabase = false)
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
 
@@ -264,12 +263,8 @@ class UserSettingsE2ETest :
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            module(
-                                keycloakAdminClient = mockKeycloak,
-                                settingsRepository = mockSettingsRepo,
-                                doctorPatientRepository = mockDoctorRepo,
-                                initDatabase = false,
-                            )
+                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            module(initDatabase = false)
                         }
 
                         val response = client.get("/api/v1/users/$mikeId") {
@@ -297,12 +292,8 @@ class UserSettingsE2ETest :
                     testApplication {
                         environment { config = buildConfig() }
                         application {
-                            module(
-                                keycloakAdminClient = mockKeycloak,
-                                settingsRepository = mockSettingsRepo,
-                                doctorPatientRepository = mockDoctorRepo,
-                                initDatabase = false,
-                            )
+                            installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                            module(initDatabase = false)
                         }
                         val client = createClient { install(ContentNegotiation) { json() } }
 

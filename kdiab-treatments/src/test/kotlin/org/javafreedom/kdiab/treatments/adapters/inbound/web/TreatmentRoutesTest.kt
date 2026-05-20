@@ -8,7 +8,9 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.*
 import io.ktor.server.config.MapApplicationConfig
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -21,12 +23,28 @@ import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.javafreedom.kdiab.treatments.application.service.DeviceStatusService
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.treatments.domain.model.Treatment
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
 import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.treatments.domain.repository.TreatmentRepository
 import org.javafreedom.kdiab.treatments.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted to avoid implicit-receiver ambiguity when called inside testApplication lambdas.
+private fun Application.installMockDi(
+    treatmentService: TreatmentService,
+    deviceStatusService: DeviceStatusService,
+    auditLogRepository: AuditLogRepository,
+) {
+    install(DI) { }
+    dependencies {
+        provide<TreatmentService> { treatmentService }
+        provide<DeviceStatusService> { deviceStatusService }
+        provide<AuditLogRepository> { auditLogRepository }
+    }
+}
 
 class TreatmentRoutesTest {
 
@@ -95,11 +113,12 @@ class TreatmentRoutesTest {
                 )
             }
             application {
-                module(
-                    treatmentService = TreatmentService(mockRepo),
-                    auditLogRepository = mockk<AuditLogRepository>(relaxed = true),
-                    initDatabase = false,
+                installMockDi(
+                    TreatmentService(mockRepo),
+                    mockk(relaxed = true),
+                    mockk(relaxed = true),
                 )
+                module(initDatabase = false)
             }
             block(mockRepo)
         }

@@ -7,7 +7,9 @@ import io.ktor.client.request.*
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.*
 import io.ktor.server.config.MapApplicationConfig
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -23,6 +25,15 @@ import org.javafreedom.kdiab.carbs.domain.model.FoodEntry
 import org.javafreedom.kdiab.carbs.domain.model.PagedFoodEntries
 import org.javafreedom.kdiab.carbs.domain.repository.FoodEntryRepository
 import org.javafreedom.kdiab.carbs.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted to avoid implicit-receiver ambiguity when called inside testApplication lambdas.
+private fun Application.installMockDi(foodEntryService: FoodEntryService) {
+    install(DI) { }
+    dependencies {
+        provide<FoodEntryService> { foodEntryService }
+    }
+}
 
 class FoodEntryRoutesTest {
 
@@ -89,10 +100,8 @@ class FoodEntryRoutesTest {
                 )
             }
             application {
-                module(
-                    foodEntryService = FoodEntryService(mockRepo),
-                    initDatabase     = false,
-                )
+                installMockDi(FoodEntryService(mockRepo))
+                module(initDatabase = false)
             }
             block(mockRepo)
         }

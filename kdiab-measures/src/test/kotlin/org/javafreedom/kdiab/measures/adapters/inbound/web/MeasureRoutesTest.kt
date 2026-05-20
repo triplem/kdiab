@@ -7,7 +7,9 @@ import io.ktor.client.request.*
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.*
 import io.ktor.server.config.MapApplicationConfig
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -29,6 +31,19 @@ import org.javafreedom.kdiab.measures.domain.model.MeasureType
 import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.measures.domain.repository.MeasureRepository
 import org.javafreedom.kdiab.measures.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted to avoid implicit-receiver ambiguity when called inside testApplication lambdas.
+private fun Application.installMockDi(
+    measureService: MeasureService,
+    auditLogRepository: AuditLogRepository,
+) {
+    install(DI) { }
+    dependencies {
+        provide<MeasureService> { measureService }
+        provide<AuditLogRepository> { auditLogRepository }
+    }
+}
 
 class MeasureRoutesTest {
 
@@ -99,11 +114,8 @@ class MeasureRoutesTest {
                 )
             }
             application {
-                module(
-                    measureService = MeasureService(mockRepo),
-                    auditLogRepository = mockk<AuditLogRepository>(relaxed = true),
-                    initDatabase = false,
-                )
+                installMockDi(MeasureService(mockRepo), mockk(relaxed = true))
+                module(initDatabase = false)
             }
             block(mockRepo)
         }
@@ -428,11 +440,12 @@ class MeasureRoutesTest {
                 )
             }
             application {
-                module(
-                    measureService = MeasureService(mockk<MeasureRepository>(relaxed = true)),
-                    auditLogRepository = auditRepo,
-                    initDatabase = false,
-                )
+                install(DI) { }
+                dependencies {
+                    provide<MeasureService> { MeasureService(mockk(relaxed = true)) }
+                    provide<AuditLogRepository> { auditRepo }
+                }
+                module(initDatabase = false)
             }
             block(auditRepo)
         }

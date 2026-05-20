@@ -4,6 +4,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
+import io.ktor.server.plugins.di.*
 import io.ktor.server.plugins.swagger.*
 import io.ktor.server.resources.Resources
 import io.ktor.server.response.*
@@ -30,12 +31,18 @@ import org.javafreedom.kdiab.common.plugins.configureStatusPages
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
-fun Application.module(
-    treatmentService: TreatmentService = TreatmentService(ExposedTreatmentRepository()),
-    deviceStatusService: DeviceStatusService = DeviceStatusService(ExposedDeviceStatusRepository()),
-    auditLogRepository: AuditLogRepository = ExposedAuditLogRepository(),
-    initDatabase: Boolean = true
-) {
+fun Application.module(initDatabase: Boolean = true) {
+    // Install DI with production bindings only if not already installed by tests.
+    // Tests install DI with mock overrides before calling module().
+    if (pluginOrNull(DI) == null) {
+        install(DI) { }
+        dependencies {
+            provide<TreatmentService> { TreatmentService(ExposedTreatmentRepository()) }
+            provide<DeviceStatusService> { DeviceStatusService(ExposedDeviceStatusRepository()) }
+            provide<AuditLogRepository> { ExposedAuditLogRepository() }
+        }
+    }
+
     configureCommonPlugins()
     configureStatusPages()
     configureContentNegotiation()
@@ -75,6 +82,10 @@ fun Application.module(
     })
 
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
+
+    val treatmentService: TreatmentService by dependencies
+    val deviceStatusService: DeviceStatusService by dependencies
+    val auditLogRepository: AuditLogRepository by dependencies
 
     routing {
         get("/") { call.respondText("T1D Treatments Service is running!") }

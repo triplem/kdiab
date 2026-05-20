@@ -8,6 +8,7 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
+import io.ktor.server.plugins.di.*
 import io.ktor.server.plugins.swagger.*
 import io.ktor.server.resources.Resources
 import io.ktor.server.response.*
@@ -47,31 +48,7 @@ private val logger = KotlinLogging.logger {}
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @Suppress("LongMethod")
-fun Application.module(
-    timelineService: TimelineOperation? = null,
-    analyticsService: AnalyticsOperation? = null,
-    profilesService: ProfilesOperation? = null,
-    deviceUsageService: DeviceUsageOperation? = null,
-    treatmentsClient: TreatmentsClient? = null,
-) {
-    configureCommonPlugins()
-    configureStatusPages {
-        exception<CircuitBreakerOpenException> { call, cause ->
-            logger.warn { "circuit_breaker service=${cause.service} state=OPEN returning 503" }
-            val status = HttpStatusCode.ServiceUnavailable
-            call.respond(status, ErrorResponse(status.value, "Service temporarily unavailable: ${cause.service}"))
-        }
-        exception<UpstreamException> { call, cause ->
-            logger.error(cause) { "Upstream service error: ${cause.service}" }
-            val status = HttpStatusCode.BadGateway
-            call.respond(status, ErrorResponse(status.value, "Upstream service unavailable: ${cause.service}"))
-        }
-    }
-
-    // Always emit null fields so the frontend receives `null` instead of `undefined`
-    // when optional DeviceUsageResult fields have no data (e.g. no battery events).
-    configureContentNegotiation { explicitNulls = true }
-
+fun Application.module() {
     // Build the shared Json instance for the HTTP client (must match server serialisation).
     val prettyPrint = environment.config.propertyOrNull("json.prettyPrint")
         ?.getString()?.toBoolean() ?: false
@@ -81,42 +58,12 @@ fun Application.module(
         explicitNulls = true
     }
 
-    install(Resources)
-
-    val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
-        ?.getString()?.split(",")?.map { it.trim() }
-        ?: listOf("http://localhost:3003")
-    install(CORS) {
-        corsOrigins.forEach { origin ->
-            val scheme = if (origin.startsWith("https://")) "https" else "http"
-            val host = origin.removePrefix("https://").removePrefix("http://")
-            allowHost(host, schemes = listOf(scheme))
-        }
-        allowHeader(HttpHeaders.ContentType)
-        allowHeader(HttpHeaders.Authorization)
-        allowMethod(HttpMethod.Get)
-    }
-    install(DefaultHeaders) {
-        header("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none'")
-        header("X-Content-Type-Options", "nosniff")
-        header("X-Frame-Options", "DENY")
-        header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-    }
-
-    val resolvedTimelineService: TimelineOperation
-    val resolvedAnalyticsService: AnalyticsOperation
-    val resolvedProfilesService: ProfilesOperation
-    val resolvedDeviceUsageService: DeviceUsageOperation
-    var resolvedTreatmentsClient: TreatmentsClient? = treatmentsClient
+    // Install DI with production bindings only if not already installed by tests.
+    // Tests install DI with mock overrides before calling module().
     var healthClient: HttpClient? = null
     var upstreamHealthUrls: List<String> = emptyList()
 
-    if (allServicesProvided(timelineService, analyticsService, profilesService, deviceUsageService)) {
-        resolvedTimelineService = requireNotNull(timelineService)
-        resolvedAnalyticsService = requireNotNull(analyticsService)
-        resolvedProfilesService = requireNotNull(profilesService)
-        resolvedDeviceUsageService = requireNotNull(deviceUsageService)
-    } else {
+    if (pluginOrNull(DI) == null) {
         val connectTimeoutMs = environment.config.propertyOrNull("http.connectTimeoutMs")
             ?.getString()?.toLong() ?: HTTP_CONNECT_TIMEOUT_MS_DEFAULT
         val requestTimeoutMs = environment.config.propertyOrNull("http.requestTimeoutMs")
@@ -150,6 +97,7 @@ fun Application.module(
             }
         }
         monitor.subscribe(ApplicationStopping) { httpClient.close() }
+
         val measuresUrl = environment.config.property("upstream.measuresUrl").getString()
         val profilesUrl = environment.config.property("upstream.profilesUrl").getString()
         val treatmentsUrl = environment.config.property("upstream.treatmentsUrl").getString()
@@ -161,11 +109,54 @@ fun Application.module(
         val realProfilesClient = ProfilesClient(httpClient.engine, profilesUrl)
         val realTreatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl)
 
-        resolvedTimelineService = TimelineService(measuresClient, realTreatmentsClient)
-        resolvedAnalyticsService = AnalyticsService(measuresClient, realProfilesClient)
-        resolvedProfilesService = ProfilesService(realProfilesClient)
-        resolvedDeviceUsageService = DeviceUsageService(realTreatmentsClient)
-        resolvedTreatmentsClient = realTreatmentsClient
+        install(DI) { }
+        dependencies {
+            provide<TimelineOperation> { TimelineService(measuresClient, realTreatmentsClient) }
+            provide<AnalyticsOperation> { AnalyticsService(measuresClient, realProfilesClient) }
+            provide<ProfilesOperation> { ProfilesService(realProfilesClient) }
+            provide<DeviceUsageOperation> { DeviceUsageService(realTreatmentsClient) }
+            provide<TreatmentsClient> { realTreatmentsClient }
+        }
+    }
+
+    configureCommonPlugins()
+    configureStatusPages {
+        exception<CircuitBreakerOpenException> { call, cause ->
+            logger.warn { "circuit_breaker service=${cause.service} state=OPEN returning 503" }
+            val status = HttpStatusCode.ServiceUnavailable
+            call.respond(status, ErrorResponse(status.value, "Service temporarily unavailable: ${cause.service}"))
+        }
+        exception<UpstreamException> { call, cause ->
+            logger.error(cause) { "Upstream service error: ${cause.service}" }
+            val status = HttpStatusCode.BadGateway
+            call.respond(status, ErrorResponse(status.value, "Upstream service unavailable: ${cause.service}"))
+        }
+    }
+
+    // Always emit null fields so the frontend receives `null` instead of `undefined`
+    // when optional DeviceUsageResult fields have no data (e.g. no battery events).
+    configureContentNegotiation { explicitNulls = true }
+
+    install(Resources)
+
+    val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
+        ?.getString()?.split(",")?.map { it.trim() }
+        ?: listOf("http://localhost:3003")
+    install(CORS) {
+        corsOrigins.forEach { origin ->
+            val scheme = if (origin.startsWith("https://")) "https" else "http"
+            val host = origin.removePrefix("https://").removePrefix("http://")
+            allowHost(host, schemes = listOf(scheme))
+        }
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader(HttpHeaders.Authorization)
+        allowMethod(HttpMethod.Get)
+    }
+    install(DefaultHeaders) {
+        header("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none'")
+        header("X-Content-Type-Options", "nosniff")
+        header("X-Frame-Options", "DENY")
+        header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
     }
 
     // Upstream-aware health check: verify all upstream /healthz endpoints when running in prod mode.
@@ -183,16 +174,22 @@ fun Application.module(
 
     val swaggerEnabled = environment.config.propertyOrNull("swagger.enabled")?.getString()?.toBoolean() ?: false
 
+    val timelineService: TimelineOperation by dependencies
+    val analyticsService: AnalyticsOperation by dependencies
+    val profilesService: ProfilesOperation by dependencies
+    val deviceUsageService: DeviceUsageOperation by dependencies
+    val treatmentsClient: TreatmentsClient by dependencies
+
     routing {
         get("/") { call.respondText("kdiab BFF is running!") }
 
         route("/api/v1") {
             bffRoutes(
-                resolvedTimelineService,
-                resolvedAnalyticsService,
-                resolvedProfilesService,
-                resolvedDeviceUsageService,
-                resolvedTreatmentsClient,
+                timelineService,
+                analyticsService,
+                profilesService,
+                deviceUsageService,
+                treatmentsClient,
             )
         }
 
@@ -201,11 +198,3 @@ fun Application.module(
         }
     }
 }
-
-private fun allServicesProvided(
-    timelineService: TimelineOperation?,
-    analyticsService: AnalyticsOperation?,
-    profilesService: ProfilesOperation?,
-    deviceUsageService: DeviceUsageOperation?,
-): Boolean = listOf(timelineService, analyticsService, profilesService, deviceUsageService)
-    .all { it != null }

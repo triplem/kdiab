@@ -7,6 +7,7 @@ import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.plugins.defaultheaders.*
+import io.ktor.server.plugins.di.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
@@ -54,13 +55,44 @@ internal fun validateConfig(config: io.ktor.server.config.ApplicationConfig) {
 }
 
 @Suppress("LongMethod")
-fun Application.module(
-    keycloakAdminClient: KeycloakAdminClient? = null,
-    settingsRepository: UserSettingsRepository? = null,
-    doctorPatientRepository: DoctorPatientRepository? = null,
-    initDatabase: Boolean = true,
-) {
+fun Application.module(initDatabase: Boolean = true) {
     validateConfig(environment.config)
+
+    // Install DI with production bindings only if not already installed by tests.
+    // Tests install DI with mock overrides before calling module().
+    if (pluginOrNull(DI) == null) {
+        val kcAdminCfg = environment.config.config("keycloakAdmin")
+        val keycloak = KeycloakAdminClient(
+            baseUrl = kcAdminCfg.property("url").getString(),
+            realm = kcAdminCfg.property("realm").getString(),
+            clientId = kcAdminCfg.property("clientId").getString(),
+            clientSecret = kcAdminCfg.property("clientSecret").getString(),
+        )
+        monitor.subscribe(ApplicationStopping) { keycloak.close() }
+
+        val requiresApproval = environment.config
+            .propertyOrNull("registration.requiresApproval")?.getString()?.toBoolean() ?: false
+
+        val settingsRepo = ExposedUserSettingsRepository()
+        val doctorPatientRepo = ExposedDoctorPatientRepository()
+
+        install(DI) { }
+        dependencies {
+            provide<KeycloakAdminClient> { keycloak }
+            provide<UserSettingsRepository> { settingsRepo }
+            provide<DoctorPatientRepository> { doctorPatientRepo }
+            provide<UserService> {
+                UserService(keycloak, settingsRepo, doctorPatientRepo)
+            }
+            provide<DoctorPatientService> {
+                DoctorPatientService(doctorPatientRepo, keycloak)
+            }
+            provide<RegistrationService> {
+                RegistrationService(keycloak, settingsRepo, requiresApproval)
+            }
+        }
+    }
+
     configureTracing()
     configureLogging()
     configureMetrics()
@@ -107,26 +139,12 @@ fun Application.module(
         DatabaseFactory.init(environment.config)
     }
 
-    val kcAdminCfg = environment.config.config("keycloakAdmin")
-    val keycloak = keycloakAdminClient ?: KeycloakAdminClient(
-        baseUrl = kcAdminCfg.property("url").getString(),
-        realm = kcAdminCfg.property("realm").getString(),
-        clientId = kcAdminCfg.property("clientId").getString(),
-        clientSecret = kcAdminCfg.property("clientSecret").getString(),
-    )
-    monitor.subscribe(ApplicationStopping) { keycloak.close() }
-
-    val settingsRepo = settingsRepository ?: ExposedUserSettingsRepository()
-    val doctorPatientRepo = doctorPatientRepository ?: ExposedDoctorPatientRepository()
-
-    val userService = UserService(keycloak, settingsRepo, doctorPatientRepo)
-    val doctorPatientService = DoctorPatientService(doctorPatientRepo, keycloak)
+    val userService: UserService by dependencies
+    val doctorPatientService: DoctorPatientService by dependencies
+    val registrationService: RegistrationService by dependencies
 
     val registrationEnabled = environment.config
         .propertyOrNull("registration.enabled")?.getString()?.toBoolean() ?: false
-    val requiresApproval = environment.config
-        .propertyOrNull("registration.requiresApproval")?.getString()?.toBoolean() ?: false
-    val registrationService = RegistrationService(keycloak, settingsRepo, requiresApproval)
 
     routing {
         get("/healthz") { call.respond(HttpStatusCode.OK) }

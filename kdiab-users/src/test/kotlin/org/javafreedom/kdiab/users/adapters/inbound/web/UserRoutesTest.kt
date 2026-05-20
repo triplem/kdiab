@@ -7,7 +7,9 @@ import io.ktor.client.request.*
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.*
 import io.ktor.server.config.MapApplicationConfig
+import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
@@ -15,12 +17,33 @@ import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
+import org.javafreedom.kdiab.users.application.service.DoctorPatientService
+import org.javafreedom.kdiab.users.application.service.RegistrationService
+import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakRole
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakUser
 import org.javafreedom.kdiab.users.module
+
+// Top-level helper: installs mock DI bindings on the Application before module() runs.
+// Extracted to avoid implicit-receiver ambiguity when called inside testApplication lambdas.
+private fun Application.installMockDi(
+    mockKeycloak: KeycloakAdminClient,
+    mockSettingsRepo: UserSettingsRepository,
+    mockDoctorRepo: DoctorPatientRepository,
+) {
+    install(DI) { }
+    dependencies {
+        provide<KeycloakAdminClient> { mockKeycloak }
+        provide<UserSettingsRepository> { mockSettingsRepo }
+        provide<DoctorPatientRepository> { mockDoctorRepo }
+        provide<UserService> { UserService(mockKeycloak, mockSettingsRepo, mockDoctorRepo) }
+        provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockKeycloak) }
+        provide<RegistrationService> { RegistrationService(mockKeycloak, mockSettingsRepo, false) }
+    }
+}
 
 class UserRoutesTest {
 
@@ -108,12 +131,8 @@ class UserRoutesTest {
                 )
             }
             application {
-                module(
-                    keycloakAdminClient = mockKeycloak,
-                    settingsRepository  = mockSettingsRepo,
-                    doctorPatientRepository = mockDoctorRepo,
-                    initDatabase        = false,
-                )
+                installMockDi(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
+                module(initDatabase = false)
             }
             block(mockKeycloak, mockSettingsRepo, mockDoctorRepo)
         }
