@@ -1,0 +1,40 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          { "path": "artifacts/kdiab-measures-image.tar",    "name": "kdiab-measures-image.tar",    "label": "kdiab-measures Docker Image" },
+          { "path": "artifacts/kdiab-measures-bom.json",     "name": "kdiab-measures-bom.json",     "label": "kdiab-measures SBOM (CycloneDX)" },
+          { "path": "kdiab-measures/api/openapi.yaml",       "name": "kdiab-measures-openapi.yaml", "label": "kdiab-measures OpenAPI Specification" },
+          { "path": "artifacts/kdiab-profiles-image.tar",    "name": "kdiab-profiles-image.tar",    "label": "kdiab-profiles Docker Image" },
+          { "path": "artifacts/kdiab-profiles-bom.json",     "name": "kdiab-profiles-bom.json",     "label": "kdiab-profiles SBOM (CycloneDX)" },
+          { "path": "kdiab-profiles/api/openapi.yaml",       "name": "kdiab-profiles-openapi.yaml", "label": "kdiab-profiles OpenAPI Specification" },
+          { "path": "artifacts/kdiab-treatments-image.tar",  "name": "kdiab-treatments-image.tar",  "label": "kdiab-treatments Docker Image" },
+          { "path": "artifacts/kdiab-treatments-bom.json",   "name": "kdiab-treatments-bom.json",   "label": "kdiab-treatments SBOM (CycloneDX)" },
+          { "path": "kdiab-treatments/api/openapi.yaml",     "name": "kdiab-treatments-openapi.yaml","label": "kdiab-treatments OpenAPI Specification" },
+          { "path": "artifacts/kdiab-calc-image.tar",        "name": "kdiab-calc-image.tar",        "label": "kdiab-calc Docker Image" },
+          { "path": "artifacts/kdiab-calc-bom.json",         "name": "kdiab-calc-bom.json",         "label": "kdiab-calc SBOM (CycloneDX)" },
+          { "path": "kdiab-calc/api/openapi.yaml",           "name": "kdiab-calc-openapi.yaml",     "label": "kdiab-calc OpenAPI Specification" },
+          { "path": "artifacts/kdiab-carbs-image.tar",       "name": "kdiab-carbs-image.tar",       "label": "kdiab-carbs Docker Image" },
+          { "path": "artifacts/kdiab-carbs-bom.json",        "name": "kdiab-carbs-bom.json",        "label": "kdiab-carbs SBOM (CycloneDX)" },
+          { "path": "kdiab-carbs/api/openapi.yaml",          "name": "kdiab-carbs-openapi.yaml",    "label": "kdiab-carbs OpenAPI Specification" },
+          { "path": "artifacts/kdiab-analyze-image.tar",     "name": "kdiab-analyze-image.tar",     "label": "kdiab-analyze Docker Image" },
+          { "path": "artifacts/kdiab-analyze-bom.json",      "name": "kdiab-analyze-bom.json",      "label": "kdiab-analyze SBOM (CycloneDX)" },
+          { "path": "kdiab-analyze/api/openapi.yaml",        "name": "kdiab-analyze-openapi.yaml",  "label": "kdiab-analyze OpenAPI Specification" },
+          { "path": "artifacts/kdiab-users-image.tar",       "name": "kdiab-users-image.tar",       "label": "kdiab-users Docker Image" },
+          { "path": "artifacts/kdiab-users-bom.json",        "name": "kdiab-users-bom.json",        "label": "kdiab-users SBOM (CycloneDX)" },
+          { "path": "kdiab-users/api/openapi.yaml",          "name": "kdiab-users-openapi.yaml",    "label": "kdiab-users OpenAPI Specification" },
+          { "path": "artifacts/kdiab-nightscout-image.tar",  "name": "kdiab-nightscout-image.tar",  "label": "kdiab-nightscout Docker Image" },
+          { "path": "artifacts/kdiab-nightscout-bom.json",   "name": "kdiab-nightscout-bom.json",   "label": "kdiab-nightscout SBOM (CycloneDX)" },
+          { "path": "kdiab-nightscout/api/openapi.yaml",     "name": "kdiab-nightscout-openapi.yaml","label": "kdiab-nightscout OpenAPI Specification" },
+          { "path": "artifacts/kdiab-ui-image.tar",          "name": "kdiab-ui-image.tar",          "label": "kdiab-ui Docker Image" },
+          { "path": "artifacts/kdiab-ui-bom.json",           "name": "kdiab-ui-bom.json",           "label": "kdiab-ui SBOM (CycloneDX)" }
+        ]
+      }
+    ]
+  ]
+}
