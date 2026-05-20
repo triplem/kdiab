@@ -312,13 +312,24 @@ class MeasureRoutesTest {
     }
 
     @Test
-    fun `archive measures - 404 when empty measure ids`() = routeTest { _ ->
+    fun `archive measures - 400 when empty measure ids`() = routeTest { _ ->
         val resp = client.post("/api/v1/users/$SARAH_ID/measures/archive") {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody("""{"measureIds":[]}""")
         }
-        assertEquals(HttpStatusCode.NotFound, resp.status)
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `archive measures - 400 when bulk size exceeds limit`() = routeTest { _ ->
+        val ids = (1..201).map { "\"00000000-0000-0000-0000-${it.toString().padStart(12, '0')}\"" }.joinToString(",")
+        val resp = client.post("/api/v1/users/$SARAH_ID/measures/archive") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody("""{"measureIds":[$ids]}""")
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
     }
 
     // ── POST /api/v1/users/{userId}/measures/delete ───────────────────────────
@@ -366,13 +377,24 @@ class MeasureRoutesTest {
     }
 
     @Test
-    fun `delete measures - 404 when empty measure ids and admin`() = routeTest { _ ->
+    fun `delete measures - 400 when empty measure ids and admin`() = routeTest { _ ->
         val resp = client.post("/api/v1/users/$SARAH_ID/measures/delete") {
             bearerAuth(adminToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody("""{"measureIds":[]}""")
         }
-        assertEquals(HttpStatusCode.NotFound, resp.status)
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `delete measures - 400 when bulk size exceeds limit and admin`() = routeTest { _ ->
+        val ids = (1..201).map { "\"00000000-0000-0000-0000-${it.toString().padStart(12, '0')}\"" }.joinToString(",")
+        val resp = client.post("/api/v1/users/$SARAH_ID/measures/delete") {
+            bearerAuth(adminToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody("""{"measureIds":[$ids]}""")
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
     }
 
     // ── Exception / StatusPages coverage ─────────────────────────────────────

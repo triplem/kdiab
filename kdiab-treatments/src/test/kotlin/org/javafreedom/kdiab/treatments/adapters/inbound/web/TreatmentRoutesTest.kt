@@ -309,13 +309,24 @@ class TreatmentRoutesTest {
     }
 
     @Test
-    fun `archive treatments - 404 when empty treatment ids`() = routeTest { _ ->
+    fun `archive treatments - 400 when empty treatment ids`() = routeTest { _ ->
         val resp = client.post("/api/v1/users/$SARAH_ID/treatments/archive") {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody("""{"treatmentIds":[]}""")
         }
-        assertEquals(HttpStatusCode.NotFound, resp.status)
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `archive treatments - 400 when bulk size exceeds limit`() = routeTest { _ ->
+        val ids = (1..201).map { "\"00000000-0000-0000-0000-${it.toString().padStart(12, '0')}\"" }.joinToString(",")
+        val resp = client.post("/api/v1/users/$SARAH_ID/treatments/archive") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody("""{"treatmentIds":[$ids]}""")
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
     }
 
     // ── POST /api/v1/users/{userId}/treatments/delete ─────────────────────────
@@ -373,13 +384,24 @@ class TreatmentRoutesTest {
     }
 
     @Test
-    fun `delete treatments - 404 when empty treatment ids`() = routeTest { _ ->
+    fun `delete treatments - 400 when empty treatment ids`() = routeTest { _ ->
         val resp = client.post("/api/v1/users/$SARAH_ID/treatments/delete") {
             bearerAuth(doctorToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody("""{"treatmentIds":[]}""")
         }
-        assertEquals(HttpStatusCode.NotFound, resp.status)
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `delete treatments - 400 when bulk size exceeds limit`() = routeTest { _ ->
+        val ids = (1..201).map { "\"00000000-0000-0000-0000-${it.toString().padStart(12, '0')}\"" }.joinToString(",")
+        val resp = client.post("/api/v1/users/$SARAH_ID/treatments/delete") {
+            bearerAuth(doctorToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody("""{"treatmentIds":[$ids]}""")
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
     }
 
     // ── Exception / StatusPages coverage ─────────────────────────────────────

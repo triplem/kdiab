@@ -33,6 +33,7 @@ import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
 
 private const val DEFAULT_PAGE_SIZE = 50
 private const val MAX_PAGE_SIZE = 200
+private const val MAX_BULK_SIZE = 200
 
 @Serializable
 private data class PagedMeasureResponse(
@@ -141,6 +142,8 @@ private fun Route.archiveMeasures(measureService: MeasureService, auditLogReposi
 
         val request = call.receive<BulkMeasureRequest>()
         val ids = request.measureIds.map { parseUuid(it) }
+        if (ids.isEmpty()) throw BusinessValidationException("measureIds must not be empty")
+        if (ids.size > MAX_BULK_SIZE) throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
         measureService.archiveMeasures(ids, targetUserId)
         logger.info { "Archived ${ids.size} measures for user $targetUserId" }
         call.respond(HttpStatusCode.OK)
@@ -156,6 +159,8 @@ private fun Route.unarchiveMeasures(measureService: MeasureService, auditLogRepo
 
         val request = call.receive<BulkMeasureRequest>()
         val ids = request.measureIds.map { parseUuid(it) }
+        if (ids.isEmpty()) throw BusinessValidationException("measureIds must not be empty")
+        if (ids.size > MAX_BULK_SIZE) throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
         measureService.unarchiveMeasures(ids, targetUserId)
         logger.info { "Unarchived ${ids.size} measures for user $targetUserId" }
         call.respond(HttpStatusCode.OK)
@@ -175,6 +180,8 @@ private fun Route.deleteMeasures(measureService: MeasureService, auditLogReposit
 
         val request = call.receive<BulkMeasureRequest>()
         val ids = request.measureIds.map { parseUuid(it) }
+        if (ids.isEmpty()) throw BusinessValidationException("measureIds must not be empty")
+        if (ids.size > MAX_BULK_SIZE) throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
         auditDeletion(call, principal, targetUserId, ids, auditLogRepository)
         measureService.deleteMeasures(ids, targetUserId)
         logger.info { "Deleted ${ids.size} measures for user $targetUserId" }

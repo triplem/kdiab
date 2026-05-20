@@ -32,6 +32,7 @@ import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
 
 private const val DEFAULT_PAGE_SIZE = 50
 private const val MAX_PAGE_SIZE = 200
+private const val MAX_BULK_SIZE = 200
 
 @Serializable
 private data class PagedTreatmentResponse(
@@ -165,6 +166,8 @@ private fun Route.archiveTreatments(treatmentService: TreatmentService, auditLog
 
         val request = call.receive<BulkTreatmentRequest>()
         val ids = request.treatmentIds.map { parseUuid(it) }
+        if (ids.isEmpty()) throw BusinessValidationException("treatmentIds must not be empty")
+        if (ids.size > MAX_BULK_SIZE) throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
         treatmentService.archiveTreatments(ids, targetUserId)
         logger.info { "Archived ${ids.size} treatments for user $targetUserId" }
         call.respond(HttpStatusCode.OK)
@@ -180,6 +183,8 @@ private fun Route.unarchiveTreatments(treatmentService: TreatmentService, auditL
 
         val request = call.receive<BulkTreatmentRequest>()
         val ids = request.treatmentIds.map { parseUuid(it) }
+        if (ids.isEmpty()) throw BusinessValidationException("treatmentIds must not be empty")
+        if (ids.size > MAX_BULK_SIZE) throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
         treatmentService.unarchiveTreatments(ids, targetUserId)
         logger.info { "Unarchived ${ids.size} treatments for user $targetUserId" }
         call.respond(HttpStatusCode.OK)
@@ -199,6 +204,8 @@ private fun Route.deleteTreatments(treatmentService: TreatmentService, auditLogR
 
         val request = call.receive<BulkTreatmentRequest>()
         val ids = request.treatmentIds.map { parseUuid(it) }
+        if (ids.isEmpty()) throw BusinessValidationException("treatmentIds must not be empty")
+        if (ids.size > MAX_BULK_SIZE) throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
         auditDeletion(call, principal, targetUserId, ids, auditLogRepository)
         treatmentService.deleteTreatments(ids, targetUserId)
         logger.info { "Deleted ${ids.size} treatments for user $targetUserId" }
