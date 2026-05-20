@@ -110,6 +110,30 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+    delete:
+      summary: Permanently delete measures
+      description: Only doctors and admins can permanently delete measures.
+      operationId: deleteMeasures
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkMeasureRequest'
+      responses:
+        '200':
+          description: Measures deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /users/{userId}/measures/{measureId}:
     put:
@@ -198,32 +222,6 @@ paths:
       responses:
         '200':
           description: Measures unarchived successfully
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /users/{userId}/measures/delete:
-    post:
-      summary: Permanently delete measures
-      description: Only doctors and admins can permanently delete measures.
-      operationId: deleteMeasures
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/BulkMeasureRequest'
-      responses:
-        '200':
-          description: Measures deleted successfully
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

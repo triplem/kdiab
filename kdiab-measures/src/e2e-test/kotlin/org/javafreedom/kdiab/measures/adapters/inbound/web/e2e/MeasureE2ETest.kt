@@ -179,7 +179,7 @@ class MeasureE2ETest : BehaviorSpec({
                     val createdId = Json.parseToJsonElement(createResp.bodyAsText()).jsonObject["id"]!!.jsonPrimitive.content
 
                     // Doctor deletes it
-                    val deleteResp = client.post("/api/v1/users/$userSarahId/measures/delete") {
+                    val deleteResp = client.delete("/api/v1/users/$userSarahId/measures") {
                         header(HttpHeaders.Authorization, "Bearer $doctorToken")
                         contentType(ContentType.Application.Json)
                         setBody("""{"measureIds":["$createdId"]}""")
