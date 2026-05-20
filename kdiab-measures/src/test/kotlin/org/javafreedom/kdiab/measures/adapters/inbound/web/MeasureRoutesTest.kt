@@ -23,12 +23,12 @@ import kotlin.uuid.Uuid
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.measures.application.service.MeasureService
-import org.javafreedom.kdiab.measures.domain.model.AuditLog
+import org.javafreedom.kdiab.common.domain.model.AuditLog
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.measures.domain.model.Measure
 import org.javafreedom.kdiab.measures.domain.model.MeasureSource
 import org.javafreedom.kdiab.measures.domain.model.MeasureStatus
 import org.javafreedom.kdiab.measures.domain.model.MeasureType
-import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.measures.domain.repository.MeasureRepository
 import org.javafreedom.kdiab.measures.module
 

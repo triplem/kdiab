@@ -1,6 +1,5 @@
-@file:Suppress("MatchingDeclarationName")
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
-package org.javafreedom.kdiab.profiles.adapters.inbound.web
+package org.javafreedom.kdiab.common.plugins
 
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -14,9 +13,8 @@ import kotlin.uuid.Uuid
 import kotlinx.serialization.Serializable
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
-import org.javafreedom.kdiab.common.plugins.UserPrincipal
-import org.javafreedom.kdiab.profiles.domain.model.AuditLog
-import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.domain.model.AuditLog
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 
 @Serializable
 data class AuditLogResponse(
@@ -65,7 +63,7 @@ fun Route.auditRoutes(auditLogRepository: AuditLogRepository) {
     }
 }
 
-internal suspend fun auditIfDoctor(
+suspend fun auditIfDoctor(
     call: ApplicationCall,
     principal: UserPrincipal?,
     patientId: Uuid,
@@ -83,6 +81,30 @@ internal suspend fun auditIfDoctor(
             occurredAt = Clock.System.now(),
             ipAddress = ip,
             userAgent = call.request.headers[HttpHeaders.UserAgent],
+        )
+    )
+}
+
+suspend fun auditDeletion(
+    call: ApplicationCall,
+    principal: UserPrincipal?,
+    targetUserId: Uuid,
+    ids: List<Uuid>,
+    repository: AuditLogRepository,
+    action: String,
+) {
+    if (principal == null) return
+    val ip = call.request.local.remoteAddress
+    repository.save(
+        AuditLog(
+            id = Uuid.random(),
+            doctorId = principal.userId,
+            patientId = targetUserId,
+            action = action,
+            occurredAt = Clock.System.now(),
+            ipAddress = ip,
+            userAgent = call.request.headers[HttpHeaders.UserAgent],
+            detail = ids.joinToString(","),
         )
     )
 }

@@ -12,10 +12,10 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.javafreedom.kdiab.measures.adapters.inbound.web.auditRoutes
 import org.javafreedom.kdiab.measures.adapters.inbound.web.measureRoutes
 import org.javafreedom.kdiab.measures.application.service.MeasureService
-import org.javafreedom.kdiab.measures.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.plugins.auditRoutes
 import org.javafreedom.kdiab.measures.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository

@@ -28,7 +28,9 @@ import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentStatus
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
-import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.plugins.auditDeletion
+import org.javafreedom.kdiab.common.plugins.auditIfDoctor
 
 private const val DEFAULT_PAGE_SIZE = 50
 private const val MAX_PAGE_SIZE = 200
@@ -167,7 +169,8 @@ private fun Route.archiveTreatments(treatmentService: TreatmentService, auditLog
         val request = call.receive<BulkTreatmentRequest>()
         val ids = request.treatmentIds.map { parseUuid(it) }
         if (ids.isEmpty()) throw BusinessValidationException("treatmentIds must not be empty")
-        if (ids.size > MAX_BULK_SIZE) throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
+        if (ids.size > MAX_BULK_SIZE)
+            throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
         treatmentService.archiveTreatments(ids, targetUserId)
         logger.info { "Archived ${ids.size} treatments for user $targetUserId" }
         call.respond(HttpStatusCode.OK)
@@ -184,7 +187,8 @@ private fun Route.unarchiveTreatments(treatmentService: TreatmentService, auditL
         val request = call.receive<BulkTreatmentRequest>()
         val ids = request.treatmentIds.map { parseUuid(it) }
         if (ids.isEmpty()) throw BusinessValidationException("treatmentIds must not be empty")
-        if (ids.size > MAX_BULK_SIZE) throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
+        if (ids.size > MAX_BULK_SIZE)
+            throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
         treatmentService.unarchiveTreatments(ids, targetUserId)
         logger.info { "Unarchived ${ids.size} treatments for user $targetUserId" }
         call.respond(HttpStatusCode.OK)
@@ -205,8 +209,9 @@ private fun Route.deleteTreatments(treatmentService: TreatmentService, auditLogR
         val request = call.receive<BulkTreatmentRequest>()
         val ids = request.treatmentIds.map { parseUuid(it) }
         if (ids.isEmpty()) throw BusinessValidationException("treatmentIds must not be empty")
-        if (ids.size > MAX_BULK_SIZE) throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
-        auditDeletion(call, principal, targetUserId, ids, auditLogRepository)
+        if (ids.size > MAX_BULK_SIZE)
+            throw BusinessValidationException("Bulk operation exceeds maximum of $MAX_BULK_SIZE items")
+        auditDeletion(call, principal, targetUserId, ids, auditLogRepository, "treatments.delete")
         treatmentService.deleteTreatments(ids, targetUserId)
         logger.info { "Deleted ${ids.size} treatments for user $targetUserId" }
         call.respond(HttpStatusCode.OK)

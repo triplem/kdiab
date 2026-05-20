@@ -12,12 +12,12 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.javafreedom.kdiab.profiles.adapters.inbound.web.auditRoutes
 import org.javafreedom.kdiab.profiles.adapters.inbound.web.insulinRoutes
 import org.javafreedom.kdiab.profiles.adapters.inbound.web.profileRoutes
 import org.javafreedom.kdiab.profiles.application.service.InsulinService
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
-import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.plugins.auditRoutes
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedInsulinRepository

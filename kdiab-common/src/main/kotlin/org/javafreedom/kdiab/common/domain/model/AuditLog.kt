@@ -1,5 +1,5 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
-package org.javafreedom.kdiab.measures.domain.model
+package org.javafreedom.kdiab.common.domain.model
 
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
