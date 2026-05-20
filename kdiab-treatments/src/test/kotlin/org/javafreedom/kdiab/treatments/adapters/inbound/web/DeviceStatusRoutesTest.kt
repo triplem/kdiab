@@ -68,11 +68,12 @@ class DeviceStatusRoutesTest {
         testApplication {
             environment {
                 config = MapApplicationConfig(
-                    "jwt.domain"   to ISSUER,
-                    "jwt.audience" to AUDIENCE,
-                    "jwt.realm"    to "kdiab-treatments",
-                    "jwt.test"     to "true",
-                    "jwt.secret"   to JWT_SECRET,
+                    "jwt.domain"       to ISSUER,
+                    "jwt.audience"     to AUDIENCE,
+                    "jwt.realm"        to "kdiab-treatments",
+                    "jwt.test"         to "true",
+                    "jwt.secret"       to JWT_SECRET,
+                    "app.initDatabase" to "false",
                 )
             }
             application {
@@ -81,7 +82,7 @@ class DeviceStatusRoutesTest {
                     DeviceStatusService(mockDeviceRepo),
                     mockk(relaxed = true),
                 )
-                module(initDatabase = false)
+                module()
             }
             block(mockDeviceRepo)
         }

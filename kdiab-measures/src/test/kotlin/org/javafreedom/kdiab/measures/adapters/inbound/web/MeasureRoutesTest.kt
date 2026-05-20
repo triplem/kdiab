@@ -106,16 +106,17 @@ class MeasureRoutesTest {
         testApplication {
             environment {
                 config = MapApplicationConfig(
-                    "jwt.domain"   to ISSUER,
-                    "jwt.audience" to AUDIENCE,
-                    "jwt.realm"    to "kdiab-measures",
-                    "jwt.test"     to "true",
-                    "jwt.secret"   to JWT_SECRET,
+                    "jwt.domain"       to ISSUER,
+                    "jwt.audience"     to AUDIENCE,
+                    "jwt.realm"        to "kdiab-measures",
+                    "jwt.test"         to "true",
+                    "jwt.secret"       to JWT_SECRET,
+                    "app.initDatabase" to "false",
                 )
             }
             application {
                 installMockDi(MeasureService(mockRepo), mockk(relaxed = true))
-                module(initDatabase = false)
+                module()
             }
             block(mockRepo)
         }
@@ -454,11 +455,12 @@ class MeasureRoutesTest {
         testApplication {
             environment {
                 config = MapApplicationConfig(
-                    "jwt.domain"   to ISSUER,
-                    "jwt.audience" to AUDIENCE,
-                    "jwt.realm"    to "kdiab-measures",
-                    "jwt.test"     to "true",
-                    "jwt.secret"   to JWT_SECRET,
+                    "jwt.domain"       to ISSUER,
+                    "jwt.audience"     to AUDIENCE,
+                    "jwt.realm"        to "kdiab-measures",
+                    "jwt.test"         to "true",
+                    "jwt.secret"       to JWT_SECRET,
+                    "app.initDatabase" to "false",
                 )
             }
             application {
@@ -467,7 +469,7 @@ class MeasureRoutesTest {
                     provide<MeasureService> { MeasureService(mockk(relaxed = true)) }
                     provide<AuditLogRepository> { auditRepo }
                 }
-                module(initDatabase = false)
+                module()
             }
             block(auditRepo)
         }

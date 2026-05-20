@@ -12,11 +12,12 @@ class ApplicationTest {
     private fun ApplicationTestBuilder.configureTestEnv() {
         environment {
             config = MapApplicationConfig(
-                "jwt.domain"   to "http://localhost:8081/realms/kdiab-measures",
-                "jwt.audience" to "measure",
-                "jwt.realm"    to "kdiab-measures",
-                "jwt.test"     to "true",
-                "jwt.secret"   to "test-secret-for-unit-tests-only",
+                "jwt.domain"      to "http://localhost:8081/realms/kdiab-measures",
+                "jwt.audience"    to "measure",
+                "jwt.realm"       to "kdiab-measures",
+                "jwt.test"        to "true",
+                "jwt.secret"      to "test-secret-for-unit-tests-only",
+                "app.initDatabase" to "false",
             )
         }
     }
@@ -24,7 +25,7 @@ class ApplicationTest {
     @Test
     fun `unknown route returns 404`() = testApplication {
         configureTestEnv()
-        application { module(initDatabase = false) }
+        application { module() }
         val response = client.get("/unknown-route")
         assertEquals(HttpStatusCode.NotFound, response.status)
     }
@@ -32,7 +33,7 @@ class ApplicationTest {
     @Test
     fun `GET metrics returns 200 with text content`() = testApplication {
         configureTestEnv()
-        application { module(initDatabase = false) }
+        application { module() }
         val response = client.get("/metrics") {
             header(HttpHeaders.Authorization, "Bearer test-token")
         }
@@ -43,7 +44,7 @@ class ApplicationTest {
     @Test
     fun `GET metrics without authorization returns 401`() = testApplication {
         configureTestEnv()
-        application { module(initDatabase = false) }
+        application { module() }
         val response = client.get("/metrics")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }

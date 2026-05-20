@@ -749,11 +749,12 @@ class ProfileApiTest {
                 environment {
                         config =
                                 MapApplicationConfig(
-                                        "jwt.audience" to "profile",
-                                        "jwt.domain" to "org.javafreedom.kdiab",
-                                        "jwt.realm" to "kdiab-profiles",
-                                        "jwt.secret" to "secret",
-                                        "jwt.test" to "true"
+                                        "jwt.audience"     to "profile",
+                                        "jwt.domain"       to "org.javafreedom.kdiab",
+                                        "jwt.realm"        to "kdiab-profiles",
+                                        "jwt.secret"       to "secret",
+                                        "jwt.test"         to "true",
+                                        "app.initDatabase" to "false",
                                 )
                 }
                 application {
@@ -762,7 +763,7 @@ class ProfileApiTest {
                         mockk(relaxed = true),
                         mockk(relaxed = true),
                     )
-                    module(initDatabase = false)
+                    module()
                 }
         }
 }
