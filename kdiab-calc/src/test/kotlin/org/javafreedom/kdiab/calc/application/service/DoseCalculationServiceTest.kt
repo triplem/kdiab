@@ -400,6 +400,64 @@ class DoseCalculationServiceTest {
     }
 
     @Test
+    fun `calculateDose uses profile timezone for segment selection when useProfileTime set`() = runTest {
+        // Europe/Berlin is UTC+1 in January. A UTC timestamp of 23:00 corresponds to 00:00 Berlin
+        // time (next calendar day). The correct segment at 00:00 Berlin is ISF 60; without the
+        // timezone fix the service would read 23:00 UTC and pick the 08:00 segment (ISF 40).
+        val berlinProfile = testProfile.copy(
+            timeZone = "Europe/Berlin",
+            isf = listOf(
+                IsfSegment(startTime = "00:00", `value` = 60.0),
+                IsfSegment(startTime = "08:00", `value` = 40.0),
+            ),
+            targets = listOf(TargetSegment(startTime = "00:00", low = 100.0, high = 120.0)),
+            icr = listOf(IcrSegment(startTime = "00:00", `value` = 15.0)),
+        )
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns berlinProfile
+
+        // 2026-01-01T23:00:00Z == 2026-01-02T00:00:00+01:00 (Berlin winter time)
+        val request = DoseRequest(
+            currentBg = 110.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+            useProfileTime = "2026-01-01T23:00:00Z",
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        // Must use the 00:00 Berlin segment (ISF 60), not the 08:00 UTC segment (ISF 40)
+        assertEquals(60.0, result.breakdown.isf)
+    }
+
+    @Test
+    fun `calculateDose falls back to UTC when profile has no timezone`() = runTest {
+        // testProfile has no timeZone — UTC must be used, matching pre-fix behaviour
+        val multiSegmentProfile = testProfile.copy(
+            isf = listOf(
+                IsfSegment(startTime = "00:00", `value` = 60.0),
+                IsfSegment(startTime = "08:00", `value` = 40.0),
+            ),
+            targets = listOf(TargetSegment(startTime = "00:00", low = 100.0, high = 120.0)),
+            icr = listOf(IcrSegment(startTime = "00:00", `value` = 15.0)),
+        )
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns multiSegmentProfile
+
+        // 14:00 UTC falls in the 08:00 segment (ISF 40)
+        val request = DoseRequest(
+            currentBg = 110.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+            useProfileTime = "2026-01-01T14:00:00Z",
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertEquals(40.0, result.breakdown.isf)
+    }
+
+    @Test
     fun `calculateDose throws BusinessValidationException when ICR segment value is zero and carbs entered`() = runTest {
         val zeroIcrProfile = testProfile.copy(
             icr = listOf(IcrSegment(startTime = "00:00", `value` = 0.0)),

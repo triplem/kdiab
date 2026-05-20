@@ -36,10 +36,11 @@ class DoseCalculationService(private val profilesClient: ProfilesClient) {
         val profile = profilesClient.getActiveProfile(userId, authorization, correlationId)
             ?: throw ResourceNotFoundException("No active profile found for user")
 
+        val profileTimeZone = profile.timeZone?.let { TimeZone.of(it) } ?: TimeZone.UTC
         val refTime: LocalTime = if (request.useProfileTime != null) {
-            Instant.parse(request.useProfileTime).toLocalDateTime(TimeZone.UTC).time
+            Instant.parse(request.useProfileTime).toLocalDateTime(profileTimeZone).time
         } else {
-            Clock.System.now().toLocalDateTime(TimeZone.UTC).time
+            Clock.System.now().toLocalDateTime(profileTimeZone).time
         }
 
         val bgMgDl = if (request.glucoseUnit.equals("mmol/L", ignoreCase = true)) {
