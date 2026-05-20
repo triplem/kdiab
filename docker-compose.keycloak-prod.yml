@@ -15,11 +15,13 @@ services:
     command: >
       start
       --optimized
-      --hostname-strict=false
+      --proxy-headers=xforwarded
       --http-enabled=true
     environment:
       KC_LOG_LEVEL: warn
       KC_HEALTH_ENABLED: "true"
+      # KC_HOSTNAME must be set to the public FQDN in production (e.g. https://auth.example.com)
+      # KC_HOSTNAME: "https://auth.example.com"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8080/health/ready || exit 1"]
       interval: 30s
