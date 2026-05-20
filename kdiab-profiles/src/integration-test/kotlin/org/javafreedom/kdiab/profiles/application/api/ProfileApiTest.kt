@@ -25,7 +25,7 @@ import org.javafreedom.kdiab.profiles.domain.model.PagedProfiles
 import org.javafreedom.kdiab.profiles.domain.model.Profile
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
-import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.profiles.module
 
 // Top-level helper: installs mock DI bindings on the Application before module() runs.

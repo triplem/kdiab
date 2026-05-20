@@ -24,7 +24,8 @@ import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.common.plugins.checkReadAccess
 import org.javafreedom.kdiab.common.plugins.parseUuid
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
-import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.plugins.auditIfDoctor
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 private const val DEFAULT_PAGE_SIZE = 50

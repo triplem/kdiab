@@ -12,13 +12,13 @@ import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
-import org.javafreedom.kdiab.treatments.adapters.inbound.web.auditRoutes
 import org.javafreedom.kdiab.treatments.adapters.inbound.web.deviceAgeRoutes
 import org.javafreedom.kdiab.treatments.adapters.inbound.web.deviceStatusRoutes
 import org.javafreedom.kdiab.treatments.adapters.inbound.web.treatmentRoutes
 import org.javafreedom.kdiab.treatments.application.service.DeviceStatusService
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
-import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.plugins.auditRoutes
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedDeviceStatusRepository

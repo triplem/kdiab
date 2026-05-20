@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.treatments.application.service.DeviceStatusService
 import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.treatments.domain.model.TreatmentType
-import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.treatments.domain.repository.TreatmentRepository
 import org.javafreedom.kdiab.treatments.module
 

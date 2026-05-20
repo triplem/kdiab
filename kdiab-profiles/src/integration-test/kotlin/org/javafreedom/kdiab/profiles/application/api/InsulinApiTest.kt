@@ -20,7 +20,7 @@ import org.javafreedom.kdiab.profiles.application.service.InsulinService
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.profiles.domain.model.Insulin
 import org.javafreedom.kdiab.common.domain.model.Role
-import org.javafreedom.kdiab.profiles.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.profiles.domain.repository.InsulinRepository
 import org.javafreedom.kdiab.profiles.module
 

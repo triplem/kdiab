@@ -7,8 +7,8 @@ import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.javafreedom.kdiab.treatments.domain.model.AuditLog
-import org.javafreedom.kdiab.treatments.domain.repository.AuditLogRepository
+import org.javafreedom.kdiab.common.domain.model.AuditLog
+import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
