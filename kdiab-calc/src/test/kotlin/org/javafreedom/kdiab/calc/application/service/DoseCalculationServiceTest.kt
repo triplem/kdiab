@@ -117,6 +117,49 @@ class DoseCalculationServiceTest {
     }
 
     @Test
+    fun `calculateDose suppresses carbDose and total to zero during hypoglycemia even when carbs entered`() = runTest {
+        // Safety-critical: carbs consumed to treat a hypo must NOT receive an insulin dose.
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        val request = DoseRequest(
+            currentBg = 60.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 30.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertEquals(0.0, result.carbDose, "carbDose must be 0 during hypo — carbs are rescue treatment")
+        assertEquals(0.0, result.correctionDose)
+        assertEquals(0.0, result.trendAdjustment)
+        assertEquals(0.0, result.totalRecommended)
+        assertTrue(result.warnings.any { it.contains("hypoglycemic") })
+    }
+
+    @Test
+    fun `calculateDose suppresses trend adjustment and total to zero during hypoglycemia`() = runTest {
+        // DOUBLE_DOWN trend during hypo must not produce a dose recommendation.
+        coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        val request = DoseRequest(
+            currentBg = 65.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.DOUBLE_DOWN,
+            carbsGrams = 20.0,
+            activeIob = 2.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertEquals(0.0, result.carbDose)
+        assertEquals(0.0, result.correctionDose)
+        assertEquals(0.0, result.trendAdjustment)
+        assertEquals(0.0, result.totalRecommended)
+        assertTrue(result.warnings.any { it.contains("hypoglycemic") })
+    }
+
+    @Test
     fun `calculateDose applies SINGLE_UP trend adjustment scaled by ISF`() = runTest {
         coEvery { profilesClient.getActiveProfile(any(), any(), any()) } returns testProfile
 

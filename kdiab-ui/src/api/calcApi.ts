@@ -24,6 +24,7 @@ export interface DoseRequestBody {
   glucoseUnit: string
   trend: string
   carbsGrams?: number
+  activeIob?: number
   useProfileTime?: string
 }
 

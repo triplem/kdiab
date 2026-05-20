@@ -409,6 +409,7 @@
     "trendSingleDown": "Falling",
     "trendDoubleDown": "Falling rapidly",
     "trendNone": "Unknown",
+    "activeIob": "Active IOB:",
     "errorNoProfile": "No active profile found. Please activate a profile first.",
     "errorNoIsf": "The active profile has no ISF segments. Please update your profile.",
     "errorNoIcr": "The active profile has no ICR segments. Please update your profile.",

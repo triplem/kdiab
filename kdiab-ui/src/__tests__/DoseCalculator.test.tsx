@@ -10,6 +10,13 @@ vi.mock('../api/calcApi', () => ({
   },
 }))
 
+vi.mock('../api/treatmentsApi', () => ({
+  treatmentsApi: {
+    listTreatments: vi.fn().mockResolvedValue({ data: { items: [], page: 0, size: 100, totalElements: 0 } }),
+    createTreatment: vi.fn(),
+  },
+}))
+
 import { calcApi } from '../api/calcApi'
 import type { DoseResponse } from '../api/calcApi'
 import { DoseCalculator } from '../features/calc/DoseCalculator'
@@ -89,6 +96,7 @@ describe('DoseCalculator', () => {
       currentBg: 180,
       glucoseUnit: 'mg/dL',
       trend: 'FLAT',
+      activeIob: expect.any(Number),
     }))
   })
 
@@ -141,7 +149,29 @@ describe('DoseCalculator', () => {
         currentBg: 9.5,
         glucoseUnit: 'mmol/L',
         carbsGrams: 45,
+        activeIob: expect.any(Number),
       }))
     })
+  })
+
+  test('passes activeIob prop to API when provided', async () => {
+    mockedCalculateDose.mockResolvedValueOnce({ data: makeDoseResponse() } as never)
+
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" activeIob={2.5} />)
+    fireEvent.change(screen.getByLabelText(/current blood glucose/i), { target: { value: '180' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }))
+
+    await waitFor(() => {
+      expect(mockedCalculateDose).toHaveBeenCalledWith('user-1', expect.objectContaining({
+        activeIob: 2.5,
+      }))
+    })
+  })
+
+  test('displays active IOB value in form', () => {
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" activeIob={1.75} />)
+    // The IOB row shows the label and the formatted value
+    expect(screen.getByText(/active iob/i)).toBeInTheDocument()
+    expect(screen.getByText('1.75 units')).toBeInTheDocument()
   })
 })
