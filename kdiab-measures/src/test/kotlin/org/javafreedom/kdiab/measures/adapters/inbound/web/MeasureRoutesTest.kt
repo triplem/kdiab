@@ -332,11 +332,11 @@ class MeasureRoutesTest {
         assertEquals(HttpStatusCode.BadRequest, resp.status)
     }
 
-    // ── POST /api/v1/users/{userId}/measures/delete ───────────────────────────
+    // ── DELETE /api/v1/users/{userId}/measures ───────────────────────────────
 
     @Test
     fun `delete measures - 403 patient cannot delete`() = routeTest { _ ->
-        val resp = client.post("/api/v1/users/$SARAH_ID/measures/delete") {
+        val resp = client.delete("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(bulkBody)
@@ -347,7 +347,7 @@ class MeasureRoutesTest {
     @Test
     fun `delete measures - 200 doctor can delete`() = routeTest { repo ->
         coEvery { repo.deleteAll(any(), any()) } just runs
-        val resp = client.post("/api/v1/users/$SARAH_ID/measures/delete") {
+        val resp = client.delete("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(doctorToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(bulkBody)
@@ -358,7 +358,7 @@ class MeasureRoutesTest {
     @Test
     fun `delete measures - 200 admin can delete`() = routeTest { repo ->
         coEvery { repo.deleteAll(any(), any()) } just runs
-        val resp = client.post("/api/v1/users/$SARAH_ID/measures/delete") {
+        val resp = client.delete("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(adminToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(bulkBody)
@@ -368,7 +368,7 @@ class MeasureRoutesTest {
 
     @Test
     fun `delete measures - 403 doctor deletes for non-allowed patient`() = routeTest { _ ->
-        val resp = client.post("/api/v1/users/$MIKE_ID/measures/delete") {
+        val resp = client.delete("/api/v1/users/$MIKE_ID/measures") {
             bearerAuth(doctorToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(bulkBody)
@@ -378,7 +378,7 @@ class MeasureRoutesTest {
 
     @Test
     fun `delete measures - 400 when empty measure ids and admin`() = routeTest { _ ->
-        val resp = client.post("/api/v1/users/$SARAH_ID/measures/delete") {
+        val resp = client.delete("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(adminToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody("""{"measureIds":[]}""")
@@ -389,7 +389,7 @@ class MeasureRoutesTest {
     @Test
     fun `delete measures - 400 when bulk size exceeds limit and admin`() = routeTest { _ ->
         val ids = (1..201).map { "\"00000000-0000-0000-0000-${it.toString().padStart(12, '0')}\"" }.joinToString(",")
-        val resp = client.post("/api/v1/users/$SARAH_ID/measures/delete") {
+        val resp = client.delete("/api/v1/users/$SARAH_ID/measures") {
             bearerAuth(adminToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody("""{"measureIds":[$ids]}""")

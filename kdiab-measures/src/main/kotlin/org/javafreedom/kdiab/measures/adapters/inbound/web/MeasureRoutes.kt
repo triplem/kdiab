@@ -168,7 +168,7 @@ private fun Route.unarchiveMeasures(measureService: MeasureService, auditLogRepo
 }
 
 private fun Route.deleteMeasures(measureService: MeasureService, auditLogRepository: AuditLogRepository) {
-    post<Paths.deleteMeasures> { params ->
+    delete<Paths.deleteMeasures> { params ->
         val principal = call.principal<UserPrincipal>()
         val targetUserId = parseUuid(params.userId)
 
