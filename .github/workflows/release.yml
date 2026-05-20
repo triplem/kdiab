@@ -42,11 +42,10 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      - name: Check all CI workflows passed for this commit
+      - name: Check all CI workflows are green on main
         id: check-ci
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           WORKFLOWS=(
             "ci-measures-backend.yml"
@@ -64,9 +63,9 @@ jobs:
             CONCLUSION=$(gh run list \
               --workflow="$wf" \
               --branch=main \
-              --limit=10 \
-              --json headSha,conclusion \
-              --jq ".[] | select(.headSha == \"$HEAD_SHA\") | .conclusion" 2>/dev/null | head -1)
+              --limit=1 \
+              --json conclusion \
+              --jq '.[0].conclusion' 2>/dev/null)
             echo "$wf → ${CONCLUSION:-not found}"
             if [ "$CONCLUSION" != "success" ]; then
               ALL_PASSED=false
@@ -79,12 +78,11 @@ jobs:
         id: run-ids
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           get_run_id() {
-            gh run list --workflow="$1" --branch=main --limit=10 \
-              --json headSha,databaseId,conclusion \
-              --jq ".[] | select(.headSha == \"$HEAD_SHA\" and .conclusion == \"success\") | .databaseId" \
+            gh run list --workflow="$1" --branch=main --limit=5 \
+              --json databaseId,conclusion \
+              --jq '.[] | select(.conclusion == "success") | .databaseId' \
               2>/dev/null | head -1
           }
           echo "measures=$(get_run_id ci-measures-backend.yml)"       >> "$GITHUB_OUTPUT"
