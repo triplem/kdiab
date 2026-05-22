@@ -1,0 +1,6 @@
+# CVE-2025-48924: Uncontrolled Recursion in Apache Commons Lang (commons-lang3)
+# NVD states that commons-lang3 3.18.0+ is NOT affected.
+# We use 3.20.0 (the latest release) which is the fixed version.
+# Trivy's vulnerability database has an incorrect affected version range.
+# Reference: https://nvd.nist.gov/vuln/detail/CVE-2025-48924
+CVE-2025-48924

@@ -117,6 +117,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
           ignore-unfixed: true
+          trivyignores: .trivyignore
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
