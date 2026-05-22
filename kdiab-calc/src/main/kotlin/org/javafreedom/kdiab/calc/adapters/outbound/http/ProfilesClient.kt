@@ -73,11 +73,17 @@ class ProfilesClient(
         } catch (e: HttpRequestTimeoutException) {
             val ms = System.currentTimeMillis() - start
             logger.warn { "Upstream profiles request timed out after ${ms}ms" }
-            throw UpstreamException(service = "profiles", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "profiles", statusCode = 503, message = "Request timed out",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         } catch (e: java.net.ConnectException) {
             val ms = System.currentTimeMillis() - start
             logger.warn { "Upstream profiles connection refused after ${ms}ms: ${e.message}" }
-            throw UpstreamException(service = "profiles", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "profiles", statusCode = 503, message = "Connection refused",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         }
     }
 }
