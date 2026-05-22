@@ -1,4 +1,5 @@
 FROM eclipse-temurin:21-jre-alpine
+RUN apk upgrade --no-cache libpng
 RUN addgroup -S ktor && adduser -S ktor -G ktor
 USER ktor
 WORKDIR /app
