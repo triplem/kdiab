@@ -1,5 +1,10 @@
+FROM alpine:3.21 AS driver
+RUN apk add --no-cache curl && \
+    curl -fsSL https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.3/postgresql-42.7.3.jar \
+    -o /postgresql.jar
+
 FROM liquibase/liquibase:5.0
-
+COPY --from=driver /postgresql.jar /liquibase/lib/postgresql.jar
+# Copy the full db directory so that relative paths in the master changelog resolve correctly
 COPY src/main/resources/db /liquibase/db
-
 CMD ["update"]
