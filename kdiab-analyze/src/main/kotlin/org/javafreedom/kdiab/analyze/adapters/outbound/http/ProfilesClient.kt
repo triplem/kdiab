@@ -6,6 +6,7 @@ import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.request.header
@@ -56,6 +57,10 @@ class ProfilesClient(
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+                config.install(HttpTimeout) {
+                    connectTimeoutMillis = CONNECT_TIMEOUT_MS
+                    requestTimeoutMillis = REQUEST_TIMEOUT_MS
+                }
             },
         ).apply { setBearerToken(token) }
 
@@ -65,13 +70,23 @@ class ProfilesClient(
 
         while (true) {
             val pageStart = System.currentTimeMillis()
-            val httpResponse = circuitBreaker.execute {
-                api.listProfiles(
-                    userId = userId,
-                    page = page,
-                    size = DEFAULT_PAGE_SIZE,
-                    status = listOf("ACTIVE", "ARCHIVED"),
-                )
+            val httpResponse = try {
+                circuitBreaker.execute {
+                    api.listProfiles(
+                        userId = userId,
+                        page = page,
+                        size = DEFAULT_PAGE_SIZE,
+                        status = listOf("ACTIVE", "ARCHIVED"),
+                    )
+                }
+            } catch (e: HttpRequestTimeoutException) {
+                val pageMs = System.currentTimeMillis() - pageStart
+                logger.warn { "Upstream profiles page $page timed out after ${pageMs}ms" }
+                throw UpstreamException(service = "profiles", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+            } catch (e: java.net.ConnectException) {
+                val pageMs = System.currentTimeMillis() - pageStart
+                logger.warn { "Upstream profiles page $page connection refused after ${pageMs}ms" }
+                throw UpstreamException(service = "profiles", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
             }
             val pageMs = System.currentTimeMillis() - pageStart
             if (!httpResponse.success) {

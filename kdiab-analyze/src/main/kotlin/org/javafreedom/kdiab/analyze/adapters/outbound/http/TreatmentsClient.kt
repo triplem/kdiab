@@ -5,6 +5,7 @@ import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.DefaultRequest
@@ -64,11 +65,21 @@ class TreatmentsClient(
 
         // Fetch page 0 first to learn totalCount, then fetch remaining pages in parallel.
         val firstPageStart = System.currentTimeMillis()
-        val firstHttpResponse = circuitBreaker.execute {
-            api.listTreatments(
-                userId = userId, type = null, from = from, to = to,
-                status = null, page = 0, size = PAGE_SIZE,
-            )
+        val firstHttpResponse = try {
+            circuitBreaker.execute {
+                api.listTreatments(
+                    userId = userId, type = null, from = from, to = to,
+                    status = null, page = 0, size = PAGE_SIZE,
+                )
+            }
+        } catch (e: HttpRequestTimeoutException) {
+            val ms = System.currentTimeMillis() - firstPageStart
+            logger.warn { "Upstream treatments page 0 timed out after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+        } catch (e: java.net.ConnectException) {
+            val ms = System.currentTimeMillis() - firstPageStart
+            logger.warn { "Upstream treatments page 0 connection refused after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
         }
         val firstPageMs = System.currentTimeMillis() - firstPageStart
         if (!firstHttpResponse.success) {
@@ -133,11 +144,21 @@ class TreatmentsClient(
         to: String?,
     ): List<UpstreamTreatment> {
         val pageStart = System.currentTimeMillis()
-        val httpResponse = circuitBreaker.execute {
-            api.listTreatments(
-                userId = userId, type = null, from = from, to = to,
-                status = null, page = pageNum, size = PAGE_SIZE,
-            )
+        val httpResponse = try {
+            circuitBreaker.execute {
+                api.listTreatments(
+                    userId = userId, type = null, from = from, to = to,
+                    status = null, page = pageNum, size = PAGE_SIZE,
+                )
+            }
+        } catch (e: HttpRequestTimeoutException) {
+            val ms = System.currentTimeMillis() - pageStart
+            logger.warn { "Upstream treatments page $pageNum timed out after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+        } catch (e: java.net.ConnectException) {
+            val ms = System.currentTimeMillis() - pageStart
+            logger.warn { "Upstream treatments page $pageNum connection refused after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
         }
         val pageMs = System.currentTimeMillis() - pageStart
         if (!httpResponse.success) {
@@ -172,11 +193,21 @@ class TreatmentsClient(
         val totalStart = System.currentTimeMillis()
 
         val firstPageStart = System.currentTimeMillis()
-        val firstHttpResponse = circuitBreaker.execute {
-            api.listTreatments(
-                userId = userId, type = treatmentType, from = from, to = to,
-                status = null, page = 0, size = PAGE_SIZE,
-            )
+        val firstHttpResponse = try {
+            circuitBreaker.execute {
+                api.listTreatments(
+                    userId = userId, type = treatmentType, from = from, to = to,
+                    status = null, page = 0, size = PAGE_SIZE,
+                )
+            }
+        } catch (e: HttpRequestTimeoutException) {
+            val ms = System.currentTimeMillis() - firstPageStart
+            logger.warn { "Upstream treatments by type $treatmentType page 0 timed out after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+        } catch (e: java.net.ConnectException) {
+            val ms = System.currentTimeMillis() - firstPageStart
+            logger.warn { "Upstream treatments by type $treatmentType page 0 connection refused after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
         }
         val firstPageMs = System.currentTimeMillis() - firstPageStart
         if (!firstHttpResponse.success) {
@@ -252,11 +283,21 @@ class TreatmentsClient(
         to: String?,
     ): List<UpstreamTreatment> {
         val pageStart = System.currentTimeMillis()
-        val httpResponse = circuitBreaker.execute {
-            api.listTreatments(
-                userId = userId, type = type, from = from, to = to,
-                status = null, page = pageNum, size = PAGE_SIZE,
-            )
+        val httpResponse = try {
+            circuitBreaker.execute {
+                api.listTreatments(
+                    userId = userId, type = type, from = from, to = to,
+                    status = null, page = pageNum, size = PAGE_SIZE,
+                )
+            }
+        } catch (e: HttpRequestTimeoutException) {
+            val ms = System.currentTimeMillis() - pageStart
+            logger.warn { "Upstream treatments by type $type page $pageNum timed out after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+        } catch (e: java.net.ConnectException) {
+            val ms = System.currentTimeMillis() - pageStart
+            logger.warn { "Upstream treatments by type $type page $pageNum connection refused after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
         }
         val pageMs = System.currentTimeMillis() - pageStart
         if (!httpResponse.success) {
@@ -287,7 +328,17 @@ class TreatmentsClient(
         val token = authorization.removePrefix("Bearer ").trim()
         val api = buildTreatmentsApi(token, correlationId)
         val start = System.currentTimeMillis()
-        val httpResponse = circuitBreaker.execute { api.getDeviceAge(userId) }
+        val httpResponse = try {
+            circuitBreaker.execute { api.getDeviceAge(userId) }
+        } catch (e: HttpRequestTimeoutException) {
+            val ms = System.currentTimeMillis() - start
+            logger.warn { "Upstream device-age timed out after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+        } catch (e: java.net.ConnectException) {
+            val ms = System.currentTimeMillis() - start
+            logger.warn { "Upstream device-age connection refused after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
+        }
         val ms = System.currentTimeMillis() - start
         if (!httpResponse.success) {
             val requestUrl = httpResponse.response.request.url.toString()
@@ -318,7 +369,17 @@ class TreatmentsClient(
         val token = authorization.removePrefix("Bearer ").trim()
         val api = buildDeviceStatusApi(token, correlationId)
         val start = System.currentTimeMillis()
-        val httpResponse = circuitBreaker.execute { api.getLatestDeviceStatus(userId) }
+        val httpResponse = try {
+            circuitBreaker.execute { api.getLatestDeviceStatus(userId) }
+        } catch (e: HttpRequestTimeoutException) {
+            val ms = System.currentTimeMillis() - start
+            logger.warn { "Upstream device-status timed out after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+        } catch (e: java.net.ConnectException) {
+            val ms = System.currentTimeMillis() - start
+            logger.warn { "Upstream device-status connection refused after ${ms}ms" }
+            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
+        }
         val ms = System.currentTimeMillis() - start
         if (httpResponse.status == HttpStatusCode.NotFound.value) {
             logger.info { "No device status found for userId=$userId in ${ms}ms" }
@@ -356,6 +417,10 @@ class TreatmentsClient(
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+                config.install(HttpTimeout) {
+                    connectTimeoutMillis = CONNECT_TIMEOUT_MS
+                    requestTimeoutMillis = REQUEST_TIMEOUT_MS
+                }
             },
         ).apply { setBearerToken(token) }
 
@@ -366,6 +431,10 @@ class TreatmentsClient(
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+                config.install(HttpTimeout) {
+                    connectTimeoutMillis = CONNECT_TIMEOUT_MS
+                    requestTimeoutMillis = REQUEST_TIMEOUT_MS
+                }
             },
         ).apply { setBearerToken(token) }
 
@@ -376,6 +445,10 @@ class TreatmentsClient(
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+                config.install(HttpTimeout) {
+                    connectTimeoutMillis = CONNECT_TIMEOUT_MS
+                    requestTimeoutMillis = REQUEST_TIMEOUT_MS
+                }
             },
         ).apply { setBearerToken(token) }
 }

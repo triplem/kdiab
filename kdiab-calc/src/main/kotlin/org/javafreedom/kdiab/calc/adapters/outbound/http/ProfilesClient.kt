@@ -2,8 +2,10 @@ package org.javafreedom.kdiab.calc.adapters.outbound.http
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.engine.*
+import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.DefaultRequest
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.header
 import io.ktor.client.statement.request
 import io.ktor.serialization.kotlinx.json.*
@@ -20,6 +22,9 @@ import org.javafreedom.kdiab.calc.domain.repository.ProfilesPort
 private val logger = KotlinLogging.logger {}
 
 private const val DEFAULT_PAGE_SIZE = 50
+private const val CONNECT_TIMEOUT_MS = 5_000L
+private const val REQUEST_TIMEOUT_MS = 10_000L
+private const val SOCKET_TIMEOUT_MS = 5_000L
 
 class ProfilesClient(
     private val httpClientEngine: HttpClientEngine,
@@ -37,29 +42,43 @@ class ProfilesClient(
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+                config.install(HttpTimeout) {
+                    connectTimeoutMillis = CONNECT_TIMEOUT_MS
+                    requestTimeoutMillis = REQUEST_TIMEOUT_MS
+                    socketTimeoutMillis = SOCKET_TIMEOUT_MS
+                }
             },
         ).apply { setBearerToken(token) }
 
         val start = System.currentTimeMillis()
-        val httpResponse = api.listProfiles(userId = userId, page = 0, size = DEFAULT_PAGE_SIZE, status = null)
-        val ms = System.currentTimeMillis() - start
-        if (!httpResponse.success) {
-            val requestUrl = httpResponse.response.request.url.toString()
-            logger.warn {
-                "Upstream profiles returned ${httpResponse.status} in ${ms}ms" +
-                    " url=$requestUrl"
+        return try {
+            val httpResponse = api.listProfiles(userId = userId, page = 0, size = DEFAULT_PAGE_SIZE, status = null)
+            val ms = System.currentTimeMillis() - start
+            if (!httpResponse.success) {
+                val requestUrl = httpResponse.response.request.url.toString()
+                logger.warn {
+                    "Upstream profiles returned ${httpResponse.status} in ${ms}ms url=$requestUrl"
+                }
+                throw UpstreamException(
+                    service = "profiles",
+                    statusCode = httpResponse.status,
+                    message = httpResponse.response.status.description,
+                    responseBody = null,
+                    url = requestUrl,
+                )
             }
-            throw UpstreamException(
-                service = "profiles",
-                statusCode = httpResponse.status,
-                message = httpResponse.response.status.description,
-                responseBody = null,
-                url = requestUrl,
-            )
+            logger.info { "Fetched profiles from upstream in ${ms}ms [status=${httpResponse.status}]" }
+            val paged = httpResponse.body()
+            paged.items.firstOrNull { it.status == Profile.Status.ACTIVE }?.toDomain()
+        } catch (e: HttpRequestTimeoutException) {
+            val ms = System.currentTimeMillis() - start
+            logger.warn { "Upstream profiles request timed out after ${ms}ms" }
+            throw UpstreamException(service = "profiles", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+        } catch (e: java.net.ConnectException) {
+            val ms = System.currentTimeMillis() - start
+            logger.warn { "Upstream profiles connection refused after ${ms}ms: ${e.message}" }
+            throw UpstreamException(service = "profiles", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
         }
-        logger.info { "Fetched profiles from upstream in ${ms}ms [status=${httpResponse.status}]" }
-        val paged = httpResponse.body()
-        return paged.items.firstOrNull { it.status == Profile.Status.ACTIVE }?.toDomain()
     }
 }
 

@@ -2,7 +2,7 @@ package org.javafreedom.kdiab.analyze.adapters.outbound.http
 
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,7 +25,7 @@ class TreatmentsClientTest {
     private fun emptyPagedJson() = pagedJson("", 0)
 
     @Test
-    fun `getTreatments returns list from paged response`() = runTest {
+    fun `getTreatments returns list from paged response`() = runBlocking {
         val body = pagedJson("${treatmentJson("t-1")},${treatmentJson("t-2")}", 2)
         val engine = MockEngine { _ ->
             respond(
@@ -42,7 +42,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatments returns empty list when first page is empty`() = runTest {
+    fun `getTreatments returns empty list when first page is empty`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(
                 content = emptyPagedJson(),
@@ -57,7 +57,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatments fetches multiple pages until all items retrieved`() = runTest {
+    fun `getTreatments fetches multiple pages until all items retrieved`() = runBlocking {
         // PAGE_SIZE=200: totalCount=201 forces 2 pages (ceil(201/200)=2)
         val page0Items = (1..200).joinToString(",") { treatmentJson("t-$it") }
         val page1Items = treatmentJson("t-201")
@@ -81,7 +81,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatments throws UpstreamException when first page returns 500`() = runTest {
+    fun `getTreatments throws UpstreamException when first page returns 500`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(content = """{"code":500,"message":"Internal Server Error"}""", status = HttpStatusCode.InternalServerError)
         }
@@ -93,7 +93,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatments throws UpstreamException when second page returns 502`() = runTest {
+    fun `getTreatments throws UpstreamException when second page returns 502`() = runBlocking {
         // PAGE_SIZE=200: totalCount=201 forces 2 pages; page 1 returns 502
         val page0Items = (1..200).joinToString(",") { treatmentJson("t-$it") }
         var requestPage = 0
@@ -114,7 +114,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatments throws UpstreamException on 401`() = runTest {
+    fun `getTreatments throws UpstreamException on 401`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -122,7 +122,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatments sends X-Correlation-ID header`() = runTest {
+    fun `getTreatments sends X-Correlation-ID header`() = runBlocking {
         var capturedCorrelationId: String? = null
         val engine = MockEngine { request ->
             capturedCorrelationId = request.headers["X-Correlation-ID"]
@@ -137,7 +137,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatments sends from and to query parameters when provided`() = runTest {
+    fun `getTreatments sends from and to query parameters when provided`() = runBlocking {
         val capturedParams = mutableListOf<Pair<String?, String?>>()
         val engine = MockEngine { request ->
             capturedParams += request.url.parameters["from"] to request.url.parameters["to"]
@@ -157,7 +157,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatments does not send from and to when null`() = runTest {
+    fun `getTreatments does not send from and to when null`() = runBlocking {
         val capturedParams = mutableListOf<Pair<String?, String?>>()
         val engine = MockEngine { request ->
             capturedParams += request.url.parameters["from"] to request.url.parameters["to"]
@@ -176,7 +176,7 @@ class TreatmentsClientTest {
     // ── getTreatmentsByType ───────────────────────────────────────────────────
 
     @Test
-    fun `getTreatmentsByType returns list from single-page response`() = runTest {
+    fun `getTreatmentsByType returns list from single-page response`() = runBlocking {
         val body = pagedJson("${treatmentJson("s-1")},${treatmentJson("s-2")}", 2)
         val engine = MockEngine { _ ->
             respond(
@@ -191,7 +191,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatmentsByType returns empty list when first page is empty`() = runTest {
+    fun `getTreatmentsByType returns empty list when first page is empty`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(
                 content = emptyPagedJson(),
@@ -205,7 +205,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatmentsByType fetches multiple pages in parallel`() = runTest {
+    fun `getTreatmentsByType fetches multiple pages in parallel`() = runBlocking {
         // totalCount=201 forces 2 pages (ceil(201/200)=2)
         val page0Items = (1..200).joinToString(",") { treatmentJson("s-$it") }
         val page1Items = treatmentJson("s-201")
@@ -229,7 +229,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatmentsByType throws UpstreamException when first page returns 500`() = runTest {
+    fun `getTreatmentsByType throws UpstreamException when first page returns 500`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(content = """{"code":500,"message":"Internal Server Error"}""", status = HttpStatusCode.InternalServerError)
         }
@@ -241,7 +241,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getTreatmentsByType throws UpstreamException when second page returns 502`() = runTest {
+    fun `getTreatmentsByType throws UpstreamException when second page returns 502`() = runBlocking {
         val page0Items = (1..200).joinToString(",") { treatmentJson("s-$it") }
         var requestPage = 0
         val engine = MockEngine { _ ->
@@ -263,7 +263,7 @@ class TreatmentsClientTest {
     // ── getDeviceAge ──────────────────────────────────────────────────────────
 
     @Test
-    fun `getDeviceAge returns device age timestamps`() = runTest {
+    fun `getDeviceAge returns device age timestamps`() = runBlocking {
         val body = """{"catheterChangedAt":"2026-05-14T10:30:00Z","reservoirChangedAt":"2026-05-13T08:00:00Z","sensorInsertedAt":"2026-05-12T18:00:00Z","batteryChangedAt":"2026-05-10T14:00:00Z"}"""
         val engine = MockEngine { _ ->
             respond(
@@ -280,7 +280,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getDeviceAge returns null fields when no device events recorded`() = runTest {
+    fun `getDeviceAge returns null fields when no device events recorded`() = runBlocking {
         val body = """{}"""
         val engine = MockEngine { _ ->
             respond(
@@ -297,7 +297,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getDeviceAge throws UpstreamException on 500`() = runTest {
+    fun `getDeviceAge throws UpstreamException on 500`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(content = """{"code":500,"message":"error"}""", status = HttpStatusCode.InternalServerError)
         }
@@ -311,7 +311,7 @@ class TreatmentsClientTest {
     // ── getLatestDeviceStatus ─────────────────────────────────────────────────
 
     @Test
-    fun `getLatestDeviceStatus returns status when found`() = runTest {
+    fun `getLatestDeviceStatus returns status when found`() = runBlocking {
         val body = """{"id":"abc","userId":"$userId","recordedAt":"2026-05-16T10:00:00Z","device":"AAPS 3.2.0","batteryLevel":87}"""
         val engine = MockEngine { _ ->
             respond(
@@ -328,7 +328,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getLatestDeviceStatus returns null when 404`() = runTest {
+    fun `getLatestDeviceStatus returns null when 404`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(content = """{"code":404,"message":"Not Found"}""", status = HttpStatusCode.NotFound)
         }
@@ -337,7 +337,7 @@ class TreatmentsClientTest {
     }
 
     @Test
-    fun `getLatestDeviceStatus throws UpstreamException on 500`() = runTest {
+    fun `getLatestDeviceStatus throws UpstreamException on 500`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(content = """{"code":500,"message":"error"}""", status = HttpStatusCode.InternalServerError)
         }
