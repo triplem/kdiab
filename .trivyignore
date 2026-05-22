@@ -4,3 +4,8 @@
 # Trivy's vulnerability database has an incorrect affected version range.
 # Reference: https://nvd.nist.gov/vuln/detail/CVE-2025-48924
 CVE-2025-48924
+
+# CVE-2026-40930: libpng vulnerability in eclipse-temurin:21-jre-alpine base image
+# Interim suppression until eclipse-temurin publishes an image with Alpine libpng >= 1.6.58-r1
+# Remove this entry once the base image is updated. Tracked in #825.
+CVE-2026-40930
