@@ -70,24 +70,7 @@ class ProfilesClient(
 
         while (true) {
             val pageStart = System.currentTimeMillis()
-            val httpResponse = try {
-                circuitBreaker.execute {
-                    api.listProfiles(
-                        userId = userId,
-                        page = page,
-                        size = DEFAULT_PAGE_SIZE,
-                        status = listOf("ACTIVE", "ARCHIVED"),
-                    )
-                }
-            } catch (e: HttpRequestTimeoutException) {
-                val pageMs = System.currentTimeMillis() - pageStart
-                logger.warn { "Upstream profiles page $page timed out after ${pageMs}ms" }
-                throw UpstreamException(service = "profiles", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
-            } catch (e: java.net.ConnectException) {
-                val pageMs = System.currentTimeMillis() - pageStart
-                logger.warn { "Upstream profiles page $page connection refused after ${pageMs}ms" }
-                throw UpstreamException(service = "profiles", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
-            }
+            val httpResponse = fetchProfilesPage(api, userId, page)
             val pageMs = System.currentTimeMillis() - pageStart
             if (!httpResponse.success) {
                 val requestUrl = httpResponse.response.request.url.toString()
@@ -112,6 +95,29 @@ class ProfilesClient(
         val totalMs = System.currentTimeMillis() - totalStart
         logger.info { "Fetched ${result.size} profiles in $page pages in ${totalMs}ms total" }
         return result
+    }
+
+    private suspend fun fetchProfilesPage(api: DefaultApi, userId: String, page: Int) = try {
+        circuitBreaker.execute {
+            api.listProfiles(
+                userId = userId,
+                page = page,
+                size = DEFAULT_PAGE_SIZE,
+                status = listOf("ACTIVE", "ARCHIVED"),
+            )
+        }
+    } catch (e: HttpRequestTimeoutException) {
+        logger.warn { "Upstream profiles page $page timed out" }
+        throw UpstreamException(
+            service = "profiles", statusCode = 503, message = "Request timed out",
+            responseBody = null, url = "$baseUrl/api/v1", cause = e,
+        )
+    } catch (e: java.net.ConnectException) {
+        logger.warn { "Upstream profiles page $page connection refused" }
+        throw UpstreamException(
+            service = "profiles", statusCode = 503, message = "Connection refused",
+            responseBody = null, url = "$baseUrl/api/v1", cause = e,
+        )
     }
 }
 

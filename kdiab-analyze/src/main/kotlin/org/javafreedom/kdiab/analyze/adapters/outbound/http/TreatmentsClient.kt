@@ -75,11 +75,17 @@ class TreatmentsClient(
         } catch (e: HttpRequestTimeoutException) {
             val ms = System.currentTimeMillis() - firstPageStart
             logger.warn { "Upstream treatments page 0 timed out after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Request timed out",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         } catch (e: java.net.ConnectException) {
             val ms = System.currentTimeMillis() - firstPageStart
             logger.warn { "Upstream treatments page 0 connection refused after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Connection refused",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         }
         val firstPageMs = System.currentTimeMillis() - firstPageStart
         if (!firstHttpResponse.success) {
@@ -154,11 +160,17 @@ class TreatmentsClient(
         } catch (e: HttpRequestTimeoutException) {
             val ms = System.currentTimeMillis() - pageStart
             logger.warn { "Upstream treatments page $pageNum timed out after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Request timed out",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         } catch (e: java.net.ConnectException) {
             val ms = System.currentTimeMillis() - pageStart
             logger.warn { "Upstream treatments page $pageNum connection refused after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Connection refused",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         }
         val pageMs = System.currentTimeMillis() - pageStart
         if (!httpResponse.success) {
@@ -203,11 +215,17 @@ class TreatmentsClient(
         } catch (e: HttpRequestTimeoutException) {
             val ms = System.currentTimeMillis() - firstPageStart
             logger.warn { "Upstream treatments by type $treatmentType page 0 timed out after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Request timed out",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         } catch (e: java.net.ConnectException) {
             val ms = System.currentTimeMillis() - firstPageStart
             logger.warn { "Upstream treatments by type $treatmentType page 0 connection refused after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Connection refused",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         }
         val firstPageMs = System.currentTimeMillis() - firstPageStart
         if (!firstHttpResponse.success) {
@@ -293,11 +311,17 @@ class TreatmentsClient(
         } catch (e: HttpRequestTimeoutException) {
             val ms = System.currentTimeMillis() - pageStart
             logger.warn { "Upstream treatments by type $type page $pageNum timed out after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Request timed out",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         } catch (e: java.net.ConnectException) {
             val ms = System.currentTimeMillis() - pageStart
             logger.warn { "Upstream treatments by type $type page $pageNum connection refused after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Connection refused",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         }
         val pageMs = System.currentTimeMillis() - pageStart
         if (!httpResponse.success) {
@@ -333,11 +357,17 @@ class TreatmentsClient(
         } catch (e: HttpRequestTimeoutException) {
             val ms = System.currentTimeMillis() - start
             logger.warn { "Upstream device-age timed out after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Request timed out",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         } catch (e: java.net.ConnectException) {
             val ms = System.currentTimeMillis() - start
             logger.warn { "Upstream device-age connection refused after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Connection refused",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         }
         val ms = System.currentTimeMillis() - start
         if (!httpResponse.success) {
@@ -374,11 +404,17 @@ class TreatmentsClient(
         } catch (e: HttpRequestTimeoutException) {
             val ms = System.currentTimeMillis() - start
             logger.warn { "Upstream device-status timed out after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Request timed out", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Request timed out",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         } catch (e: java.net.ConnectException) {
             val ms = System.currentTimeMillis() - start
             logger.warn { "Upstream device-status connection refused after ${ms}ms" }
-            throw UpstreamException(service = "treatments", statusCode = 503, message = "Connection refused", responseBody = null, url = "$baseUrl/api/v1")
+            throw UpstreamException(
+                service = "treatments", statusCode = 503, message = "Connection refused",
+                responseBody = null, url = "$baseUrl/api/v1", cause = e,
+            )
         }
         val ms = System.currentTimeMillis() - start
         if (httpResponse.status == HttpStatusCode.NotFound.value) {

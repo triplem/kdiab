@@ -166,7 +166,7 @@ private fun MeasureResponse.toDomain() = UpstreamMeasure(
     userId = userId,
     measuredAt = measuredAt,
     type = type.value,
-    source = source?.value,
+    source = source.value,
     data = `data`,
     status = status.value,
 )
