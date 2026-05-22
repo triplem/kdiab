@@ -666,7 +666,7 @@
       "serviceAccountsEnabled": true,
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": false,
-      "secret": "change-me-in-production",
+      "secret": "users-service-secret",
       "protocolMappers": []
     }
   ]
