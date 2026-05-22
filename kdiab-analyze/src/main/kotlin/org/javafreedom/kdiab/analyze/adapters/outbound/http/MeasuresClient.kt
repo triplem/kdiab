@@ -6,6 +6,7 @@ import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.request.header
@@ -152,6 +153,10 @@ class MeasuresClient(
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+                config.install(HttpTimeout) {
+                    connectTimeoutMillis = CONNECT_TIMEOUT_MS
+                    requestTimeoutMillis = REQUEST_TIMEOUT_MS
+                }
             },
         ).apply { setBearerToken(token) }
 }

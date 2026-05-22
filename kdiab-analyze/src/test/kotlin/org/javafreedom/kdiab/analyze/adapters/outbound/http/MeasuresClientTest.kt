@@ -2,7 +2,7 @@ package org.javafreedom.kdiab.analyze.adapters.outbound.http
 
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -45,7 +45,7 @@ class MeasuresClientTest {
     // ── single-page response ──────────────────────────────────────────────────
 
     @Test
-    fun `getMeasures returns all items from a single page`() = runTest {
+    fun `getMeasures returns all items from a single page`() = runBlocking {
         val items = listOf(measure("m-1"), measure("m-2"))
         val engine = MockEngine { _ ->
             respond(
@@ -64,7 +64,7 @@ class MeasuresClientTest {
     // ── multi-page response ───────────────────────────────────────────────────
 
     @Test
-    fun `getMeasures fetches all pages and returns flat list`() = runTest {
+    fun `getMeasures fetches all pages and returns flat list`() = runBlocking {
         // PAGE_SIZE=200: totalCount=201 forces 2 pages (ceil(201/200)=2)
         val page0 = (1..200).map { measure("m-$it") }
         val page1 = listOf(measure("m-201"))
@@ -99,7 +99,7 @@ class MeasuresClientTest {
     // ── empty response ────────────────────────────────────────────────────────
 
     @Test
-    fun `getMeasures returns empty list when totalCount is zero`() = runTest {
+    fun `getMeasures returns empty list when totalCount is zero`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(
                 content = pagedJson(emptyList(), page = 0, size = 200, total = 0),
@@ -115,7 +115,7 @@ class MeasuresClientTest {
     // ── upstream error ────────────────────────────────────────────────────────
 
     @Test
-    fun `getMeasures throws UpstreamException on 401`() = runTest {
+    fun `getMeasures throws UpstreamException on 401`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(content = "", status = HttpStatusCode.Unauthorized)
         }
@@ -126,7 +126,7 @@ class MeasuresClientTest {
     }
 
     @Test
-    fun `getMeasures throws UpstreamException on 500`() = runTest {
+    fun `getMeasures throws UpstreamException on 500`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(content = "", status = HttpStatusCode.InternalServerError)
         }
@@ -137,7 +137,7 @@ class MeasuresClientTest {
     }
 
     @Test
-    fun `getMeasures throws UpstreamException with statusCode when first page returns 500`() = runTest {
+    fun `getMeasures throws UpstreamException with statusCode when first page returns 500`() = runBlocking {
         val engine = MockEngine { _ ->
             respond(content = "", status = HttpStatusCode.InternalServerError)
         }
@@ -149,7 +149,7 @@ class MeasuresClientTest {
     }
 
     @Test
-    fun `getMeasures throws UpstreamException when second page returns 502 and partial data is discarded`() = runTest {
+    fun `getMeasures throws UpstreamException when second page returns 502 and partial data is discarded`() = runBlocking {
         // PAGE_SIZE=200: totalCount=201 forces 2 pages; page 1 returns 502
         val page0 = (1..200).map { measure("m-$it") }
         var callCount = 0
@@ -176,7 +176,7 @@ class MeasuresClientTest {
     }
 
     @Test
-    fun `getMeasures makes exactly one request when first page is empty`() = runTest {
+    fun `getMeasures makes exactly one request when first page is empty`() = runBlocking {
         var callCount = 0
         val engine = MockEngine { _ ->
             callCount++
@@ -195,7 +195,7 @@ class MeasuresClientTest {
     // ── pagination parameters ─────────────────────────────────────────────────
 
     @Test
-    fun `getMeasures sends correct page and size query parameters`() = runTest {
+    fun `getMeasures sends correct page and size query parameters`() = runBlocking {
         val capturedParams = mutableListOf<Pair<String?, String?>>()
         val engine = MockEngine { request ->
             capturedParams += request.url.parameters["page"] to request.url.parameters["size"]
@@ -216,7 +216,7 @@ class MeasuresClientTest {
     // ── header forwarding ─────────────────────────────────────────────────────
 
     @Test
-    fun `getMeasures sends X-Correlation-ID header`() = runTest {
+    fun `getMeasures sends X-Correlation-ID header`() = runBlocking {
         var capturedCorrelationId: String? = null
         val engine = MockEngine { request ->
             capturedCorrelationId = request.headers["X-Correlation-ID"]
@@ -234,7 +234,7 @@ class MeasuresClientTest {
     // ── from/to parameters ────────────────────────────────────────────────────
 
     @Test
-    fun `getMeasures sends from and to query parameters when provided`() = runTest {
+    fun `getMeasures sends from and to query parameters when provided`() = runBlocking {
         val capturedParams = mutableListOf<Triple<String?, String?, String?>>()
         val engine = MockEngine { request ->
             capturedParams += Triple(
@@ -257,7 +257,7 @@ class MeasuresClientTest {
     }
 
     @Test
-    fun `getMeasures does not send from and to when null`() = runTest {
+    fun `getMeasures does not send from and to when null`() = runBlocking {
         val capturedParams = mutableListOf<Pair<String?, String?>>()
         val engine = MockEngine { request ->
             capturedParams += request.url.parameters["from"] to request.url.parameters["to"]
