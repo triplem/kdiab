@@ -70,7 +70,7 @@ class ProfilesClient(
 
         while (true) {
             val pageStart = System.currentTimeMillis()
-            val httpResponse = fetchProfilesPage(api, userId, page)
+            val httpResponse = fetchProfilesPage(api, userId, page, pageStart)
             val pageMs = System.currentTimeMillis() - pageStart
             if (!httpResponse.success) {
                 val requestUrl = httpResponse.response.request.url.toString()
@@ -97,7 +97,7 @@ class ProfilesClient(
         return result
     }
 
-    private suspend fun fetchProfilesPage(api: DefaultApi, userId: String, page: Int) = try {
+    private suspend fun fetchProfilesPage(api: DefaultApi, userId: String, page: Int, startMs: Long) = try {
         circuitBreaker.execute {
             api.listProfiles(
                 userId = userId,
@@ -107,13 +107,15 @@ class ProfilesClient(
             )
         }
     } catch (e: HttpRequestTimeoutException) {
-        logger.warn { "Upstream profiles page $page timed out" }
+        val ms = System.currentTimeMillis() - startMs
+        logger.warn { "Upstream profiles page $page timed out after ${ms}ms" }
         throw UpstreamException(
             service = "profiles", statusCode = 503, message = "Request timed out",
             responseBody = null, url = "$baseUrl/api/v1", cause = e,
         )
     } catch (e: java.net.ConnectException) {
-        logger.warn { "Upstream profiles page $page connection refused" }
+        val ms = System.currentTimeMillis() - startMs
+        logger.warn { "Upstream profiles page $page connection refused after ${ms}ms" }
         throw UpstreamException(
             service = "profiles", statusCode = 503, message = "Connection refused",
             responseBody = null, url = "$baseUrl/api/v1", cause = e,
