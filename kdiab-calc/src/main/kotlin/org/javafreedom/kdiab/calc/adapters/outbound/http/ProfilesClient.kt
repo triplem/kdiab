@@ -18,6 +18,8 @@ import org.javafreedom.kdiab.calc.domain.model.GlucoseTarget
 import org.javafreedom.kdiab.calc.domain.model.IcrRatio
 import org.javafreedom.kdiab.calc.domain.model.IsfRatio
 import org.javafreedom.kdiab.calc.domain.repository.ProfilesPort
+import org.javafreedom.kdiab.common.plugins.CircuitBreaker
+import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 
 private val logger = KotlinLogging.logger {}
 
@@ -29,6 +31,16 @@ private const val SOCKET_TIMEOUT_MS = 5_000L
 class ProfilesClient(
     private val httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
+    val circuitBreaker: CircuitBreaker = CircuitBreaker(
+        name = "profiles",
+        failureThreshold = 5,
+        resetTimeoutMs = 30_000L,
+        isInfrastructureFailure = { e ->
+            e is HttpRequestTimeoutException ||
+                e is java.net.ConnectException ||
+                e is UpstreamException
+        },
+    ),
 ) : ProfilesPort {
     override suspend fun getActiveProfile(
         userId: String,
@@ -52,24 +64,36 @@ class ProfilesClient(
 
         val start = System.currentTimeMillis()
         return try {
-            val httpResponse = api.listProfiles(userId = userId, page = 0, size = DEFAULT_PAGE_SIZE, status = null)
-            val ms = System.currentTimeMillis() - start
-            if (!httpResponse.success) {
-                val requestUrl = httpResponse.response.request.url.toString()
-                logger.warn {
-                    "Upstream profiles returned ${httpResponse.status} in ${ms}ms url=$requestUrl"
+            circuitBreaker.execute {
+                val httpResponse = api.listProfiles(userId = userId, page = 0, size = DEFAULT_PAGE_SIZE, status = null)
+                val ms = System.currentTimeMillis() - start
+                if (!httpResponse.success) {
+                    val requestUrl = httpResponse.response.request.url.toString()
+                    logger.warn {
+                        "Upstream profiles returned ${httpResponse.status} in ${ms}ms url=$requestUrl"
+                    }
+                    throw UpstreamException(
+                        service = "profiles",
+                        statusCode = httpResponse.status,
+                        message = httpResponse.response.status.description,
+                        responseBody = null,
+                        url = requestUrl,
+                    )
                 }
-                throw UpstreamException(
-                    service = "profiles",
-                    statusCode = httpResponse.status,
-                    message = httpResponse.response.status.description,
-                    responseBody = null,
-                    url = requestUrl,
-                )
+                logger.info { "Fetched profiles from upstream in ${ms}ms [status=${httpResponse.status}]" }
+                val paged = httpResponse.body()
+                paged.items.firstOrNull { it.status == Profile.Status.ACTIVE }?.toDomain()
             }
-            logger.info { "Fetched profiles from upstream in ${ms}ms [status=${httpResponse.status}]" }
-            val paged = httpResponse.body()
-            paged.items.firstOrNull { it.status == Profile.Status.ACTIVE }?.toDomain()
+        } catch (e: CircuitBreakerOpenException) {
+            logger.warn { "Upstream profiles circuit breaker is OPEN — fast-failing request" }
+            throw UpstreamException(
+                service = "profiles",
+                statusCode = 503,
+                message = "Service unavailable — circuit breaker is open",
+                responseBody = null,
+                url = "$baseUrl/api/v1",
+                cause = e,
+            )
         } catch (e: HttpRequestTimeoutException) {
             val ms = System.currentTimeMillis() - start
             logger.warn { "Upstream profiles request timed out after ${ms}ms" }
