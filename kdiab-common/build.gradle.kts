@@ -11,6 +11,9 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.exposed.core)
+    implementation(libs.exposed.jdbc)
+    implementation(libs.exposed.kotlin.datetime)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.auth)
     implementation(libs.ktor.server.auth.jwt)

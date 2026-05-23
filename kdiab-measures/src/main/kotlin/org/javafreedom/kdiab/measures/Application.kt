@@ -14,7 +14,7 @@ import org.javafreedom.kdiab.measures.application.service.MeasureService
 import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.common.plugins.auditRoutes
 import org.javafreedom.kdiab.measures.infrastructure.persistence.DatabaseFactory
-import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedAuditLogRepository
+import org.javafreedom.kdiab.common.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository
 import org.javafreedom.kdiab.common.plugins.DefaultHealthService
 import org.javafreedom.kdiab.common.plugins.configureCommonPlugins
