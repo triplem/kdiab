@@ -168,16 +168,27 @@ export default function App() {
     setTreatmentSaving(true)
     setTreatmentError(null)
     try {
-      await treatmentsApi.createTreatment(viewingUserId, {
+      const bolusResponse = await treatmentsApi.createTreatment(viewingUserId, {
         type: 'BOLUS',
         treatedAt: meal.treatedAt,
         data: { insulin: meal.insulinUnits },
       })
-      await treatmentsApi.createTreatment(viewingUserId, {
-        type: 'CARBS',
-        treatedAt: meal.treatedAt,
-        data: { carbs: meal.carbs },
-      })
+      const bolusId = bolusResponse.data.id
+      try {
+        await treatmentsApi.createTreatment(viewingUserId, {
+          type: 'CARBS',
+          treatedAt: meal.treatedAt,
+          data: { carbs: meal.carbs },
+        })
+      } catch (carbsErr: unknown) {
+        // Compensate: archive the orphaned BOLUS (archiveTreatments is available to all roles; deleteTreatments is DOCTOR/ADMIN-only)
+        try {
+          await treatmentsApi.archiveTreatments(viewingUserId, { treatmentIds: [bolusId] })
+        } catch {
+          // best-effort — original CARBS error is still re-thrown below
+        }
+        throw carbsErr
+      }
       setShowAddTreatment(false)
       void queryClient.invalidateQueries({ queryKey: ['treatments', viewingUserId] })
       toast.success(t('treatmentModal.saveSuccess'))
