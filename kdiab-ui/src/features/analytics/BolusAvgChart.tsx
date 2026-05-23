@@ -1,5 +1,5 @@
 import {
-  BarChart,
+  ComposedChart,
   Bar,
   XAxis,
   YAxis,
@@ -8,6 +8,9 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useTranslation } from 'react-i18next'
+
+// Bolus blue matching the ▲ treatment marker colour in GlucoseTrendChart
+const BOLUS_COLOR = '#3b82f6'
 
 interface Props {
   /** Hourly buckets (index = UTC hour 0–23), each value is the avg dose in U or null */
@@ -46,14 +49,15 @@ export function BolusAvgChart({ hourlyAvg }: Props) {
             {t('analytics.bolusAvgChartCaption')}
           </figcaption>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" />
+            <ComposedChart data={chartData} margin={{ top: 16, right: 20, left: 10, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="hour"
                 tickFormatter={formatHour}
                 label={{ value: t('analytics.agpHour'), position: 'insideBottom', offset: -5, fill: 'var(--text-secondary)' }}
               />
               <YAxis
+                domain={[0, 'auto']}
                 label={{ value: 'U', angle: -90, position: 'insideLeft', offset: 10, fill: 'var(--text-secondary)' }}
               />
               <Tooltip
@@ -65,10 +69,28 @@ export function BolusAvgChart({ hourlyAvg }: Props) {
               <Bar
                 dataKey="avg"
                 name={t('analytics.bolusAvgDose')}
-                fill="var(--chart-bolus)"
-                radius={[2, 2, 0, 0]}
+                shape={(props: unknown) => {
+                  const p = props as Record<string, unknown>
+                  const x = (p['x'] as number) ?? 0
+                  const y = (p['y'] as number) ?? 0
+                  const width = (p['width'] as number) ?? 0
+                  const height = (p['height'] as number) ?? 0
+                  const value = p['value'] as number | null
+                  if (!value || height <= 0) return <g />
+                  const cx = x + width / 2
+                  const tipSize = Math.min(width * 0.5, 8)
+                  return (
+                    <g>
+                      <rect x={x} y={y} width={width} height={height} fill={BOLUS_COLOR} fillOpacity={0.7} />
+                      <polygon
+                        points={`${cx},${y - 2} ${cx - tipSize},${y + tipSize} ${cx + tipSize},${y + tipSize}`}
+                        fill={BOLUS_COLOR}
+                      />
+                    </g>
+                  )
+                }}
               />
-            </BarChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </figure>
       )}
