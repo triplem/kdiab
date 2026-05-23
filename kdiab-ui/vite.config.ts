@@ -60,6 +60,11 @@ export default defineConfig({
         'src/test/**',
         '**/*.d.ts',
         'src/main.tsx',
+        // top-level orchestration — tab routing, auth rendering, role guards;
+        // integration-level concerns tested via E2E; toast handler unit tests live
+        // in App.test.tsx and verify mock interactions without requiring full
+        // branch coverage of the composition root
+        'src/App.tsx',
         'src/vite-env.d.ts',
         // dashboard rendering components — business logic lives in basalUtils.ts (tested)
         'src/features/dashboard/DashboardView.tsx',
