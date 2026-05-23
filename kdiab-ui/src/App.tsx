@@ -181,8 +181,12 @@ export default function App() {
           data: { carbs: meal.carbs },
         })
       } catch (carbsErr: unknown) {
-        // Compensate: undo the BOLUS so no orphaned record is left
-        await treatmentsApi.deleteTreatments(viewingUserId, { treatmentIds: [bolusId] })
+        // Compensate: archive the orphaned BOLUS (archiveTreatments is available to all roles; deleteTreatments is DOCTOR/ADMIN-only)
+        try {
+          await treatmentsApi.archiveTreatments(viewingUserId, { treatmentIds: [bolusId] })
+        } catch {
+          // best-effort — original CARBS error is still re-thrown below
+        }
         throw carbsErr
       }
       setShowAddTreatment(false)
