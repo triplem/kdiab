@@ -101,20 +101,24 @@ interface TreatmentMarker {
 }
 
 // Linear interpolation of the CGM value at a given timestamp
-function interpolateCgm(ts: number, cgmData: { ts: number; value?: number }[]): number | undefined {
+function interpolateCgm(ts: number, cgmData: { ts: number; value: number }[]): number | undefined {
   if (cgmData.length === 0) return undefined
   let lo = -1
   let hi = -1
   for (let i = 0; i < cgmData.length; i++) {
-    if (cgmData[i].ts <= ts) lo = i
-    if (cgmData[i].ts >= ts && hi === -1) hi = i
+    const entry = cgmData[i]
+    if (!entry) continue
+    if (entry.ts <= ts) lo = i
+    if (entry.ts >= ts && hi === -1) hi = i
   }
   if (lo === -1 && hi === -1) return undefined
-  if (lo === -1) return cgmData[hi].value
-  if (hi === -1) return cgmData[lo].value
-  if (lo === hi) return cgmData[lo].value
-  const t0 = cgmData[lo].ts, t1 = cgmData[hi].ts
-  const v0 = cgmData[lo].value!, v1 = cgmData[hi].value!
+  const loEntry = lo !== -1 ? cgmData[lo] : undefined
+  const hiEntry = hi !== -1 ? cgmData[hi] : undefined
+  if (!loEntry) return hiEntry?.value
+  if (!hiEntry) return loEntry.value
+  if (lo === hi) return loEntry.value
+  const t0 = loEntry.ts, t1 = hiEntry.ts
+  const v0 = loEntry.value, v1 = hiEntry.value
   return v0 + ((ts - t0) / (t1 - t0)) * (v1 - v0)
 }
 
@@ -128,17 +132,13 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
 
   const cgmData = measures
     .filter(m => m.type === 'CGM')
-    .map(m => ({
-      ts: new Date(m.measuredAt).getTime(),
-      value: (() => {
-        const raw = m.data['value']
-        const val = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN
-        if (isNaN(val)) return undefined
-        const storageUnit = typeof m.data['unit'] === 'string' ? m.data['unit'] as string : 'mg/dL'
-        return displayValue(toMgDl(val, storageUnit), glucoseUnit)
-      })(),
-    }))
-    .filter(d => d.value !== undefined)
+    .flatMap(m => {
+      const raw = m.data['value']
+      const val = typeof raw === 'number' ? raw : typeof raw === 'string' ? parseFloat(raw) : NaN
+      if (isNaN(val)) return []
+      const storageUnit = typeof m.data['unit'] === 'string' ? m.data['unit'] as string : 'mg/dL'
+      return [{ ts: new Date(m.measuredAt).getTime(), value: displayValue(toMgDl(val, storageUnit), glucoseUnit) }]
+    })
     .sort((a, b) => a.ts - b.ts)
 
   const bgmData = measures
@@ -159,7 +159,7 @@ export function TimelineChart({ measures, treatments, glucoseUnit, profileChange
   for (const tr of treatments) {
     const ts = new Date(tr.treatedAt).getTime()
     const bucket = byTs.get(ts) ?? []
-    bucket.push({ type: tr.type, notes: tr.notes, treatmentData: tr.data })
+    bucket.push({ type: tr.type, ...(tr.notes !== undefined && { notes: tr.notes }), treatmentData: tr.data })
     byTs.set(ts, bucket)
   }
 

@@ -17,7 +17,10 @@ export const getNextSegment = <T extends { startTime: string; value: number }>(
   if (fields.length === 0) return { startTime: '00:00', value: defaultValue }
   const sorted = [...fields].sort((a, b) => a.startTime.localeCompare(b.startTime))
   const last = sorted[sorted.length - 1]
-  const [h, m] = last.startTime.split(':').map(Number)
+  if (!last) return { startTime: '00:00', value: defaultValue }
+  const parts = last.startTime.split(':').map(Number)
+  const h = parts[0] ?? 0
+  const m = parts[1] ?? 0
   const totalMinutes = h * 60 + m
   const nextTotalMinutes = Math.min(totalMinutes + 60, 23 * 60 + 45)
   const nextH = Math.floor(nextTotalMinutes / 60)
@@ -36,7 +39,9 @@ const timeSegmentSchema = z.object({
 const validateChronological = (arr: { startTime: string }[]) => {
   if (arr.length <= 1) return true
   for (let i = 0; i < arr.length - 1; i++) {
-    if (arr[i].startTime >= arr[i + 1].startTime) return false
+    const curr = arr[i]
+    const next = arr[i + 1]
+    if (curr && next && curr.startTime >= next.startTime) return false
   }
   return true
 }
@@ -77,8 +82,8 @@ interface ProfileEditorProps {
 const generateNextName = (currentName: string) => {
   const match = currentName.match(/(.*)-(\d+)$/)
   if (match) {
-    const base = match[1]
-    const num = parseInt(match[2], 10) + 1
+    const base = match[1] ?? currentName
+    const num = parseInt(match[2] ?? '0', 10) + 1
     return `${base}-${num}`
   }
   return `${currentName}-1`
@@ -88,7 +93,10 @@ const getNextTargetSegment = (fields: { startTime: string; low: number; high: nu
   if (fields.length === 0) return { startTime: '00:00', low: 80, high: 120 }
   const sorted = [...fields].sort((a, b) => a.startTime.localeCompare(b.startTime))
   const last = sorted[sorted.length - 1]
-  const [h, m] = last.startTime.split(':').map(Number)
+  if (!last) return { startTime: '00:00', low: 80, high: 120 }
+  const parts = last.startTime.split(':').map(Number)
+  const h = parts[0] ?? 0
+  const m = parts[1] ?? 0
   const next = Math.min(h * 60 + m + 60, 23 * 60 + 45)
   return {
     startTime: `${String(Math.floor(next / 60)).padStart(2, '0')}:${String(next % 60).padStart(2, '0')}`,
@@ -140,20 +148,20 @@ export function ProfileEditor({
           basal: z
             .array(timeSegmentSchema)
             .nonempty('At least one basal segment required')
-            .refine((arr) => arr[0].startTime === '00:00', 'Basal must start at 00:00')
+            .refine((arr) => arr[0]?.startTime === '00:00', 'Basal must start at 00:00')
             .refine(validateChronological, 'Basal segments must be chronological'),
           icr: z
             .array(icrSegmentSchema)
-            .refine((arr) => arr.length === 0 || arr[0].startTime === '00:00', 'ICR must start at 00:00')
+            .refine((arr) => arr.length === 0 || arr[0]?.startTime === '00:00', 'ICR must start at 00:00')
             .refine(validateChronological, 'ICR segments must be chronological'),
           isf: z
             .array(isfSegmentSchema)
-            .refine((arr) => arr.length === 0 || arr[0].startTime === '00:00', 'ISF must start at 00:00')
+            .refine((arr) => arr.length === 0 || arr[0]?.startTime === '00:00', 'ISF must start at 00:00')
             .refine(validateChronological, 'ISF segments must be chronological'),
           targets: z
             .array(targetSegmentSchema)
             .refine(
-              (arr) => arr.length === 0 || arr[0].startTime === '00:00',
+              (arr) => arr.length === 0 || arr[0]?.startTime === '00:00',
               'Targets must start at 00:00',
             )
             .refine(validateChronological, 'Target segments must be chronological'),
@@ -164,10 +172,16 @@ export function ProfileEditor({
             let totalDailyBasal = 0
             for (let i = 0; i < data.basal.length; i++) {
               const current = data.basal[i]
+              if (!current) continue
               let nextTimeStr = '24:00'
-              if (i + 1 < data.basal.length) nextTimeStr = data.basal[i + 1].startTime
-              const [currH, currM] = current.startTime.split(':').map(Number)
-              const [nextH, nextM] = nextTimeStr.split(':').map(Number)
+              const nextEntry = data.basal[i + 1]
+              if (i + 1 < data.basal.length && nextEntry) nextTimeStr = nextEntry.startTime
+              const currParts = current.startTime.split(':').map(Number)
+              const nextParts = nextTimeStr.split(':').map(Number)
+              const currH = currParts[0] ?? 0
+              const currM = currParts[1] ?? 0
+              const nextH = nextParts[0] ?? 0
+              const nextM = nextParts[1] ?? 0
               const currMinutes = currH * 60 + currM
               const nextMinutes = nextH === 24 ? 24 * 60 : nextH * 60 + nextM
               const durationHours = (nextMinutes - currMinutes) / 60.0
@@ -183,6 +197,7 @@ export function ProfileEditor({
     [isfSegmentSchema],
   )
 
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   const {
     register,
     control,
@@ -191,8 +206,9 @@ export function ProfileEditor({
     setValue,
     getValues,
     formState: { errors, isDirty },
-  } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileSchema),
+  } = useForm<ProfileFormValues, any, ProfileFormValues>({
+    resolver: zodResolver(profileSchema) as any,
+  /* eslint-enable @typescript-eslint/no-explicit-any */
     defaultValues: initialProfile
       ? {
           name: generateNextName(initialProfile.name),
@@ -291,7 +307,7 @@ export function ProfileEditor({
         typeof s === 'string' && s.length > 0 && !s.trimStart().startsWith('<')
       if (isSafeString(data)) errorMessage = data
       else if (isSafeString((data as Record<string, unknown>)?.message))
-        errorMessage = (data as Record<string, string>).message
+        errorMessage = (data as Record<string, string>).message!
       else if (isSafeString(e.message)) errorMessage = e.message
       setApiError(errorMessage)
     },
@@ -420,7 +436,7 @@ export function ProfileEditor({
                 className="btn small"
                 onClick={() => {
                   setIsAddingNewInsulin(false)
-                  setValue('insulinType', insulins[0]?.name || '')
+                  setValue('insulinType', insulins[0]?.name ?? '')
                 }}
               >
                 Cancel

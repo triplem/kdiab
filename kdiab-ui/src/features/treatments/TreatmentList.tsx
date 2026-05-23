@@ -189,7 +189,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
       await treatmentsApi.updateTreatment(userId, editTarget.id, {
         treatedAt: treatment.treatedAt,
         data: treatment.data,
-        notes: treatment.notes,
+        ...(treatment.notes !== undefined && { notes: treatment.notes }),
       })
       setEditTarget(null)
       void queryClient.invalidateQueries({ queryKey: ['treatments', userId] })
@@ -425,7 +425,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                           type: tr.type,
                           treatedAt: tr.treatedAt,
                           data: tr.data as Record<string, unknown>,
-                          notes: tr.notes,
+                          ...(tr.notes !== undefined && { notes: tr.notes }),
                         })}
                       >
                         {t('list.edit', { defaultValue: 'Edit' })}

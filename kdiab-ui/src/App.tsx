@@ -329,7 +329,7 @@ export default function App() {
                 </button>
                 <ProfileEditor
                   userId={viewingUserId}
-                  initialProfile={editingProfile ?? undefined}
+                  {...(editingProfile !== null && { initialProfile: editingProfile })}
                   onProfileSaved={() => { setShowProfileEditor(false); setEditingProfile(null) }}
                   readOnly={isDoctorViewingPatient}
                   isDoctor={isDoctor}
@@ -387,7 +387,7 @@ export default function App() {
       {isDoctorViewingPatient && (
         <PatientBanner
           patientId={activePatientId!}
-          patientName={patientNames.get(activePatientId!)}
+          {...(() => { const name = patientNames.get(activePatientId!); return name !== undefined ? { patientName: name } : {} })()}
           onReturnToOwn={() => setActivePatientId(null)}
         />
       )}

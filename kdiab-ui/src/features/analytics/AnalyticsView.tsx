@@ -99,9 +99,9 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
         <AgpChart
           hourlyData={agpQuery.data.hourlyData}
           glucoseUnit={glucoseUnit}
-          warnings={agpQuery.data.warnings}
-          totalReadingCount={agpQuery.data.totalReadingCount}
-          sensorWearDays={agpQuery.data.sensorWearDays}
+          {...(agpQuery.data.warnings !== undefined && { warnings: agpQuery.data.warnings })}
+          {...(agpQuery.data.totalReadingCount !== undefined && { totalReadingCount: agpQuery.data.totalReadingCount })}
+          {...(agpQuery.data.sensorWearDays !== undefined && { sensorWearDays: agpQuery.data.sensorWearDays })}
         />
       )}
 
@@ -115,7 +115,7 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
             meanGlucose={hba1cQuery.data.meanGlucose}
             tir={hba1cQuery.data.tir}
             glucoseUnit={glucoseUnit}
-            warnings={hba1cQuery.data.warnings}
+            {...(hba1cQuery.data.warnings !== undefined && { warnings: hba1cQuery.data.warnings })}
           />
           <TimeInRangeBar tir={hba1cQuery.data.tir} glucoseUnit={glucoseUnit} />
         </>

@@ -347,7 +347,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
                 type="button"
                 onClick={() => {
                   const id = pendingRejectProfileId
-                  rejectMutation.mutate({ profileId: id, reason: rejectReason || undefined })
+                  rejectMutation.mutate({ profileId: id, ...(rejectReason ? { reason: rejectReason } : {}) })
                   setPendingRejectProfileId(null)
                   setRejectReason('')
                   if (id) rejectTriggerRefs.current.get(id)?.focus()
@@ -366,7 +366,7 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
           isOpen={true}
           title={confirmAction.title}
           message={confirmAction.message}
-          danger={confirmAction.danger}
+          {...(confirmAction.danger !== undefined && { danger: confirmAction.danger })}
           confirmLabel={t('confirm.confirmLabel')}
           cancelLabel={t('confirm.cancelLabel')}
           onConfirm={() => {

@@ -88,20 +88,20 @@ export class Configuration {
     formDataCtor?: new () => any;
 
     constructor(param: ConfigurationParameters = {}) {
-        this.apiKey = param.apiKey;
-        this.username = param.username;
-        this.password = param.password;
-        this.accessToken = param.accessToken;
-        this.awsv4 = param.awsv4;
-        this.basePath = param.basePath;
-        this.serverIndex = param.serverIndex;
+        if (param.apiKey !== undefined) this.apiKey = param.apiKey;
+        if (param.username !== undefined) this.username = param.username;
+        if (param.password !== undefined) this.password = param.password;
+        if (param.accessToken !== undefined) this.accessToken = param.accessToken;
+        if (param.awsv4 !== undefined) this.awsv4 = param.awsv4;
+        if (param.basePath !== undefined) this.basePath = param.basePath;
+        if (param.serverIndex !== undefined) this.serverIndex = param.serverIndex;
         this.baseOptions = {
             ...param.baseOptions,
             headers: {
                 ...param.baseOptions?.headers,
             },
         };
-        this.formDataCtor = param.formDataCtor;
+        if (param.formDataCtor !== undefined) this.formDataCtor = param.formDataCtor;
     }
 
     /**

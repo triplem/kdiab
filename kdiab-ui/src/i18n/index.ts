@@ -8,7 +8,7 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
     de: { translation: de },
   },
-  lng: navigator.language.split('-')[0],
+  lng: navigator.language.split('-')[0] ?? 'en',
   fallbackLng: 'en',
   interpolation: { escapeValue: false },
 })
