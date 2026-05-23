@@ -12,6 +12,8 @@ import io.ktor.server.routing.*
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
+import org.javafreedom.kdiab.nightscout.domain.model.NightscoutEntry
+import org.javafreedom.kdiab.nightscout.domain.model.NightscoutTreatment
 
 private val logger = KotlinLogging.logger {}
 
@@ -50,6 +52,20 @@ fun Route.nightscoutRoutes(service: NightscoutService) {
                 to = to,
                 count = count,
             )
+            call.respond(HttpStatusCode.OK, treatments)
+        }
+
+        post("/api/v1/entries.json") {
+            val ctx = extractContext(call)
+            val entries = call.receive<List<NightscoutEntry>>()
+            service.postEntries(ctx.userId, ctx.authorization, ctx.correlationId, entries)
+            call.respond(HttpStatusCode.OK, entries)
+        }
+
+        post("/api/v1/treatments.json") {
+            val ctx = extractContext(call)
+            val treatments = call.receive<List<NightscoutTreatment>>()
+            service.postTreatments(ctx.userId, ctx.authorization, ctx.correlationId, treatments)
             call.respond(HttpStatusCode.OK, treatments)
         }
     }

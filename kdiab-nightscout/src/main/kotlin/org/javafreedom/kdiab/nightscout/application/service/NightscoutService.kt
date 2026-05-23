@@ -2,8 +2,10 @@ package org.javafreedom.kdiab.nightscout.application.service
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import org.javafreedom.kdiab.nightscout.adapters.inbound.web.toMeasureRequest
 import org.javafreedom.kdiab.nightscout.adapters.inbound.web.toNightscoutEntry
 import org.javafreedom.kdiab.nightscout.adapters.inbound.web.toNightscoutTreatment
+import org.javafreedom.kdiab.nightscout.adapters.inbound.web.toTreatmentRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.nightscout.domain.model.NightscoutEntry
@@ -55,6 +57,28 @@ class NightscoutService(
             .mapNotNull { it.toNightscoutTreatment() }
             .sortedByDescending { it.mills }
             .take(count)
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun postEntries(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        entries: List<NightscoutEntry>,
+    ) {
+        val measures = entries.mapNotNull { it.toMeasureRequest() }
+        measures.forEach { measuresClient.postMeasure(userId, authorization, correlationId, it) }
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun postTreatments(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        treatments: List<NightscoutTreatment>,
+    ) {
+        val requests = treatments.mapNotNull { it.toTreatmentRequest() }
+        requests.forEach { treatmentsClient.postTreatment(userId, authorization, correlationId, it) }
     }
 
     companion object {

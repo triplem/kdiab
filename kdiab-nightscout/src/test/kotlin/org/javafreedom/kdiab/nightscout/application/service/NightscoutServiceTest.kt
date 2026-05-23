@@ -1,18 +1,24 @@
 package org.javafreedom.kdiab.nightscout.application.service
 
 import io.mockk.coEvery
+import io.mockk.coJustRun
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
+import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.CreateMeasureRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureSource
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureStatus
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureType
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.CreateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentType
+import org.javafreedom.kdiab.nightscout.domain.model.NightscoutEntry
+import org.javafreedom.kdiab.nightscout.domain.model.NightscoutTreatment
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -121,5 +127,76 @@ class NightscoutServiceTest {
         val entries = service.getEntries("user1", "Bearer token", "corr", count = 3)
 
         assertEquals(3, entries.size)
+    }
+
+    @Test
+    fun `postEntries maps sgv entries to measures client`() = runTest {
+        coJustRun { measuresClient.postMeasure(any(), any(), any(), any()) }
+        val entries = listOf(
+            NightscoutEntry(
+                type = "sgv",
+                sgv = 140,
+                date = 1704067200000L,
+                dateString = "2024-01-01T00:00:00Z",
+                trend = 4,
+                direction = "Flat",
+                id = "e1",
+                mills = 1704067200000L,
+            )
+        )
+
+        service.postEntries("user1", "Bearer token", "corr", entries)
+
+        coVerify(exactly = 1) {
+            measuresClient.postMeasure(
+                "user1",
+                "Bearer token",
+                "corr",
+                match { it.type == MeasureType.CGM && it.source == MeasureSource.NIGHTSCOUT },
+            )
+        }
+    }
+
+    @Test
+    fun `postEntries skips non-sgv-mbg entries`() = runTest {
+        val entries = listOf(
+            NightscoutEntry(
+                type = "cal",
+                sgv = null,
+                date = 1704067200000L,
+                dateString = "2024-01-01T00:00:00Z",
+                id = "e1",
+                mills = 1704067200000L,
+            )
+        )
+
+        service.postEntries("user1", "Bearer token", "corr", entries)
+
+        coVerify(exactly = 0) { measuresClient.postMeasure(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `postTreatments maps bolus treatment to treatments client`() = runTest {
+        coJustRun { treatmentsClient.postTreatment(any(), any(), any(), any()) }
+        val treatments = listOf(
+            NightscoutTreatment(
+                id = "t1",
+                eventType = "Bolus",
+                createdAt = "2024-01-01T08:00:00Z",
+                insulin = 3.5,
+                mills = 1704067200000L,
+            )
+        )
+
+        service.postTreatments("user1", "Bearer token", "corr", treatments)
+
+        coVerify(exactly = 1) {
+            treatmentsClient.postTreatment(
+                "user1",
+                "Bearer token",
+                "corr",
+                match { it.type == TreatmentType.BOLUS },
+            )
+        }
     }
 }
