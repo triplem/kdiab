@@ -10,6 +10,7 @@ import io.ktor.server.resources.get
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
+import kotlinx.datetime.TimeZone
 import org.javafreedom.kdiab.analyze.api.Paths
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.analyze.application.service.AnalyticsOperation
@@ -85,6 +86,8 @@ fun Route.bffRoutes(
                 correlationId = ctx.correlationId,
             )
 
+            // TODO(#859): extract patient timezone from UserPrincipal once it carries a timezone
+            //             field from the JWT claim; until then default to UTC.
             val result = analyticsService.getAgp(
                 userId = ctx.targetUserId.toString(),
                 from = from,
@@ -94,6 +97,7 @@ fun Route.bffRoutes(
                 correlationId = ctx.correlationId,
                 tirLow = tirLow,
                 tirHigh = tirHigh,
+                timeZone = TimeZone.UTC,
             )
             call.respond(result.toResponse())
         }

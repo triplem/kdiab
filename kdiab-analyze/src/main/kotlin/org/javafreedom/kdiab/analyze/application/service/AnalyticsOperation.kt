@@ -1,5 +1,6 @@
 package org.javafreedom.kdiab.analyze.application.service
 
+import kotlinx.datetime.TimeZone
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 
@@ -36,5 +37,7 @@ interface AnalyticsOperation {
         correlationId: String,
         tirLow: Double = DEFAULT_TIR_LOW,
         tirHigh: Double = DEFAULT_TIR_HIGH,
+        // TODO(#859): wire timezone from JWT claim once UserPrincipal carries a timezone field
+        timeZone: TimeZone = TimeZone.UTC,
     ): AgpResult
 }
