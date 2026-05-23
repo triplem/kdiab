@@ -47,7 +47,7 @@ jobs:
           build-mode: manual
 
       - name: Build all Kotlin services
-        run: ./gradlew buildBackends -x test --no-parallel
+        run: ./gradlew buildBackends --no-parallel
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
