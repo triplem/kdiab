@@ -1,3 +1,4 @@
+import java.io.File
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
@@ -216,6 +217,30 @@ val generateProfilesModels by tasks.registering(GenerateTask::class) {
         "useCoroutines" to "true",
     ))
     typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
+    // Resolve to a String at configuration time so the doLast closure captures only a
+    // serializable value (required by the configuration cache).
+    val generatedKtSrcDir = outputDir.get() + "/src/main/kotlin"
+    doLast {
+        // The jvm-ktor generator emits unnecessary safe calls and deprecated encodeBase64 usage.
+        // Patch each file once to suppress these so they don't pollute the build output.
+        // Uses java.io.File directly (not project.fileTree) to stay configuration-cache compatible.
+        // Some generated files already have @file:Suppress with other rules — inject into those
+        // rather than prepending a second annotation block.
+        File(generatedKtSrcDir)
+            .walkTopDown()
+            .filter { it.isFile && it.extension == "kt" }
+            .forEach { f ->
+                val text = f.readText()
+                if ("UNNECESSARY_SAFE_CALL" in text) return@forEach
+                val patched = when {
+                    "@file:Suppress(" in text ->
+                        text.replace("@file:Suppress(", "@file:Suppress(\"UNNECESSARY_SAFE_CALL\", \"DEPRECATION\",\n    ")
+                    else ->
+                        "@file:Suppress(\"UNNECESSARY_SAFE_CALL\", \"DEPRECATION\")\n" + text
+                }
+                f.writeText(patched)
+            }
+    }
 }
 
 tasks.compileKotlin {
