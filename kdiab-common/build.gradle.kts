@@ -26,6 +26,8 @@ dependencies {
     implementation(libs.opentelemetry.sdk)
     implementation(libs.opentelemetry.autoconfigure)
     implementation(libs.opentelemetry.exporter.otlp)
+    implementation(libs.ktor.server.cors)
+    implementation(libs.ktor.server.default.headers)
 }
 
 kotlin {

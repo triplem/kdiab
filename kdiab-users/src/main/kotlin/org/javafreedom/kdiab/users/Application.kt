@@ -6,7 +6,6 @@ import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.di.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -16,6 +15,7 @@ import kotlinx.serialization.json.Json
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.javafreedom.kdiab.common.plugins.configureLogging
 import org.javafreedom.kdiab.common.plugins.configureSecurity
+import org.javafreedom.kdiab.common.plugins.configureSecurityHeaders
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 import org.javafreedom.kdiab.common.plugins.configureTracing
 import org.javafreedom.kdiab.users.adapters.inbound.web.doctorPatientRoutes
@@ -127,17 +127,7 @@ fun Application.module() {
         allowMethod(HttpMethod.Patch)
         allowMethod(HttpMethod.Delete)
     }
-    val httpsEnabled = environment.config.propertyOrNull("server.httpsEnabled")
-        ?.getString()?.toBoolean() ?: false
-    install(DefaultHeaders) {
-        header("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none'")
-        header("X-Content-Type-Options", "nosniff")
-        header("X-Frame-Options", "DENY")
-        // HSTS is only meaningful over HTTPS; sending it on plain HTTP confuses intermediaries.
-        if (httpsEnabled) {
-            header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-        }
-    }
+    configureSecurityHeaders()
 
     if (initDatabase) {
         DatabaseFactory.init(environment.config)
