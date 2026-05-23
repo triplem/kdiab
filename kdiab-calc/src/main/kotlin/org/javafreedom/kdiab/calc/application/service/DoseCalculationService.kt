@@ -19,6 +19,7 @@ import org.javafreedom.kdiab.calc.domain.repository.ProfilesPort
 private const val MMOL_TO_MGDL_FACTOR = 18.0
 private const val HYPOGLYCEMIA_THRESHOLD = 70.0
 private const val HIGH_DOSE_THRESHOLD = 20.0
+private const val MAX_ABSOLUTE_DOSE = 30.0
 private const val TREND_DOUBLE_MGDL_OFFSET = 30.0     // expected BG rise for DoubleUp
 private const val TREND_SINGLE_MGDL_OFFSET = 20.0
 private const val TREND_FORTY_FIVE_MGDL_OFFSET = 10.0
@@ -77,6 +78,13 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
             if (total > HIGH_DOSE_THRESHOLD) {
                 add("Calculated dose is unusually high — please verify inputs")
             }
+        }
+
+        if (total > MAX_ABSOLUTE_DOSE) {
+            throw BusinessValidationException(
+                "Calculated dose of ${round2(total)} U exceeds the maximum allowed single dose of" +
+                    " $MAX_ABSOLUTE_DOSE U — check your profile configuration"
+            )
         }
 
         return DoseResult(

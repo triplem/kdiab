@@ -1,0 +1,93 @@
+= Non-Functional Requirements
+:toc: left
+:icons: font
+
+This document defines measurable non-functional requirements (NFRs) for the kdiab platform.
+
+== Latency
+
+[cols="1,1,1,1"]
+|===
+| Endpoint | P50 | P95 | P99
+
+| GET list endpoints (measures, treatments, profiles)
+| < 100 ms
+| < 300 ms
+| < 500 ms
+
+| POST / PUT (single resource write)
+| < 100 ms
+| < 200 ms
+| < 400 ms
+
+| GET /api/v1/users/{id}/analytics/hba1c (kdiab-analyze)
+| < 300 ms
+| < 800 ms
+| < 1 500 ms
+
+| POST /api/v1/users/{id}/calc/dose (kdiab-calc)
+| < 150 ms
+| < 400 ms
+| < 800 ms
+|===
+
+Latency is measured end-to-end at the load balancer. Upstream service-to-service calls are excluded from individual service SLAs but contribute to the BFF aggregate.
+
+== Availability
+
+|===
+| Target | 99.5% monthly uptime per service (≈ 3.6 h downtime/month)
+| Measurement window | Rolling 30 days
+| Exclusions | Planned maintenance windows (max 4 h/quarter, announced 48 h in advance)
+|===
+
+== Data Retention
+
+[cols="1,1,1"]
+|===
+| Data type | Retention period | Policy on deletion
+
+| CGM / BGM readings
+| Indefinite (user-owned medical data)
+| Soft delete (status = ARCHIVED); hard delete on account deletion
+
+| Treatments
+| Indefinite
+| Soft delete; hard delete on account deletion
+
+| Audit logs
+| 7 years (medical record retention, EU MDR)
+| No soft delete; hard delete after retention period
+
+| Application logs
+| 90 days
+| Automatic expiry in log aggregation system
+|===
+
+== Performance Testing
+
+The P99 latency targets above must be validated by a Gatling or k6 load test scenario:
+
+* Ramp: 0 → 50 concurrent users over 60 s
+* Steady state: 50 users for 120 s
+* Cooldown: 50 → 0 users over 30 s
+* Scenario: representative read-heavy mix (80% GET, 20% POST)
+
+Tests run in CI on demand (not on every PR) against a staging environment with realistic seed data.
+
+== Security
+
+* All endpoints require JWT authentication (no unauthenticated access to patient data).
+* JWT access token expiry: ≤ 15 minutes.
+* HTTPS enforced in all non-local environments.
+* No HIGH or CRITICAL CVEs unmitigated in production images (Trivy scan on every release).
+
+== Backup and Recovery
+
+[cols="1,1"]
+|===
+| Recovery Time Objective (RTO) | < 4 hours (restore from last daily backup)
+| Recovery Point Objective (RPO) | < 24 hours (daily PostgreSQL backups)
+|===
+
+Backups are encrypted at rest and stored in a separate cloud region.

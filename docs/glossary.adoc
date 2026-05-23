@@ -27,11 +27,15 @@ European/international glucose unit. Conversion: `mmol/L = mg/dL ÷ 18`.
 == Analytics
 
 === TIR — Time In Range
-The percentage of CGM readings within the target glucose range (70–180 mg/dL). Clinical guidelines target ≥70% TIR for most T1D patients. kdiab computes four zones:
+The percentage of CGM readings within the target glucose range (70–180 mg/dL). Clinical guidelines target ≥70% TIR for most T1D patients. kdiab computes five zones:
 
 [cols="1,1,1"]
 |===
 | Zone | Range | Field
+
+| Very Low
+| < 54 mg/dL
+| `veryLowCount`
 
 | Below
 | < 70 mg/dL
@@ -49,6 +53,8 @@ The percentage of CGM readings within the target glucose range (70–180 mg/dL).
 | > 250 mg/dL
 | `highCount`
 |===
+
+The Very Low zone (< 54 mg/dL) corresponds to Level 2 hypoglycaemia per ADA/ATTD consensus — the most clinically dangerous zone, requiring immediate treatment.
 
 === HbA1c — Glycated Haemoglobin
 A blood test reflecting average glucose over the preceding ~3 months. Expressed as a percentage (NGSP/DCCT) or mmol/mol (IFCC). kdiab estimates HbA1c from CGM data using the DCCT formula:
