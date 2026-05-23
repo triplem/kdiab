@@ -2,11 +2,18 @@ package org.javafreedom.kdiab.nightscout.adapters.inbound.web
 
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.CreateMeasureRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureResponse
+import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureSource
+import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureType
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.CreateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentResponse
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.nightscout.domain.model.NightscoutEntry
 import org.javafreedom.kdiab.nightscout.domain.model.NightscoutTreatment
 
@@ -69,5 +76,42 @@ fun TreatmentResponse.toNightscoutTreatment(): NightscoutTreatment? {
         carbs = carbs,
         notes = this.notes,
         mills = millis,
+    )
+}
+
+fun NightscoutEntry.toMeasureRequest(): CreateMeasureRequest? {
+    val measureType = when (type) {
+        "sgv" -> MeasureType.CGM
+        "mbg" -> MeasureType.BGM
+        else -> return null
+    }
+    val data = buildJsonObject {
+        sgv?.let { put("sgv", it) }
+        trend?.let { put("trend", it) }
+        direction?.let { put("direction", it) }
+    }
+    return CreateMeasureRequest(
+        measuredAt = dateString,
+        type = measureType,
+        source = MeasureSource.NIGHTSCOUT,
+        data = data,
+    )
+}
+
+fun NightscoutTreatment.toTreatmentRequest(): CreateTreatmentRequest? {
+    val treatmentType = TREATMENT_TYPE_MAP.entries
+        .firstOrNull { it.value == eventType }
+        ?.key
+        ?.let { runCatching { TreatmentType.valueOf(it) }.getOrNull() }
+        ?: return null
+    val data = buildJsonObject {
+        insulin?.let { put("insulin", it) }
+        carbs?.let { put("carbs", it) }
+    }
+    return CreateTreatmentRequest(
+        treatedAt = createdAt,
+        type = treatmentType,
+        data = data,
+        notes = notes,
     )
 }

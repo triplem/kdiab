@@ -12,6 +12,7 @@ import io.ktor.client.statement.request
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.DefaultApi
+import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.CreateMeasureRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
@@ -97,5 +98,36 @@ class MeasuresClient(
 
         logger.info { "Fetched ${result.size} measures for nightscout userId=$userId" }
         return result
+    }
+
+    suspend fun postMeasure(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        request: CreateMeasureRequest,
+    ) {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val api = DefaultApi(
+            baseUrl = "$baseUrl/api/v1",
+            httpClientEngine = httpClient.engine,
+            httpClientConfig = { config ->
+                config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+            },
+        ).apply { setBearerToken(token) }
+
+        val httpResponse = circuitBreaker.execute {
+            api.createMeasure(userId = userId, createMeasureRequest = request)
+        }
+        if (!httpResponse.success) {
+            val requestUrl = httpResponse.response.request.url.toString()
+            throw UpstreamException(
+                service = "measures",
+                statusCode = httpResponse.status,
+                reason = httpResponse.response.status.description,
+                url = requestUrl,
+            )
+        }
+        logger.info { "Posted measure for nightscout userId=$userId" }
     }
 }

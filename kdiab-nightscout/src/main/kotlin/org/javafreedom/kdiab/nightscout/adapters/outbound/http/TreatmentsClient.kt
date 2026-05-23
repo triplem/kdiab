@@ -12,6 +12,7 @@ import io.ktor.client.statement.request
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.DefaultApi
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.CreateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentResponse
 import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
@@ -98,5 +99,36 @@ class TreatmentsClient(
 
         logger.info { "Fetched ${result.size} treatments for nightscout userId=$userId" }
         return result
+    }
+
+    suspend fun postTreatment(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        request: CreateTreatmentRequest,
+    ) {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val api = DefaultApi(
+            baseUrl = "$baseUrl/api/v1",
+            httpClientEngine = httpClient.engine,
+            httpClientConfig = { config ->
+                config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+            },
+        ).apply { setBearerToken(token) }
+
+        val httpResponse = circuitBreaker.execute {
+            api.createTreatment(userId = userId, createTreatmentRequest = request)
+        }
+        if (!httpResponse.success) {
+            val requestUrl = httpResponse.response.request.url.toString()
+            throw UpstreamException(
+                service = "treatments",
+                statusCode = httpResponse.status,
+                reason = httpResponse.response.status.description,
+                url = requestUrl,
+            )
+        }
+        logger.info { "Posted treatment for nightscout userId=$userId" }
     }
 }
