@@ -50,7 +50,7 @@ dependencies {
 
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
-    implementation(libs.exposed.java.time)
+    implementation(libs.exposed.kotlin.datetime)
     implementation(libs.postgresql)
     implementation(libs.hikaricp)
     implementation(libs.liquibase.core)

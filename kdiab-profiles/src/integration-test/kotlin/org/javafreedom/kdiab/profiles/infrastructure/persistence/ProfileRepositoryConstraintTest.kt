@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.runBlocking
+import kotlin.time.Clock
 import kotlinx.datetime.LocalTime
 import org.javafreedom.kdiab.profiles.domain.model.*
 import org.jetbrains.exposed.v1.core.*
@@ -126,7 +127,7 @@ class ProfileRepositoryConstraintTest {
             it[units] = "mg/dl"
             it[durationOfAction] = 180
             it[timeZone] = "UTC"
-            it[createdAt] = java.time.Instant.now()
+            it[createdAt] = Clock.System.now()
             it[segments] = ProfileSegments(
                 basal = listOf(BasalSegment(LocalTime(0, 0), 1.0))
             )
@@ -135,7 +136,7 @@ class ProfileRepositoryConstraintTest {
             it[ProfileStatuses.profileId] = profileId
             it[ProfileStatuses.userId] = userId
             it[ProfileStatuses.status] = status
-            it[validFrom] = java.time.Instant.now()
+            it[validFrom] = Clock.System.now()
         }
     }
 

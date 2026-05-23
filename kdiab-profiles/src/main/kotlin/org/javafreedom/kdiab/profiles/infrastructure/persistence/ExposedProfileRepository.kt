@@ -7,6 +7,7 @@ import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.time.Clock
 import kotlinx.datetime.IllegalTimeZoneException
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
@@ -19,7 +20,7 @@ import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.*
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
-import org.jetbrains.exposed.v1.javatime.timestamp
+import org.jetbrains.exposed.v1.datetime.timestamp
 import org.jetbrains.exposed.v1.json.jsonb
 import kotlin.time.Instant
 
@@ -173,10 +174,8 @@ class ExposedProfileRepository(
                 .where {
                     (Profiles.userId eq userId) and
                         (ProfileStatuses.status eq ProfileStatus.ARCHIVED) and
-                        (Profiles.createdAt greaterEq
-                            java.time.Instant.ofEpochMilli(from.toEpochMilliseconds())) and
-                        (Profiles.createdAt lessEq
-                            java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                        (Profiles.createdAt greaterEq from) and
+                        (Profiles.createdAt lessEq to)
                 }
                 .orderBy(Profiles.createdAt, SortOrder.DESC)
                 .map { mapToProfile(it) }
@@ -228,7 +227,7 @@ class ExposedProfileRepository(
         suspendTransaction {
             ProfileStatuses.update({ ProfileStatuses.profileId eq id }) {
                 it[status] = ProfileStatus.ARCHIVED
-                it[validFrom] = java.time.Instant.now()
+                it[validFrom] = Clock.System.now()
             } > 0
         }
     }
@@ -324,7 +323,7 @@ class ExposedProfileRepository(
             it[units] = profile.units
             it[durationOfAction] = profile.durationOfAction
             it[timeZone] = profile.timeZone.id
-            it[createdAt] = java.time.Instant.ofEpochMilli(profile.createdAt.toEpochMilliseconds())
+            it[createdAt] = profile.createdAt
             it[proposalReason] = profile.proposalReason
             it[createdBy] = profile.createdBy
             it[rejectionReason] = profile.rejectionReason
@@ -345,13 +344,9 @@ class ExposedProfileRepository(
             it[profileId] = profile.id
             it[userId] = profile.userId
             it[status] = profile.status
-            it[validFrom] = java.time.Instant.now()
-            it[activatedAt] = profile.activatedAt?.let { a ->
-                java.time.Instant.ofEpochMilli(a.toEpochMilliseconds())
-            }
-            it[archivedAt] = profile.archivedAt?.let { a ->
-                java.time.Instant.ofEpochMilli(a.toEpochMilliseconds())
-            }
+            it[validFrom] = Clock.System.now()
+            it[activatedAt] = profile.activatedAt
+            it[archivedAt] = profile.archivedAt
         }
     }
 
@@ -386,13 +381,9 @@ class ExposedProfileRepository(
     ) {
         ProfileStatuses.update({ ProfileStatuses.profileId eq profileId }) {
             it[status] = newStatus
-            it[validFrom] = java.time.Instant.now()
-            activatedAt?.let { a ->
-                it[ProfileStatuses.activatedAt] = java.time.Instant.ofEpochMilli(a.toEpochMilliseconds())
-            }
-            archivedAt?.let { a ->
-                it[ProfileStatuses.archivedAt] = java.time.Instant.ofEpochMilli(a.toEpochMilliseconds())
-            }
+            it[validFrom] = Clock.System.now()
+            if (activatedAt != null) it[ProfileStatuses.activatedAt] = activatedAt
+            if (archivedAt != null) it[ProfileStatuses.archivedAt] = archivedAt
         }
     }
 
@@ -416,14 +407,10 @@ class ExposedProfileRepository(
             durationOfAction = row[Profiles.durationOfAction],
             timeZone = tz,
             status = row[ProfileStatuses.status],
-            createdAt = Instant.fromEpochMilliseconds(row[Profiles.createdAt].toEpochMilli()),
-            validFrom = Instant.fromEpochMilliseconds(row[ProfileStatuses.validFrom].toEpochMilli()),
-            activatedAt = row[ProfileStatuses.activatedAt]?.let {
-                Instant.fromEpochMilliseconds(it.toEpochMilli())
-            },
-            archivedAt = row[ProfileStatuses.archivedAt]?.let {
-                Instant.fromEpochMilliseconds(it.toEpochMilli())
-            },
+            createdAt = row[Profiles.createdAt],
+            validFrom = row[ProfileStatuses.validFrom],
+            activatedAt = row[ProfileStatuses.activatedAt],
+            archivedAt = row[ProfileStatuses.archivedAt],
             proposalReason = row[Profiles.proposalReason],
             createdBy = row[Profiles.createdBy],
             rejectionReason = row[Profiles.rejectionReason],
