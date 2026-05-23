@@ -131,6 +131,15 @@
             "async": true
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "docker ps --format '{{.Names}}' 2>/dev/null | grep -q claude-otel-collector && OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4328 OTEL_SERVICE_NAME=claude-code OTEL_TRACES_EXPORTER=otlp npx --yes @colmurray/claude-code-otel 2>/dev/null || true",
+            "async": true
+          }
+        ]
       }
     ]
   },
