@@ -1,6 +1,6 @@
 import {
-  BarChart,
-  Bar,
+  ComposedChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useTranslation } from 'react-i18next'
+import { BASAL_COLORS } from '../dashboard/basalUtils'
 
 interface Props {
   /** Hourly buckets (index = UTC hour 0–23), each value is the avg rate in U/hr or null */
@@ -46,14 +47,15 @@ export function BasalAvgChart({ hourlyAvg }: Props) {
             {t('analytics.basalAvgChartCaption')}
           </figcaption>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" />
+            <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis
                 dataKey="hour"
                 tickFormatter={formatHour}
                 label={{ value: t('analytics.agpHour'), position: 'insideBottom', offset: -5, fill: 'var(--text-secondary)' }}
               />
               <YAxis
+                domain={[0, 'auto']}
                 label={{ value: 'U/hr', angle: -90, position: 'insideLeft', offset: 10, fill: 'var(--text-secondary)' }}
               />
               <Tooltip
@@ -62,13 +64,19 @@ export function BasalAvgChart({ hourlyAvg }: Props) {
                 contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
                 wrapperStyle={{ outline: 'none' }}
               />
-              <Bar
+              <Area
+                type="stepAfter"
                 dataKey="avg"
                 name={t('analytics.basalAvgRate')}
-                fill="var(--chart-basal)"
-                radius={[2, 2, 0, 0]}
+                fill={BASAL_COLORS['SCHEDULED']!}
+                fillOpacity={0.5}
+                stroke={BASAL_COLORS['SCHEDULED']!}
+                strokeWidth={1.5}
+                dot={false}
+                isAnimationActive={false}
+                connectNulls={false}
               />
-            </BarChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </figure>
       )}

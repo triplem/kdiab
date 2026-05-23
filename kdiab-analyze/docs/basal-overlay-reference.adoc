@@ -1,0 +1,108 @@
+= Basal Overlay Reference
+:toc: left
+:icons: font
+:source-highlighter: rouge
+
+== Overview
+
+The dashboard CGM chart (`GlucoseTrendChart`) renders a basal-rate overlay at the top of the glucose chart, following the style pioneered by Nightscout.
+The overlay lets users correlate glucose excursions with their basal delivery at a glance without needing a separate chart.
+
+== Dual-Axis Approach
+
+Recharts `ComposedChart` supports multiple Y-axes.
+The basal overlay uses a hidden *right Y-axis* (`yAxisId="basal"`) whose domain is scaled so the basal area occupies only the upper 25% of the chart.
+
+[source,tsx]
+----
+// Hidden right axis — basal values are negated, domain is [-(maxRate * 4), 0]
+// so the maximum scheduled rate appears at the top 25% of chart height.
+<YAxis yAxisId="basal" orientation="right" domain={basalDomain} hide={true} width={0} />
+----
+
+=== Why Negation?
+
+In Recharts, higher Y values appear at the top of the chart.
+To make the basal area *fill downward from the top edge* (Nightscout convention), values are negated:
+
+[source]
+----
+domain = [-(maxRate * 4), 0]
+----
+
+[options="header"]
+|===
+|Basal rate |Y value plotted |Position in chart
+|0 U/h (no basal) |0 |Top edge of chart (0% from top) — basal area has zero height here
+|maxRate U/h |−maxRate |25% from top — bottom edge of the maximum-height basal area
+|n/a |−maxRate × 4 |Bottom edge of chart (domain minimum, never plotted)
+|===
+
+The scheduled profile line uses negated `sched` values:
+
+[source,tsx]
+----
+const negatedBasalLine = basalProfileLine.map(p => ({ time: p.time, basalSched: -p.sched }))
+----
+
+=== ReferenceArea Blocks
+
+Each `BasalBlock` from `reconstructBasalBlocks()` is rendered as a `ReferenceArea`:
+
+[source,tsx]
+----
+<ReferenceArea
+  yAxisId="basal"
+  x1={block.startMs}
+  x2={block.endMs}
+  y1={-block.deliveredRate}  // lower bound (further down)
+  y2={0}                     // upper bound (top edge)
+  fill={BASAL_COLORS[block.state]}
+  fillOpacity={0.65}
+/>
+----
+
+== Colour Scheme
+
+Colours are defined in `basalUtils.ts` and shared across the dashboard and CGM chart:
+
+[options="header"]
+|===
+|State |Colour |Meaning
+|`SCHEDULED` |`#64748b` (slate) |Normal scheduled rate
+|`ABOVE` |`#22c55e` (green) |Temp above scheduled rate
+|`BELOW` |`#f59e0b` (amber) |Temp below scheduled rate (e.g. exercise)
+|`SUSPENDED` |`#e2e8f0` (light) |Pump suspended (e.g. site change)
+|===
+
+== Data Flow
+
+[source]
+----
+activeProfile.basal         ─┐
+windowTimeline.treatments   ─┤─► reconstructBasalBlocks() ──► basalBlocks: BasalBlock[]
+windowFrom / windowTo       ─┘
+
+activeProfile.basal ──► manual step expansion ──► basalProfileLine: {time, sched}[]
+
+Both passed as optional props to GlucoseTrendChart
+  basalBlocks?
+  basalProfileLine?
+----
+
+If `basalBlocks` is empty and `basalProfileLine` is empty the overlay is hidden (`hasBasal = false`) and the chart renders exactly as before — no visible change for users without an active profile.
+
+== Analytics Charts
+
+`BasalAvgChart` (analytics view) uses the same `BASAL_COLORS['SCHEDULED']` slate for consistency.
+It renders a `stepAfter` area chart rather than bars so the 24-bucket hourly average looks like a continuous basal profile.
+
+`BolusAvgChart` uses `#3b82f6` (bolus blue) with triangle-topped bars, matching the `▲` treatment markers in the dashboard CGM chart.
+
+== Related Components
+
+* `kdiab-ui/src/features/dashboard/GlucoseTrendChart.tsx` — primary implementation
+* `kdiab-ui/src/features/dashboard/BasalRateChart.tsx` — standalone basal chart (below CGM chart)
+* `kdiab-ui/src/features/dashboard/basalUtils.ts` — `reconstructBasalBlocks`, `BASAL_COLORS`, `BasalBlock`
+* `kdiab-ui/src/features/analytics/BasalAvgChart.tsx` — analytics step-area chart
+* `kdiab-ui/src/features/analytics/BolusAvgChart.tsx` — analytics bolus bar chart

@@ -301,6 +301,8 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         tirLow={tirLow}
         tirHigh={tirHigh}
         isLoading={isLoading}
+        basalBlocks={basalBlocks}
+        basalProfileLine={basalProfileLine}
       />
 
       {/* -- Basal block chart ----------------------------------------------- */}
