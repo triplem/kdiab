@@ -28,7 +28,7 @@ import org.javafreedom.kdiab.common.plugins.configureHealth
 import org.javafreedom.kdiab.common.plugins.configureSecurityHeaders
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 
-fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
+fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 
 fun Application.module() {
     val initDatabase = environment.config.propertyOrNull("app.initDatabase")?.getString()?.toBoolean() ?: true

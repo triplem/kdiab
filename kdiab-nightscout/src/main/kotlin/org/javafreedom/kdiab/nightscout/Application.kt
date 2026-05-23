@@ -39,7 +39,7 @@ private val logger = KotlinLogging.logger {}
 // The upstream common default of 10 s is too tight for these clients; keep 30 s here.
 private const val HTTP_REQUEST_TIMEOUT_MS = 30_000L
 
-fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
+fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 
 fun Application.module() {
     val json = Json { ignoreUnknownKeys = true }

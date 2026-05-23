@@ -45,7 +45,7 @@ import org.javafreedom.kdiab.common.plugins.configureStatusPages
 
 private val logger = KotlinLogging.logger {}
 
-fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
+fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 
 @Suppress("LongMethod")
 fun Application.module() {
