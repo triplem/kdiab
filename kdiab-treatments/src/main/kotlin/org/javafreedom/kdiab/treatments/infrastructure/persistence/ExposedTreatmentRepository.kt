@@ -20,7 +20,7 @@ import org.jetbrains.exposed.v1.core.statements.*
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
-import org.jetbrains.exposed.v1.javatime.timestamp
+import org.jetbrains.exposed.v1.datetime.timestamp
 import org.jetbrains.exposed.v1.json.jsonb
 
 object TreatmentsTable : Table("treatments") {
@@ -46,8 +46,8 @@ class ExposedTreatmentRepository(
                 TreatmentsTable.insert {
                     it[TreatmentsTable.id] = treatment.id
                     it[TreatmentsTable.userId] = treatment.userId
-                    it[TreatmentsTable.treatedAt] = java.time.Instant.ofEpochMilli(treatment.treatedAt.toEpochMilliseconds())
-                    it[TreatmentsTable.createdAt] = java.time.Instant.ofEpochMilli(treatment.createdAt.toEpochMilliseconds())
+                    it[TreatmentsTable.treatedAt] = treatment.treatedAt
+                    it[TreatmentsTable.createdAt] = treatment.createdAt
                     it[TreatmentsTable.type] = treatment.type.name
                     it[TreatmentsTable.data] = treatment.data
                     it[TreatmentsTable.notes] = treatment.notes
@@ -80,12 +80,10 @@ class ExposedTreatmentRepository(
                             (TreatmentsTable.status eq status.name) and
                             (TreatmentsTable.type neq TreatmentType.DEVICE_STATUS.name)
                         if (from != null) {
-                            condition = condition and (TreatmentsTable.treatedAt greaterEq
-                                java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
+                            condition = condition and (TreatmentsTable.treatedAt greaterEq from)
                         }
                         if (to != null) {
-                            condition = condition and (TreatmentsTable.treatedAt lessEq
-                                java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                            condition = condition and (TreatmentsTable.treatedAt lessEq to)
                         }
                         condition
                     }
@@ -109,12 +107,10 @@ class ExposedTreatmentRepository(
                         (TreatmentsTable.status eq status.name) and
                         (TreatmentsTable.type neq TreatmentType.DEVICE_STATUS.name)
                     if (from != null) {
-                        condition = condition and (TreatmentsTable.treatedAt greaterEq
-                            java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
+                        condition = condition and (TreatmentsTable.treatedAt greaterEq from)
                     }
                     if (to != null) {
-                        condition = condition and (TreatmentsTable.treatedAt lessEq
-                            java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                        condition = condition and (TreatmentsTable.treatedAt lessEq to)
                     }
                     condition
                 }
@@ -136,10 +132,8 @@ class ExposedTreatmentRepository(
                         var condition = (TreatmentsTable.userId eq userId) and
                             (TreatmentsTable.type eq type.name) and
                             (TreatmentsTable.status eq status.name)
-                        if (from != null) condition = condition and (TreatmentsTable.treatedAt greaterEq
-                            java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
-                        if (to != null) condition = condition and (TreatmentsTable.treatedAt lessEq
-                            java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                        if (from != null) condition = condition and (TreatmentsTable.treatedAt greaterEq from)
+                        if (to != null) condition = condition and (TreatmentsTable.treatedAt lessEq to)
                         condition
                     }
                     .orderBy(TreatmentsTable.treatedAt, SortOrder.DESC)
@@ -158,7 +152,7 @@ class ExposedTreatmentRepository(
             TreatmentsTable.update({
                 (TreatmentsTable.id eq treatmentId) and (TreatmentsTable.userId eq userId)
             }) {
-                it[TreatmentsTable.treatedAt] = java.time.Instant.ofEpochMilli(treatedAt.toEpochMilliseconds())
+                it[TreatmentsTable.treatedAt] = treatedAt
                 it[TreatmentsTable.data] = data
                 it[TreatmentsTable.notes] = notes
             }
@@ -181,7 +175,7 @@ class ExposedTreatmentRepository(
                     .orderBy(TreatmentsTable.treatedAt, SortOrder.DESC)
                     .limit(1)
                     .firstOrNull()
-                    ?.let { Instant.fromEpochMilliseconds(it[TreatmentsTable.treatedAt].toEpochMilli()) }
+                    ?.let { it[TreatmentsTable.treatedAt] }
             }
         }
 
@@ -203,9 +197,7 @@ class ExposedTreatmentRepository(
                     .groupBy(TreatmentsTable.type)
                     .mapNotNull { row ->
                         val type = TreatmentType.valueOf(row[TreatmentsTable.type])
-                        row[maxTreatedAt]?.let { javaInstant ->
-                            type to Instant.fromEpochMilliseconds(javaInstant.toEpochMilli())
-                        }
+                        row[maxTreatedAt]?.let { type to it }
                     }
                     .toMap()
             }
@@ -243,8 +235,8 @@ class ExposedTreatmentRepository(
     private fun ResultRow.toTreatment(): Treatment = Treatment(
         id = this[TreatmentsTable.id],
         userId = this[TreatmentsTable.userId],
-        treatedAt = Instant.fromEpochMilliseconds(this[TreatmentsTable.treatedAt].toEpochMilli()),
-        createdAt = Instant.fromEpochMilliseconds(this[TreatmentsTable.createdAt].toEpochMilli()),
+        treatedAt = this[TreatmentsTable.treatedAt],
+        createdAt = this[TreatmentsTable.createdAt],
         type = TreatmentType.valueOf(this[TreatmentsTable.type]),
         data = this[TreatmentsTable.data],
         notes = this[TreatmentsTable.notes],

@@ -21,7 +21,7 @@ import org.jetbrains.exposed.v1.core.statements.*
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
-import org.jetbrains.exposed.v1.javatime.timestamp
+import org.jetbrains.exposed.v1.datetime.timestamp
 import org.jetbrains.exposed.v1.json.jsonb
 
 object MeasuresTable : Table("measures") {
@@ -47,8 +47,8 @@ class ExposedMeasureRepository(
                 MeasuresTable.insert {
                     it[MeasuresTable.id] = measure.id
                     it[MeasuresTable.userId] = measure.userId
-                    it[MeasuresTable.measuredAt] = java.time.Instant.ofEpochMilli(measure.measuredAt.toEpochMilliseconds())
-                    it[MeasuresTable.createdAt] = java.time.Instant.ofEpochMilli(measure.createdAt.toEpochMilliseconds())
+                    it[MeasuresTable.measuredAt] = measure.measuredAt
+                    it[MeasuresTable.createdAt] = measure.createdAt
                     it[MeasuresTable.type] = measure.type.name
                     it[MeasuresTable.sourceField] = measure.source.name
                     it[MeasuresTable.data] = measure.data
@@ -76,12 +76,10 @@ class ExposedMeasureRepository(
                         var condition = (MeasuresTable.userId eq userId) and
                             (MeasuresTable.status eq status.name)
                         if (from != null) {
-                            condition = condition and (MeasuresTable.measuredAt greaterEq
-                                java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
+                            condition = condition and (MeasuresTable.measuredAt greaterEq from)
                         }
                         if (to != null) {
-                            condition = condition and (MeasuresTable.measuredAt lessEq
-                                java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                            condition = condition and (MeasuresTable.measuredAt lessEq to)
                         }
                         condition
                     }
@@ -100,12 +98,10 @@ class ExposedMeasureRepository(
                         var condition = (MeasuresTable.userId eq userId) and
                             (MeasuresTable.status eq status.name)
                         if (from != null) {
-                            condition = condition and (MeasuresTable.measuredAt greaterEq
-                                java.time.Instant.ofEpochMilli(from.toEpochMilliseconds()))
+                            condition = condition and (MeasuresTable.measuredAt greaterEq from)
                         }
                         if (to != null) {
-                            condition = condition and (MeasuresTable.measuredAt lessEq
-                                java.time.Instant.ofEpochMilli(to.toEpochMilliseconds()))
+                            condition = condition and (MeasuresTable.measuredAt lessEq to)
                         }
                         condition
                     }
@@ -129,7 +125,7 @@ class ExposedMeasureRepository(
                 MeasuresTable.update({
                     (MeasuresTable.id eq measureId) and (MeasuresTable.userId eq userId)
                 }) {
-                    it[MeasuresTable.measuredAt] = java.time.Instant.ofEpochMilli(measuredAt.toEpochMilliseconds())
+                    it[MeasuresTable.measuredAt] = measuredAt
                     it[MeasuresTable.data] = data
                 }
                 MeasuresTable.selectAll()
@@ -170,8 +166,8 @@ class ExposedMeasureRepository(
     private fun ResultRow.toMeasure(): Measure = Measure(
         id = this[MeasuresTable.id],
         userId = this[MeasuresTable.userId],
-        measuredAt = Instant.fromEpochMilliseconds(this[MeasuresTable.measuredAt].toEpochMilli()),
-        createdAt = Instant.fromEpochMilliseconds(this[MeasuresTable.createdAt].toEpochMilli()),
+        measuredAt = this[MeasuresTable.measuredAt],
+        createdAt = this[MeasuresTable.createdAt],
         type = MeasureType.valueOf(this[MeasuresTable.type]),
         source = MeasureSource.valueOf(this[MeasuresTable.sourceField]),
         data = this[MeasuresTable.data],

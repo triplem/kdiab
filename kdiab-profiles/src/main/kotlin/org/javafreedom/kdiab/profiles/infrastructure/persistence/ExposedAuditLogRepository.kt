@@ -12,7 +12,7 @@ import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
-import org.jetbrains.exposed.v1.javatime.timestamp
+import org.jetbrains.exposed.v1.datetime.timestamp
 
 private const val ACTION_MAX_LEN = 100
 private const val IP_MAX_LEN = 100
@@ -40,7 +40,7 @@ class ExposedAuditLogRepository(
                 it[doctorId] = entry.doctorId
                 it[patientId] = entry.patientId
                 it[action] = entry.action
-                it[occurredAt] = java.time.Instant.ofEpochMilli(entry.occurredAt.toEpochMilliseconds())
+                it[occurredAt] = entry.occurredAt
                 it[ipAddress] = entry.ipAddress
                 it[userAgent] = entry.userAgent
                 it[detail] = entry.detail
@@ -53,11 +53,9 @@ class ExposedAuditLogRepository(
             suspendTransaction {
                 AuditLogsTable.selectAll()
                     .where {
-                        val jFrom = java.time.Instant.ofEpochMilli(from.toEpochMilliseconds())
-                        val jTo = java.time.Instant.ofEpochMilli(to.toEpochMilliseconds())
                         (AuditLogsTable.patientId eq patientId) and
-                        (AuditLogsTable.occurredAt greaterEq jFrom) and
-                        (AuditLogsTable.occurredAt lessEq jTo)
+                        (AuditLogsTable.occurredAt greaterEq from) and
+                        (AuditLogsTable.occurredAt lessEq to)
                     }
                     .orderBy(AuditLogsTable.occurredAt, SortOrder.DESC)
                     .map { row ->
@@ -66,7 +64,7 @@ class ExposedAuditLogRepository(
                             doctorId = row[AuditLogsTable.doctorId],
                             patientId = row[AuditLogsTable.patientId],
                             action = row[AuditLogsTable.action],
-                            occurredAt = Instant.fromEpochMilliseconds(row[AuditLogsTable.occurredAt].toEpochMilli()),
+                            occurredAt = row[AuditLogsTable.occurredAt],
                             ipAddress = row[AuditLogsTable.ipAddress],
                             userAgent = row[AuditLogsTable.userAgent],
                             detail = row[AuditLogsTable.detail],

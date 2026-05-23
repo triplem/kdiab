@@ -1,6 +1,7 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.carbs.infrastructure.persistence
 
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineDispatcher
@@ -16,7 +17,7 @@ import org.jetbrains.exposed.v1.core.statements.*
 import org.jetbrains.exposed.v1.exceptions.ExposedSQLException
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
-import org.jetbrains.exposed.v1.javatime.timestamp
+import org.jetbrains.exposed.v1.datetime.timestamp
 
 // NAME_MAX_LENGTH and STATUS_MAX_LENGTH define the DB column widths for food_entries.
 private const val NAME_MAX_LENGTH = 200
@@ -108,10 +109,8 @@ class ExposedFoodEntryRepository(
                     it[FoodEntriesTable.portionGrams] = entry.portionGrams
                     it[FoodEntriesTable.carbsPer100g] = entry.carbsPer100g
                     it[FoodEntriesTable.status] = entry.status.name
-                    it[FoodEntriesTable.createdAt] =
-                        java.time.Instant.ofEpochMilli(entry.createdAt.toEpochMilliseconds())
-                    it[FoodEntriesTable.updatedAt] =
-                        java.time.Instant.ofEpochMilli(entry.updatedAt.toEpochMilliseconds())
+                    it[FoodEntriesTable.createdAt] = entry.createdAt
+                    it[FoodEntriesTable.updatedAt] = entry.updatedAt
                 }
                 entry
             }
@@ -128,7 +127,7 @@ class ExposedFoodEntryRepository(
 
     override suspend fun archive(id: Uuid, userId: Uuid): FoodEntry = withContext(ioDispatcher) {
         suspendTransaction {
-            val now = java.time.Instant.now()
+            val now = Clock.System.now()
             FoodEntriesTable.update({
                 (FoodEntriesTable.id eq id) and
                 (FoodEntriesTable.userId eq userId)
@@ -155,7 +154,7 @@ class ExposedFoodEntryRepository(
         carbsPer100g: Double,
     ): FoodEntry = withContext(ioDispatcher) {
         suspendTransaction {
-            val now = java.time.Instant.now()
+            val now = Clock.System.now()
             FoodEntriesTable.update({
                 (FoodEntriesTable.id eq id) and
                 (FoodEntriesTable.userId eq userId)
@@ -194,7 +193,7 @@ class ExposedFoodEntryRepository(
         carbsPer100g = this[FoodEntriesTable.carbsPer100g],
         status = runCatching { FoodEntryStatus.valueOf(this[FoodEntriesTable.status]) }
             .getOrDefault(FoodEntryStatus.ACTIVE),
-        createdAt = Instant.fromEpochMilliseconds(this[FoodEntriesTable.createdAt].toEpochMilli()),
-        updatedAt = Instant.fromEpochMilliseconds(this[FoodEntriesTable.updatedAt].toEpochMilli()),
+        createdAt = this[FoodEntriesTable.createdAt],
+        updatedAt = this[FoodEntriesTable.updatedAt],
     )
 }

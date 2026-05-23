@@ -51,7 +51,7 @@ dependencies {
     // Database (Exposed + Postgres)
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
-    implementation(libs.exposed.java.time) // Date/Time support
+    implementation(libs.exposed.kotlin.datetime) // Date/Time support
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.postgresql)
     implementation(libs.hikaricp)

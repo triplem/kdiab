@@ -12,7 +12,7 @@ import org.javafreedom.kdiab.treatments.domain.repository.DeviceStatusRepository
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
-import org.jetbrains.exposed.v1.javatime.timestamp
+import org.jetbrains.exposed.v1.datetime.timestamp
 
 object DeviceStatusTable : Table("device_status") {
     val id = uuid("id")
@@ -37,8 +37,8 @@ class ExposedDeviceStatusRepository(
             DeviceStatusTable.insert {
                 it[DeviceStatusTable.id] = deviceStatus.id
                 it[DeviceStatusTable.userId] = deviceStatus.userId
-                it[DeviceStatusTable.recordedAt] = java.time.Instant.ofEpochMilli(deviceStatus.recordedAt.toEpochMilliseconds())
-                it[DeviceStatusTable.createdAt] = java.time.Instant.ofEpochMilli(deviceStatus.createdAt.toEpochMilliseconds())
+                it[DeviceStatusTable.recordedAt] = deviceStatus.recordedAt
+                it[DeviceStatusTable.createdAt] = deviceStatus.createdAt
                 it[DeviceStatusTable.device] = deviceStatus.device
                 it[DeviceStatusTable.pumpName] = deviceStatus.pumpName
                 it[DeviceStatusTable.reservoirUnits] = deviceStatus.reservoirUnits
@@ -63,8 +63,8 @@ class ExposedDeviceStatusRepository(
     private fun ResultRow.toDeviceStatus(): DeviceStatus = DeviceStatus(
         id = this[DeviceStatusTable.id],
         userId = this[DeviceStatusTable.userId],
-        recordedAt = Instant.fromEpochMilliseconds(this[DeviceStatusTable.recordedAt].toEpochMilli()),
-        createdAt = Instant.fromEpochMilliseconds(this[DeviceStatusTable.createdAt].toEpochMilli()),
+        recordedAt = this[DeviceStatusTable.recordedAt],
+        createdAt = this[DeviceStatusTable.createdAt],
         device = this[DeviceStatusTable.device],
         pumpName = this[DeviceStatusTable.pumpName],
         reservoirUnits = this[DeviceStatusTable.reservoirUnits],

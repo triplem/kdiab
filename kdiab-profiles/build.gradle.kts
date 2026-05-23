@@ -52,7 +52,7 @@ dependencies {
     // Database (Exposed + Postgres)
     implementation(libs.exposed.core)
     implementation(libs.exposed.jdbc)
-    implementation(libs.exposed.java.time) // Date/Time support
+    implementation(libs.exposed.kotlin.datetime) // Date/Time support
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.exposed.json) // JSON support
     implementation(libs.postgresql)
@@ -100,7 +100,7 @@ testing {
                 // Exposed ORM -- needed because the integrationTest classpath is separate from testImplementation
                 implementation(libs.exposed.core)
                 implementation(libs.exposed.jdbc)
-                implementation(libs.exposed.java.time)
+                implementation(libs.exposed.kotlin.datetime)
                 implementation(libs.exposed.json)
                 // Runtime dependencies for async DB operations
                 implementation(libs.kotlinx.coroutines.core)
