@@ -72,6 +72,9 @@ export default defineConfig({
         'src/features/dashboard/BasalRateChart.tsx',
         // data-fetching hook — integration concern, tested via component tests
         'src/features/dashboard/useDashboardData.ts',
+        // BolusBarShape and recharts callbacks (formatHour, shape, labelFormatter, formatter)
+        // are only reachable through unmocked recharts rendering — integration-level concern
+        'src/features/analytics/BolusAvgChart.tsx',
         // treatment sub-forms — thin UI adapters, business logic tested in AddTreatmentModal tests
         'src/features/treatments/forms/**',
       ],

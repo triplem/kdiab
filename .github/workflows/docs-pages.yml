@@ -28,6 +28,7 @@ concurrency:
 
 jobs:
   build:
+    if: github.repository == 'triplem/kdiab'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -85,6 +86,8 @@ jobs:
 
       - name: Setup Pages
         uses: actions/configure-pages@v6
+        with:
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
@@ -92,6 +95,7 @@ jobs:
           path: pages/
 
   deploy:
+    if: github.repository == 'triplem/kdiab'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
