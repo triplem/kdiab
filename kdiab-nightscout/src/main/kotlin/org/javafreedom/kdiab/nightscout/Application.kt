@@ -7,8 +7,6 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.di.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -16,9 +14,13 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.server.plugins.statuspages.*
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
+import org.javafreedom.kdiab.common.plugins.HTTP_CONNECT_TIMEOUT_MS_DEFAULT
+import org.javafreedom.kdiab.common.plugins.HTTP_SOCKET_TIMEOUT_MS_DEFAULT
 import org.javafreedom.kdiab.common.plugins.HealthService
 import org.javafreedom.kdiab.common.plugins.configureHealth
 import org.javafreedom.kdiab.common.plugins.configureLogging
+import org.javafreedom.kdiab.common.plugins.configureCors
+import org.javafreedom.kdiab.common.plugins.configureSecurityHeaders
 import org.javafreedom.kdiab.common.plugins.configureSecurity
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 import org.javafreedom.kdiab.common.plugins.configureTracing
@@ -33,9 +35,9 @@ import org.javafreedom.kdiab.common.plugins.configureMetrics
 
 private val logger = KotlinLogging.logger {}
 
-private const val HTTP_CONNECT_TIMEOUT_MS_DEFAULT = 5_000L
-private const val HTTP_REQUEST_TIMEOUT_MS_DEFAULT = 30_000L
-private const val HTTP_SOCKET_TIMEOUT_MS_DEFAULT = 5_000L
+// Nightscout bridges AAPS, xDrip+, and Juggluco which may be on slow mobile connections.
+// The upstream common default of 10 s is too tight for these clients; keep 30 s here.
+private const val HTTP_REQUEST_TIMEOUT_MS = 30_000L
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -51,7 +53,7 @@ fun Application.module() {
         val connectTimeoutMs = environment.config.propertyOrNull("http.connectTimeoutMs")
             ?.getString()?.toLong() ?: HTTP_CONNECT_TIMEOUT_MS_DEFAULT
         val requestTimeoutMs = environment.config.propertyOrNull("http.requestTimeoutMs")
-            ?.getString()?.toLong() ?: HTTP_REQUEST_TIMEOUT_MS_DEFAULT
+            ?.getString()?.toLong() ?: HTTP_REQUEST_TIMEOUT_MS
         val socketTimeoutMs = environment.config.propertyOrNull("http.socketTimeoutMs")
             ?.getString()?.toLong() ?: HTTP_SOCKET_TIMEOUT_MS_DEFAULT
 
@@ -101,23 +103,9 @@ fun Application.module() {
 
     install(ContentNegotiation) { json(json) }
 
-    val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
-        ?.getString()?.split(",")?.map { it.trim() }
-        ?: listOf("http://localhost:3000")
-    install(CORS) {
-        corsOrigins.forEach { origin ->
-            val scheme = if (origin.startsWith("https://")) "https" else "http"
-            val host = origin.removePrefix("https://").removePrefix("http://")
-            allowHost(host, schemes = listOf(scheme))
-        }
-        allowHeader(HttpHeaders.ContentType)
-        allowHeader(HttpHeaders.Authorization)
-        allowMethod(HttpMethod.Get)
-    }
-    install(DefaultHeaders) {
-        header("X-Content-Type-Options", "nosniff")
-        header("X-Frame-Options", "DENY")
-    }
+    // Nightscout clients (AAPS, xDrip+, Juggluco) use GET/POST; restrict to GET at browser level.
+    configureCors(allowedMethods = listOf(HttpMethod.Get))
+    configureSecurityHeaders(includeCsp = false)
 
     val capturedHealthClient = healthClient
     val capturedUrls = upstreamHealthUrls

@@ -6,8 +6,6 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.plugins.cors.routing.*
-import io.ktor.server.plugins.defaultheaders.*
 import io.ktor.server.plugins.di.*
 import io.ktor.server.plugins.swagger.*
 import io.ktor.server.resources.Resources
@@ -40,7 +38,9 @@ import org.javafreedom.kdiab.common.plugins.HTTP_SOCKET_TIMEOUT_MS_DEFAULT
 import org.javafreedom.kdiab.common.plugins.HealthService
 import org.javafreedom.kdiab.common.plugins.configureCommonPlugins
 import org.javafreedom.kdiab.common.plugins.configureContentNegotiation
+import org.javafreedom.kdiab.common.plugins.configureCors
 import org.javafreedom.kdiab.common.plugins.configureHealth
+import org.javafreedom.kdiab.common.plugins.configureSecurityHeaders
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 
 private val logger = KotlinLogging.logger {}
@@ -139,25 +139,12 @@ fun Application.module() {
 
     install(Resources)
 
-    val corsOrigins = environment.config.propertyOrNull("cors.allowedOrigins")
-        ?.getString()?.split(",")?.map { it.trim() }
-        ?: listOf("http://localhost:3003")
-    install(CORS) {
-        corsOrigins.forEach { origin ->
-            val scheme = if (origin.startsWith("https://")) "https" else "http"
-            val host = origin.removePrefix("https://").removePrefix("http://")
-            allowHost(host, schemes = listOf(scheme))
-        }
-        allowHeader(HttpHeaders.ContentType)
-        allowHeader(HttpHeaders.Authorization)
-        allowMethod(HttpMethod.Get)
-    }
-    install(DefaultHeaders) {
-        header("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none'")
-        header("X-Content-Type-Options", "nosniff")
-        header("X-Frame-Options", "DENY")
-        header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-    }
+    // analyze is read-only from the browser perspective; only GET is needed.
+    configureCors(
+        defaultOrigins = listOf("http://localhost:3003"),
+        allowedMethods = listOf(HttpMethod.Get),
+    )
+    configureSecurityHeaders()
 
     // Upstream-aware health check: verify all upstream /healthz endpoints when running in prod mode.
     val capturedHealthClient = healthClient

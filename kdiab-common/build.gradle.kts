@@ -26,6 +26,28 @@ dependencies {
     implementation(libs.opentelemetry.sdk)
     implementation(libs.opentelemetry.autoconfigure)
     implementation(libs.opentelemetry.exporter.otlp)
+    implementation(libs.ktor.server.cors)
+    implementation(libs.ktor.server.default.headers)
+
+    testImplementation(kotlin("test-junit5"))
+    testImplementation(libs.ktor.server.test.host)
+    testImplementation(libs.ktor.server.content.negotiation)
+}
+
+testing {
+    suites {
+        val test by getting(JvmTestSuite::class) {
+            useJUnitJupiter()
+        }
+    }
+}
+
+tasks.withType<Test> {
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
 }
 
 kotlin {
