@@ -8,6 +8,7 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
     de: { translation: de },
   },
+  // noUncheckedIndexedAccess widens split()[0] to string|undefined; ?? 'en' is required by the compiler
   lng: navigator.language.split('-')[0] ?? 'en',
   fallbackLng: 'en',
   interpolation: { escapeValue: false },

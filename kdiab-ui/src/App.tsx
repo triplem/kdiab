@@ -386,13 +386,15 @@ export default function App() {
     }
   }
 
+  const activePatientName = activePatientId !== null ? patientNames.get(activePatientId) : undefined
+
   return (
     <>
       <Toaster position="top-right" richColors />
       {isDoctorViewingPatient && (
         <PatientBanner
           patientId={activePatientId!}
-          {...(() => { const name = patientNames.get(activePatientId!); return name !== undefined ? { patientName: name } : {} })()}
+          {...(activePatientName !== undefined && { patientName: activePatientName })}
           onReturnToOwn={() => setActivePatientId(null)}
         />
       )}

@@ -6,7 +6,7 @@ import io.ktor.server.plugins.cors.routing.*
 
 /**
  * Installs the Ktor [CORS] plugin using origins read from `cors.allowedOrigins` in the
- * application config (comma-separated list, e.g. `http://localhost:3005,https://app.example.com`).
+ * application config (comma-separated list, e.g. `http://localhost:3000,https://app.example.com`).
  *
  * Falls back to [defaultOrigins] when the config key is absent or blank.
  *
