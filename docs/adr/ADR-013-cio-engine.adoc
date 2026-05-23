@@ -1,0 +1,53 @@
+= ADR-013: Switch all Ktor services from Netty to CIO engine
+:date: 2026-05-23
+:status: Accepted
+:deciders: triplem
+
+== Context
+
+All eight kdiab backend services originally used `io.ktor.server.netty.EngineMain` as the Ktor
+server engine (documented in the per-service ADR-108 files). Netty is a high-performance NIO
+framework that introduces a large transitive dependency tree (several MB of JARs) and relies
+on Java NIO thread pools rather than Kotlin coroutines.
+
+The CIO (Coroutine I/O) engine is Ktor's own fully coroutine-native implementation. It has no
+external NIO library dependency, is implemented entirely in Kotlin coroutines, and integrates
+directly with the Ktor coroutine dispatcher model used throughout the codebase.
+
+== Decision
+
+Switch all eight services to `io.ktor.server.cio.EngineMain` by replacing the Netty engine
+dependency with the CIO engine dependency in each `build.gradle.kts` and updating the `main`
+entry point accordingly.
+
+The per-service ADR-108 files have been amended to reflect this change.
+
+== Consequences
+
+=== Positive
+
+* Removes the Netty dependency tree from every service image, reducing Docker image size.
+* The server engine is now consistent with the coroutine-based I/O already used in Ktor clients
+  and the Exposed ORM dispatcher (`Dispatchers.IO`).
+* No configuration file (`application.conf`) changes are required — `EngineMain` reads the same
+  HOCON configuration regardless of which engine is used.
+* All existing unit, integration, and E2E tests pass without modification.
+
+=== Constraints
+
+* CIO does not support HTTP/2 out of the box. If HTTP/2 is required in future, a dedicated
+  engine (Netty or Jetty with ALPN) must be re-introduced.
+* CIO has a smaller production footprint in the ecosystem than Netty; any edge-case TLS or
+  connection-pooling behaviour should be validated under load before relying on it in production.
+
+== Alternatives Considered
+
+=== Keep Netty
+
+*Rejected*: The project has no need for HTTP/2 or advanced Netty-specific features. CIO is
+lighter, fully coroutine-native, and sufficient for the current workload.
+
+=== Switch to Jetty
+
+*Rejected*: Jetty also adds significant external dependencies and offers no advantage over CIO
+for this use case.
