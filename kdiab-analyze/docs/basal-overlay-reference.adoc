@@ -33,9 +33,9 @@ domain = [-(maxRate * 4), 0]
 [options="header"]
 |===
 |Basal rate |Y value plotted |Position in chart
-|0 U/h (no basal) |0 |Top edge (25% mark from top)
-|maxRate |−maxRate |75% from top (25% from bottom)
-|n/a |−maxRate × 4 |Bottom edge (domain min)
+|0 U/h (no basal) |0 |Top edge of chart (0% from top) — basal area has zero height here
+|maxRate U/h |−maxRate |25% from top — bottom edge of the maximum-height basal area
+|n/a |−maxRate × 4 |Bottom edge of chart (domain minimum, never plotted)
 |===
 
 The scheduled profile line uses negated `sched` values:

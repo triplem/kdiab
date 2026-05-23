@@ -18,7 +18,6 @@ interface Props {
 export function BasalAvgChart({ hourlyAvg }: Props) {
   const { t } = useTranslation()
 
-  // Build step-chart data: duplicate each bucket as two points so the area renders as a step
   const chartData = hourlyAvg.map((avg, hour) => ({
     hour,
     avg: avg !== null ? Math.round(avg * 100) / 100 : null,

@@ -12,7 +12,7 @@ import {
   ReferenceArea,
   ResponsiveContainer,
 } from 'recharts'
-import { type BasalBlock, BASAL_COLORS } from './basalUtils'
+import { type BasalBlock, type BasalProfilePoint, BASAL_COLORS } from './basalUtils'
 
 interface ChartPoint {
   time: number
@@ -21,11 +21,6 @@ interface ChartPoint {
   marker: number | null
   treatmentType: string | null
   label: string | null
-}
-
-interface BasalProfilePoint {
-  time: number
-  sched: number
 }
 
 function treatmentAppearance(type: string): { color: string; shape: string } {
@@ -143,10 +138,13 @@ export function GlucoseTrendChart({
 
   // Basal overlay: domain is [-(maxRate * 4), 0] so max rate occupies top 25% of chart.
   // Values are negated so the area fills downward from the top edge.
-  const maxBasalRate = useMemo(
-    () => (basalProfileLine?.length ? Math.max(...basalProfileLine.map(p => p.sched)) : 1),
-    [basalProfileLine]
-  )
+  // maxBasalRate uses both scheduled (profile) and delivered (blocks) to handle the case
+  // where blocks arrive before the profile line is populated.
+  const maxBasalRate = useMemo(() => {
+    const schedMax = basalProfileLine?.length ? Math.max(...basalProfileLine.map(p => p.sched)) : 0
+    const deliveredMax = basalBlocks?.length ? Math.max(...basalBlocks.map(b => b.deliveredRate)) : 0
+    return Math.max(schedMax, deliveredMax, 1)
+  }, [basalProfileLine, basalBlocks])
   const basalDomain = useMemo(
     () => [-(maxBasalRate * 4), 0] as [number, number],
     [maxBasalRate]
@@ -237,6 +235,7 @@ export function GlucoseTrendChart({
                 strokeWidth={1}
                 strokeDasharray="4 2"
                 dot={false}
+                legendType="none"
                 isAnimationActive={false}
               />
             )}

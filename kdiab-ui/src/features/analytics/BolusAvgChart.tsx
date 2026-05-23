@@ -12,6 +12,27 @@ import { useTranslation } from 'react-i18next'
 // Bolus blue matching the ▲ treatment marker colour in GlucoseTrendChart
 const BOLUS_COLOR = '#3b82f6'
 
+function BolusBarShape(props: unknown) {
+  const p = props as Record<string, unknown>
+  const x = (p['x'] as number) ?? 0
+  const y = (p['y'] as number) ?? 0
+  const width = (p['width'] as number) ?? 0
+  const height = (p['height'] as number) ?? 0
+  const value = p['value'] as number | null
+  if (!value || height <= 0) return <g />
+  const cx = x + width / 2
+  const tipSize = Math.min(width * 0.5, 8)
+  return (
+    <g>
+      <rect x={x} y={y} width={width} height={height} fill={BOLUS_COLOR} fillOpacity={0.7} />
+      <polygon
+        points={`${cx},${y - 2} ${cx - tipSize},${y + tipSize} ${cx + tipSize},${y + tipSize}`}
+        fill={BOLUS_COLOR}
+      />
+    </g>
+  )
+}
+
 interface Props {
   /** Hourly buckets (index = UTC hour 0–23), each value is the avg dose in U or null */
   hourlyAvg: (number | null)[]
@@ -69,26 +90,7 @@ export function BolusAvgChart({ hourlyAvg }: Props) {
               <Bar
                 dataKey="avg"
                 name={t('analytics.bolusAvgDose')}
-                shape={(props: unknown) => {
-                  const p = props as Record<string, unknown>
-                  const x = (p['x'] as number) ?? 0
-                  const y = (p['y'] as number) ?? 0
-                  const width = (p['width'] as number) ?? 0
-                  const height = (p['height'] as number) ?? 0
-                  const value = p['value'] as number | null
-                  if (!value || height <= 0) return <g />
-                  const cx = x + width / 2
-                  const tipSize = Math.min(width * 0.5, 8)
-                  return (
-                    <g>
-                      <rect x={x} y={y} width={width} height={height} fill={BOLUS_COLOR} fillOpacity={0.7} />
-                      <polygon
-                        points={`${cx},${y - 2} ${cx - tipSize},${y + tipSize} ${cx + tipSize},${y + tipSize}`}
-                        fill={BOLUS_COLOR}
-                      />
-                    </g>
-                  )
-                }}
+                shape={(props: unknown) => <BolusBarShape {...(props as object)} />}
               />
             </ComposedChart>
           </ResponsiveContainer>

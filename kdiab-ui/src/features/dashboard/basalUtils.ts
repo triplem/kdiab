@@ -33,6 +33,11 @@ export interface BasalBlock {
   state: 'SCHEDULED' | 'ABOVE' | 'BELOW' | 'SUSPENDED'
 }
 
+export interface BasalProfilePoint {
+  time: number
+  sched: number
+}
+
 // -- Pure helper functions ------------------------------------------------------
 
 export function toDisplay(mgdl: number, unit: string): number {
