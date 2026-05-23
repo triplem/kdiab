@@ -86,7 +86,7 @@ export function AdminUserList() {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin', 'users', search, page],
     queryFn: () =>
-      usersApi.listUsers({ search: search || undefined, page, size: PAGE_SIZE }).then((r) => r.data),
+      usersApi.listUsers({ ...(search ? { search } : {}), page, size: PAGE_SIZE }).then((r) => r.data),
   })
 
   const createMutation = useMutation({
@@ -127,11 +127,13 @@ export function AdminUserList() {
   })
 
   const createForm = useForm<CreateForm>({ resolver: zodResolver(createSchema) })
-  const editForm = useForm<EditForm>({
-    resolver: zodResolver(editSchema),
-    values: editUser
-      ? { displayName: editUser.displayName, role: (editUser.roles[0] ?? 'PATIENT') as 'PATIENT' | 'DOCTOR' | 'ADMIN' }
-      : undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const editForm = useForm<EditForm, any, EditForm>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(editSchema) as any,
+    ...(editUser !== null && {
+      values: { displayName: editUser.displayName, role: (editUser.roles[0] ?? 'PATIENT') as 'PATIENT' | 'DOCTOR' | 'ADMIN' },
+    }),
   })
 
   const handleCloseCreate = () => {

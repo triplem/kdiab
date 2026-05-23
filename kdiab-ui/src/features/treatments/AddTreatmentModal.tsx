@@ -209,7 +209,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'MEAL':
         return (
           <MealForm
-            initialData={isEditMode ? { insulin: editData.insulin as number, carbs: editData.carbs as number } : undefined}
+            {...(isEditMode && { initialData: { insulin: editData.insulin as number, carbs: editData.carbs as number } })}
             validationError={validationError}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
@@ -218,7 +218,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'CORRECTION_BOLUS':
         return (
           <BolusForm
-            initialData={isEditMode ? { insulin: editData.insulin as number, insulinType: editData.insulinType as string } : undefined}
+            {...(isEditMode && { initialData: { insulin: editData.insulin as number, insulinType: editData.insulinType as string } })}
             validationError={validationError}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
@@ -226,7 +226,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'COMBO_BOLUS':
         return (
           <ComboBolusForm
-            initialData={isEditMode ? { insulin: editData.insulin as number, splitNow: editData.splitNow as number, duration: editData.duration as number } : undefined}
+            {...(isEditMode && { initialData: { insulin: editData.insulin as number, splitNow: editData.splitNow as number, duration: editData.duration as number } })}
             validationError={validationError}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
@@ -234,7 +234,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'BASAL':
         return (
           <BasalForm
-            initialData={isEditMode ? { insulin: editData.insulin as number, insulinType: editData.insulinType as string, duration: editData.duration as number } : undefined}
+            {...(isEditMode && { initialData: { insulin: editData.insulin as number, insulinType: editData.insulinType as string, duration: editData.duration as number } })}
             validationError={validationError}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
@@ -242,7 +242,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'TEMP_BASAL':
         return (
           <TempBasalForm
-            initialData={isEditMode ? { rate: editData.rate as number, duration: editData.duration as number, absolute: editData.absolute as boolean } : undefined}
+            {...(isEditMode && { initialData: { rate: editData.rate as number, duration: editData.duration as number, absolute: editData.absolute as boolean } })}
             validationError={validationError}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
@@ -250,7 +250,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'PUMP_SUSPEND':
         return (
           <PumpSuspendForm
-            initialData={isEditMode ? { duration: editData.duration as number, reason: editData.reason as string } : undefined}
+            {...(isEditMode && { initialData: { duration: editData.duration as number, reason: editData.reason as string } })}
             validationError={validationError}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
@@ -258,16 +258,16 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'CARBS':
         return (
           <CarbsForm
-            initialData={isEditMode ? { carbs: editData.carbs as number, absorptionTime: editData.absorptionTime as number } : undefined}
+            {...(isEditMode && { initialData: { carbs: editData.carbs as number, absorptionTime: editData.absorptionTime as number } })}
             validationError={validationError}
-            userId={userId}
+            {...(userId !== undefined && { userId })}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
         )
       case 'EXERCISE':
         return (
           <ExerciseForm
-            initialData={isEditMode ? { duration: editData.duration as number, intensity: editData.intensity as 'light' | 'moderate' | 'intense' } : undefined}
+            {...(isEditMode && { initialData: { duration: editData.duration as number, intensity: editData.intensity as 'light' | 'moderate' | 'intense' } })}
             validationError={validationError}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
@@ -275,7 +275,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'NOTE':
         return (
           <NoteForm
-            initialData={isEditMode ? { text: editData.text as string } : undefined}
+            {...(isEditMode && { initialData: { text: editData.text as string } })}
             validationError={validationError}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
@@ -283,21 +283,21 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'SITE_CHANGE':
         return (
           <SiteChangeForm
-            initialData={isEditMode ? { location: editData.location as string } : undefined}
+            {...(isEditMode && { initialData: { location: editData.location as string } })}
             onDataChange={(data) => setPendingData(data as Record<string, unknown>)}
           />
         )
       case 'SENSOR_INSERT':
         return (
           <SensorInsertForm
-            initialData={isEditMode ? { sensor: editData.sensor as string } : undefined}
+            {...(isEditMode && { initialData: { sensor: editData.sensor as string } })}
             onDataChange={(data) => setPendingData(data as Record<string, unknown>)}
           />
         )
       case 'INSULIN_CHANGE':
         return (
           <InsulinChangeForm
-            initialData={isEditMode ? { insulinType: editData.insulinType as string } : undefined}
+            {...(isEditMode && { initialData: { insulinType: editData.insulinType as string } })}
             onDataChange={(data) => setPendingData(data as Record<string, unknown>)}
           />
         )
@@ -310,7 +310,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'ACTIVITY':
         return (
           <ActivityForm
-            initialData={isEditMode ? { name: editData.name as string, duration: editData.duration as number, intensity: editData.intensity as 'low' | 'moderate' | 'high' } : undefined}
+            {...(isEditMode && { initialData: { name: editData.name as string, duration: editData.duration as number, intensity: editData.intensity as 'low' | 'moderate' | 'high' } })}
             validationError={validationError}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
@@ -318,7 +318,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
       case 'HYPO_TREATMENT':
         return (
           <HypoTreatmentForm
-            initialData={isEditMode ? { carbs: editData.carbs as number, reason: editData.reason as string } : undefined}
+            {...(isEditMode && { initialData: { carbs: editData.carbs as number, reason: editData.reason as string } })}
             validationError={validationError}
             glucoseUnit={glucoseUnit}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}

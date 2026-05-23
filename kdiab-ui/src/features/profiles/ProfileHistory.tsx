@@ -161,7 +161,7 @@ export function ProfileHistory({ userId, onSelectProfile, glucoseUnit }: Profile
         <>
           <ul className="history-list" style={{ listStyle: 'none', padding: 0 }}>
             {visibleProfiles.map(profile => (
-              <ProfileHistoryItem key={profile.id} profile={profile} formatTime={formatTime} is24Hour={is24Hour} onSelectProfile={onSelectProfile} glucoseUnit={glucoseUnit} />
+              <ProfileHistoryItem key={profile.id} profile={profile} formatTime={formatTime} is24Hour={is24Hour} {...(onSelectProfile !== undefined && { onSelectProfile })} {...(glucoseUnit !== undefined && { glucoseUnit })} />
             ))}
           </ul>
 

@@ -13,6 +13,7 @@ export function getAccessToken(): string | null {
 function decodeJwtPayload(token: string): Record<string, unknown> {
   try {
     const base64Url = token.split('.')[1]
+    if (base64Url === undefined) return {}
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
     const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=')
     return JSON.parse(atob(padded)) as Record<string, unknown>

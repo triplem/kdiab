@@ -39,7 +39,9 @@ export function TimeFormatProvider({ children }: { children: ReactNode }) {
   const formatTime = (timeStr: string): string => {
     if (!timeStr || !timeStr.includes(':')) return timeStr
     if (is24Hour) return timeStr
-    const [h, m] = timeStr.split(':')
+    const parts = timeStr.split(':')
+    const h = parts[0] ?? '0'
+    const m = parts[1] ?? '00'
     let hour = parseInt(h, 10)
     const ampm = hour >= 12 ? 'PM' : 'AM'
     hour = hour % 12 || 12

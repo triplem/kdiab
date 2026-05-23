@@ -51,22 +51,24 @@ export function UserSettings() {
     queryFn: () => usersApi.getMe().then((r) => r.data),
   })
 
-  const { register, handleSubmit, reset, control, formState: { errors, isDirty } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    values: data?.settings
-      ? {
-          timezone: data.settings.timezone,
-          language: data.settings.language,
-          timeFormat: data.settings.timeFormat,
-          glucoseUnit: data.settings.glucoseUnit,
-          weightUnit: data.settings.weightUnit,
-          alarmUrgentHigh: data.settings.alarmUrgentHigh,
-          alarmHigh: data.settings.alarmHigh,
-          alarmLow: data.settings.alarmLow,
-          alarmUrgentLow: data.settings.alarmUrgentLow,
-          sensorDurationHours: data.settings.sensorDurationHours ?? 240,
-        }
-      : undefined,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { register, handleSubmit, reset, control, formState: { errors, isDirty } } = useForm<FormData, any, FormData>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(schema) as any,
+    ...(data?.settings !== undefined && {
+      values: {
+        timezone: data.settings.timezone,
+        language: data.settings.language,
+        timeFormat: data.settings.timeFormat,
+        glucoseUnit: data.settings.glucoseUnit,
+        weightUnit: data.settings.weightUnit,
+        alarmUrgentHigh: data.settings.alarmUrgentHigh,
+        alarmHigh: data.settings.alarmHigh,
+        alarmLow: data.settings.alarmLow,
+        alarmUrgentLow: data.settings.alarmUrgentLow,
+        sensorDurationHours: data.settings.sensorDurationHours ?? 240,
+      },
+    }),
   })
 
   const [toast, setToast] = useState<{ kind: 'success' | 'error'; msg: string } | null>(null)

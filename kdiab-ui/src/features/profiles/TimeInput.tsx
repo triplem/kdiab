@@ -18,7 +18,9 @@ export const TimeInput = forwardRef<HTMLDivElement, TimeInputProps>(
     const { is24Hour } = useTimeFormat()
 
     const timeVal = typeof value === 'string' && value ? value : '00:00'
-    const [hStr, mStr] = timeVal.split(':')
+    const timeParts = timeVal.split(':')
+    const hStr = timeParts[0] ?? '0'
+    const mStr = timeParts[1]
     let h = parseInt(hStr, 10)
     if (isNaN(h)) h = 0
     const m = (mStr || '00').padStart(2, '0')
@@ -28,7 +30,7 @@ export const TimeInput = forwardRef<HTMLDivElement, TimeInputProps>(
 
     const triggerChange = (newHH: string, newMM: string) => {
       if (onChange) {
-        onChange({ target: { name, value: `${newHH}:${newMM}` } })
+        onChange({ target: { ...(name !== undefined && { name }), value: `${newHH}:${newMM}` } })
       }
     }
 

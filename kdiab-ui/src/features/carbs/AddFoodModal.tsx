@@ -86,6 +86,7 @@ export const AddFoodModal: React.FC<AddFoodModalProps> = ({
         if (focusableArr.length === 0) return
         const first = focusableArr[0]
         const last = focusableArr[focusableArr.length - 1]
+        if (!first || !last) return
         if (e.shiftKey) {
           if (document.activeElement === first) {
             e.preventDefault()
