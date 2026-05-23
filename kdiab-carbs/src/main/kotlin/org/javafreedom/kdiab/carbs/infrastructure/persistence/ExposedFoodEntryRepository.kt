@@ -1,12 +1,12 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.carbs.infrastructure.persistence
 
+import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.time.Clock
 import org.javafreedom.kdiab.carbs.domain.model.FoodEntry
 import org.javafreedom.kdiab.carbs.domain.model.FoodEntryStatus
 import org.javafreedom.kdiab.carbs.domain.repository.FoodEntryRepository

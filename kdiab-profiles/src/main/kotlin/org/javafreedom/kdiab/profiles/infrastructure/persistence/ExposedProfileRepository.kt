@@ -3,11 +3,12 @@
 package org.javafreedom.kdiab.profiles.infrastructure.persistence
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.time.Clock
 import kotlinx.datetime.IllegalTimeZoneException
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
@@ -18,11 +19,10 @@ import org.javafreedom.kdiab.profiles.domain.model.*
 import org.javafreedom.kdiab.profiles.domain.repository.ProfileRepository
 import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.core.statements.*
+import org.jetbrains.exposed.v1.datetime.timestamp
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
-import org.jetbrains.exposed.v1.datetime.timestamp
 import org.jetbrains.exposed.v1.json.jsonb
-import kotlin.time.Instant
 
 private val logger = KotlinLogging.logger {}
 

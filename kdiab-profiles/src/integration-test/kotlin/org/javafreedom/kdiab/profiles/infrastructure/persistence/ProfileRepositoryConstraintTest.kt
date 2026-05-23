@@ -5,8 +5,8 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFailsWith
 import kotlin.uuid.Uuid
-import kotlinx.coroutines.runBlocking
 import kotlin.time.Clock
+import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.LocalTime
 import org.javafreedom.kdiab.profiles.domain.model.*
 import org.jetbrains.exposed.v1.core.*
