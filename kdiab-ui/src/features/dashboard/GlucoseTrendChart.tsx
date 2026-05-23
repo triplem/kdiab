@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 import {
@@ -8,8 +9,10 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceLine,
+  ReferenceArea,
   ResponsiveContainer,
 } from 'recharts'
+import { type BasalBlock, BASAL_COLORS } from './basalUtils'
 
 interface ChartPoint {
   time: number
@@ -18,6 +21,11 @@ interface ChartPoint {
   marker: number | null
   treatmentType: string | null
   label: string | null
+}
+
+interface BasalProfilePoint {
+  time: number
+  sched: number
 }
 
 function treatmentAppearance(type: string): { color: string; shape: string } {
@@ -111,6 +119,8 @@ interface GlucoseTrendChartProps {
   tirLow: number
   tirHigh: number
   isLoading: boolean
+  basalBlocks?: BasalBlock[]
+  basalProfileLine?: BasalProfilePoint[]
 }
 
 export function GlucoseTrendChart({
@@ -125,9 +135,27 @@ export function GlucoseTrendChart({
   tirLow,
   tirHigh,
   isLoading,
+  basalBlocks,
+  basalProfileLine,
 }: GlucoseTrendChartProps) {
   const { t } = useTranslation()
   const { formatTime } = useTimeFormat()
+
+  // Basal overlay: domain is [-(maxRate * 4), 0] so max rate occupies top 25% of chart.
+  // Values are negated so the area fills downward from the top edge.
+  const maxBasalRate = useMemo(
+    () => (basalProfileLine?.length ? Math.max(...basalProfileLine.map(p => p.sched)) : 1),
+    [basalProfileLine]
+  )
+  const basalDomain = useMemo(
+    () => [-(maxBasalRate * 4), 0] as [number, number],
+    [maxBasalRate]
+  )
+  const negatedBasalLine = useMemo(
+    () => basalProfileLine?.map(p => ({ time: p.time, basalSched: -p.sched })) ?? [],
+    [basalProfileLine]
+  )
+  const hasBasal = (basalBlocks?.length ?? 0) > 0 || negatedBasalLine.length > 0
 
   return (
     <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
@@ -141,7 +169,7 @@ export function GlucoseTrendChart({
             {t('dashboard.cgmChartCaption')}
           </figcaption>
         <ResponsiveContainer width="100%" height={220}>
-          <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <ComposedChart data={chartData} margin={{ top: 5, right: hasBasal ? 0 : 10, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="time"
@@ -152,10 +180,20 @@ export function GlucoseTrendChart({
               scale="time"
             />
             <YAxis
+              yAxisId="left"
               domain={[glucoseUnit === 'mmol/L' ? 2 : 40, glucoseUnit === 'mmol/L' ? 18 : 330]}
               tick={{ fontSize: 11 }}
               label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 15, style: { fontSize: 11 }, fill: 'var(--text-secondary)' }}
             />
+            {hasBasal && (
+              <YAxis
+                yAxisId="basal"
+                orientation="right"
+                domain={basalDomain}
+                hide={true}
+                width={0}
+              />
+            )}
             <Tooltip
               labelFormatter={(ms: unknown) => formatTime(new Date(typeof ms === 'number' ? ms : 0).toISOString())}
               formatter={(v: unknown, name: unknown, entry: { payload?: { treatmentType?: string; label?: string } }) => {
@@ -166,14 +204,44 @@ export function GlucoseTrendChart({
                   const lbl = entry.payload?.label ?? ''
                   return [lbl || ttype, ttype]
                 }
+                if (name === 'basalSched') return null
                 return [`${String(v)}`, String(name ?? '')]
               }}
               contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
               wrapperStyle={{ outline: 'none' }}
             />
-            <ReferenceLine y={tirLow} stroke="#ef4444" strokeDasharray="4 4" />
-            <ReferenceLine y={tirHigh} stroke="#f59e0b" strokeDasharray="4 4" />
+            <ReferenceLine yAxisId="left" y={tirLow} stroke="#ef4444" strokeDasharray="4 4" />
+            <ReferenceLine yAxisId="left" y={tirHigh} stroke="#f59e0b" strokeDasharray="4 4" />
+            {/* Basal overlay: colored blocks at top of chart, then dashed scheduled rate line */}
+            {hasBasal && basalBlocks?.map((block, i) => (
+              <ReferenceArea
+                key={i}
+                yAxisId="basal"
+                x1={block.startMs}
+                x2={block.endMs}
+                y1={-block.deliveredRate}
+                y2={0}
+                fill={BASAL_COLORS[block.state] ?? BASAL_COLORS['SCHEDULED']!}
+                fillOpacity={0.65}
+                stroke="none"
+                ifOverflow="extendDomain"
+              />
+            ))}
+            {hasBasal && negatedBasalLine.length > 0 && (
+              <Line
+                data={negatedBasalLine}
+                dataKey="basalSched"
+                name="basalSched"
+                yAxisId="basal"
+                stroke={BASAL_COLORS['SCHEDULED']!}
+                strokeWidth={1}
+                strokeDasharray="4 2"
+                dot={false}
+                isAnimationActive={false}
+              />
+            )}
             <Line
+              yAxisId="left"
               type="monotone"
               dataKey="sgv"
               stroke="var(--chart-median)"
@@ -184,6 +252,7 @@ export function GlucoseTrendChart({
             />
             {bgmPoints.length > 0 && (
               <Line
+                yAxisId="left"
                 dataKey="bgm"
                 name="bgm"
                 stroke="none"
@@ -196,6 +265,7 @@ export function GlucoseTrendChart({
             )}
             {treatmentMarkers.length > 0 && (
               <Line
+                yAxisId="left"
                 dataKey="marker"
                 name="marker"
                 stroke="none"
@@ -223,6 +293,14 @@ export function GlucoseTrendChart({
         <span><span style={{ color: '#10b981' }}>⊕</span> {t('dashboard.legendSiteChange')}</span>
         <span><span style={{ color: '#8b5cf6' }}>◆</span> {t('dashboard.legendSensorInsert')}</span>
         <span><span style={{ color: '#ec4899' }}>◈</span> {t('dashboard.legendInsulinChange')}</span>
+        {hasBasal && (
+          <>
+            <span><span style={{ display: 'inline-block', width: 10, height: 10, background: BASAL_COLORS['SCHEDULED'], borderRadius: 2, marginRight: 3 }} />{t('dashboard.legendScheduled')}</span>
+            <span><span style={{ display: 'inline-block', width: 10, height: 10, background: BASAL_COLORS['ABOVE'], borderRadius: 2, marginRight: 3 }} />{t('dashboard.legendAbove')}</span>
+            <span><span style={{ display: 'inline-block', width: 10, height: 10, background: BASAL_COLORS['BELOW'], borderRadius: 2, marginRight: 3 }} />{t('dashboard.legendBelow')}</span>
+            <span><span style={{ display: 'inline-block', width: 10, height: 10, background: BASAL_COLORS['SUSPENDED'], border: '1px solid var(--border)', borderRadius: 2, marginRight: 3 }} />{t('dashboard.legendSuspended')}</span>
+          </>
+        )}
       </div>
     </div>
   )
