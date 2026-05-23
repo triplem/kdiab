@@ -3,6 +3,7 @@ package org.javafreedom.kdiab.analyze.application.service
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.TimeZone
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
@@ -228,6 +229,22 @@ class AnalyticsServiceTest {
         val bucket7 = result.hourlyData.first { it.hour == 7 }
         assertEquals(1, bucket7.count)
         assertEquals(120.0, bucket7.median!!, absoluteTolerance = 0.01)
+    }
+
+    @Test
+    fun `getAgp buckets reading at 05_00 UTC into hour 7 when timezone is UTC+2`() = runTest {
+        // A reading at 2024-01-15T05:00:00Z is 07:00 local time in UTC+2.
+        // With UTC bucketing it would land in hour 5; with UTC+2 it must land in hour 7.
+        val utcPlusTwoHours = TimeZone.of("UTC+2")
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            cgmDto(150.0, "2024-01-15T05:00:00Z"),
+        )
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "", timeZone = utcPlusTwoHours)
+        val bucket5 = result.hourlyData.first { it.hour == 5 }
+        val bucket7 = result.hourlyData.first { it.hour == 7 }
+        assertEquals(0, bucket5.count, "UTC hour 5 must be empty when timezone is UTC+2")
+        assertEquals(1, bucket7.count, "Local hour 7 (UTC 05:00 + 2h) must contain the reading")
+        assertEquals(150.0, bucket7.median!!, absoluteTolerance = 0.01)
     }
 
     // ── Warnings ──────────────────────────────────────────────────────────────

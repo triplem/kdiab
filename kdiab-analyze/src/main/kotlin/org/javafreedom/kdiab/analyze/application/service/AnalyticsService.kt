@@ -169,6 +169,7 @@ class AnalyticsService(
         correlationId: String,
         tirLow: Double,
         tirHigh: Double,
+        timeZone: TimeZone,
     ): AgpResult {
         val allMeasures = try {
             getMeasuresCached(userId, from, to, authorization, correlationId)
@@ -195,14 +196,14 @@ class AnalyticsService(
             val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
             val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * GLUCOSE_CONVERSION_FACTOR else sgv
             if (mgDl <= 0.0) return@forEach
-            val hour = t.toLocalDateTime(TimeZone.UTC).hour
+            val hour = t.toLocalDateTime(timeZone).hour
             byHour[hour].add(mgDl)
         }
 
         val sensorWearDays = allMeasures.mapNotNull { dto ->
             if (dto.type != "CGM") return@mapNotNull null
             runCatching { Instant.parse(dto.measuredAt) }.getOrNull()
-                ?.toLocalDateTime(TimeZone.UTC)?.date
+                ?.toLocalDateTime(timeZone)?.date
         }.toSet().size
 
         val hourlyData = byHour.mapIndexed { hour, values ->
