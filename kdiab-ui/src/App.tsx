@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from 'react-oidc-context'
 import { useTranslation } from 'react-i18next'
+import { Toaster, toast } from 'sonner'
 import {
   setAccessToken,
   parseRolesFromToken,
@@ -125,6 +126,7 @@ export default function App() {
       await measuresApi.createMeasure(viewingUserId, measure)
       setShowAddMeasure(false)
       void queryClient.invalidateQueries({ queryKey: ['measures', viewingUserId] })
+      toast.success(t('modal.saveSuccess'))
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
       setMeasureError(
@@ -147,6 +149,7 @@ export default function App() {
       await treatmentsApi.createTreatment(viewingUserId, treatment)
       setShowAddTreatment(false)
       void queryClient.invalidateQueries({ queryKey: ['treatments', viewingUserId] })
+      toast.success(t('treatmentModal.saveSuccess'))
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
       setTreatmentError(
@@ -177,6 +180,7 @@ export default function App() {
       })
       setShowAddTreatment(false)
       void queryClient.invalidateQueries({ queryKey: ['treatments', viewingUserId] })
+      toast.success(t('treatmentModal.saveSuccess'))
     } catch (err: unknown) {
       const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
       setTreatmentError(
@@ -384,6 +388,7 @@ export default function App() {
 
   return (
     <>
+      <Toaster position="top-right" richColors />
       {isDoctorViewingPatient && (
         <PatientBanner
           patientId={activePatientId!}
