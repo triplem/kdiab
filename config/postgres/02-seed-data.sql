@@ -217,12 +217,25 @@ BEGIN
               jsonb_build_object('duration', 60, 'intensity', 'high'), 'Cycling');
     END IF;
 
-    -- Temp basal during exercise for sarah (every 2 days, reduce basal 50% for 1h)
-    IF day % 2 = 0 THEN
-      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '6 hours' + INTERVAL '45 minutes';
+    -- Temp basal for sarah: daily entries covering BELOW / ABOVE / SUSPENDED states
+    -- BELOW (every day during exercise window)
+    t := base_ts + (day * INTERVAL '1 day') + INTERVAL '6 hours' + INTERVAL '45 minutes';
+    INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+    VALUES (gen_random_uuid(), sarah_id, t, 'TEMP_BASAL',
+            jsonb_build_object('rate', 0.45, 'duration', 60, 'percent', 50), 'Reduced for exercise');
+    -- ABOVE (every 3 days: post-meal high correction via increased basal)
+    IF day % 3 = 1 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '14 hours' + INTERVAL '30 minutes';
       INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
       VALUES (gen_random_uuid(), sarah_id, t, 'TEMP_BASAL',
-              jsonb_build_object('rate', 0.45, 'duration', 60), 'Reduced for exercise');
+              jsonb_build_object('rate', 2.0, 'duration', 30, 'percent', 200), 'High correction temp');
+    END IF;
+    -- SUSPENDED (every 7 days: pump suspend for site change)
+    IF day % 7 = 0 THEN
+      t := base_ts + (day * INTERVAL '1 day') + INTERVAL '9 hours' + INTERVAL '5 minutes';
+      INSERT INTO treatments(id, user_id, treated_at, type, data, notes)
+      VALUES (gen_random_uuid(), sarah_id, t, 'TEMP_BASAL',
+              jsonb_build_object('rate', 0.0, 'duration', 5, 'percent', 0), 'Suspended for site change');
     END IF;
 
     -- Hypo treatment for sarah (every 4 days)
@@ -430,7 +443,7 @@ VALUES (
 )
 ON CONFLICT (profile_id) DO NOTHING;
 
--- Mike -- one active profile
+-- Mike -- archived profile v1 (45 days ago) + active profile v2 (20 days ago)
 INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
 VALUES (
   'bbbb0001-0000-0000-0000-000000000001',
@@ -450,8 +463,34 @@ INSERT INTO profile_statuses(profile_id, user_id, status, valid_from)
 VALUES (
   'bbbb0001-0000-0000-0000-000000000001',
   '22222222-2222-2222-2222-222222222222',
-  'ACTIVE',
+  'ARCHIVED',
   NOW() - INTERVAL '45 days'
+)
+ON CONFLICT (profile_id) DO UPDATE SET status = 'ARCHIVED';
+
+-- Mike v2: slightly increased overnight basal after doctor review at day -20
+INSERT INTO profiles(id, user_id, previous_profile_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
+VALUES (
+  'bbbb0002-0000-0000-0000-000000000002',
+  '22222222-2222-2222-2222-222222222222',
+  'bbbb0001-0000-0000-0000-000000000001',
+  'Mike Profile v2',
+  'Novolog',
+  'mg/dl',
+  210,
+  'America/New_York',
+  NOW() - INTERVAL '20 days',
+  '{"basal":[{"startTime":"00:00","value":0.80},{"startTime":"06:00","value":1.00},{"startTime":"12:00","value":0.80},{"startTime":"20:00","value":0.70}],"icr":[{"startTime":"00:00","value":12.0},{"startTime":"12:00","value":15.0}],"isf":[{"startTime":"00:00","value":45.0},{"startTime":"14:00","value":40.0}],"targets":[{"startTime":"00:00","low":80.0,"high":120.0}]}',
+  25.0
+)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO profile_statuses(profile_id, user_id, status, valid_from)
+VALUES (
+  'bbbb0002-0000-0000-0000-000000000002',
+  '22222222-2222-2222-2222-222222222222',
+  'ACTIVE',
+  NOW() - INTERVAL '20 days'
 )
 ON CONFLICT (profile_id) DO NOTHING;
 
