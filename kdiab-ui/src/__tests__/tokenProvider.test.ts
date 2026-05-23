@@ -25,6 +25,14 @@ describe('parseRolesFromToken', () => {
     const token = buildJwt({ roles: 'ADMIN' })
     expect(parseRolesFromToken(token)).toEqual([])
   })
+
+  test('returns empty roles for a malformed token without dots', () => {
+    expect(parseRolesFromToken('notajwt')).toEqual([])
+  })
+
+  test('returns empty roles for an empty string token', () => {
+    expect(parseRolesFromToken('')).toEqual([])
+  })
 })
 
 describe('parseAllowedPatientsFromToken', () => {

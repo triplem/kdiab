@@ -197,7 +197,6 @@ export function ProfileEditor({
     [isfSegmentSchema],
   )
 
-  /* eslint-disable @typescript-eslint/no-explicit-any */
   const {
     register,
     control,
@@ -206,9 +205,10 @@ export function ProfileEditor({
     setValue,
     getValues,
     formState: { errors, isDirty },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useForm<ProfileFormValues, any, ProfileFormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(profileSchema) as any,
-  /* eslint-enable @typescript-eslint/no-explicit-any */
     defaultValues: initialProfile
       ? {
           name: generateNextName(initialProfile.name),
