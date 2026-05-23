@@ -16,7 +16,7 @@ import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.common.plugins.auditRoutes
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.DatabaseFactory
-import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedAuditLogRepository
+import org.javafreedom.kdiab.common.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedInsulinRepository
 import org.javafreedom.kdiab.profiles.infrastructure.persistence.ExposedProfileRepository
 import org.javafreedom.kdiab.common.plugins.DefaultHealthService

@@ -1,6 +1,6 @@
 @file:Suppress("WildcardImport")
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
-package org.javafreedom.kdiab.profiles.infrastructure.persistence
+package org.javafreedom.kdiab.common.infrastructure.persistence
 
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
@@ -10,9 +10,9 @@ import kotlinx.coroutines.withContext
 import org.javafreedom.kdiab.common.domain.model.AuditLog
 import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.datetime.timestamp
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
-import org.jetbrains.exposed.v1.datetime.timestamp
 
 private const val ACTION_MAX_LEN = 100
 private const val IP_MAX_LEN = 100

@@ -17,7 +17,7 @@ import org.javafreedom.kdiab.treatments.application.service.TreatmentService
 import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
 import org.javafreedom.kdiab.common.plugins.auditRoutes
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.DatabaseFactory
-import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedAuditLogRepository
+import org.javafreedom.kdiab.common.infrastructure.persistence.ExposedAuditLogRepository
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedDeviceStatusRepository
 import org.javafreedom.kdiab.treatments.infrastructure.persistence.ExposedTreatmentRepository
 import org.javafreedom.kdiab.common.plugins.DefaultHealthService
