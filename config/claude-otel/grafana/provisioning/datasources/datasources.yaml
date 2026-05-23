@@ -1,0 +1,11 @@
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    url: http://claude-prometheus:9090
+    isDefault: true
+    jsonData:
+      httpMethod: POST
+  - name: Jaeger
+    type: jaeger
+    url: http://claude-jaeger:16686
