@@ -1,0 +1,53 @@
+# Opt-in OpenTelemetry observability overlay.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.otel.yml up
+# Or via Podman: ./podman-up.sh -o --build
+#
+# Sets OTEL_TRACES_EXPORTER/OTEL_METRICS_EXPORTER=otlp and
+# OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 in the shell
+# so all kdiab backends forward telemetry to the collector.
+
+services:
+  otel-collector:
+    container_name: kdiab-otel-collector
+    # Pin to digest when available: otel/opentelemetry-collector-contrib:0.127.0@sha256:<digest>
+    image: otel/opentelemetry-collector-contrib:0.127.0
+    command: ["--config=/etc/otel/otel-collector-config.yaml"]
+    volumes:
+      - ./config/otel/otel-collector-config.yaml:/etc/otel/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    networks:
+      - shared
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+  jaeger:
+    container_name: kdiab-jaeger
+    # Pin to digest when available: jaegertracing/jaeger:2.7.0@sha256:<digest>
+    # jaegertracing/jaeger is the unified all-in-one image introduced in Jaeger 2.x
+    image: jaegertracing/jaeger:2.7.0
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "14317:4317"    # Jaeger OTLP gRPC (host-side remapped; otel-collector uses port 4317)
+    networks:
+      - shared
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+
