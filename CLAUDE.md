@@ -54,7 +54,12 @@ docker compose down -v           # Tear down and wipe all volumes
 podman compose up --build        # Podman alternative
 # Include pgAdmin (opt-in):
 docker compose -f docker-compose.yml -f docker-compose.pgadmin.yml up --build
+# Include OpenTelemetry observability (opt-in: collector, Jaeger, Prometheus, Grafana):
+./podman-up.sh -o --build
 ```
+
+The observability overlay adds otel-collector (:4317/:4318), Jaeger UI (:16686), Prometheus (:9090),
+and Grafana (:3010). See `kdiab-analyze/docs/observability-guide.adoc` for the full developer guide.
 
 The database is automatically initialised by:
 1. `config/postgres/01-init-databases.sh` — creates `kdiab-measures`, `kdiab-profiles`, `kdiab-treatments`, `kdiab-carbs` databases
@@ -107,6 +112,9 @@ npm run test:e2e                 # Playwright e2e tests (requires running app)
 |---|---|
 | Keycloak Admin | http://localhost:8081 (admin / from `.env`) |
 | pgAdmin | http://localhost:5050 (opt-in via docker-compose.pgadmin.yml) |
+| Jaeger UI | http://localhost:16686 (opt-in via -o flag / docker-compose.otel.yml) |
+| Prometheus | http://localhost:9090 (opt-in via -o flag / docker-compose.otel.yml) |
+| Grafana | http://localhost:3010 admin/admin (opt-in via -o flag / docker-compose.otel.yml) |
 | kdiab-ui (all frontends) | http://localhost:3005 |
 | kdiab-measures backend / Swagger | http://localhost:8080 / http://localhost:8080/swagger |
 | kdiab-profiles backend / Swagger | http://localhost:8082 / http://localhost:8082/swagger |
