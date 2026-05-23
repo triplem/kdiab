@@ -1,0 +1,167 @@
+= Claude Code OTEL Telemetry Stack
+:toc: left
+:icons: font
+:source-highlighter: rouge
+
+== Overview
+
+The Claude Code OTEL stack captures observability data from Claude Code sessions:
+tool call durations, session lengths, token usage, and error rates.
+It uses link:https://github.com/ColeMurray/claude-code-otel[claude-code-otel] as a
+Claude Code Stop hook to emit OTLP traces and metrics after each session.
+
+This stack is completely separate from the kdiab application observability stack.
+It runs on a dedicated `claude-otel` Docker network with its own port space so both
+stacks can run simultaneously without any port conflicts.
+
+=== Architecture
+
+----
+Claude Code session (local)
+  └─► Stop hook: @colmurray/claude-code-otel
+        └─► OTLP HTTP :4328
+              └─► claude-otel-collector
+                    ├─► claude-jaeger :4317  (traces)
+                    └─► claude-prometheus :8889  (metrics exposition)
+                              └─► claude-grafana :3015
+----
+
+=== Why a Separate Stack
+
+The kdiab application OTEL stack (`docker-compose.otel.yml`) uses ports 4317/4318,
+16686, 9090, and 3010. Sharing those ports would require the kdiab stack to be
+running whenever Claude Code telemetry was needed, coupling two independent concerns.
+
+The dedicated `claude-otel` Docker network also prevents Claude Code telemetry from
+accidentally being routed to kdiab backend services and vice versa.
+
+== Quick Start
+
+Prerequisites: Docker (or Podman), Node.js (for the npx hook invocation).
+
+[source,bash]
+----
+./claude-otel-up.sh
+----
+
+This starts all four containers and prints the service URLs.
+The Stop hook in `.claude/settings.json` is already configured — it activates
+automatically the next time a Claude Code session ends while the stack is running.
+
+== Service URLs
+
+[options="header"]
+|===
+| Service | URL | Credentials
+| Jaeger UI (traces) | http://localhost:16696 | —
+| Prometheus | http://localhost:9095 | —
+| Grafana | http://localhost:3015 | admin / admin
+| OTLP HTTP endpoint | http://localhost:4328 | —
+|===
+
+== Port Comparison: kdiab OTEL vs Claude OTEL
+
+[options="header"]
+|===
+| Component | kdiab host port | Claude host port
+| OTLP gRPC | 4317 | 4327
+| OTLP HTTP | 4318 | 4328
+| Jaeger UI | 16686 | 16696
+| Prometheus | 9090 | 9095
+| Grafana | 3010 | 3015
+|===
+
+Both stacks can run at the same time — no port conflicts.
+
+== Running Both Stacks Simultaneously
+
+[source,bash]
+----
+# Start kdiab application stack with observability
+./podman-up.sh -o --build
+
+# Start Claude Code telemetry stack
+./claude-otel-up.sh
+
+# Both stacks are now running independently
+# Jaeger at :16686 (kdiab), :16696 (Claude Code)
+# Grafana at :3010 (kdiab), :3015 (Claude Code)
+----
+
+== How the Hook Works
+
+The Stop hook in `.claude/settings.json` runs after every Claude Code session ends:
+
+[source,bash]
+----
+docker ps | grep claude-otel-collector \
+  && OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4328 ... npx @colmurray/claude-code-otel \
+  || true
+----
+
+The `docker ps` guard means the hook is a complete no-op when the claude-otel stack is
+not running — no error messages, no delay, no effect on Claude Code behaviour.
+
+== Teardown
+
+[source,bash]
+----
+# Stop containers (keep volumes — traces and metrics are preserved)
+./claude-otel-down.sh
+
+# Stop containers and wipe all data volumes
+./claude-otel-down.sh --volumes
+----
+
+== Troubleshooting
+
+=== Port conflicts
+
+If `./claude-otel-up.sh` fails with a bind error, another process is using one of
+the Claude OTEL ports (4327, 4328, 16696, 9095, 3015):
+
+[source,bash]
+----
+ss -tlnp | grep -E '4327|4328|16696|9095|3015'
+----
+
+=== Collector not receiving spans
+
+Check that the Stop hook ran after your last session:
+
+[source,bash]
+----
+podman logs claude-otel-collector | tail -20
+----
+
+Verify `OTEL_EXPORTER_OTLP_ENDPOINT` is `http://localhost:4328` in the hook:
+
+[source,bash]
+----
+jq '.hooks.Stop[1]' .claude/settings.json
+----
+
+=== Jaeger showing no traces
+
+The Stop hook fires at session end, not per tool call. If no sessions have ended
+since the stack started, Jaeger will be empty. End a Claude Code session and check
+Jaeger again.
+
+Also confirm the hook is not being skipped because the service name does not match:
+
+[source,bash]
+----
+podman logs claude-otel-collector | grep "received"
+----
+
+=== Container health check failures
+
+[source,bash]
+----
+docker compose -f docker-compose.claude-otel.yml ps
+docker compose -f docker-compose.claude-otel.yml logs claude-otel-collector
+----
+
+The collector healthcheck hits `http://localhost:13133` (the `health_check` extension).
+If that port is not responding, check the collector config at
+`config/claude-otel/otel-collector-config.yaml`.
