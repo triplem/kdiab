@@ -6,6 +6,10 @@ plugins {
     id("org.asciidoctor.jvm.convert") version "4.0.5"
 }
 
+repositories {
+    mavenCentral()
+}
+
 // -- Service list --------------------------------------------------------------
 // The eight backend services that produce runnable JARs and Docker images.
 // kdiab-common is a shared library included automatically as a substituted
