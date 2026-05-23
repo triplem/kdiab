@@ -216,6 +216,9 @@ class DoseCalculationServiceTest {
 
     @Test
     fun `calculateDose does not produce NaN when ISF is very small but positive`() = runTest {
+        // Use FLAT trend so the trend adjustment is 0.0 and doesn't exceed the hard cap.
+        // The test verifies arithmetic stability: with tiny ISF, correction = (110 - 110) / 0.1 = 0
+        // and the result is a valid finite number, not NaN or Infinity.
         val tinyIsfProfile = testProfile.copy(
             isf = listOf(IsfRatio(startTime ="00:00", value =0.1)),
         )
@@ -224,7 +227,7 @@ class DoseCalculationServiceTest {
         val request = DoseRequest(
             currentBg = 110.0,
             glucoseUnit = "mg/dL",
-            trend = CgmTrend.SINGLE_UP,
+            trend = CgmTrend.FLAT,
             carbsGrams = 0.0,
         )
 
@@ -232,6 +235,7 @@ class DoseCalculationServiceTest {
 
         assertTrue(!result.trendAdjustment.isNaN())
         assertTrue(!result.trendAdjustment.isInfinite())
+        assertTrue(!result.totalRecommended.isNaN())
     }
 
     @Test
@@ -321,24 +325,44 @@ class DoseCalculationServiceTest {
 
     @Test
     fun `calculateDose applies high-dose warning when total recommended exceeds threshold`() = runTest {
-        // Force a very high dose: BG = 1100 mg/dL, ISF = 50, target = 110 => correction = (1100-110)/50 = 19.8
-        // Add carbs = 30, ICR = 1 => carbDose = 30.0; total = 49.8 which is > 20 (HIGH_DOSE_THRESHOLD)
-        val lowIcrProfile = testProfile.copy(
-            icr = listOf(IcrRatio(startTime ="00:00", value =1.0)),
-        )
-        coEvery { profilesPort.getActiveProfile(any(), any(), any()) } returns lowIcrProfile
+        // Force a dose between 20 U and 30 U to trigger the warning without hitting the hard cap:
+        // BG = 1160 mg/dL, ISF = 50, target = 110 => correction = (1160-110)/50 = 21.0; no carbs.
+        // total = 21.0 which is > 20 (HIGH_DOSE_THRESHOLD) but ≤ 30 (MAX_ABSOLUTE_DOSE).
+        coEvery { profilesPort.getActiveProfile(any(), any(), any()) } returns testProfile
 
         val request = DoseRequest(
-            currentBg = 1100.0,
+            currentBg = 1160.0,
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
-            carbsGrams = 30.0,
+            carbsGrams = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
 
         assertTrue(result.totalRecommended > 20.0)
         assertTrue(result.warnings.any { it.contains("unusually high") })
+    }
+
+    @Test
+    fun `should throw BusinessValidationException when total exceeds maximum dose`() = runTest {
+        // ISF = 0.5, BG = 500 mg/dL, target = 110 => rawCorrection = (500-110)/0.5 = 780.0
+        // No IOB, no carbs => total = 780.0 which exceeds MAX_ABSOLUTE_DOSE (30 U)
+        val tinyIsfProfile = testProfile.copy(
+            isf = listOf(IsfRatio(startTime = "00:00", value = 0.5)),
+        )
+        coEvery { profilesPort.getActiveProfile(any(), any(), any()) } returns tinyIsfProfile
+
+        val request = DoseRequest(
+            currentBg = 500.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+            activeIob = 0.0,
+        )
+
+        assertFailsWith<BusinessValidationException> {
+            service.calculateDose("user-123", request, "Bearer token", "corr-id")
+        }
     }
 
     @Test

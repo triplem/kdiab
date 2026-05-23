@@ -197,6 +197,8 @@ The service appends human-readable warnings to the response. No warning blocks t
 | "Calculated dose is unusually high — please verify inputs"
 |===
 
+NOTE: If the calculated total exceeds 30 U (the absolute maximum single dose), the request is rejected with HTTP 400 and a `BusinessValidationException`. No result is returned — the caller must correct the profile or inputs.
+
 == Hypoglycemia Safety Lock
 
 When `bgMgDl < 70`, all dose components are forced to **0.0** regardless of inputs. The hypoglycemia warning is always emitted. This is a hard safety rule that cannot be overridden by the caller.
@@ -212,8 +214,8 @@ When `bgMgDl < 70`, all dose components are forced to **0.0** regardless of inpu
 | 404 Not Found
 | No active profile found for the user in `kdiab-profiles`
 
-| 422 Unprocessable Entity
-| ISF ≤ 0; ICR ≤ 0 when carbs > 0; empty profile segments
+| 400 Bad Request
+| ISF ≤ 0; ICR ≤ 0 when carbs > 0; empty profile segments; calculated dose exceeds maximum single-dose limit
 
 | 401 Unauthorized
 | Missing or invalid JWT
