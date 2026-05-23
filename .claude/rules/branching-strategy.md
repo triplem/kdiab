@@ -87,6 +87,26 @@ Tags are created on `main` by ReleaseAgent after squash merge. Semver bump is de
 
 Feature branches are deleted automatically after PR merge (GitHub: "Delete branch on merge"). Worktrees are cleaned up by the agent that created them.
 
+## Worktree Cleanup: Double-Force Required for Locked Worktrees
+
+Claude agent worktrees are locked with a lock reason. A single `git worktree remove --force` is not enough — it fails with `"cannot remove a locked working tree, use 'remove -f -f' to override"`. Always use double-force:
+
+```bash
+git worktree remove -f -f /path/to/worktree
+```
+
+After removing worktrees, delete the now-dangling local branches:
+
+```bash
+git branch | grep "worktree-agent-" | xargs -r git branch -D
+```
+
+Then prune stale remote-tracking refs:
+
+```bash
+git fetch --prune
+```
+
 ## Hotfix
 
 For production bugs requiring immediate fix:
