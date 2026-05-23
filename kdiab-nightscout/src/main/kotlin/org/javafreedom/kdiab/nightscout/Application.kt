@@ -37,7 +37,7 @@ private const val HTTP_CONNECT_TIMEOUT_MS_DEFAULT = 5_000L
 private const val HTTP_REQUEST_TIMEOUT_MS_DEFAULT = 30_000L
 private const val HTTP_SOCKET_TIMEOUT_MS_DEFAULT = 5_000L
 
-fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
+fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 
 fun Application.module() {
     val json = Json { ignoreUnknownKeys = true }

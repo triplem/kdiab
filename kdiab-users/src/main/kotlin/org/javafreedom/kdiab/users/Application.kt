@@ -36,7 +36,7 @@ import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedDoctorPatie
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedUserSettingsRepository
 import org.javafreedom.kdiab.common.plugins.configureMetrics
 
-fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
+fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 
 // Keys that have no safe fallback default and must be provided at startup.
 private val REQUIRED_CONFIG_KEYS = listOf(
