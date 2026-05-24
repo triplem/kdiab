@@ -66,7 +66,7 @@ class TreatmentMapperTest {
             data = buildJsonObject { put("carbs", 45.0) },
         )
         val result = response.toNs3Treatment()
-        assertEquals("Carbs", result.eventType)
+        assertEquals("Carbs (and/or Bolus)", result.eventType)
         assertEquals(45.0, result.carbs)
         assertNull(result.insulin)
     }
@@ -128,10 +128,55 @@ class TreatmentMapperTest {
 
     @Test
     fun `toCreateTreatmentRequest maps Carbs eventType to CARBS TreatmentType`() {
-        val treatment = ns3Treatment(eventType = "Carbs", carbs = 30.0, insulin = null)
+        val treatment = ns3Treatment(eventType = "Carbs (and/or Bolus)", carbs = 30.0, insulin = null)
         val request = treatment.toCreateTreatmentRequest()
         assertNotNull(request)
         assertEquals(TreatmentType.CARBS, request.type)
+    }
+
+    @Test
+    fun `toNs3Treatment maps SITE_CHANGE to Site Change eventType`() {
+        val response = treatmentResponse(type = TreatmentType.SITE_CHANGE, data = buildJsonObject {})
+        val result = response.toNs3Treatment()
+        assertEquals("Site Change", result.eventType)
+    }
+
+    @Test
+    fun `toCreateTreatmentRequest maps Site Change back to SITE_CHANGE`() {
+        val treatment = ns3Treatment(eventType = "Site Change", insulin = null)
+        val request = treatment.toCreateTreatmentRequest()
+        assertNotNull(request)
+        assertEquals(TreatmentType.SITE_CHANGE, request.type)
+    }
+
+    @Test
+    fun `toNs3Treatment maps SENSOR_INSERT to Sensor Start eventType`() {
+        val response = treatmentResponse(type = TreatmentType.SENSOR_INSERT, data = buildJsonObject {})
+        val result = response.toNs3Treatment()
+        assertEquals("Sensor Start", result.eventType)
+    }
+
+    @Test
+    fun `toCreateTreatmentRequest maps Sensor Start back to SENSOR_INSERT`() {
+        val treatment = ns3Treatment(eventType = "Sensor Start", insulin = null)
+        val request = treatment.toCreateTreatmentRequest()
+        assertNotNull(request)
+        assertEquals(TreatmentType.SENSOR_INSERT, request.type)
+    }
+
+    @Test
+    fun `toNs3Treatment maps INSULIN_CHANGE to Insulin Change eventType`() {
+        val response = treatmentResponse(type = TreatmentType.INSULIN_CHANGE, data = buildJsonObject {})
+        val result = response.toNs3Treatment()
+        assertEquals("Insulin Change", result.eventType)
+    }
+
+    @Test
+    fun `toCreateTreatmentRequest maps Insulin Change back to INSULIN_CHANGE`() {
+        val treatment = ns3Treatment(eventType = "Insulin Change", insulin = null)
+        val request = treatment.toCreateTreatmentRequest()
+        assertNotNull(request)
+        assertEquals(TreatmentType.INSULIN_CHANGE, request.type)
     }
 
     @Test
