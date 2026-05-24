@@ -52,8 +52,11 @@ so the returned token is accepted by kdiab-nightscout.
 
 == 3. Supported Endpoints
 
-kdiab-nightscout implements **Nightscout API v1** (`/api/v1/`).
-This is the broadest-compatibility format supported by AAPS, xDrip+, Juggluco, and similar apps.
+kdiab-nightscout implements both **Nightscout API v1** (`/api/v1/`) and **Nightscout API v3** (`/api/v3/`).
+
+=== 3.1. Nightscout API v1 Endpoints
+
+The v1 API provides broad compatibility with older client configurations.
 
 [cols="2,1,1,4",options="header"]
 |===
@@ -95,11 +98,66 @@ This is the broadest-compatibility format supported by AAPS, xDrip+, Juggluco, a
 | Readiness probe — checks upstream health; no auth required
 |===
 
-NOTE: kdiab-nightscout implements the Nightscout **v1** API. Clients configured for Nightscout v3
-(`/api/v3/` paths) will receive 404 responses. Use the v1-compatible plugin in your client app —
-see <<per-client-configuration>> for details.
+=== 3.2. Nightscout API v3 Endpoints
 
-=== 3.1. Query Parameters
+The v3 API provides full bidirectional CRUD for all collections, required by AAPS NSClientV3 and xDrip+ v3 sync.
+
+[cols="2,1,1,1,1,4",options="header"]
+|===
+| Collection | GET (list) | GET (single) | POST | PUT/PATCH | DELETE
+
+| `/api/v3/entries`
+| Yes
+| Yes
+| Yes
+| Yes
+| Yes
+
+| `/api/v3/treatments`
+| Yes
+| Yes
+| Yes
+| Yes
+| Yes
+
+| `/api/v3/food`
+| Yes
+| Yes
+| Yes
+| Yes
+| Yes
+
+| `/api/v3/profile`
+| Yes
+| Yes
+| Yes
+| Yes (copy-on-write)
+| Yes (archive only)
+
+| `/api/v3/settings`
+| Yes
+| —
+| —
+| 422 (units read-only)
+| No
+
+| `/api/v3/devicestatus`
+| Yes
+| Yes
+| Yes
+| No
+| Yes
+
+|===
+
+Meta endpoints (require JWT):
+
+* `GET /api/v3/version` — server version info
+* `GET /api/v3/status` — authentication status and permissions
+* `GET /api/v3/lastModified` — last modification timestamps per collection
+* `GET /api/v3/{collection}/history` — full history since a given timestamp
+
+=== 3.3. Query Parameters (v1)
 
 Both `GET /api/v1/entries.json` and `GET /api/v1/treatments.json` accept:
 
@@ -132,7 +190,7 @@ Both `GET /api/v1/entries.json` and `GET /api/v1/treatments.json` accept:
 | Setting | Value
 
 | Plugin
-| **NSClient** (legacy v1 plugin) — do NOT use NSClientV3 as kdiab-nightscout serves v1 endpoints
+| **NSClientV3** (recommended for AAPS 3.x) — targets `/api/v3/` paths. Use **NSClient** (legacy) only for older AAPS builds that do not support v3.
 
 | Nightscout URL
 | `http://<host>:8087` — no trailing slash
@@ -153,8 +211,8 @@ Both `GET /api/v1/entries.json` and `GET /api/v1/treatments.json` accept:
 | Enable
 |===
 
-IMPORTANT: AAPS NSClientV3 uses `/api/v3/` paths which kdiab-nightscout does not serve.
-Use the standard NSClient plugin that targets `/api/v1/` paths.
+NOTE: Both NSClientV3 (`/api/v3/` paths) and NSClient (`/api/v1/` paths) are supported.
+NSClientV3 is recommended for new configurations as it provides full bidirectional sync including treatments and devicestatus.
 
 === 4.2. xDrip+
 
@@ -178,11 +236,11 @@ Use the latest nightly build from the xDrip+ GitHub releases page to obtain this
 The following behaviours differ from a standard Nightscout server.
 Operators and client users should be aware of these before deploying.
 
-=== 5.1. API Version
+=== 5.1. Both API Versions Supported
 
-kdiab-nightscout serves **Nightscout API v1** only.
-Clients or plugins that target Nightscout API v3 (`/api/v3/` paths) will not work.
-Always select the v1-compatible plugin or mode in your client application.
+kdiab-nightscout serves both **Nightscout API v1** (`/api/v1/`) and **Nightscout API v3** (`/api/v3/`).
+New client configurations should use v3 for full bidirectional sync.
+Legacy v1-only clients continue to work without any changes required.
 
 === 5.2. No API Secret Authentication
 
@@ -234,10 +292,10 @@ must be explicitly deleted.
   which has the `nightscout` audience mapper configured.
   Tokens from other clients may not carry this audience.
 
-| HTTP 404 on `/api/v3/` paths
-| Client is targeting Nightscout v3 endpoints
-| Switch to the v1-compatible plugin or mode.
-  kdiab-nightscout serves `/api/v1/` paths only.
+| HTTP 404 on a specific `/api/v3/` path
+| Endpoint not yet implemented or path is misspelled
+| Verify the path against the supported endpoint list in section 3.2.
+  Both `/api/v1/` and `/api/v3/` are supported; check for typos in the URL.
 
 | HTTP 502 Bad Gateway
 | One or more upstream services are unavailable
@@ -245,9 +303,10 @@ must be explicitly deleted.
   `GET /readyz` reports the health of both upstreams.
 
 | AAPS shows "not authorised" after connection test
-| Wrong plugin (NSClientV3) or token not accepted
-| Switch to the NSClient (v1) plugin in AAPS.
-  Verify the token is pasted without the `Bearer ` prefix.
+| Token not accepted or wrong plugin version
+| Verify the token is pasted without the `Bearer ` prefix.
+  For NSClientV3, ensure the Keycloak client has the `nightscout` audience mapper.
+  For NSClient (v1), verify the URL has no trailing slash.
 
 | xDrip+ uploads succeed but data does not appear in kdiab
 | Old xDrip+ version without Bearer token support
@@ -262,5 +321,5 @@ must be explicitly deleted.
 
 == 7. Reference: Field Mapping
 
-For a detailed mapping between Nightscout v1 JSON fields and kdiab domain model fields,
-see the Architecture document at `kdiab-nightscout/docs/architecture.adoc`.
+For a detailed mapping between Nightscout v3 collection JSON fields and kdiab domain model fields,
+see `kdiab-nightscout/docs/nightscout-v3-mapping.adoc`.
