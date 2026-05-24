@@ -1,14 +1,16 @@
 apiVersion: 1
 datasources:
   - name: Prometheus
+    uid: kdiab-prometheus
     type: prometheus
     url: http://prometheus:9090
     isDefault: true
     jsonData:
       httpMethod: POST
   - name: Jaeger
+    uid: kdiab-jaeger
     type: jaeger
     url: http://jaeger:16686
     jsonData:
       tracesToMetrics:
-        datasourceUid: prometheus
+        datasourceUid: kdiab-prometheus
