@@ -19,6 +19,7 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateMeasureRe
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3HistoryResult
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Settings
@@ -56,6 +57,21 @@ class NightscoutV3Service(
             }
             .drop(params.skip)
             .take(params.limit)
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun historyEntries(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        lastModified: Long?,
+        glucoseUnit: String,
+    ): Ns3HistoryResult<Ns3Entry> {
+        val fromIso = epochMsToIso(lastModified)
+        val entries = measuresClient.getMeasures(userId, authorization, correlationId, from = fromIso)
+            .map { it.toNs3Entry(glucoseUnit) }
+        val newestSrvModified = entries.mapNotNull { it.srvModified }.maxOrNull()
+        return Ns3HistoryResult(status = 200, result = entries, lastModified = newestSrvModified)
     }
 
     @Suppress("LongParameterList")
