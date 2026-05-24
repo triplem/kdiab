@@ -92,7 +92,7 @@ class FoodMapperTest {
     fun `toCreateFoodRequest sets portionGrams`() {
         val food = Ns3Food(identifier = "id", name = "Apple", carbs = 21.0, portionSize = 150.0)
         val result = food.toCreateFoodRequest()
-        assertEquals(java.math.BigDecimal(150.0), result.portionGrams)
+        assertEquals(java.math.BigDecimal.valueOf(150.0), result.portionGrams)
     }
 
     @Test
@@ -108,7 +108,7 @@ class FoodMapperTest {
         // carbs=30, portionSize=null → treated as 100 → carbsPer100g = 30/100*100 = 30.0
         val food = Ns3Food(identifier = "id", name = "Rice", carbs = 30.0, portionSize = null)
         val result = food.toCreateFoodRequest()
-        assertEquals(java.math.BigDecimal(100.0), result.portionGrams)
+        assertEquals(java.math.BigDecimal.valueOf(100.0), result.portionGrams)
         assertEquals(30.0, result.carbsPer100g.toDouble(), 0.001)
     }
 

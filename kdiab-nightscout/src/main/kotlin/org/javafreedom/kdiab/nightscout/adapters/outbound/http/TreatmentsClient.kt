@@ -14,6 +14,7 @@ import org.javafreedom.kdiab.nightscout.api.upstream.treatments.DefaultApi
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.BulkTreatmentRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.CreateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentResponse
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.UpdateTreatmentRequest
 import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
@@ -200,5 +201,91 @@ class TreatmentsClient(
             reason = httpResponse.response.status.description,
             url = httpResponse.response.request.url.toString(),
         )
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun getDeviceStatusTreatments(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        from: String? = null,
+        to: String? = null,
+    ): List<TreatmentResponse> {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val api = DefaultApi(
+            baseUrl = "$baseUrl/api/v1",
+            httpClientEngine = httpClientEngine,
+            httpClientConfig = { config ->
+                config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+            },
+        ).apply { setBearerToken(token) }
+
+        val result = mutableListOf<TreatmentResponse>()
+        var page = 0
+        var totalCount = Long.MAX_VALUE
+        var done = false
+
+        while (result.size < totalCount && !done) {
+            val httpResponse = circuitBreaker.execute {
+                api.listTreatments(
+                    userId = userId,
+                    type = TreatmentType.DEVICE_STATUS,
+                    from = from,
+                    to = to,
+                    status = null,
+                    page = page,
+                    size = PAGE_SIZE,
+                )
+            }
+            if (!httpResponse.success) throw UpstreamException(
+                service = "treatments",
+                statusCode = httpResponse.status,
+                reason = httpResponse.response.status.description,
+                url = httpResponse.response.request.url.toString(),
+            )
+            val paged = httpResponse.body()
+            totalCount = paged.totalCount
+            result.addAll(paged.items)
+            if (result.size >= MAX_TREATMENTS) {
+                logger.warn { "MAX_TREATMENTS limit reached for devicestatus userId=$userId" }
+                done = true
+            } else {
+                page++
+                done = paged.items.isEmpty()
+            }
+        }
+        logger.info { "Fetched ${result.size} device-status treatments for userId=$userId" }
+        return result
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun createTreatmentResponse(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        request: CreateTreatmentRequest,
+    ): TreatmentResponse {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val api = DefaultApi(
+            baseUrl = "$baseUrl/api/v1",
+            httpClientEngine = httpClientEngine,
+            httpClientConfig = { config ->
+                config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+            },
+        ).apply { setBearerToken(token) }
+        val httpResponse = circuitBreaker.execute {
+            api.createTreatment(userId = userId, createTreatmentRequest = request)
+        }
+        if (!httpResponse.success) throw UpstreamException(
+            service = "treatments",
+            statusCode = httpResponse.status,
+            reason = httpResponse.response.status.description,
+            url = httpResponse.response.request.url.toString(),
+        )
+        val created = httpResponse.body()
+        logger.info { "Created device-status treatment userId=$userId id=${created.id}" }
+        return created
     }
 }
