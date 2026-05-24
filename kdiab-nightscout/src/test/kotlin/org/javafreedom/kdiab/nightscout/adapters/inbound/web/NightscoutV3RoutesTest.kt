@@ -19,6 +19,7 @@ import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3HistoryResult
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Settings
 import org.javafreedom.kdiab.nightscout.module
@@ -442,5 +443,117 @@ class NightscoutV3RoutesTest {
     fun `DELETE api v3 profile slash id returns 401 without token`() = v3RouteTest { _ ->
         val response = client.delete("/api/v3/profile/profile-1")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    // ─── Meta endpoints ────────────────────────────────────────────────────────
+
+    @Test
+    fun `GET api v3 version returns 200 with version info`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/version") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "srvDate")
+        assertContains(response.bodyAsText(), "\"status\":200")
+    }
+
+    @Test
+    fun `GET api v3 version returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/version")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `GET api v3 status returns 200 with authenticated true`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/status") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "isAuthenticated")
+        assertContains(response.bodyAsText(), "true")
+    }
+
+    @Test
+    fun `GET api v3 status returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/status")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `GET api v3 lastModified returns 200 with all collections`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/lastModified") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        val body = response.bodyAsText()
+        assertContains(body, "entries")
+        assertContains(body, "treatments")
+        assertContains(body, "foods")
+        assertContains(body, "profile")
+        assertContains(body, "devicestatus")
+        assertContains(body, "srvDate")
+    }
+
+    @Test
+    fun `GET api v3 lastModified returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/lastModified")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `GET api v3 entries history returns 200 with entries`() = v3RouteTest { svc ->
+        coEvery { svc.historyEntries(any(), any(), any(), null, any()) } returns
+            Ns3HistoryResult(
+                status = 200,
+                result = listOf(sampleEntry),
+                lastModified = 1704067200000L,
+            )
+
+        val response = client.get("/api/v3/entries/history") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "entry-1")
+    }
+
+    @Test
+    fun `GET api v3 entries history returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/entries/history")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `GET api v3 entries history with lastModified returns 200`() = v3RouteTest { svc ->
+        val lastModified = 1704067200000L
+        coEvery { svc.historyEntries(any(), any(), any(), lastModified, any()) } returns
+            Ns3HistoryResult(
+                status = 200,
+                result = listOf(sampleEntry),
+                lastModified = lastModified,
+            )
+
+        val response = client.get("/api/v3/entries/history/$lastModified") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "entry-1")
+    }
+
+    @Test
+    fun `GET api v3 treatments history stub returns 200 with empty list`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/treatments/history") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "result")
+    }
+
+    @Test
+    fun `GET api v3 foods history stub returns 200 with empty list`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/foods/history") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "result")
     }
 }

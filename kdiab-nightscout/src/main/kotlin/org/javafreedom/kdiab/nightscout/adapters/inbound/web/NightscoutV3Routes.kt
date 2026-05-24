@@ -11,14 +11,59 @@ import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3HistoryResult
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3LastModifiedResult
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3ListResponse
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Response
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Settings
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3StatusResult
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3VersionResult
 
+@Suppress("LongMethod")
 fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
     authenticate("auth-jwt") {
+        get("/api/v3/version") {
+            call.respond(
+                Ns3Response(
+                    status = 200,
+                    result = Ns3VersionResult(srvDate = System.currentTimeMillis()),
+                )
+            )
+        }
+
+        get("/api/v3/status") {
+            call.respond(
+                Ns3Response(
+                    status = 200,
+                    result = Ns3StatusResult(
+                        isAuthenticated = true,
+                        permissions = listOf("*:*", "api:read", "api:create", "api:update", "api:delete"),
+                    ),
+                )
+            )
+        }
+
+        get("/api/v3/lastModified") {
+            val now = System.currentTimeMillis()
+            call.respond(
+                Ns3Response(
+                    status = 200,
+                    result = Ns3LastModifiedResult(
+                        srvDate = now,
+                        collections = mapOf(
+                            "entries" to now,
+                            "treatments" to now,
+                            "foods" to now,
+                            "profile" to now,
+                            "devicestatus" to now,
+                        ),
+                    ),
+                )
+            )
+        }
+
         route("/api/v3/entries") {
             get {
                 val principal = call.principal<UserPrincipal>()!!
@@ -102,6 +147,53 @@ fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
                     permanent = permanent,
                 )
                 call.respond(Ns3Response<Unit>(status = 200))
+            }
+            get("/history") {
+                val principal = call.principal<UserPrincipal>()!!
+                val result = service.historyEntries(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    lastModified = null,
+                    glucoseUnit = principal.glucoseUnit,
+                )
+                call.respond(result)
+            }
+            get("/history/{lastModified}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val lastModified = call.parameters["lastModified"]?.toLongOrNull()
+                val result = service.historyEntries(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    lastModified = lastModified,
+                    glucoseUnit = principal.glucoseUnit,
+                )
+                call.respond(result)
+            }
+        }
+        // TODO(#894-#898): stub HISTORY endpoints for collections implemented in parallel PRs
+        for (collection in listOf("treatments", "foods", "profile", "devicestatus")) {
+            route("/api/v3/$collection/history") {
+                get {
+                    call.respond(
+                        Ns3HistoryResult<String>(
+                            status = 200,
+                            result = emptyList(),
+                            lastModified = System.currentTimeMillis(),
+                        )
+                    )
+                }
+                get("/{lastModified}") {
+                    call.respond(
+                        Ns3HistoryResult<String>(
+                            status = 200,
+                            result = emptyList(),
+                            lastModified = call.parameters["lastModified"]?.toLongOrNull()
+                                ?: System.currentTimeMillis(),
+                        )
+                    )
+                }
             }
         }
         route("/api/v3/treatments") {

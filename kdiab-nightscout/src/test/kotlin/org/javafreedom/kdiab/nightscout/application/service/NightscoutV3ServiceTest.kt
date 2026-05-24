@@ -426,4 +426,68 @@ class NightscoutV3ServiceTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull()?.message?.contains("Permanent deletion") == true)
     }
+
+    @Test
+    fun `historyEntries with null lastModified fetches all entries and returns them`() = runTest {
+        coEvery {
+            measuresClient.getMeasures("user1", "Bearer token", "corr", from = null)
+        } returns listOf(
+            measureResponse("m1", "2024-01-01T00:00:00Z", 100),
+            measureResponse("m2", "2024-01-01T01:00:00Z", 120),
+        )
+
+        val result = service.historyEntries("user1", "Bearer token", "corr", null, "mg/dL")
+
+        assertEquals(200, result.status)
+        assertEquals(2, result.result.size)
+        assertEquals("m1", result.result[0].identifier)
+        assertEquals("m2", result.result[1].identifier)
+        assertNotNull(result.lastModified)
+    }
+
+    @Test
+    fun `historyEntries uses srvModified from newest entry as lastModified`() = runTest {
+        val newerMillis = 1704070800000L  // 2024-01-01T01:00:00Z
+
+        coEvery {
+            measuresClient.getMeasures(any(), any(), any(), from = null)
+        } returns listOf(
+            measureResponse("m1", "2024-01-01T00:00:00Z", 100),
+            measureResponse("m2", "2024-01-01T01:00:00Z", 120),
+        )
+
+        val result = service.historyEntries("user1", "Bearer token", "corr", null, "mg/dL")
+
+        assertEquals(newerMillis, result.lastModified)
+    }
+
+    @Test
+    fun `historyEntries with lastModified passes from filter to client`() = runTest {
+        val lastModifiedMs = 1704067200000L  // 2024-01-01T00:00:00Z
+        val expectedFrom = "2024-01-01T00:00:00Z"
+
+        coEvery {
+            measuresClient.getMeasures("user1", "Bearer token", "corr", from = expectedFrom)
+        } returns emptyList()
+
+        val result = service.historyEntries("user1", "Bearer token", "corr", lastModifiedMs, "mg/dL")
+
+        assertEquals(200, result.status)
+        assertEquals(0, result.result.size)
+        assertNull(result.lastModified)
+        coVerify(exactly = 1) {
+            measuresClient.getMeasures("user1", "Bearer token", "corr", from = expectedFrom)
+        }
+    }
+
+    @Test
+    fun `historyEntries returns null lastModified when result is empty`() = runTest {
+        coEvery {
+            measuresClient.getMeasures(any(), any(), any(), from = any())
+        } returns emptyList()
+
+        val result = service.historyEntries("user1", "Bearer token", "corr", null, "mg/dL")
+
+        assertNull(result.lastModified)
+    }
 }

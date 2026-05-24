@@ -137,3 +137,10 @@ data class Ns3LastModifiedResult(
     val srvDate: Long,
     val collections: Map<String, Long?>,
 )
+
+@Serializable
+data class Ns3HistoryResult<T>(
+    val status: Int,
+    val result: List<T>,
+    val lastModified: Long?,
+)
