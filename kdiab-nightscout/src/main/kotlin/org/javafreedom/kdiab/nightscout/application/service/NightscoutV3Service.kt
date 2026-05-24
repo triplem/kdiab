@@ -17,6 +17,9 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toNs3Treatment
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateFoodRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateMeasureRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateTreatmentRequest
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateTreatmentRequest
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toNs3DeviceStatus
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3DeviceStatus
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3HistoryResult
@@ -335,6 +338,64 @@ class NightscoutV3Service(
         require(!permanent) { "Permanent deletion is not supported for profiles; use soft-archive only" }
         profilesClient.archiveProfile(userId, authorization, correlationId, id)
         logger.info { "Archived v3 profile id=$id userId=$userId" }
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun searchDeviceStatus(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        params: Ns3SearchParams,
+    ): List<Ns3DeviceStatus> {
+        val dateFilters = params.filters["date"] ?: emptyList()
+        val from = dateFilters.firstOrNull { (op, _) -> op == "\$gte" }
+            ?.second?.toLongOrNull()?.let { epochMsToIso(it) }
+        val to = dateFilters.firstOrNull { (op, _) -> op == "\$lte" }
+            ?.second?.toLongOrNull()?.let { epochMsToIso(it) }
+        return treatmentsClient.getDeviceStatusTreatments(userId, authorization, correlationId, from, to)
+            .map { it.toNs3DeviceStatus() }
+            .let { list ->
+                if (params.sortDesc) list.sortedByDescending { it.date }
+                else list.sortedBy { it.date }
+            }
+            .drop(params.skip)
+            .take(params.limit)
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun getDeviceStatus(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+    ): Ns3DeviceStatus? =
+        treatmentsClient.getDeviceStatusTreatments(userId, authorization, correlationId)
+            .firstOrNull { it.id == id }
+            ?.toNs3DeviceStatus()
+
+    @Suppress("LongParameterList")
+    suspend fun createDeviceStatus(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        ds: Ns3DeviceStatus,
+    ): Ns3DeviceStatus {
+        val request = ds.toCreateTreatmentRequest()
+        val created = treatmentsClient.createTreatmentResponse(userId, authorization, correlationId, request)
+        logger.info { "Created v3 devicestatus userId=$userId serverId=${created.id}" }
+        return created.toNs3DeviceStatus()
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun deleteDeviceStatus(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+        permanent: Boolean,
+    ) {
+        treatmentsClient.deleteTreatment(userId, authorization, correlationId, id, permanent)
+        logger.info { "Deleted v3 devicestatus id=$id userId=$userId permanent=$permanent" }
     }
 }
 

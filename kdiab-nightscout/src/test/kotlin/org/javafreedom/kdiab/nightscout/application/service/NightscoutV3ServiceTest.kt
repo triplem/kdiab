@@ -21,6 +21,9 @@ import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.UpdateMeasureRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.CreateProfileRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentResponse
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentType
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3DeviceStatus
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
@@ -489,5 +492,106 @@ class NightscoutV3ServiceTest {
         val result = service.historyEntries("user1", "Bearer token", "corr", null, "mg/dL")
 
         assertNull(result.lastModified)
+    }
+
+    // --- devicestatus ---
+
+    private fun deviceStatusTreatment(
+        id: String = "ds-1",
+        treatedAt: String = "2024-01-01T00:00:00Z",
+        device: String? = "xDrip",
+    ) = TreatmentResponse(
+        id = id,
+        userId = "user1",
+        treatedAt = treatedAt,
+        createdAt = treatedAt,
+        type = TreatmentType.DEVICE_STATUS,
+        data = buildJsonObject { device?.let { put("device", it) } },
+        status = TreatmentResponse.Status.ACTIVE,
+    )
+
+    @Test
+    fun `searchDeviceStatus returns mapped and sorted results`() = runTest {
+        coEvery {
+            treatmentsClient.getDeviceStatusTreatments(any(), any(), any(), any(), any())
+        } returns listOf(
+            deviceStatusTreatment(id = "ds-2", treatedAt = "2024-01-02T00:00:00Z"),
+            deviceStatusTreatment(id = "ds-1", treatedAt = "2024-01-01T00:00:00Z"),
+        )
+
+        val params = defaultParams.copy(limit = 10, skip = 0, sortDesc = false)
+        val result = service.searchDeviceStatus("user1", "Bearer token", "corr", params)
+
+        assertEquals(2, result.size)
+        assertEquals("ds-1", result.first().identifier)
+    }
+
+    @Test
+    fun `searchDeviceStatus sortDesc returns newest first`() = runTest {
+        coEvery {
+            treatmentsClient.getDeviceStatusTreatments(any(), any(), any(), any(), any())
+        } returns listOf(
+            deviceStatusTreatment(id = "ds-1", treatedAt = "2024-01-01T00:00:00Z"),
+            deviceStatusTreatment(id = "ds-2", treatedAt = "2024-01-02T00:00:00Z"),
+        )
+
+        val params = defaultParams.copy(limit = 10, skip = 0, sortDesc = true)
+        val result = service.searchDeviceStatus("user1", "Bearer token", "corr", params)
+
+        assertEquals("ds-2", result.first().identifier)
+    }
+
+    @Test
+    fun `getDeviceStatus returns matching entry`() = runTest {
+        coEvery {
+            treatmentsClient.getDeviceStatusTreatments(any(), any(), any())
+        } returns listOf(deviceStatusTreatment(id = "ds-99"))
+
+        val result = service.getDeviceStatus("user1", "Bearer token", "corr", "ds-99")
+
+        assertNotNull(result)
+        assertEquals("ds-99", result.identifier)
+    }
+
+    @Test
+    fun `getDeviceStatus returns null when not found`() = runTest {
+        coEvery {
+            treatmentsClient.getDeviceStatusTreatments(any(), any(), any())
+        } returns emptyList()
+
+        val result = service.getDeviceStatus("user1", "Bearer token", "corr", "missing")
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `createDeviceStatus calls treatmentsClient and returns created status`() = runTest {
+        val created = deviceStatusTreatment(id = "ds-new")
+        coEvery {
+            treatmentsClient.createTreatmentResponse(any(), any(), any(), any())
+        } returns created
+
+        val ds = Ns3DeviceStatus(
+            identifier = "",
+            date = 0L,
+            dateString = "2024-01-01T00:00:00Z",
+            device = "xDrip",
+        )
+        val result = service.createDeviceStatus("user1", "Bearer token", "corr", ds)
+
+        assertEquals("ds-new", result.identifier)
+    }
+
+    @Test
+    fun `deleteDeviceStatus calls deleteTreatment`() = runTest {
+        coJustRun {
+            treatmentsClient.deleteTreatment(any(), any(), any(), any(), any())
+        }
+
+        service.deleteDeviceStatus("user1", "Bearer token", "corr", "ds-1", permanent = false)
+
+        coVerify(exactly = 1) {
+            treatmentsClient.deleteTreatment("user1", "Bearer token", "corr", "ds-1", false)
+        }
     }
 }

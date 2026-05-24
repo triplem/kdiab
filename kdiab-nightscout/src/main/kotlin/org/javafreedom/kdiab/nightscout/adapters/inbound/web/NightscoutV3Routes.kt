@@ -9,6 +9,7 @@ import io.ktor.server.routing.*
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3DeviceStatus
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3HistoryResult
@@ -359,6 +360,7 @@ fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
         }
         settingsRoutes(service)
         nightscoutV3ProfileRoutes(service, maxLimit)
+        nightscoutV3DeviceStatusRoutes(service, maxLimit)
     }
 }
 
@@ -482,6 +484,65 @@ private fun Route.settingsRoutes(service: NightscoutV3Service) {
                 glucoseUnit = principal.glucoseUnit,
             )
             call.respond(Ns3Response(status = 200, result = settings))
+        }
+    }
+}
+
+private fun Route.nightscoutV3DeviceStatusRoutes(service: NightscoutV3Service, maxLimit: Int) {
+    route("/api/v3/devicestatus") {
+        get {
+            val principal = call.principal<UserPrincipal>()!!
+            val params = call.parseNs3SearchParams(maxLimit)
+            val result = service.searchDeviceStatus(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                params = params,
+            )
+            call.respond(Ns3ListResponse(status = 200, result = result))
+        }
+        post {
+            val principal = call.principal<UserPrincipal>()!!
+            val ds = call.receive<Ns3DeviceStatus>()
+            val created = service.createDeviceStatus(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                ds = ds,
+            )
+            call.response.header("Location", "/api/v3/devicestatus/${created.identifier}")
+            call.respond(
+                HttpStatusCode.Created,
+                Ns3Response<Ns3DeviceStatus>(status = 201, identifier = created.identifier),
+            )
+        }
+        get("/{identifier}") {
+            val principal = call.principal<UserPrincipal>()!!
+            val id = call.parameters["identifier"]!!
+            val ds = service.getDeviceStatus(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                id = id,
+            )
+            if (ds == null) {
+                call.respond(HttpStatusCode.NotFound, Ns3Response<Ns3DeviceStatus>(status = 404))
+            } else {
+                call.respond(Ns3Response(status = 200, result = ds))
+            }
+        }
+        delete("/{identifier}") {
+            val principal = call.principal<UserPrincipal>()!!
+            val id = call.parameters["identifier"]!!
+            val permanent = call.request.queryParameters["permanent"] == "true"
+            service.deleteDeviceStatus(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                id = id,
+                permanent = permanent,
+            )
+            call.respond(Ns3Response<Unit>(status = 200))
         }
     }
 }
