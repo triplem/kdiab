@@ -202,6 +202,11 @@ kover {
                     // Exception data classes have no logic to measure
                     "org.javafreedom.kdiab.nightscout.domain.exception"
                 )
+                classes(
+                    // Ns3* v3 domain models — pure data-class DTOs, no business logic (#891)
+                    "org.javafreedom.kdiab.nightscout.domain.model.Ns3*",
+                    "org.javafreedom.kdiab.nightscout.domain.model.NightscoutV3ModelsKt"
+                )
             }
         }
 
