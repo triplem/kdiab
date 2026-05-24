@@ -11,6 +11,7 @@ import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3ListResponse
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Response
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
 
 fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
     authenticate("auth-jwt") {
@@ -90,6 +91,86 @@ fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
                 val id = call.parameters["identifier"]!!
                 val permanent = call.request.queryParameters["permanent"] == "true"
                 service.deleteEntry(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    id = id,
+                    permanent = permanent,
+                )
+                call.respond(Ns3Response<Unit>(status = 200))
+            }
+        }
+        route("/api/v3/treatments") {
+            get {
+                val principal = call.principal<UserPrincipal>()!!
+                val params = call.parseNs3SearchParams(maxLimit)
+                val treatments = service.searchTreatments(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    params = params,
+                )
+                call.respond(Ns3ListResponse(status = 200, result = treatments))
+            }
+            post {
+                val principal = call.principal<UserPrincipal>()!!
+                val treatment = call.receive<Ns3Treatment>()
+                val created = service.createTreatment(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    treatment = treatment,
+                )
+                call.response.header("Location", "/api/v3/treatments/${created.identifier}")
+                val createResponse = Ns3Response<Ns3Treatment>(status = 201, identifier = created.identifier)
+                call.respond(HttpStatusCode.Created, createResponse)
+            }
+            get("/{identifier}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val id = call.parameters["identifier"]!!
+                val treatment = service.getTreatment(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    id = id,
+                )
+                if (treatment == null) {
+                    call.respond(HttpStatusCode.NotFound, Ns3Response<Ns3Treatment>(status = 404))
+                } else {
+                    call.respond(Ns3Response(status = 200, result = treatment))
+                }
+            }
+            put("/{identifier}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val id = call.parameters["identifier"]!!
+                val treatment = call.receive<Ns3Treatment>()
+                val updated = service.updateTreatment(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    id = id,
+                    treatment = treatment,
+                )
+                call.respond(Ns3Response(status = 200, result = updated))
+            }
+            patch("/{identifier}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val id = call.parameters["identifier"]!!
+                val treatment = call.receive<Ns3Treatment>()
+                val updated = service.updateTreatment(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    id = id,
+                    treatment = treatment,
+                )
+                call.respond(Ns3Response(status = 200, result = updated))
+            }
+            delete("/{identifier}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val id = call.parameters["identifier"]!!
+                val permanent = call.request.queryParameters["permanent"] == "true"
+                service.deleteTreatment(
                     userId = principal.userId.toString(),
                     authorization = call.request.header("Authorization") ?: "",
                     correlationId = call.request.header("X-Correlation-ID") ?: "",

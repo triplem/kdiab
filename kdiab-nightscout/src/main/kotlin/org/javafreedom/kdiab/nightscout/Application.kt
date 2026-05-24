@@ -94,7 +94,10 @@ fun Application.module() {
                 )
             }
             provide<NightscoutV3Service> {
-                NightscoutV3Service(measuresClient = MeasuresClient(httpClient.engine, measuresUrl))
+                NightscoutV3Service(
+                    measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
+                    treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
+                )
             }
             provide<CarbsClient> { CarbsClient(httpClient.engine, carbsUrl) }
             provide<ProfilesClient> { ProfilesClient(httpClient.engine, profilesUrl) }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureSource
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureStatus
@@ -22,7 +23,8 @@ import kotlin.test.assertNull
 class NightscoutV3ServiceTest {
 
     private val measuresClient = mockk<MeasuresClient>()
-    private val service = NightscoutV3Service(measuresClient)
+    private val treatmentsClient = mockk<TreatmentsClient>()
+    private val service = NightscoutV3Service(measuresClient, treatmentsClient)
 
     private val defaultParams = Ns3SearchParams(
         limit = 100,
