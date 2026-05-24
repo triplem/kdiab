@@ -4,6 +4,7 @@ import { useTimeFormat } from '../../context/TimeFormatContext'
 import {
   ComposedChart,
   Line,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -12,7 +13,7 @@ import {
   ReferenceArea,
   ResponsiveContainer,
 } from 'recharts'
-import { type BasalBlock, type BasalProfilePoint, BASAL_COLORS } from './basalUtils'
+import { type BasalBlock, type BasalProfilePoint, BASAL_COLORS, deriveDeliveredLine } from './basalUtils'
 
 interface ChartPoint {
   time: number
@@ -153,6 +154,10 @@ export function GlucoseTrendChart({
     () => basalProfileLine?.map(p => ({ time: p.time, basalSched: -p.sched })) ?? [],
     [basalProfileLine]
   )
+  const negatedDeliveredLine = useMemo(
+    () => deriveDeliveredLine(basalBlocks ?? []),
+    [basalBlocks]
+  )
   const hasBasal = (basalBlocks?.length ?? 0) > 0 || negatedBasalLine.length > 0
 
   return (
@@ -203,6 +208,7 @@ export function GlucoseTrendChart({
                   return [lbl || ttype, ttype]
                 }
                 if (name === 'basalSched') return null
+                if (name === 'basalDelivered') return null
                 return [`${String(v)}`, String(name ?? '')]
               }}
               contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
@@ -234,6 +240,23 @@ export function GlucoseTrendChart({
                 stroke={BASAL_COLORS['SCHEDULED']!}
                 strokeWidth={1}
                 strokeDasharray="4 2"
+                dot={false}
+                legendType="none"
+                isAnimationActive={false}
+              />
+            )}
+            {hasBasal && negatedDeliveredLine.length > 0 && (
+              <Area
+                data={negatedDeliveredLine}
+                dataKey="basalDelivered"
+                name="basalDelivered"
+                yAxisId="basal"
+                type="stepAfter"
+                stroke="#475569"
+                strokeWidth={1.5}
+                fill="#475569"
+                fillOpacity={0.25}
+                y2={0}
                 dot={false}
                 legendType="none"
                 isAnimationActive={false}

@@ -208,3 +208,18 @@ export function currentBasalRate(basal: Array<{ startTime: string; value: number
   if (!basal?.length) return null
   return scheduledRateAt(basal, Date.now())
 }
+
+export interface DeliveredLinePoint {
+  time: number
+  basalDelivered: number
+}
+
+export function deriveDeliveredLine(blocks: BasalBlock[]): DeliveredLinePoint[] {
+  if (!blocks.length) return []
+  const pts: DeliveredLinePoint[] = []
+  for (const block of blocks) {
+    pts.push({ time: block.startMs, basalDelivered: -block.deliveredRate })
+    pts.push({ time: block.endMs - 1, basalDelivered: -block.deliveredRate })
+  }
+  return pts.sort((a, b) => a.time - b.time)
+}
