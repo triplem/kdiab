@@ -6,6 +6,9 @@ import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.CreateFoodEntryRequest
+import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.FoodEntryResponse
+import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.UpdateFoodEntryRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.CreateMeasureRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureSource
@@ -16,7 +19,10 @@ import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.Treatment
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.UpdateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
+
+private const val DEFAULT_PORTION_GRAMS = 100.0
 
 // Reverse map: kdiab TreatmentType key → Nightscout eventType string
 internal val NS3_TREATMENT_TYPE_MAP = mapOf(
@@ -132,4 +138,37 @@ fun Ns3Treatment.toUpdateTreatmentRequest(): UpdateTreatmentRequest {
         carbs?.let { put("carbs", it) }
     }
     return UpdateTreatmentRequest(treatedAt = dateString, data = data, notes = notes)
+}
+
+fun FoodEntryResponse.toNs3Food(): Ns3Food {
+    val created = runCatching { Instant.parse(createdAt).toEpochMilliseconds() }.getOrNull()
+    val modified = runCatching { Instant.parse(updatedAt).toEpochMilliseconds() }.getOrNull()
+    return Ns3Food(
+        identifier = id,
+        name = name,
+        carbs = carbsForPortion.toDouble(),
+        portionSize = portionGrams.toDouble(),
+        srvCreated = created,
+        srvModified = modified,
+    )
+}
+
+fun Ns3Food.toCreateFoodRequest(): CreateFoodEntryRequest {
+    val portion = portionSize ?: DEFAULT_PORTION_GRAMS
+    val carbsPer100g = carbs / portion * DEFAULT_PORTION_GRAMS
+    return CreateFoodEntryRequest(
+        name = name,
+        portionGrams = java.math.BigDecimal.valueOf(portion),
+        carbsPer100g = java.math.BigDecimal.valueOf(carbsPer100g),
+    )
+}
+
+fun Ns3Food.toUpdateFoodRequest(): UpdateFoodEntryRequest {
+    val portion = portionSize ?: DEFAULT_PORTION_GRAMS
+    val carbsPer100g = carbs / portion * DEFAULT_PORTION_GRAMS
+    return UpdateFoodEntryRequest(
+        name = name,
+        portionGrams = java.math.BigDecimal.valueOf(portion),
+        carbsPer100g = java.math.BigDecimal.valueOf(carbsPer100g),
+    )
 }

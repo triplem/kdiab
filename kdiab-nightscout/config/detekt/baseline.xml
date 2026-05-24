@@ -2,6 +2,9 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>CyclomaticComplexMethod:NightscoutV3Routes.kt$fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int)</ID>
+    <ID>LongMethod:Application.kt$fun Application.module()</ID>
+    <ID>LongMethod:NightscoutV3Routes.kt$fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int)</ID>
     <ID>MaxLineLength:CircuitBreaker.kt$CircuitBreaker$logger.warn { "circuit_breaker service=$name failures=$count threshold=$failureThreshold reason=${cause.message}" }</ID>
     <ID>ReturnCount:NightscoutMapper.kt$fun MeasureResponse.toNightscoutEntry(): NightscoutEntry?</ID>
     <ID>ReturnCount:NightscoutMapper.kt$fun TreatmentResponse.toNightscoutTreatment(): NightscoutTreatment?</ID>

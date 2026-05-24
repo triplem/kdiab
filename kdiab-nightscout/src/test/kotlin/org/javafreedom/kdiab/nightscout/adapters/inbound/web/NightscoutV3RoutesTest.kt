@@ -18,6 +18,7 @@ import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.module
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -170,6 +171,96 @@ class NightscoutV3RoutesTest {
     @Test
     fun `DELETE api v3 entries slash id returns 401 without token`() = v3RouteTest { _ ->
         val response = client.delete("/api/v3/entries/entry-1")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    // ---- /api/v3/food routes ----
+
+    private val sampleFood = Ns3Food(
+        identifier = "food-1",
+        name = "Apple",
+        carbs = 21.0,
+        portionSize = 150.0,
+    )
+
+    @Test
+    fun `GET api v3 food returns 200 with list`() = v3RouteTest { svc ->
+        coEvery { svc.searchFood(any(), any(), any(), any()) } returns listOf(sampleFood)
+
+        val response = client.get("/api/v3/food") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "food-1")
+    }
+
+    @Test
+    fun `GET api v3 food returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/food")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `GET api v3 food slash id returns 200 when found`() = v3RouteTest { svc ->
+        coEvery { svc.getFood(any(), any(), any(), "food-1") } returns sampleFood
+
+        val response = client.get("/api/v3/food/food-1") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "food-1")
+    }
+
+    @Test
+    fun `GET api v3 food slash id returns 404 when not found`() = v3RouteTest { svc ->
+        coEvery { svc.getFood(any(), any(), any(), "missing") } returns null
+
+        val response = client.get("/api/v3/food/missing") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `POST api v3 food returns 201 with location header`() = v3RouteTest { svc ->
+        coEvery { svc.createFood(any(), any(), any(), any()) } returns sampleFood
+
+        val response = client.post("/api/v3/food") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(sampleFood))
+        }
+
+        assertEquals(HttpStatusCode.Created, response.status)
+        assertContains(response.headers[HttpHeaders.Location] ?: "", "food-1")
+    }
+
+    @Test
+    fun `POST api v3 food returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.post("/api/v3/food") {
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(sampleFood))
+        }
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `DELETE api v3 food slash id returns 200`() = v3RouteTest { svc ->
+        coJustRun { svc.deleteFood(any(), any(), any(), "food-1", any()) }
+
+        val response = client.delete("/api/v3/food/food-1") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+    }
+
+    @Test
+    fun `DELETE api v3 food slash id returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.delete("/api/v3/food/food-1")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 }

@@ -7,24 +7,31 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
+import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.FoodEntryResponse
+import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.FoodEntryStatus
+import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.PagedFoodResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureSource
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureStatus
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.UpdateMeasureRequest
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class NightscoutV3ServiceTest {
 
     private val measuresClient = mockk<MeasuresClient>()
     private val treatmentsClient = mockk<TreatmentsClient>()
-    private val service = NightscoutV3Service(measuresClient, treatmentsClient)
+    private val carbsClient = mockk<CarbsClient>()
+    private val service = NightscoutV3Service(measuresClient, treatmentsClient, carbsClient)
 
     private val defaultParams = Ns3SearchParams(
         limit = 100,
@@ -172,6 +179,116 @@ class NightscoutV3ServiceTest {
 
         coVerify(exactly = 1) {
             measuresClient.deleteMeasure("user1", "Bearer token", "corr", "m1", permanent = true)
+        }
+    }
+
+    // ---- food methods ----
+
+    private fun foodEntryResponse(id: String = "food-1") = FoodEntryResponse(
+        id = id,
+        userId = "user1",
+        name = "Apple",
+        portionGrams = java.math.BigDecimal("150"),
+        carbsPer100g = java.math.BigDecimal("14"),
+        carbsForPortion = java.math.BigDecimal("21"),
+        status = FoodEntryStatus.ACTIVE,
+        createdAt = "2024-01-01T00:00:00Z",
+        updatedAt = "2024-01-01T00:00:00Z",
+    )
+
+    private fun pagedFoodResponse(vararg entries: FoodEntryResponse) = PagedFoodResponse(
+        items = entries.toList(),
+        page = 0,
+        propertySize = 200,
+        totalCount = entries.size,
+    )
+
+    @Test
+    fun `searchFood returns mapped food items`() = runTest {
+        coEvery { carbsClient.listFood(any(), any(), any(), any(), any()) } returns pagedFoodResponse(foodEntryResponse())
+        val params = defaultParams.copy(limit = 10, skip = 0)
+
+        val result = service.searchFood("user1", "Bearer token", "corr", params)
+
+        assertEquals(1, result.size)
+        assertEquals("food-1", result[0].identifier)
+        assertEquals("Apple", result[0].name)
+        assertEquals(21.0, result[0].carbs)
+    }
+
+    @Test
+    fun `searchFood applies skip and limit`() = runTest {
+        val items = (1..5).map { foodEntryResponse("food-$it") }.toTypedArray()
+        coEvery { carbsClient.listFood(any(), any(), any(), any(), any()) } returns pagedFoodResponse(*items)
+        val params = defaultParams.copy(limit = 2, skip = 2)
+
+        val result = service.searchFood("user1", "Bearer token", "corr", params)
+
+        assertEquals(2, result.size)
+        assertEquals("food-3", result[0].identifier)
+        assertEquals("food-4", result[1].identifier)
+    }
+
+    @Test
+    fun `getFood returns mapped food when found`() = runTest {
+        coEvery { carbsClient.getFood("user1", "Bearer token", "corr", "food-1") } returns foodEntryResponse()
+
+        val result = service.getFood("user1", "Bearer token", "corr", "food-1")
+
+        assertNotNull(result)
+        assertEquals("food-1", result.identifier)
+    }
+
+    @Test
+    fun `getFood returns null when not found`() = runTest {
+        coEvery { carbsClient.getFood("user1", "Bearer token", "corr", "missing") } returns null
+
+        val result = service.getFood("user1", "Bearer token", "corr", "missing")
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `createFood calls carbsClient and returns created food`() = runTest {
+        coEvery { carbsClient.createFood(any(), any(), any(), any()) } returns foodEntryResponse("server-id")
+
+        val food = Ns3Food(identifier = "temp", name = "Apple", carbs = 21.0, portionSize = 150.0)
+        val result = service.createFood("user1", "Bearer token", "corr", food)
+
+        assertEquals("server-id", result.identifier)
+        coVerify(exactly = 1) { carbsClient.createFood("user1", "Bearer token", "corr", any()) }
+    }
+
+    @Test
+    fun `updateFood calls carbsClient and returns updated food`() = runTest {
+        coEvery { carbsClient.updateFood(any(), any(), any(), "food-1", any()) } returns foodEntryResponse()
+
+        val food = Ns3Food(identifier = "food-1", name = "Apple", carbs = 21.0, portionSize = 150.0)
+        val result = service.updateFood("user1", "Bearer token", "corr", "food-1", food)
+
+        assertEquals("food-1", result.identifier)
+        coVerify(exactly = 1) { carbsClient.updateFood("user1", "Bearer token", "corr", "food-1", any()) }
+    }
+
+    @Test
+    fun `deleteFood calls carbsClient with permanent false`() = runTest {
+        coJustRun { carbsClient.deleteFood(any(), any(), any(), any(), any()) }
+
+        service.deleteFood("user1", "Bearer token", "corr", "food-1", permanent = false)
+
+        coVerify(exactly = 1) {
+            carbsClient.deleteFood("user1", "Bearer token", "corr", "food-1", permanent = false)
+        }
+    }
+
+    @Test
+    fun `deleteFood with permanent true calls carbsClient with permanent true`() = runTest {
+        coJustRun { carbsClient.deleteFood(any(), any(), any(), any(), any()) }
+
+        service.deleteFood("user1", "Bearer token", "corr", "food-1", permanent = true)
+
+        coVerify(exactly = 1) {
+            carbsClient.deleteFood("user1", "Bearer token", "corr", "food-1", permanent = true)
         }
     }
 }

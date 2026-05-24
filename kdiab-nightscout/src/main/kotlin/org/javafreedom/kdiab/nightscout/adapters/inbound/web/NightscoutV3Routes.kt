@@ -9,6 +9,7 @@ import io.ktor.server.routing.*
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3ListResponse
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Response
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
@@ -171,6 +172,86 @@ fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
                 val id = call.parameters["identifier"]!!
                 val permanent = call.request.queryParameters["permanent"] == "true"
                 service.deleteTreatment(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    id = id,
+                    permanent = permanent,
+                )
+                call.respond(Ns3Response<Unit>(status = 200))
+            }
+        }
+        route("/api/v3/food") {
+            get {
+                val principal = call.principal<UserPrincipal>()!!
+                val params = call.parseNs3SearchParams(maxLimit)
+                val foods = service.searchFood(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    params = params,
+                )
+                call.respond(Ns3ListResponse(status = 200, result = foods))
+            }
+            post {
+                val principal = call.principal<UserPrincipal>()!!
+                val food = call.receive<Ns3Food>()
+                val created = service.createFood(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    food = food,
+                )
+                call.response.header("Location", "/api/v3/food/${created.identifier}")
+                val createResponse = Ns3Response<Ns3Food>(status = 201, identifier = created.identifier)
+                call.respond(HttpStatusCode.Created, createResponse)
+            }
+            get("/{identifier}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val id = call.parameters["identifier"]!!
+                val food = service.getFood(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    id = id,
+                )
+                if (food == null) {
+                    call.respond(HttpStatusCode.NotFound, Ns3Response<Ns3Food>(status = 404))
+                } else {
+                    call.respond(Ns3Response(status = 200, result = food))
+                }
+            }
+            put("/{identifier}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val id = call.parameters["identifier"]!!
+                val food = call.receive<Ns3Food>()
+                val updated = service.updateFood(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    id = id,
+                    food = food,
+                )
+                call.respond(Ns3Response(status = 200, result = updated))
+            }
+            patch("/{identifier}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val id = call.parameters["identifier"]!!
+                val food = call.receive<Ns3Food>()
+                val updated = service.updateFood(
+                    userId = principal.userId.toString(),
+                    authorization = call.request.header("Authorization") ?: "",
+                    correlationId = call.request.header("X-Correlation-ID") ?: "",
+                    id = id,
+                    food = food,
+                )
+                call.respond(Ns3Response(status = 200, result = updated))
+            }
+            delete("/{identifier}") {
+                val principal = call.principal<UserPrincipal>()!!
+                val id = call.parameters["identifier"]!!
+                val permanent = call.request.queryParameters["permanent"] == "true"
+                service.deleteFood(
                     userId = principal.userId.toString(),
                     authorization = call.request.header("Authorization") ?: "",
                     correlationId = call.request.header("X-Correlation-ID") ?: "",
