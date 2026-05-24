@@ -255,7 +255,7 @@ fun Ns3DeviceStatus.toCreateTreatmentRequest(): CreateTreatmentRequest {
         pumpName?.let { put("pumpName", it) }
         reservoir?.let { put("reservoirUnits", it) }
         batteryPct?.let { put("batteryLevel", it) }
-        uploaderBattery?.let { put("uploaderBattery", it) }
+        uploaderBattery?.let { put("batteryLevel", it) }
         put("pumpConnected", pumpStatusNormal)
     }
     return CreateTreatmentRequest(

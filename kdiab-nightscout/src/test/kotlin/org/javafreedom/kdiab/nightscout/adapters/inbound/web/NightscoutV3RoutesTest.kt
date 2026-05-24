@@ -556,4 +556,30 @@ class NightscoutV3RoutesTest {
         assertEquals(HttpStatusCode.OK, response.status)
         assertContains(response.bodyAsText(), "result")
     }
+
+    // --- /api/v3/version and /api/v3/status lastModified ---
+
+    @Test
+    fun `GET api v3 version returns lastModified field`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/version")
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "lastModified")
+    }
+
+    @Test
+    fun `GET api v3 status returns lastModified field`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/status")
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "lastModified")
+    }
+
+    @Test
+    fun `GET api v3 version lastModified is stable across requests`() = v3RouteTest { _ ->
+        val body1 = client.get("/api/v3/version").bodyAsText()
+        val body2 = client.get("/api/v3/version").bodyAsText()
+        val regex = """"lastModified"\s*:\s*(\d+)""".toRegex()
+        val ts1 = regex.find(body1)?.groupValues?.get(1)
+        val ts2 = regex.find(body2)?.groupValues?.get(1)
+        assertEquals(ts1, ts2)
+    }
 }
