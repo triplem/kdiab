@@ -115,12 +115,14 @@ data class Ns3VersionResult(
     val version: String = "15.0.0",
     val apiVersion: String = "v3",
     val srvDate: Long,
+    val lastModified: Long? = null,
 )
 
 @Serializable
 data class Ns3StatusResult(
     val isAuthenticated: Boolean,
     val permissions: List<String> = emptyList(),
+    val lastModified: Long? = null,
 )
 
 data class Ns3SearchParams(
