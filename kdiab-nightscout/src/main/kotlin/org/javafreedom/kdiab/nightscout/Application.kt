@@ -25,10 +25,12 @@ import org.javafreedom.kdiab.common.plugins.configureSecurity
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 import org.javafreedom.kdiab.common.plugins.configureTracing
 import org.javafreedom.kdiab.nightscout.adapters.inbound.web.nightscoutRoutes
+import org.javafreedom.kdiab.nightscout.adapters.inbound.web.nightscoutV3Routes
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
+import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
 import org.javafreedom.kdiab.nightscout.domain.model.NightscoutStatus
 import org.javafreedom.kdiab.common.plugins.configureMetrics
@@ -38,6 +40,7 @@ private val logger = KotlinLogging.logger {}
 // Nightscout bridges AAPS, xDrip+, and Juggluco which may be on slow mobile connections.
 // The upstream common default of 10 s is too tight for these clients; keep 30 s here.
 private const val HTTP_REQUEST_TIMEOUT_MS = 30_000L
+private const val DEFAULT_API3_MAX_LIMIT = 1000
 
 fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 
@@ -81,6 +84,9 @@ fun Application.module() {
                     treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
                 )
             }
+            provide<NightscoutV3Service> {
+                NightscoutV3Service(measuresClient = MeasuresClient(httpClient.engine, measuresUrl))
+            }
         }
     }
 
@@ -120,6 +126,7 @@ fun Application.module() {
     })
 
     val nightscoutService: NightscoutService by dependencies
+    val nightscoutV3Service: NightscoutV3Service by dependencies
 
     routing {
 
@@ -137,5 +144,7 @@ fun Application.module() {
         }
 
         nightscoutRoutes(nightscoutService)
+        val maxLimit = environment.config.propertyOrNull("api3.maxLimit")?.getString()?.toInt() ?: DEFAULT_API3_MAX_LIMIT
+        nightscoutV3Routes(nightscoutV3Service, maxLimit)
     }
 }
