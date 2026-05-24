@@ -18,9 +18,11 @@ import org.javafreedom.kdiab.common.plugins.configureSecurity
 import org.javafreedom.kdiab.common.plugins.configureSecurityHeaders
 import org.javafreedom.kdiab.common.plugins.configureStatusPages
 import org.javafreedom.kdiab.common.plugins.configureTracing
+import org.javafreedom.kdiab.users.adapters.inbound.web.apiKeyRoutes
 import org.javafreedom.kdiab.users.adapters.inbound.web.doctorPatientRoutes
 import org.javafreedom.kdiab.users.adapters.inbound.web.registrationRoutes
 import org.javafreedom.kdiab.users.adapters.inbound.web.userRoutes
+import org.javafreedom.kdiab.users.application.service.ApiKeyService
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
 import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
@@ -69,6 +71,7 @@ fun Application.module() {
             clientId = kcAdminCfg.property("clientId").getString(),
             clientSecret = kcAdminCfg.property("clientSecret").getString(),
         )
+        val keycloakTokenEndpoint = kcAdminCfg.property("tokenEndpoint").getString()
         monitor.subscribe(ApplicationStopping) { keycloak.close() }
 
         val identityProvider: IdentityProviderPort = KeycloakIdentityProviderAdapter(keycloak)
@@ -93,6 +96,9 @@ fun Application.module() {
             }
             provide<RegistrationService> {
                 RegistrationService(identityProvider, settingsRepo, requiresApproval)
+            }
+            provide<ApiKeyService> {
+                ApiKeyService(keycloak, keycloakTokenEndpoint)
             }
         }
     }
@@ -136,6 +142,7 @@ fun Application.module() {
     val userService: UserService by dependencies
     val doctorPatientService: DoctorPatientService by dependencies
     val registrationService: RegistrationService by dependencies
+    val apiKeyService: ApiKeyService by dependencies
 
     val registrationEnabled = environment.config
         .propertyOrNull("registration.enabled")?.getString()?.toBoolean() ?: false
@@ -153,6 +160,7 @@ fun Application.module() {
         route("/api/v1") {
             userRoutes(userService)
             doctorPatientRoutes(doctorPatientService)
+            apiKeyRoutes(apiKeyService)
             if (registrationEnabled) {
                 registrationRoutes(registrationService)
             }

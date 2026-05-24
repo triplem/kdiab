@@ -36,3 +36,32 @@ data class KeycloakRole(
     val clientRole: Boolean? = null,
     val containerId: String? = null,
 )
+
+@Serializable
+data class KeycloakServiceClient(
+    val id: String? = null,
+    val clientId: String? = null,
+    val name: String? = null,
+    val enabled: Boolean = true,
+    val clientAuthenticatorType: String? = null,
+    val serviceAccountsEnabled: Boolean = false,
+    val standardFlowEnabled: Boolean = false,
+    val directAccessGrantsEnabled: Boolean = false,
+    val publicClient: Boolean = false,
+    val attributes: Map<String, String>? = null,
+)
+
+@Serializable
+data class KeycloakClientSecret(
+    val type: String? = null,
+    val value: String? = null,
+)
+
+data class KeycloakClientInfo(
+    val id: String,
+    val clientId: String,
+    val secret: String,
+    val name: String,
+    val expiresAt: kotlinx.datetime.Instant?,
+    val createdAt: kotlinx.datetime.Instant,
+)

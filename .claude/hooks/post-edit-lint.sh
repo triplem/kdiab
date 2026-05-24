@@ -35,11 +35,14 @@ EXT="${FILE_PATH##*.}"
 
 case "$EXT" in
   kt)
-    # ktlint check on single file
-    if command -v ktlint &>/dev/null; then
-      OUTPUT=$(ktlint "$FILE_PATH" 2>&1 | head -30)
-    elif [ -f "./gradlew" ]; then
-      OUTPUT=$(./gradlew ktlintCheck -PktlintTarget="$FILE_PATH" -q 2>&1 | head -30)
+    # Run detekt on the subproject that owns this file.
+    if [ -f "./gradlew" ]; then
+      # Derive subproject from path: the first path segment under PROJECT_DIR is the Gradle subproject.
+      REL_PATH="${FILE_PATH#$PROJECT_DIR/}"
+      SUBPROJECT=$(echo "$REL_PATH" | cut -d'/' -f1)
+      if ./gradlew ":${SUBPROJECT}:tasks" -q 2>/dev/null | grep -q "detektMain"; then
+        OUTPUT=$(./gradlew ":${SUBPROJECT}:detektMain" -q 2>&1 | grep -v "^>" | head -30)
+      fi
     fi
     ;;
   java)

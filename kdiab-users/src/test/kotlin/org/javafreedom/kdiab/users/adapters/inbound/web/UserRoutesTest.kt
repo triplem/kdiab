@@ -18,9 +18,11 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.common.domain.model.Role
+import org.javafreedom.kdiab.users.application.service.ApiKeyService
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
 import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
+import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
@@ -34,6 +36,7 @@ private fun Application.installMockDi(
     mockSettingsRepo: UserSettingsRepository,
     mockDoctorRepo: DoctorPatientRepository,
 ) {
+    val mockKeycloak = mockk<KeycloakAdminClient>(relaxed = true)
     install(DI) { }
     dependencies {
         provide<IdentityProviderPort> { mockIdentityProvider }
@@ -42,6 +45,7 @@ private fun Application.installMockDi(
         provide<UserService> { UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo) }
         provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
         provide<RegistrationService> { RegistrationService(mockIdentityProvider, mockSettingsRepo, false) }
+        provide<ApiKeyService> { ApiKeyService(mockKeycloak, "http://localhost:8081/realms/kdiab/protocol/openid-connect/token") }
     }
 }
 

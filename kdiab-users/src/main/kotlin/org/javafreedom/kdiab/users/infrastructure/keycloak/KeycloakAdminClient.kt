@@ -27,6 +27,7 @@ import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 private val logger = KotlinLogging.logger {}
 
 private val PROTECTED_KC_ATTRIBUTES = setOf("roles")
+private const val RANDOM_SUFFIX_LENGTH = 8
 
 private const val DEFAULT_FAILURE_THRESHOLD = 5
 private const val DEFAULT_RESET_TIMEOUT_MS = 30_000L
@@ -226,6 +227,134 @@ class KeycloakAdminClient(
             check(response.status.isSuccess()) { "getRealmRole failed: ${response.status}" }
             response.body()
         }
+    }
+
+    suspend fun createServiceClient(
+        userId: String,
+        name: String,
+        expiresAt: kotlinx.datetime.Instant?,
+    ): KeycloakClientInfo {
+        val randomSuffix = (1..RANDOM_SUFFIX_LENGTH).map { ('a'..'z').random() }.joinToString("")
+        val clientId = "device-$userId-$randomSuffix"
+        val auth = authHeader()
+
+        val clientUuid = circuitBreaker.execute {
+            val response = httpClient.post(adminUrl("clients")) {
+                header(HttpHeaders.Authorization, auth)
+                contentType(ContentType.Application.Json)
+                setBody(KeycloakServiceClient(
+                    clientId = clientId,
+                    name = name,
+                    enabled = true,
+                    clientAuthenticatorType = "client-secret",
+                    serviceAccountsEnabled = true,
+                    standardFlowEnabled = false,
+                    directAccessGrantsEnabled = false,
+                    publicClient = false,
+                    attributes = buildMap {
+                        put("kdiab.owner.userId", userId)
+                        put("kdiab.key.name", name)
+                        if (expiresAt != null) put("kdiab.key.expires_at", expiresAt.toString())
+                    },
+                ))
+            }
+            check(response.status == HttpStatusCode.Created) { "createServiceClient failed: ${response.status}" }
+            val location = response.headers[HttpHeaders.Location]
+                ?: error("Keycloak did not return Location header after client creation")
+            location.substringAfterLast("/")
+        }
+
+        val secretValue = circuitBreaker.execute {
+            val response = httpClient.get(adminUrl("clients", clientUuid, "client-secret")) {
+                header(HttpHeaders.Authorization, auth)
+            }
+            check(response.status.isSuccess()) { "getClientSecret failed: ${response.status}" }
+            response.body<KeycloakClientSecret>().value
+                ?: error("Keycloak returned no secret value for client $clientUuid")
+        }
+
+        val serviceAccountUserId = circuitBreaker.execute {
+            val response = httpClient.get(adminUrl("clients", clientUuid, "service-account-user")) {
+                header(HttpHeaders.Authorization, auth)
+            }
+            check(response.status.isSuccess()) { "getServiceAccountUser failed: ${response.status}" }
+            response.body<KeycloakUser>().id
+                ?: error("Keycloak returned no id for service account user of client $clientUuid")
+        }
+
+        val patientRole = getRealmRole("PATIENT")
+        circuitBreaker.execute {
+            val response = httpClient.post(adminUrl("users", serviceAccountUserId, "role-mappings", "realm")) {
+                header(HttpHeaders.Authorization, auth)
+                contentType(ContentType.Application.Json)
+                setBody(listOf(patientRole))
+            }
+            check(response.status.isSuccess()) { "assignRoles to service account failed: ${response.status}" }
+        }
+
+        logger.info { "keycloak_admin action=create_service_client clientUuid=$clientUuid userId=$userId" }
+        return KeycloakClientInfo(
+            id = clientUuid,
+            clientId = clientId,
+            secret = secretValue,
+            name = name,
+            expiresAt = expiresAt,
+            createdAt = kotlinx.datetime.Clock.System.now(),
+        )
+    }
+
+    suspend fun listServiceClients(userId: String): List<KeycloakClientInfo> {
+        val auth = authHeader()
+        val clients = circuitBreaker.execute {
+            val response = httpClient.get(adminUrl("clients")) {
+                header(HttpHeaders.Authorization, auth)
+                parameter("clientId", "device-$userId-")
+                parameter("search", "true")
+            }
+            check(response.status.isSuccess()) { "listServiceClients failed: ${response.status}" }
+            response.body<List<KeycloakServiceClient>>()
+        }
+        return clients
+            .filter { it.attributes?.get("kdiab.owner.userId") == userId }
+            .mapNotNull { client ->
+                val id = client.id ?: return@mapNotNull null
+                val clientId = client.clientId ?: return@mapNotNull null
+                val name = client.attributes?.get("kdiab.key.name") ?: client.name ?: return@mapNotNull null
+                val expiresAtStr = client.attributes?.get("kdiab.key.expires_at")?.takeIf { it.isNotBlank() }
+                val expiresAt = expiresAtStr?.let {
+                    runCatching { kotlinx.datetime.Instant.parse(it) }.getOrNull()
+                }
+                KeycloakClientInfo(
+                    id = id,
+                    clientId = clientId,
+                    secret = "",
+                    name = name,
+                    expiresAt = expiresAt,
+                    createdAt = kotlinx.datetime.Clock.System.now(),
+                )
+            }
+    }
+
+    suspend fun deleteServiceClient(clientUuid: String, ownerUserId: String) {
+        val auth = authHeader()
+        circuitBreaker.execute {
+            val getResp = httpClient.get(adminUrl("clients", clientUuid)) {
+                header(HttpHeaders.Authorization, auth)
+            }
+            if (getResp.status == HttpStatusCode.NotFound) {
+                throw ResourceNotFoundException("API key $clientUuid not found")
+            }
+            check(getResp.status.isSuccess()) { "getClient failed: ${getResp.status}" }
+            val client = getResp.body<KeycloakServiceClient>()
+            if (client.attributes?.get("kdiab.owner.userId") != ownerUserId) {
+                throw ResourceNotFoundException("API key $clientUuid not found")
+            }
+            val delResp = httpClient.delete(adminUrl("clients", clientUuid)) {
+                header(HttpHeaders.Authorization, auth)
+            }
+            check(delResp.status.isSuccess()) { "deleteServiceClient failed: ${delResp.status}" }
+        }
+        logger.info { "keycloak_admin action=delete_service_client clientUuid=$clientUuid userId=$ownerUserId" }
     }
 
     fun close() {

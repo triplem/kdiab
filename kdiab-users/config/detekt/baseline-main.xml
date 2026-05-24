@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>RedundantSuspendModifier:KeycloakAdminClient.kt$KeycloakAdminClient$suspend</ID>
+    <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$KeycloakClientInfo( id = id, clientId = clientId, secret = "", name = name, expiresAt = expiresAt, createdAt = kotlinx.datetime.Clock.System.now(), )</ID>
+    <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val clientId = client.clientId ?: return@mapNotNull null</ID>
+    <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val expiresAt = expiresAtStr?.let { runCatching { kotlinx.datetime.Instant.parse(it) }.getOrNull() }</ID>
+    <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val expiresAtStr = client.attributes?.get("kdiab.key.expires_at")?.takeIf { it.isNotBlank() }</ID>
+    <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val id = client.id ?: return@mapNotNull null</ID>
+    <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val name = client.attributes?.get("kdiab.key.name") ?: client.name ?: return@mapNotNull null</ID>
+  </CurrentIssues>
+</SmellBaseline>
