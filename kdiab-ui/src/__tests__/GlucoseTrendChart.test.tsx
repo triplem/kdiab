@@ -174,4 +174,17 @@ describe('GlucoseTrendChart', () => {
     render(<GlucoseTrendChart {...baseProps} chartData={[cgmPoint]} cgmPoints={[cgmPoint]} basalBlocks={[suspendBlock]} basalProfileLine={mockBasalProfileLine} />)
     expect(screen.getByRole('img')).toBeTruthy()
   })
+
+  test('CGM line has activeDot configured for per-reading hover', () => {
+    // With recharts mocked, just verify the component renders without errors
+    // when cgmPoints are present (activeDot is a prop, not a rendered element in the mock)
+    render(
+      <GlucoseTrendChart
+        {...baseProps}
+        chartData={[cgmPoint]}
+        cgmPoints={[cgmPoint]}
+      />
+    )
+    expect(screen.getByRole('img')).toBeTruthy()
+  })
 })

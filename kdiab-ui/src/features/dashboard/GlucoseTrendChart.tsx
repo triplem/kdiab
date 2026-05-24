@@ -268,6 +268,7 @@ export function GlucoseTrendChart({
               dataKey="sgv"
               stroke="var(--chart-median)"
               dot={false}
+              activeDot={{ r: 5, strokeWidth: 1.5, stroke: 'var(--chart-median)', fill: '#fff' }}
               strokeWidth={2}
               isAnimationActive={false}
               connectNulls={false}
