@@ -177,7 +177,16 @@ class NightscoutServiceTest {
 
     @Test
     fun `postTreatments maps bolus treatment to treatments client`() = runTest {
-        coJustRun { treatmentsClient.postTreatment(any(), any(), any(), any()) }
+        val mockTreatmentResponse = TreatmentResponse(
+            id = "t1",
+            userId = "user1",
+            treatedAt = "2024-01-01T08:00:00Z",
+            createdAt = "2024-01-01T08:00:00Z",
+            type = TreatmentType.BOLUS,
+            data = buildJsonObject { put("insulin", 3.5) },
+            status = TreatmentResponse.Status.ACTIVE,
+        )
+        coEvery { treatmentsClient.postTreatment(any(), any(), any(), any()) } returns mockTreatmentResponse
         val treatments = listOf(
             NightscoutTreatment(
                 id = "t1",

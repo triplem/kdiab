@@ -11,8 +11,10 @@ import io.ktor.client.statement.request
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.DefaultApi
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.BulkTreatmentRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.CreateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentResponse
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.UpdateTreatmentRequest
 import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
@@ -101,7 +103,7 @@ class TreatmentsClient(
         authorization: String,
         correlationId: String,
         request: CreateTreatmentRequest,
-    ) {
+    ): TreatmentResponse {
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",
@@ -133,5 +135,70 @@ class TreatmentsClient(
             )
         }
         logger.info { "Posted treatment for nightscout userId=$userId" }
+        return httpResponse.body()
+    }
+
+    suspend fun getTreatment(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+    ): TreatmentResponse? = getTreatments(userId, authorization, correlationId).firstOrNull { it.id == id }
+
+    @Suppress("LongParameterList")
+    suspend fun updateTreatment(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+        request: UpdateTreatmentRequest,
+    ): TreatmentResponse {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val api = DefaultApi(
+            baseUrl = "$baseUrl/api/v1",
+            httpClientEngine = httpClientEngine,
+            httpClientConfig = { config ->
+                config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+            },
+        ).apply { setBearerToken(token) }
+        val httpResponse = circuitBreaker.execute {
+            api.updateTreatment(userId = userId, treatmentId = id, updateTreatmentRequest = request)
+        }
+        if (!httpResponse.success) throw UpstreamException(
+            service = "treatments", statusCode = httpResponse.status,
+            reason = httpResponse.response.status.description,
+            url = httpResponse.response.request.url.toString(),
+        )
+        return httpResponse.body()
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun deleteTreatment(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+        permanent: Boolean,
+    ) {
+        val token = authorization.removePrefix("Bearer ").trim()
+        val api = DefaultApi(
+            baseUrl = "$baseUrl/api/v1",
+            httpClientEngine = httpClientEngine,
+            httpClientConfig = { config ->
+                config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+            },
+        ).apply { setBearerToken(token) }
+        val bulkRequest = BulkTreatmentRequest(treatmentIds = listOf(id))
+        val httpResponse = circuitBreaker.execute {
+            if (permanent) api.deleteTreatments(userId = userId, bulkTreatmentRequest = bulkRequest)
+            else api.archiveTreatments(userId = userId, bulkTreatmentRequest = bulkRequest)
+        }
+        if (!httpResponse.success) throw UpstreamException(
+            service = "treatments", statusCode = httpResponse.status,
+            reason = httpResponse.response.status.description,
+            url = httpResponse.response.request.url.toString(),
+        )
     }
 }

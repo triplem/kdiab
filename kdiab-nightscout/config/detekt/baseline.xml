@@ -22,5 +22,11 @@
     <ID>UnreachableCode:NightscoutMapper.kt$val treatmentType = TREATMENT_TYPE_MAP.entries .firstOrNull { it.value == eventType } ?.key ?.let { runCatching { TreatmentType.valueOf(it) }.getOrNull() } ?: return null</ID>
     <ID>UnreachableCode:NightscoutMapper.kt$val data = buildJsonObject { insulin?.let { put("insulin", it) } carbs?.let { put("carbs", it) } }</ID>
     <ID>UnreachableCode:NightscoutMapper.kt$return CreateTreatmentRequest( treatedAt = createdAt, type = treatmentType, data = data, notes = notes, )</ID>
+    <ID>CyclomaticComplexMethod:NightscoutV3Routes.kt$fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int)</ID>
+    <ID>LongMethod:Application.kt$fun Application.module()</ID>
+    <ID>LongMethod:NightscoutV3Routes.kt$fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int)</ID>
+    <ID>UnreachableCode:NightscoutV3Mapper.kt$val treatmentType = NS3_TREATMENT_TYPE_MAP.entries .firstOrNull { it.value == eventType } ?.key ?.let { runCatching { TreatmentType.valueOf(it) }.getOrNull() } ?: return null</ID>
+    <ID>UnreachableCode:NightscoutV3Mapper.kt$val data = buildJsonObject { insulin?.let { put("insulin", it) } carbs?.let { put("carbs", it) } }</ID>
+    <ID>UnreachableCode:NightscoutV3Mapper.kt$return CreateTreatmentRequest(treatedAt = dateString, type = treatmentType, data = data, notes = notes)</ID>
   </CurrentIssues>
 </SmellBaseline>

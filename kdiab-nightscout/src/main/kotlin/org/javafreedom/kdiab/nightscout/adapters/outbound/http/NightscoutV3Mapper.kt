@@ -2,6 +2,7 @@ package org.javafreedom.kdiab.nightscout.adapters.outbound.http
 
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -10,7 +11,29 @@ import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureResp
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureSource
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.UpdateMeasureRequest
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.CreateTreatmentRequest
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentResponse
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentType
+import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.UpdateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
+
+// Reverse map: kdiab TreatmentType key → Nightscout eventType string
+internal val NS3_TREATMENT_TYPE_MAP = mapOf(
+    "BOLUS" to "Bolus",
+    "CORRECTION_BOLUS" to "Correction Bolus",
+    "COMBO_BOLUS" to "Combo Bolus",
+    "BASAL" to "Temp Basal",
+    "TEMP_BASAL" to "Temp Basal",
+    "CARBS" to "Carbs (and/or Bolus)",
+    "EXERCISE" to "Exercise",
+    "NOTE" to "Note",
+    "BG_CHECK" to "BG Check",
+    "PUMP_SUSPEND" to "Pump Suspend",
+    "SITE_CHANGE" to "Site Change",
+    "SENSOR_INSERT" to "Sensor Start",
+    "INSULIN_CHANGE" to "Insulin Change",
+)
 
 private const val MMOL_TO_MGDL = 18.0
 private const val MMOL_ROUND_FACTOR = 10.0
@@ -69,4 +92,44 @@ fun Ns3Entry.toUpdateMeasureRequest(glucoseUnit: String): UpdateMeasureRequest {
         direction?.let { put("direction", it) }
     }
     return UpdateMeasureRequest(measuredAt = dateString, data = data)
+}
+
+fun TreatmentResponse.toNs3Treatment(): Ns3Treatment {
+    val millis = runCatching { Instant.parse(treatedAt).toEpochMilliseconds() }.getOrDefault(0L)
+    val nsEventType = NS3_TREATMENT_TYPE_MAP[type.value] ?: type.value
+    val insulin = data["insulin"]?.jsonPrimitive?.runCatching { double }?.getOrNull()
+        ?: data["units"]?.jsonPrimitive?.runCatching { double }?.getOrNull()
+    val carbs = data["carbs"]?.jsonPrimitive?.runCatching { double }?.getOrNull()
+    return Ns3Treatment(
+        identifier = id,
+        date = millis,
+        dateString = treatedAt,
+        eventType = nsEventType,
+        insulin = insulin,
+        carbs = carbs,
+        notes = notes,
+        srvCreated = millis,
+        srvModified = millis,
+    )
+}
+
+fun Ns3Treatment.toCreateTreatmentRequest(): CreateTreatmentRequest? {
+    val treatmentType = NS3_TREATMENT_TYPE_MAP.entries
+        .firstOrNull { it.value == eventType }
+        ?.key
+        ?.let { runCatching { TreatmentType.valueOf(it) }.getOrNull() }
+        ?: return null
+    val data = buildJsonObject {
+        insulin?.let { put("insulin", it) }
+        carbs?.let { put("carbs", it) }
+    }
+    return CreateTreatmentRequest(treatedAt = dateString, type = treatmentType, data = data, notes = notes)
+}
+
+fun Ns3Treatment.toUpdateTreatmentRequest(): UpdateTreatmentRequest {
+    val data = buildJsonObject {
+        insulin?.let { put("insulin", it) }
+        carbs?.let { put("carbs", it) }
+    }
+    return UpdateTreatmentRequest(treatedAt = dateString, data = data, notes = notes)
 }
