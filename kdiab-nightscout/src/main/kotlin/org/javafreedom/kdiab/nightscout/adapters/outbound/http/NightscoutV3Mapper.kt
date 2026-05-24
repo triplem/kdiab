@@ -21,10 +21,13 @@ import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.Treatment
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.UpdateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3BasalSegment
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3DeviceStatus
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 private const val DEFAULT_PORTION_GRAMS = 100.0
 
@@ -210,3 +213,54 @@ fun Ns3Profile.toCreateProfileRequest(): CreateProfileRequest = CreateProfileReq
     insulinType = UNKNOWN_INSULIN_TYPE,
     durationOfAction = (dia * MINUTES_PER_HOUR).toInt(),
 )
+
+@Suppress("CyclomaticComplexMethod")
+fun TreatmentResponse.toNs3DeviceStatus(): Ns3DeviceStatus {
+    val millis = runCatching { Instant.parse(treatedAt).toEpochMilliseconds() }.getOrDefault(0L)
+    val deviceName = data["device"]?.jsonPrimitive?.content
+    val batteryLevel = data["batteryLevel"]?.jsonPrimitive?.runCatching { int }?.getOrNull()
+    val reservoirUnits = data["reservoirUnits"]?.jsonPrimitive?.runCatching { double }?.getOrNull()
+    val pumpName = data["pumpName"]?.jsonPrimitive?.content
+    val pumpConnected = data["pumpConnected"]?.jsonPrimitive?.content?.toBooleanStrictOrNull()
+    val hasPumpData = pumpName != null || reservoirUnits != null || batteryLevel != null || pumpConnected != null
+    val pumpMap: Map<String, kotlinx.serialization.json.JsonElement>? =
+        if (hasPumpData) {
+            buildMap {
+                pumpName?.let { put("name", JsonPrimitive(it)) }
+                reservoirUnits?.let { put("reservoir", JsonPrimitive(it)) }
+                batteryLevel?.let { put("battery", buildJsonObject { put("percent", it) }) }
+                pumpConnected?.let { put("status", buildJsonObject { put("status", if (it) "normal" else "suspended") }) }
+            }
+        } else null
+    return Ns3DeviceStatus(
+        identifier = id,
+        date = millis,
+        dateString = treatedAt,
+        device = deviceName,
+        uploaderBattery = batteryLevel,
+        pump = pumpMap,
+        srvCreated = millis,
+        srvModified = millis,
+    )
+}
+
+fun Ns3DeviceStatus.toCreateTreatmentRequest(): CreateTreatmentRequest {
+    val pumpMap = pump
+    val pumpName = (pumpMap?.get("name") as? JsonPrimitive)?.content
+    val reservoir = (pumpMap?.get("reservoir") as? JsonPrimitive)?.runCatching { double }?.getOrNull()
+    val batteryPct = (pumpMap?.get("battery") as? JsonObject)?.get("percent")?.jsonPrimitive?.runCatching { int }?.getOrNull()
+    val pumpStatusNormal = (pumpMap?.get("status") as? JsonObject)?.get("status")?.jsonPrimitive?.content == "normal"
+    val dataObj = buildJsonObject {
+        device?.let { put("device", it) }
+        pumpName?.let { put("pumpName", it) }
+        reservoir?.let { put("reservoirUnits", it) }
+        batteryPct?.let { put("batteryLevel", it) }
+        uploaderBattery?.let { put("batteryLevel", it) }
+        put("pumpConnected", pumpStatusNormal)
+    }
+    return CreateTreatmentRequest(
+        treatedAt = dateString,
+        type = TreatmentType.DEVICE_STATUS,
+        data = dataObj,
+    )
+}
