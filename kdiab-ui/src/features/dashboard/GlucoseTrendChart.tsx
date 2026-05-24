@@ -205,7 +205,8 @@ export function GlucoseTrendChart({
                 if (name === 'marker') {
                   const ttype = entry.payload?.treatmentType ?? ''
                   const lbl = entry.payload?.label ?? ''
-                  return [lbl || ttype, ttype]
+                  const typeName = t(`treatmentModal.types.${ttype}`, { defaultValue: ttype })
+                  return [lbl ? `${typeName}: ${lbl}` : typeName, typeName]
                 }
                 if (name === 'basalSched') return null
                 if (name === 'basalDelivered') return null
