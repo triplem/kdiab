@@ -144,7 +144,8 @@ fun Application.module() {
         }
 
         nightscoutRoutes(nightscoutService)
-        val maxLimit = environment.config.propertyOrNull("api3.maxLimit")?.getString()?.toInt() ?: DEFAULT_API3_MAX_LIMIT
+        val maxLimit = environment.config.propertyOrNull("api3.maxLimit")
+            ?.getString()?.toInt() ?: DEFAULT_API3_MAX_LIMIT
         nightscoutV3Routes(nightscoutV3Service, maxLimit)
     }
 }
