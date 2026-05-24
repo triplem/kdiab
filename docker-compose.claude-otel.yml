@@ -1,0 +1,144 @@
+# Standalone Claude Code OpenTelemetry stack.
+# Completely separate from the kdiab observability stack — dedicated network and
+# non-overlapping ports. Both stacks can run simultaneously.
+#
+# Usage:
+#   ./claude-otel-up.sh           # recommended — starts stack and prints service URLs
+#   docker compose -f docker-compose.claude-otel.yml up -d
+#
+# Port map (kdiab otel ports listed for reference — no overlap):
+#   OTLP gRPC   4327:4317  (kdiab: 4317)
+#   OTLP HTTP   4328:4318  (kdiab: 4318)
+#   Jaeger UI   16696:16686 (kdiab: 16686)
+#   Prometheus  9095:9090  (kdiab: 9090)
+#   Grafana     3015:3000  (kdiab: 3010)
+
+services:
+  claude-otel-collector:
+    container_name: claude-otel-collector
+    # Pin to digest when available: otel/opentelemetry-collector-contrib:0.127.0@sha256:<digest>
+    image: otel/opentelemetry-collector-contrib:0.127.0
+    command: ["--config=/etc/otel/otel-collector-config.yaml"]
+    volumes:
+      - ./config/claude-otel/otel-collector-config.yaml:/etc/otel/otel-collector-config.yaml:ro
+    ports:
+      - "4327:4317"   # OTLP gRPC
+      - "4328:4318"   # OTLP HTTP
+    networks:
+      - claude-otel
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:13133"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+  claude-jaeger:
+    container_name: claude-jaeger
+    # Pin to digest when available: jaegertracing/jaeger:2.7.0@sha256:<digest>
+    image: jaegertracing/jaeger:2.7.0
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16696:16686"   # Jaeger UI
+    networks:
+      - claude-otel
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:16686"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+
+  claude-prometheus:
+    container_name: claude-prometheus
+    # Pin to digest when available: prom/prometheus:v3.4.0@sha256:<digest>
+    image: prom/prometheus:v3.4.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./config/claude-otel/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_claude_data:/prometheus
+    ports:
+      - "9095:9090"   # Prometheus UI
+    networks:
+      - claude-otel
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+  claude-grafana:
+    container_name: claude-grafana
+    # Pin to digest when available: grafana/grafana:12.0.1@sha256:<digest>
+    image: grafana/grafana:12.0.1
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_claude_data:/var/lib/grafana
+      - ./config/claude-otel/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/claude-otel/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3015:3000"   # Grafana UI
+    depends_on:
+      claude-prometheus:
+        condition: service_healthy
+      claude-jaeger:
+        condition: service_healthy
+    networks:
+      - claude-otel
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+networks:
+  claude-otel:
+    name: claude-otel
+    driver: bridge
+
+volumes:
+  prometheus_claude_data:
+  grafana_claude_data:
