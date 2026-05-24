@@ -458,9 +458,9 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 version returns 401 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 version returns 200 without token`() = v3RouteTest { _ ->
         val response = client.get("/api/v3/version")
-        assertEquals(HttpStatusCode.Unauthorized, response.status)
+        assertEquals(HttpStatusCode.OK, response.status)
     }
 
     @Test
@@ -474,9 +474,9 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 status returns 401 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 status returns 200 without token`() = v3RouteTest { _ ->
         val response = client.get("/api/v3/status")
-        assertEquals(HttpStatusCode.Unauthorized, response.status)
+        assertEquals(HttpStatusCode.OK, response.status)
     }
 
     @Test

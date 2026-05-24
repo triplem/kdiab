@@ -23,28 +23,29 @@ import org.javafreedom.kdiab.nightscout.domain.model.Ns3VersionResult
 
 @Suppress("LongMethod")
 fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
+    // NS3 protocol requires version and status to be publicly accessible before auth
+    get("/api/v3/version") {
+        call.respond(
+            Ns3Response(
+                status = 200,
+                result = Ns3VersionResult(srvDate = System.currentTimeMillis()),
+            )
+        )
+    }
+
+    get("/api/v3/status") {
+        call.respond(
+            Ns3Response(
+                status = 200,
+                result = Ns3StatusResult(
+                    isAuthenticated = true,
+                    permissions = listOf("*:*", "api:read", "api:create", "api:update", "api:delete"),
+                ),
+            )
+        )
+    }
+
     authenticate("auth-jwt") {
-        get("/api/v3/version") {
-            call.respond(
-                Ns3Response(
-                    status = 200,
-                    result = Ns3VersionResult(srvDate = System.currentTimeMillis()),
-                )
-            )
-        }
-
-        get("/api/v3/status") {
-            call.respond(
-                Ns3Response(
-                    status = 200,
-                    result = Ns3StatusResult(
-                        isAuthenticated = true,
-                        permissions = listOf("*:*", "api:read", "api:create", "api:update", "api:delete"),
-                    ),
-                )
-            )
-        }
-
         get("/api/v3/lastModified") {
             val now = System.currentTimeMillis()
             call.respond(
