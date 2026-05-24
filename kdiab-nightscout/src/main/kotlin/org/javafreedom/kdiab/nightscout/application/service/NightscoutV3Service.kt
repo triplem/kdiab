@@ -2,15 +2,20 @@ package org.javafreedom.kdiab.nightscout.application.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.Instant
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateFoodRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateMeasureRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toNs3Entry
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toNs3Food
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toNs3Treatment
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateFoodRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateMeasureRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
 
@@ -19,6 +24,7 @@ private val logger = KotlinLogging.logger {}
 class NightscoutV3Service(
     private val measuresClient: MeasuresClient,
     private val treatmentsClient: TreatmentsClient,
+    private val carbsClient: CarbsClient,
 ) {
 
     @Suppress("LongParameterList")
@@ -158,6 +164,67 @@ class NightscoutV3Service(
     ) {
         treatmentsClient.deleteTreatment(userId, authorization, correlationId, id, permanent)
         logger.info { "Deleted v3 treatment id=$id userId=$userId permanent=$permanent" }
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun searchFood(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        params: Ns3SearchParams,
+    ): List<Ns3Food> {
+        return carbsClient.listFood(userId, authorization, correlationId)
+            .items
+            .map { it.toNs3Food() }
+            .drop(params.skip)
+            .take(params.limit)
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun getFood(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+    ): Ns3Food? = carbsClient.getFood(userId, authorization, correlationId, id)?.toNs3Food()
+
+    @Suppress("LongParameterList")
+    suspend fun createFood(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        food: Ns3Food,
+    ): Ns3Food {
+        val request = food.toCreateFoodRequest()
+        val created = carbsClient.createFood(userId, authorization, correlationId, request)
+        logger.info { "Created v3 food identifier=${created.id} userId=$userId" }
+        return created.toNs3Food()
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun updateFood(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+        food: Ns3Food,
+    ): Ns3Food {
+        val request = food.toUpdateFoodRequest()
+        val updated = carbsClient.updateFood(userId, authorization, correlationId, id, request)
+        logger.info { "Updated v3 food id=$id userId=$userId" }
+        return updated.toNs3Food()
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun deleteFood(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+        permanent: Boolean,
+    ) {
+        carbsClient.deleteFood(userId, authorization, correlationId, id, permanent)
+        logger.info { "Deleted v3 food id=$id userId=$userId permanent=$permanent" }
     }
 }
 

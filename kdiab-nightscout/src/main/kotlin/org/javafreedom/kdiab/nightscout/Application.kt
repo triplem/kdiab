@@ -97,6 +97,7 @@ fun Application.module() {
                 NightscoutV3Service(
                     measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
                     treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
+                    carbsClient = CarbsClient(httpClient.engine, carbsUrl),
                 )
             }
             provide<CarbsClient> { CarbsClient(httpClient.engine, carbsUrl) }
