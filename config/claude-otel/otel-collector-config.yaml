@@ -15,6 +15,17 @@ processors:
     timeout: 1s
     send_batch_size: 512
 
+connectors:
+  # Derives metrics from traces — generates traces_spanmetrics_calls_total
+  # and traces_spanmetrics_duration_milliseconds_* for the Prometheus pipeline.
+  spanmetrics:
+    histogram:
+      explicit:
+        buckets: [1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1000ms, 2500ms, 5000ms]
+    dimensions:
+      - name: service.name
+      - name: span.kind
+
 exporters:
   otlp/jaeger:
     endpoint: claude-jaeger:4317
@@ -29,8 +40,10 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/jaeger]
+      # spanmetrics connector consumes traces and emits derived metrics
+      exporters: [otlp/jaeger, spanmetrics]
     metrics:
-      receivers: [otlp]
+      # spanmetrics connector feeds the metrics pipeline alongside any OTLP metrics
+      receivers: [otlp, spanmetrics]
       processors: [batch]
       exporters: [prometheus]
