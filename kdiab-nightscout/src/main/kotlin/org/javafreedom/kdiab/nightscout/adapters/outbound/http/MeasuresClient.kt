@@ -157,7 +157,7 @@ class MeasuresClient(
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",
-            httpClientEngine = httpClient.engine,
+            httpClientEngine = httpClientEngine,
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
@@ -185,7 +185,7 @@ class MeasuresClient(
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",
-            httpClientEngine = httpClient.engine,
+            httpClientEngine = httpClientEngine,
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
