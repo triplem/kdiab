@@ -1,0 +1,419 @@
+= Nightscout v3 Collection Mapping Reference
+:toc: left
+:toclevels: 3
+
+This document describes how each kdiab domain type maps to a Nightscout API v3 collection document.
+It is the primary reference for anyone maintaining or extending the translation layer in `kdiab-nightscout`.
+
+All translation logic lives in:
+
+* `adapters/outbound/http/NightscoutV3Mapper.kt` — field-level mapping functions for entries
+* `adapters/inbound/web/NightscoutV3Routes.kt` — route handlers that extract the JWT `glucoseUnit` claim
+* `application/service/NightscoutV3Service.kt` — orchestration (pagination, sorting, upstream delegation)
+* `adapters/outbound/http/CarbsClient.kt` — food CRUD to kdiab-carbs
+* `adapters/outbound/http/ProfilesClient.kt` — profile CRUD to kdiab-profiles
+
+== Collection: entries
+
+Maps to `kdiab-measures`. CGM (`type=CGM`) and BGM (`type=BGM`) measurements are the only measure
+types exposed via the Nightscout protocol; other types (BLOOD_PRESSURE, WEIGHT, PULSE) are silently
+excluded.
+
+*Upstream endpoint:* `GET/POST/PUT/DELETE /api/v1/users/{userId}/measures`
+
+=== Field Mapping
+
+|===
+| NS v3 field | kdiab field | Notes
+
+| `identifier`
+| `MeasureResponse.id`
+| UUID string; stable across reads
+
+| `date`
+| `Instant.parse(measuredAt).toEpochMilliseconds()`
+| Epoch milliseconds (Long)
+
+| `dateString`
+| `MeasureResponse.measuredAt`
+| ISO-8601 string as stored; timezone is UTC
+
+| `type`
+| `MeasureType.CGM` → `"sgv"` / `MeasureType.BGM` → `"mbg"`
+| Determined by the `type` field on the upstream response
+
+| `sgv`
+| `data["sgv"]` or `data["value"]`
+| Integer in kdiab (always mg/dL internally); converted to mmol/L (one decimal place) when JWT `glucose_unit` claim is `"mmol/L"`
+
+| `direction`
+| `data["direction"]`
+| String arrow label, e.g. `"Flat"`, `"FortyFiveUp"` — passed through unchanged
+
+| `device`
+| static `"kdiab"`
+| Constant; not stored in kdiab
+
+| `srvCreated`
+| `Instant.parse(measuredAt).toEpochMilliseconds()`
+| Approximated from `measuredAt` — kdiab has no separate server-creation timestamp
+
+| `srvModified`
+| `Instant.parse(measuredAt).toEpochMilliseconds()`
+| Same approximation as `srvCreated`
+|===
+
+=== Glucose Unit Conversion
+
+The `glucoseUnit` claim is read from the JWT `glucose_unit` field set by Keycloak.
+
+When `glucoseUnit == "mmol/L"`:
+
+----
+sgv_mmol = round(sgv_mgdl / 18.0, 1 decimal place)
+        = Math.round(rawSgv / 18.0 * 10.0) / 10.0
+----
+
+When writing (POST/PUT), the inverse applies:
+
+----
+sgv_mgdl = (sgv_mmol * 18.0).toInt()
+----
+
+kdiab always stores glucose in **mg/dL** internally.
+
+== Collection: treatments
+
+Maps to `kdiab-treatments`.
+
+*Upstream endpoint:* `GET/POST/PUT/DELETE /api/v1/users/{userId}/treatments`
+
+=== Field Mapping
+
+|===
+| NS v3 field | kdiab field | Notes
+
+| `identifier`
+| `TreatmentResponse.id`
+| UUID string; stable across reads
+
+| `date`
+| `Instant.parse(treatedAt).toEpochMilliseconds()`
+| Epoch milliseconds (Long)
+
+| `dateString`
+| `TreatmentResponse.treatedAt`
+| ISO-8601 string as stored; timezone is UTC
+
+| `eventType`
+| `TreatmentType` via `TREATMENT_TYPE_MAP`
+| See type map table below
+
+| `insulin`
+| `data["insulin"]`
+| Double; present on BOLUS, CORRECTION_BOLUS, COMBO_BOLUS
+
+| `carbs`
+| `data["carbs"]`
+| Double; present on CARBS, COMBO_BOLUS
+
+| `notes`
+| `TreatmentResponse.notes`
+| Nullable TEXT field; passed through unchanged
+
+| `enteredBy`
+| static `"kdiab"`
+| Constant; not stored in kdiab
+
+| `srvCreated`
+| `Instant.parse(treatedAt).toEpochMilliseconds()`
+| Approximated from `treatedAt`
+
+| `srvModified`
+| `Instant.parse(treatedAt).toEpochMilliseconds()`
+| Same approximation as `srvCreated`
+|===
+
+=== Treatment Type Map (`TREATMENT_TYPE_MAP`)
+
+|===
+| kdiab `TreatmentType` | Nightscout `eventType`
+
+| `BOLUS`
+| `"Bolus"`
+
+| `BASAL`
+| `"Temp Basal"`
+
+| `CARBS`
+| `"Carbs (and/or Bolus)"`
+
+| `CORRECTION_BOLUS`
+| `"Correction Bolus"`
+
+| `COMBO_BOLUS`
+| `"Combo Bolus"`
+
+| `TEMP_BASAL`
+| `"Temp Basal"`
+
+| `EXERCISE`
+| `"Exercise"`
+
+| `NOTE`
+| `"Note"`
+
+| `BG_CHECK`
+| `"BG Check"`
+
+| `PUMP_SUSPEND`
+| `"Pump Suspend"`
+
+| `SITE_CHANGE`
+| `"Site Change"`
+
+| `SENSOR_INSERT`
+| `"Sensor Start"`
+
+| `INSULIN_CHANGE`
+| `"Insulin Change"`
+|===
+
+NOTE: The v1 mapper (`NightscoutMapper.kt`) uses `"Carbs"` and `"Suspend Pump"` for CARBS and
+PUMP_SUSPEND respectively. The v3 mapper uses the standard Nightscout v3 values shown above.
+When writing treatments received via v3, the map is reversed to find the kdiab `TreatmentType`.
+Treatments whose `eventType` does not appear in the map are rejected with HTTP 422.
+
+== Collection: food
+
+Maps to `kdiab-carbs`.
+
+*Upstream endpoint:* `GET/POST/PUT/DELETE /api/v1/users/{userId}/foods`
+
+NOTE: The kdiab-carbs API has no GET-by-ID endpoint. The v3 GET-by-identifier path
+(`GET /api/v3/food/{identifier}`) is implemented by fetching paginated pages from kdiab-carbs
+and filtering locally until the item is found.
+
+=== Field Mapping
+
+|===
+| NS v3 field | kdiab field | Notes
+
+| `identifier`
+| `FoodEntryResponse.id`
+| UUID string; stable across reads
+
+| `name`
+| `FoodEntryResponse.name`
+| Free-text food name
+
+| `carbs`
+| `FoodEntryResponse.carbsForPortion`
+| `BigDecimal` converted to `Double` for the NS3 response
+
+| `portionSize`
+| `FoodEntryResponse.portionGrams`
+| Grams; nullable in NS3 model
+
+| `unit`
+| static `"g"`
+| Constant; kdiab always uses grams
+
+| `fat`
+| `null`
+| Not in kdiab-carbs upstream model
+
+| `protein`
+| `null`
+| Not in kdiab-carbs upstream model
+
+| `energy`
+| `null`
+| Not in kdiab-carbs upstream model
+|===
+
+Fields not present in the kdiab model (`fat`, `protein`, `energy`) are omitted from responses.
+Third-party NS3 clients that write these fields will have the values silently discarded.
+
+== Collection: profile
+
+Maps to `kdiab-profiles`.
+
+*Upstream endpoint:* `GET/POST/PUT/DELETE /api/v1/users/{userId}/profiles`
+
+=== Field Mapping
+
+|===
+| NS v3 field | kdiab field | Notes
+
+| `identifier`
+| `Profile.id`
+| UUID string; **may change after PUT** — see copy-on-write caveat below
+
+| `defaultProfile`
+| `Profile.name`
+| Human-readable profile name
+
+| `startDate`
+| `Profile.activatedAt` (ISO-8601)
+| The date the profile was activated; may be `null` for DRAFT profiles
+
+| `dia`
+| `Profile.durationOfAction / 60.0`
+| kdiab stores duration in minutes; NS3 requires hours as a Double
+
+| `basalSegments`
+| `[]`
+| Basal rate segments are not yet exposed via the NS3 API; always returns empty list
+
+| `carbratio`
+| `[]`
+| Carb ratio segments are not yet exposed via the NS3 API; always returns empty list
+
+| `sens`
+| `[]`
+| Insulin sensitivity segments not yet exposed; always returns empty list
+
+| `units`
+| `"mg/dl"` (default)
+| Per-user glucose unit is stored in the JWT `glucose_unit` claim, not in the profile
+
+| `timeZone`
+| static `"UTC"`
+| Per-user timezone is not yet implemented in kdiab
+|===
+
+=== Copy-on-Write Caveat
+
+kdiab-profiles enforces immutability on ACTIVE profiles via a copy-on-write pattern (see ADR-015).
+
+When a Nightscout client performs `PUT /api/v3/profile/{identifier}`:
+
+1. kdiab-profiles archives the current profile under the original `identifier`.
+2. A **new** profile is created with a **new UUID** and returned in the response.
+3. The new profile is immediately ACTIVE.
+
+*Consequence for NS3 clients:* The `identifier` in the PUT response body will differ from the
+`identifier` sent in the request path. Any client that caches the profile UUID (e.g. AAPS, Loop)
+**must refresh its local profile ID** from the response after every successful PUT. Stale IDs will
+result in HTTP 404 on subsequent GET or PUT requests.
+
+This behaviour is by design and cannot be changed without violating kdiab's clinical-safety
+immutability guarantee.
+
+== Collection: settings
+
+Settings are **user-scoped** and assembled at request time from the active profile and the JWT
+`glucose_unit` claim. There is no dedicated upstream endpoint.
+
+=== Field Mapping
+
+|===
+| NS v3 field | Source | Notes
+
+| `identifier`
+| JWT `sub` claim (userId)
+| Settings have no separate identifier in kdiab; the userId serves as the stable key
+
+| `units`
+| JWT `glucose_unit` claim
+| `"mg/dl"` or `"mmol"` — determined by Keycloak user attribute, not a writable field
+
+| `timeZone`
+| static `"UTC"`
+| Per-user timezone is not yet implemented; hard-coded
+|===
+
+=== Write Restrictions
+
+`PUT /api/v3/settings` with a `units` change returns **HTTP 422 Unprocessable Entity**.
+
+The `glucose_unit` field is a Keycloak user attribute and cannot be changed via the Nightscout API.
+Users must update their unit preference through the kdiab-ui settings page. The change takes effect
+on the user's next login (JWT re-issue).
+
+== Collection: devicestatus
+
+Device status is stored as treatments of type `DEVICE_STATUS` in `kdiab-treatments`.
+
+*GET* queries treatments with `type=DEVICE_STATUS`.
+*POST* creates a new `DEVICE_STATUS` treatment.
+
+=== Field Mapping
+
+|===
+| NS v3 field | kdiab field | Notes
+
+| `identifier`
+| `TreatmentResponse.id`
+| UUID string; stable across reads
+
+| `date`
+| `Instant.parse(treatedAt).toEpochMilliseconds()`
+| Epoch milliseconds (Long)
+
+| `dateString`
+| `TreatmentResponse.treatedAt`
+| ISO-8601 string as stored; timezone is UTC
+
+| `device`
+| `data["device"]`
+| String device identifier (e.g. pump model name)
+
+| `uploaderBattery`
+| `data["batteryLevel"]`
+| Integer percentage (0–100)
+
+| `pump.reservoir`
+| `data["reservoirUnits"]`
+| Double; insulin units remaining in reservoir
+
+| `pump.battery.percent`
+| `data["batteryLevel"]`
+| Integer; same source as `uploaderBattery`
+
+| `pump.status.status`
+| `data["pumpConnected"] == true` → `"normal"` / else `"suspended"`
+| Derived from a boolean flag in the treatment data JSONB
+|===
+
+== Write Semantics Summary
+
+|===
+| Collection | Soft delete | Hard delete | Identifier stability
+
+| entries
+| archive (`?permanent=false`)
+| yes (`?permanent=true`)
+| stable
+
+| treatments
+| archive
+| yes
+| stable
+
+| food
+| archive
+| yes
+| stable
+
+| profile
+| archive only
+| no (kdiab-profiles has no hard delete for profiles)
+| **unstable after PUT** (copy-on-write creates a new UUID)
+
+| settings
+| N/A
+| N/A
+| stable (userId from JWT `sub`)
+
+| devicestatus
+| archive
+| yes
+| stable
+|===
+
+*Soft delete* routes the request to the upstream archive endpoint (sets `status=ARCHIVED`).
+*Hard delete* routes to the upstream permanent-delete endpoint (removes the row from the database).
+The `permanent` query parameter (`?permanent=true` / `?permanent=false`) controls the behaviour on
+all collections that support both modes. The default is soft delete when `permanent` is absent.
