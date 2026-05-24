@@ -1,0 +1,266 @@
+= kdiab-nightscout Client Integration Guide
+:toc:
+:toclevels: 3
+
+== 1. Prerequisites
+
+Before connecting a Nightscout-compatible client to kdiab-nightscout, ensure the following are in place:
+
+* A running kdiab stack (root `docker-compose.yml`) or a standalone kdiab-nightscout service.
+* A valid kdiab user account (created via kdiab-ui at `http://localhost:3005` or through the kdiab-users registration endpoint).
+* The kdiab-nightscout service URL — default `http://localhost:8087` in the root compose stack.
+* The upstream services that kdiab-nightscout depends on must also be running: kdiab-measures and kdiab-treatments.
+
+== 2. Authentication
+
+kdiab-nightscout uses **Bearer JWT tokens** issued by Keycloak.
+There is no Nightscout API secret (`API_SECRET`) — only JWT authentication is supported.
+
+=== 2.1. Obtaining a Token
+
+**Option A — Log in to kdiab-ui:**
+
+Navigate to `http://localhost:3005` and sign in.
+The access token is managed automatically by the OIDC session.
+
+**Option B — Direct token request (scripting / testing):**
+
+[source,bash]
+----
+curl -s -X POST \
+  http://localhost:8081/realms/kdiab/protocol/openid-connect/token \
+  -d "client_id=kdiab-analyze-frontend" \
+  -d "grant_type=password" \
+  -d "username=sarah" \
+  -d "password=password" \
+  | jq -r '.access_token'
+----
+
+Replace `sarah` / `password` with the actual credentials.
+The `kdiab-analyze-frontend` Keycloak client has the `nightscout` audience mapper pre-configured,
+so the returned token is accepted by kdiab-nightscout.
+
+=== 2.2. Token Characteristics
+
+* Access tokens are short-lived — typically **5–15 minutes**.
+* Clients must handle HTTP 401 responses and re-authenticate automatically.
+* The JWT `aud` claim must include `nightscout`.
+  If you obtain a token from a different Keycloak client, verify that the audience mapper is configured.
+* Refresh tokens are issued alongside access tokens.
+  Clients that support OAuth 2.0 refresh-token flows should use them to obtain new access tokens
+  without repeating the password grant.
+
+== 3. Supported Endpoints
+
+kdiab-nightscout implements **Nightscout API v1** (`/api/v1/`).
+This is the broadest-compatibility format supported by AAPS, xDrip+, Juggluco, and similar apps.
+
+[cols="2,1,1,4",options="header"]
+|===
+| Path | Read | Write | Notes
+
+| `GET /api/v1/entries.json`
+| Yes
+| —
+| CGM and BGM readings (from kdiab-measures)
+
+| `POST /api/v1/entries.json`
+| —
+| Yes
+| Upload CGM/BGM readings
+
+| `GET /api/v1/treatments.json`
+| Yes
+| —
+| Bolus, basal, carbs events (from kdiab-treatments)
+
+| `POST /api/v1/treatments.json`
+| —
+| Yes
+| Upload treatment events
+
+| `GET /api/v1/status.json`
+| Yes
+| —
+| Service status — no auth required
+
+| `GET /healthz`
+| Yes
+| —
+| Liveness probe — no auth required
+
+| `GET /readyz`
+| Yes
+| —
+| Readiness probe — checks upstream health; no auth required
+|===
+
+NOTE: kdiab-nightscout implements the Nightscout **v1** API. Clients configured for Nightscout v3
+(`/api/v3/` paths) will receive 404 responses. Use the v1-compatible plugin in your client app —
+see <<per-client-configuration>> for details.
+
+=== 3.1. Query Parameters
+
+Both `GET /api/v1/entries.json` and `GET /api/v1/treatments.json` accept:
+
+[cols="1,1,1,3",options="header"]
+|===
+| Parameter | Type | Default | Description
+
+| `from`
+| ISO-8601 string
+| Service default
+| Inclusive start of the time range
+
+| `to`
+| ISO-8601 string
+| Service default
+| Inclusive end of the time range
+
+| `count`
+| Integer
+| 288
+| Maximum number of records to return (288 ≈ 24 h at 5-minute CGM intervals)
+|===
+
+== 4. Per-Client Configuration [[per-client-configuration]]
+
+=== 4.1. AAPS 3.x
+
+[cols="1,3",options="header"]
+|===
+| Setting | Value
+
+| Plugin
+| **NSClient** (legacy v1 plugin) — do NOT use NSClientV3 as kdiab-nightscout serves v1 endpoints
+
+| Nightscout URL
+| `http://<host>:8087` — no trailing slash
+
+| API Secret
+| Leave blank
+
+| Access Token / Bearer token field
+| Paste the Bearer token **without** the `Bearer ` prefix
+
+| Sync — Treatments Upload
+| Enable
+
+| Sync — BG Upload
+| Enable
+
+| Sync — Devicestatus Upload
+| Enable
+|===
+
+IMPORTANT: AAPS NSClientV3 uses `/api/v3/` paths which kdiab-nightscout does not serve.
+Use the standard NSClient plugin that targets `/api/v1/` paths.
+
+=== 4.2. xDrip+
+
+. Open xDrip+ → *Settings* → *Cloud Upload* → *Nightscout Sync*.
+. Set *Base URL* to `http://<host>:8087`.
+. Leave *API Secret* blank.
+. In the *Access Token* field (if available in your xDrip+ build), paste the Bearer token without the `Bearer ` prefix.
+
+NOTE: xDrip+ releases before early 2024 may not support the Bearer token field.
+Use the latest nightly build from the xDrip+ GitHub releases page to obtain this support.
+
+=== 4.3. Juggluco
+
+. Open Juggluco → *Settings* → *Nightscout*.
+. Set *Server* to `http://<host>:8087`.
+. Set *Token* to the Bearer token (without the `Bearer ` prefix).
+. Enable the *entries* and *treatments* collections.
+
+== 5. Known Differences from Standard Nightscout
+
+The following behaviours differ from a standard Nightscout server.
+Operators and client users should be aware of these before deploying.
+
+=== 5.1. API Version
+
+kdiab-nightscout serves **Nightscout API v1** only.
+Clients or plugins that target Nightscout API v3 (`/api/v3/` paths) will not work.
+Always select the v1-compatible plugin or mode in your client application.
+
+=== 5.2. No API Secret Authentication
+
+kdiab-nightscout does not support the `API_SECRET` header that standard Nightscout servers use.
+Authentication is exclusively via `Authorization: Bearer <JWT>`.
+Leave the API Secret field blank in all client configurations; any value entered there is ignored.
+
+=== 5.3. Short-Lived Access Tokens
+
+Keycloak access tokens expire in 5–15 minutes by default.
+Clients must handle HTTP 401 responses gracefully and re-authenticate automatically using a
+refresh-token flow or by prompting the user.
+Static token configurations that do not refresh will stop working after the first expiry.
+
+=== 5.4. Settings Are User-Scoped
+
+`GET /api/v1/status.json` returns settings for the **currently authenticated user**.
+There is no global `DISPLAY_UNITS` configuration shared across users.
+Each user's glucose unit is derived from the `glucose_unit` JWT claim set in Keycloak.
+
+=== 5.5. Glucose Unit Cannot Be Changed via the API
+
+The glucose unit is a Keycloak user attribute, not a field writable via the Nightscout API.
+Attempting to change units through a Nightscout client will have no effect.
+Users must change their glucose unit in kdiab-ui user settings, and then re-login so that
+a new JWT reflecting the updated claim is issued.
+
+=== 5.6. Treatments Are Persisted
+
+Unlike ephemeral Nightscout device-status implementations, all treatment events written via
+`POST /api/v1/treatments.json` are stored permanently in kdiab-treatments.
+This enables historical analysis of pump and CGM metrics but also means incorrect uploads
+must be explicitly deleted.
+
+== 6. Troubleshooting
+
+[cols="2,2,3",options="header"]
+|===
+| Error | Cause | Fix
+
+| HTTP 401 on any request
+| Token expired or missing `Authorization` header
+| Re-authenticate and obtain a fresh access token.
+  Ensure the client is sending `Authorization: Bearer <token>`.
+
+| HTTP 403 on any request
+| JWT does not include the `nightscout` audience
+| Obtain a token using the `kdiab-analyze-frontend` Keycloak client,
+  which has the `nightscout` audience mapper configured.
+  Tokens from other clients may not carry this audience.
+
+| HTTP 404 on `/api/v3/` paths
+| Client is targeting Nightscout v3 endpoints
+| Switch to the v1-compatible plugin or mode.
+  kdiab-nightscout serves `/api/v1/` paths only.
+
+| HTTP 502 Bad Gateway
+| One or more upstream services are unavailable
+| Check that kdiab-measures and kdiab-treatments are running and healthy.
+  `GET /readyz` reports the health of both upstreams.
+
+| AAPS shows "not authorised" after connection test
+| Wrong plugin (NSClientV3) or token not accepted
+| Switch to the NSClient (v1) plugin in AAPS.
+  Verify the token is pasted without the `Bearer ` prefix.
+
+| xDrip+ uploads succeed but data does not appear in kdiab
+| Old xDrip+ version without Bearer token support
+| Upgrade to a recent xDrip+ nightly build.
+  Uploads that lack a valid JWT are rejected with HTTP 401.
+
+| Data uploaded via client is not visible in kdiab-ui
+| Token `sub` claim does not match the expected user ID
+| Confirm you are logging in with the correct user account.
+  Data is stored and retrieved by the `userId` derived from the JWT `sub` claim.
+|===
+
+== 7. Reference: Field Mapping
+
+For a detailed mapping between Nightscout v1 JSON fields and kdiab domain model fields,
+see the Architecture document at `kdiab-nightscout/docs/architecture.adoc`.
