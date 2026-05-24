@@ -1,7 +1,6 @@
 package org.javafreedom.kdiab.nightscout.adapters.outbound.http
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.HttpRequestRetry
@@ -20,36 +19,34 @@ import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
 
 private val logger = KotlinLogging.logger {}
 
+private val profilesJson = Json { ignoreUnknownKeys = true }
+
 private const val CONNECT_TIMEOUT_MS = 5_000L
 private const val REQUEST_TIMEOUT_MS = 30_000L
 private const val PROFILES_PAGE_SIZE = 200
 private const val HTTP_NOT_FOUND = 404
 
 class ProfilesClient(
-    httpClientEngine: HttpClientEngine,
+    private val httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
     val circuitBreaker: CircuitBreaker = CircuitBreaker(name = "profiles"),
 ) {
-    private val httpClient = HttpClient(httpClientEngine) {
-        install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
-        install(HttpTimeout) {
-            connectTimeoutMillis = CONNECT_TIMEOUT_MS
-            requestTimeoutMillis = REQUEST_TIMEOUT_MS
-        }
-        install(HttpRequestRetry) {
-            retryOnServerErrors(maxRetries = 3)
-            exponentialDelay()
-        }
-    }
-
     private fun buildApi(authorization: String, correlationId: String): DefaultApi {
         val token = authorization.removePrefix("Bearer ").trim()
         return DefaultApi(
             baseUrl = "$baseUrl/api/v1",
-            httpClientEngine = httpClient.engine,
+            httpClientEngine = httpClientEngine,
             httpClientConfig = { config ->
-                config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+                config.install(ContentNegotiation) { json(profilesJson) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+                config.install(HttpTimeout) {
+                    connectTimeoutMillis = CONNECT_TIMEOUT_MS
+                    requestTimeoutMillis = REQUEST_TIMEOUT_MS
+                }
+                config.install(HttpRequestRetry) {
+                    retryOnServerErrors(maxRetries = 3)
+                    exponentialDelay()
+                }
             },
         ).apply { setBearerToken(token) }
     }
@@ -58,6 +55,7 @@ class ProfilesClient(
         userId: String,
         authorization: String,
         correlationId: String,
+        statusFilter: List<String>? = null,
     ): List<Profile> {
         val api = buildApi(authorization, correlationId)
         val result = mutableListOf<Profile>()
@@ -66,7 +64,7 @@ class ProfilesClient(
 
         while (result.size < totalCount) {
             val httpResponse = circuitBreaker.execute {
-                api.listProfiles(userId = userId, page = page, size = PROFILES_PAGE_SIZE, status = null)
+                api.listProfiles(userId = userId, page = page, size = PROFILES_PAGE_SIZE, status = statusFilter)
             }
             if (!httpResponse.success) {
                 val requestUrl = httpResponse.response.request.url.toString()
@@ -184,8 +182,7 @@ class ProfilesClient(
         userId: String,
         authorization: String,
         correlationId: String,
-    ): Profile? {
-        val profiles = listProfiles(userId, authorization, correlationId)
-        return profiles.firstOrNull { it.status == Status.ACTIVE }
-    }
+    ): Profile? =
+        listProfiles(userId, authorization, correlationId, statusFilter = listOf(Status.ACTIVE.value))
+            .firstOrNull()
 }

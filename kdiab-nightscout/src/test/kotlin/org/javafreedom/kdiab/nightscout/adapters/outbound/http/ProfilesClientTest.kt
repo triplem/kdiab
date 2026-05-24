@@ -3,7 +3,7 @@ package org.javafreedom.kdiab.nightscout.adapters.outbound.http
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
 import kotlin.test.Test
@@ -64,7 +64,7 @@ class ProfilesClientTest {
     }
 
     @Test
-    fun `listProfiles returns all profiles on success`() = runTest {
+    fun `listProfiles returns all profiles on success`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel(pagedProfilesWithActiveJson),
@@ -78,7 +78,7 @@ class ProfilesClientTest {
     }
 
     @Test
-    fun `getProfile returns profile when found`() = runTest {
+    fun `getProfile returns profile when found`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel(activeProfileJson),
@@ -93,7 +93,7 @@ class ProfilesClientTest {
     }
 
     @Test
-    fun `getProfile returns null when 404`() = runTest {
+    fun `getProfile returns null when 404`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel("""{"code":404,"message":"Not Found"}"""),
@@ -107,7 +107,7 @@ class ProfilesClientTest {
     }
 
     @Test
-    fun `getActiveProfile returns the ACTIVE profile from list`() = runTest {
+    fun `getActiveProfile returns the ACTIVE profile from list`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel(pagedProfilesWithActiveJson),
@@ -123,7 +123,7 @@ class ProfilesClientTest {
     }
 
     @Test
-    fun `getActiveProfile returns null when no ACTIVE profile exists`() = runTest {
+    fun `getActiveProfile returns null when no ACTIVE profile exists`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel(emptyPagedProfilesJson),
@@ -137,7 +137,7 @@ class ProfilesClientTest {
     }
 
     @Test
-    fun `archiveProfile succeeds on 204 response`() = runTest {
+    fun `archiveProfile succeeds on 204 response`() = runBlocking {
         var calledMethod = ""
         val engine = MockEngine { request ->
             calledMethod = request.method.value
@@ -154,7 +154,7 @@ class ProfilesClientTest {
     }
 
     @Test
-    fun `listProfiles throws UpstreamException on 5xx response`() = runTest {
+    fun `listProfiles throws UpstreamException on 5xx response`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel("""{"code":500,"message":"Internal Server Error"}"""),
@@ -166,6 +166,93 @@ class ProfilesClientTest {
         val client = ProfilesClient(engine, BASE_URL, cb)
         assertFailsWith<UpstreamException> {
             client.listProfiles(USER_ID, AUTH, CORR)
+        }
+    }
+
+    @Test
+    fun `createProfile returns created profile on success`() = runBlocking {
+        val engine = MockEngine { request ->
+            respond(
+                content = ByteReadChannel(activeProfileJson),
+                status = HttpStatusCode.Created,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val client = ProfilesClient(engine, BASE_URL)
+        val request = org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.CreateProfileRequest(
+            name = "Default Profile",
+            insulinType = "Novorapid",
+            durationOfAction = 240,
+        )
+        val result = client.createProfile(USER_ID, AUTH, CORR, request)
+        assertEquals(PROFILE_ID, result.id)
+        assertEquals("Default Profile", result.name)
+    }
+
+    @Test
+    fun `createProfile throws UpstreamException on 5xx response`() = runBlocking {
+        val engine = MockEngine { request ->
+            respond(
+                content = ByteReadChannel("""{"code":500,"message":"Internal Server Error"}"""),
+                status = HttpStatusCode.InternalServerError,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val cb = CircuitBreaker(name = "profiles-create-test", failureThreshold = 1)
+        val client = ProfilesClient(engine, BASE_URL, cb)
+        val request = org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.CreateProfileRequest(
+            name = "Default Profile",
+            insulinType = "Novorapid",
+            durationOfAction = 240,
+        )
+        assertFailsWith<UpstreamException> {
+            client.createProfile(USER_ID, AUTH, CORR, request)
+        }
+    }
+
+    @Test
+    fun `updateProfile returns updated profile on success`() = runBlocking {
+        val engine = MockEngine { request ->
+            respond(
+                content = ByteReadChannel(activeProfileJson),
+                status = HttpStatusCode.OK,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val client = ProfilesClient(engine, BASE_URL)
+        val profile = org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile(
+            id = PROFILE_ID,
+            userId = USER_ID,
+            name = "Default Profile",
+            insulinType = "Novorapid",
+            durationOfAction = 240,
+            status = org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile.Status.ACTIVE,
+        )
+        val result = client.updateProfile(USER_ID, AUTH, CORR, PROFILE_ID, profile)
+        assertEquals(PROFILE_ID, result.id)
+    }
+
+    @Test
+    fun `updateProfile throws UpstreamException on 5xx response`() = runBlocking {
+        val engine = MockEngine { request ->
+            respond(
+                content = ByteReadChannel("""{"code":500,"message":"Internal Server Error"}"""),
+                status = HttpStatusCode.InternalServerError,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val cb = CircuitBreaker(name = "profiles-update-test", failureThreshold = 1)
+        val client = ProfilesClient(engine, BASE_URL, cb)
+        val profile = org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile(
+            id = PROFILE_ID,
+            userId = USER_ID,
+            name = "Default Profile",
+            insulinType = "Novorapid",
+            durationOfAction = 240,
+            status = org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile.Status.ACTIVE,
+        )
+        assertFailsWith<UpstreamException> {
+            client.updateProfile(USER_ID, AUTH, CORR, PROFILE_ID, profile)
         }
     }
 }

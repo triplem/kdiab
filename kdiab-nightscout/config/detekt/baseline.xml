@@ -6,5 +6,21 @@
     <ID>ReturnCount:NightscoutMapper.kt$fun MeasureResponse.toNightscoutEntry(): NightscoutEntry?</ID>
     <ID>ReturnCount:NightscoutMapper.kt$fun TreatmentResponse.toNightscoutTreatment(): NightscoutTreatment?</ID>
     <ID>TooGenericExceptionCaught:CircuitBreaker.kt$CircuitBreaker$e: Exception</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val millis = runCatching { Instant.parse(measuredAt).toEpochMilliseconds() }.getOrNull() ?: return null</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val entryType = if (typeValue == "CGM") "sgv" else "mbg"</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val data = this.data as? JsonObject</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val sgv = data?.get("sgv")?.jsonPrimitive?.runCatching { int }?.getOrNull() ?: data?.get("value")?.jsonPrimitive?.runCatching { int }?.getOrNull()</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val trend = data?.get("trend")?.jsonPrimitive?.runCatching { int }?.getOrNull()</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val direction = data?.get("direction")?.jsonPrimitive?.content</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$return NightscoutEntry( type = entryType, sgv = sgv, date = millis, dateString = measuredAt, trend = trend, direction = direction, id = id, mills = millis, )</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val millis = runCatching { Instant.parse(treatedAt).toEpochMilliseconds() }.getOrNull() ?: return null</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val nsEventType = TREATMENT_TYPE_MAP[type.value] ?: return null</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val data = this.data as? JsonObject</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val insulin = data?.get("insulin")?.jsonPrimitive?.runCatching { double }?.getOrNull() ?: data?.get("units")?.jsonPrimitive?.runCatching { double }?.getOrNull()</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val carbs = data?.get("carbs")?.jsonPrimitive?.runCatching { double }?.getOrNull()</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$return NightscoutTreatment( id = id, eventType = nsEventType, createdAt = treatedAt, timestamp = treatedAt, insulin = insulin, carbs = carbs, notes = this.notes, mills = millis, )</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val treatmentType = TREATMENT_TYPE_MAP.entries .firstOrNull { it.value == eventType } ?.key ?.let { runCatching { TreatmentType.valueOf(it) }.getOrNull() } ?: return null</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$val data = buildJsonObject { insulin?.let { put("insulin", it) } carbs?.let { put("carbs", it) } }</ID>
+    <ID>UnreachableCode:NightscoutMapper.kt$return CreateTreatmentRequest( treatedAt = createdAt, type = treatmentType, data = data, notes = notes, )</ID>
   </CurrentIssues>
 </SmellBaseline>

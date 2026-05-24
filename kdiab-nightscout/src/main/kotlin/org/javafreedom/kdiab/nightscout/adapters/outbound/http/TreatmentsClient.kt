@@ -1,7 +1,6 @@
 package org.javafreedom.kdiab.nightscout.adapters.outbound.http
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import io.ktor.client.*
 import io.ktor.client.engine.*
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.HttpRequestRetry
@@ -26,22 +25,10 @@ private const val CONNECT_TIMEOUT_MS = 5_000L
 private const val REQUEST_TIMEOUT_MS = 30_000L
 
 class TreatmentsClient(
-    httpClientEngine: HttpClientEngine,
+    private val httpClientEngine: HttpClientEngine,
     private val baseUrl: String,
     val circuitBreaker: CircuitBreaker = CircuitBreaker(name = "treatments"),
 ) {
-    private val httpClient = HttpClient(httpClientEngine) {
-        install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
-        install(HttpTimeout) {
-            connectTimeoutMillis = CONNECT_TIMEOUT_MS
-            requestTimeoutMillis = REQUEST_TIMEOUT_MS
-        }
-        install(HttpRequestRetry) {
-            retryOnServerErrors(maxRetries = 3)
-            exponentialDelay()
-        }
-    }
-
     suspend fun getTreatments(
         userId: String,
         authorization: String,
@@ -52,10 +39,18 @@ class TreatmentsClient(
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",
-            httpClientEngine = httpClient.engine,
+            httpClientEngine = httpClientEngine,
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+                config.install(HttpTimeout) {
+                    connectTimeoutMillis = CONNECT_TIMEOUT_MS
+                    requestTimeoutMillis = REQUEST_TIMEOUT_MS
+                }
+                config.install(HttpRequestRetry) {
+                    retryOnServerErrors(maxRetries = 3)
+                    exponentialDelay()
+                }
             },
         ).apply { setBearerToken(token) }
 
@@ -110,10 +105,18 @@ class TreatmentsClient(
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",
-            httpClientEngine = httpClient.engine,
+            httpClientEngine = httpClientEngine,
             httpClientConfig = { config ->
                 config.install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
                 config.install(DefaultRequest) { header("X-Correlation-ID", correlationId) }
+                config.install(HttpTimeout) {
+                    connectTimeoutMillis = CONNECT_TIMEOUT_MS
+                    requestTimeoutMillis = REQUEST_TIMEOUT_MS
+                }
+                config.install(HttpRequestRetry) {
+                    retryOnServerErrors(maxRetries = 3)
+                    exponentialDelay()
+                }
             },
         ).apply { setBearerToken(token) }
 

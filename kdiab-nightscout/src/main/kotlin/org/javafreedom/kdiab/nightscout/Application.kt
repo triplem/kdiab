@@ -78,7 +78,12 @@ fun Application.module() {
         val profilesUrl = environment.config.property("upstream.profilesUrl").getString()
 
         healthClient = httpClient
-        upstreamHealthUrls = listOf("$measuresUrl/healthz", "$treatmentsUrl/healthz")
+        upstreamHealthUrls = listOf(
+            "$measuresUrl/healthz",
+            "$treatmentsUrl/healthz",
+            "$carbsUrl/healthz",
+            "$profilesUrl/healthz",
+        )
 
         install(DI) { }
         dependencies {

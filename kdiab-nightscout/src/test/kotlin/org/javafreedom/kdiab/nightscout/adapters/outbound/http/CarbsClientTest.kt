@@ -3,7 +3,7 @@ package org.javafreedom.kdiab.nightscout.adapters.outbound.http
 import io.ktor.client.engine.mock.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
 import kotlin.test.Test
@@ -58,7 +58,7 @@ class CarbsClientTest {
     }
 
     @Test
-    fun `listFood returns paged response on success`() = runTest {
+    fun `listFood returns paged response on success`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel(pagedFoodResponseJson),
@@ -73,7 +73,7 @@ class CarbsClientTest {
     }
 
     @Test
-    fun `getFood returns matching item when found`() = runTest {
+    fun `getFood returns matching item when found`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel(pagedFoodResponseJson),
@@ -88,7 +88,7 @@ class CarbsClientTest {
     }
 
     @Test
-    fun `getFood returns null when not found in any page`() = runTest {
+    fun `getFood returns null when not found in any page`() = runBlocking {
         val emptyPageJson = """{"items":[],"page":0,"size":200,"totalCount":0}"""
         val engine = MockEngine { request ->
             respond(
@@ -103,7 +103,7 @@ class CarbsClientTest {
     }
 
     @Test
-    fun `createFood returns created food entry on success`() = runTest {
+    fun `createFood returns created food entry on success`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel(foodEntryResponseJson),
@@ -123,7 +123,7 @@ class CarbsClientTest {
     }
 
     @Test
-    fun `updateFood returns updated food entry on success`() = runTest {
+    fun `updateFood returns updated food entry on success`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel(foodEntryResponseJson),
@@ -142,7 +142,7 @@ class CarbsClientTest {
     }
 
     @Test
-    fun `deleteFood with permanent=false calls archive endpoint`() = runTest {
+    fun `deleteFood with permanent=false calls archive endpoint`() = runBlocking {
         var calledPath = ""
         val engine = MockEngine { request ->
             calledPath = request.url.encodedPath
@@ -158,7 +158,7 @@ class CarbsClientTest {
     }
 
     @Test
-    fun `deleteFood with permanent=true calls delete endpoint`() = runTest {
+    fun `deleteFood with permanent=true calls delete endpoint`() = runBlocking {
         var calledPath = ""
         var calledMethod = ""
         val engine = MockEngine { request ->
@@ -177,7 +177,7 @@ class CarbsClientTest {
     }
 
     @Test
-    fun `listFood throws UpstreamException on 5xx response`() = runTest {
+    fun `listFood throws UpstreamException on 5xx response`() = runBlocking {
         val engine = MockEngine { request ->
             respond(
                 content = ByteReadChannel("""{"code":500,"message":"Internal Server Error"}"""),
@@ -185,11 +185,84 @@ class CarbsClientTest {
                 headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
             )
         }
-        // Use circuit breaker with low threshold to test it trips quickly
         val cb = CircuitBreaker(name = "carbs-test", failureThreshold = 1)
         val client = CarbsClient(engine, BASE_URL, cb)
         assertFailsWith<UpstreamException> {
             client.listFood(USER_ID, AUTH, CORR)
+        }
+    }
+
+    @Test
+    fun `getFood throws UpstreamException on 5xx response`() = runBlocking {
+        val engine = MockEngine { request ->
+            respond(
+                content = ByteReadChannel("""{"code":500,"message":"Internal Server Error"}"""),
+                status = HttpStatusCode.InternalServerError,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val cb = CircuitBreaker(name = "carbs-get-test", failureThreshold = 1)
+        val client = CarbsClient(engine, BASE_URL, cb)
+        assertFailsWith<UpstreamException> {
+            client.getFood(USER_ID, AUTH, CORR, FOOD_ID)
+        }
+    }
+
+    @Test
+    fun `createFood throws UpstreamException on 5xx response`() = runBlocking {
+        val engine = MockEngine { request ->
+            respond(
+                content = ByteReadChannel("""{"code":500,"message":"Internal Server Error"}"""),
+                status = HttpStatusCode.InternalServerError,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val cb = CircuitBreaker(name = "carbs-create-test", failureThreshold = 1)
+        val client = CarbsClient(engine, BASE_URL, cb)
+        val request = org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.CreateFoodEntryRequest(
+            name = "Apple",
+            portionGrams = java.math.BigDecimal("150"),
+            carbsPer100g = java.math.BigDecimal("14"),
+        )
+        assertFailsWith<UpstreamException> {
+            client.createFood(USER_ID, AUTH, CORR, request)
+        }
+    }
+
+    @Test
+    fun `updateFood throws UpstreamException on 5xx response`() = runBlocking {
+        val engine = MockEngine { request ->
+            respond(
+                content = ByteReadChannel("""{"code":500,"message":"Internal Server Error"}"""),
+                status = HttpStatusCode.InternalServerError,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val cb = CircuitBreaker(name = "carbs-update-test", failureThreshold = 1)
+        val client = CarbsClient(engine, BASE_URL, cb)
+        val request = org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.UpdateFoodEntryRequest(
+            name = "Apple",
+            portionGrams = java.math.BigDecimal("150"),
+            carbsPer100g = java.math.BigDecimal("14"),
+        )
+        assertFailsWith<UpstreamException> {
+            client.updateFood(USER_ID, AUTH, CORR, FOOD_ID, request)
+        }
+    }
+
+    @Test
+    fun `deleteFood throws UpstreamException on 5xx response`() = runBlocking {
+        val engine = MockEngine { request ->
+            respond(
+                content = ByteReadChannel("""{"code":500,"message":"Internal Server Error"}"""),
+                status = HttpStatusCode.InternalServerError,
+                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString()),
+            )
+        }
+        val cb = CircuitBreaker(name = "carbs-delete-test", failureThreshold = 1)
+        val client = CarbsClient(engine, BASE_URL, cb)
+        assertFailsWith<UpstreamException> {
+            client.deleteFood(USER_ID, AUTH, CORR, FOOD_ID, permanent = true)
         }
     }
 }
