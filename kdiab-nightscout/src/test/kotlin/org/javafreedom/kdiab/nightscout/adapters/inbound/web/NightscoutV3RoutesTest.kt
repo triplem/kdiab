@@ -19,6 +19,7 @@ import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Settings
 import org.javafreedom.kdiab.nightscout.module
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -262,5 +263,80 @@ class NightscoutV3RoutesTest {
     fun `DELETE api v3 food slash id returns 401 without token`() = v3RouteTest { _ ->
         val response = client.delete("/api/v3/food/food-1")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    // --- /api/v3/settings ---
+
+    @Test
+    fun `GET api v3 settings returns 200 with units from JWT`() = v3RouteTest { svc ->
+        val expectedSettings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
+        coEvery { svc.getSettings(any(), any(), any(), any()) } returns expectedSettings
+
+        val response = client.get("/api/v3/settings") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "mg/dL")
+    }
+
+    @Test
+    fun `GET api v3 settings returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/settings")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `PUT api v3 settings returns 200 when units match JWT`() = v3RouteTest { svc ->
+        val settings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
+        coEvery { svc.getSettings(any(), any(), any(), any()) } returns settings
+
+        val response = client.put("/api/v3/settings") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(settings))
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+    }
+
+    @Test
+    fun `PUT api v3 settings returns 422 when units differ from JWT`() = v3RouteTest { _ ->
+        val body = Ns3Settings(identifier = USER_ID, units = "mmol/L", timeZone = "UTC")
+
+        val response = client.put("/api/v3/settings") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(body))
+        }
+
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+    }
+
+    @Test
+    fun `PATCH api v3 settings returns 200 when units match JWT`() = v3RouteTest { svc ->
+        val settings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
+        coEvery { svc.getSettings(any(), any(), any(), any()) } returns settings
+
+        val response = client.patch("/api/v3/settings") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(settings))
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+    }
+
+    @Test
+    fun `PATCH api v3 settings returns 422 when units differ from JWT`() = v3RouteTest { _ ->
+        val body = Ns3Settings(identifier = USER_ID, units = "mmol/L", timeZone = "UTC")
+
+        val response = client.patch("/api/v3/settings") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(body))
+        }
+
+        assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
     }
 }

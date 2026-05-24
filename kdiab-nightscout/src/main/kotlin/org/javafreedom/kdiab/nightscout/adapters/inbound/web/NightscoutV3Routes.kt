@@ -12,6 +12,7 @@ import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3ListResponse
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Response
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Settings
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
 
 fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
@@ -260,6 +261,52 @@ fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
                 )
                 call.respond(Ns3Response<Unit>(status = 200))
             }
+        }
+        settingsRoutes(service)
+    }
+}
+
+private fun Route.settingsRoutes(service: NightscoutV3Service) {
+    route("/api/v3/settings") {
+        get {
+            val principal = call.principal<UserPrincipal>()!!
+            val settings = service.getSettings(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                glucoseUnit = principal.glucoseUnit,
+            )
+            call.respond(Ns3Response(status = 200, result = settings))
+        }
+        put {
+            val principal = call.principal<UserPrincipal>()!!
+            val body = call.receive<Ns3Settings>()
+            if (body.units.isNotEmpty() && body.units != principal.glucoseUnit) {
+                call.respond(HttpStatusCode.UnprocessableEntity, Ns3Response<Ns3Settings>(status = 422))
+                return@put
+            }
+            val settings = service.getSettings(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                glucoseUnit = principal.glucoseUnit,
+            )
+            call.respond(Ns3Response(status = 200, result = settings))
+        }
+        patch {
+            val principal = call.principal<UserPrincipal>()!!
+            val body = call.receive<Ns3Settings>()
+            if (body.units.isNotEmpty() && body.units != principal.glucoseUnit) {
+                call.respond(HttpStatusCode.UnprocessableEntity, Ns3Response<Ns3Settings>(status = 422))
+                return@patch
+            }
+            val settings = service.getSettings(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                glucoseUnit = principal.glucoseUnit,
+            )
+            call.respond(Ns3Response(status = 200, result = settings))
         }
     }
 }
