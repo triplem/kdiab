@@ -168,6 +168,7 @@ private fun Application.registerDependencies(
                 measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
                 treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
                 carbsClient = CarbsClient(httpClient.engine, carbsUrl),
+                profilesClient = ProfilesClient(httpClient.engine, profilesUrl),
             )
         }
         provide<CarbsClient> { CarbsClient(httpClient.engine, carbsUrl) }
