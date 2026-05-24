@@ -158,8 +158,8 @@ fun Ns3Food.toCreateFoodRequest(): CreateFoodEntryRequest {
     val carbsPer100g = carbs / portion * DEFAULT_PORTION_GRAMS
     return CreateFoodEntryRequest(
         name = name,
-        portionGrams = java.math.BigDecimal(portion),
-        carbsPer100g = java.math.BigDecimal(carbsPer100g),
+        portionGrams = java.math.BigDecimal.valueOf(portion),
+        carbsPer100g = java.math.BigDecimal.valueOf(carbsPer100g),
     )
 }
 
@@ -168,7 +168,7 @@ fun Ns3Food.toUpdateFoodRequest(): UpdateFoodEntryRequest {
     val carbsPer100g = carbs / portion * DEFAULT_PORTION_GRAMS
     return UpdateFoodEntryRequest(
         name = name,
-        portionGrams = java.math.BigDecimal(portion),
-        carbsPer100g = java.math.BigDecimal(carbsPer100g),
+        portionGrams = java.math.BigDecimal.valueOf(portion),
+        carbsPer100g = java.math.BigDecimal.valueOf(carbsPer100g),
     )
 }

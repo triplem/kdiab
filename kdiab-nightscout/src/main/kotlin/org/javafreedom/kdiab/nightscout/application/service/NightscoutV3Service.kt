@@ -173,11 +173,19 @@ class NightscoutV3Service(
         correlationId: String,
         params: Ns3SearchParams,
     ): List<Ns3Food> {
-        return carbsClient.listFood(userId, authorization, correlationId)
-            .items
-            .map { it.toNs3Food() }
-            .drop(params.skip)
-            .take(params.limit)
+        val allFood = mutableListOf<Ns3Food>()
+        var page = 0
+        var totalFetched = 0
+        var totalCount = Int.MAX_VALUE
+        while (totalFetched < totalCount) {
+            val paged = carbsClient.listFood(userId, authorization, correlationId, page)
+            totalCount = paged.totalCount
+            if (paged.items.isEmpty()) break
+            allFood.addAll(paged.items.map { it.toNs3Food() })
+            totalFetched += paged.items.size
+            page++
+        }
+        return allFood.drop(params.skip).take(params.limit)
     }
 
     @Suppress("LongParameterList")
