@@ -214,6 +214,8 @@ export interface DeliveredLinePoint {
   basalDelivered: number
 }
 
+/** Converts basalBlocks into step-series data for the delivered basal area.
+ *  Each block emits two points so the sequence forms a staircase. */
 export function deriveDeliveredLine(blocks: BasalBlock[]): DeliveredLinePoint[] {
   if (!blocks.length) return []
   const pts: DeliveredLinePoint[] = []

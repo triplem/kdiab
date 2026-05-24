@@ -205,4 +205,18 @@ describe('GlucoseTrendChart', () => {
     )
     expect(screen.getByRole('img')).toBeTruthy()
   })
+
+  test('renders without crashing with ABOVE and BELOW blocks (delivered line present)', () => {
+    const blocks: BasalBlock[] = [
+      { startMs: new Date('2024-06-01T00:00:00Z').getTime(), endMs: new Date('2024-06-01T01:00:00Z').getTime(), deliveredRate: 1.8, scheduledRate: 0.9, state: 'ABOVE' },
+      { startMs: new Date('2024-06-01T01:00:00Z').getTime(), endMs: new Date('2024-06-01T02:00:00Z').getTime(), deliveredRate: 0.45, scheduledRate: 0.9, state: 'BELOW' },
+    ]
+    render(<GlucoseTrendChart {...baseProps} chartData={[cgmPoint]} cgmPoints={[cgmPoint]} basalBlocks={blocks} basalProfileLine={mockBasalProfileLine} />)
+    expect(screen.getByRole('img')).toBeTruthy()
+  })
+
+  test('renders without crashing with empty basalBlocks (delivered line absent)', () => {
+    render(<GlucoseTrendChart {...baseProps} chartData={[cgmPoint]} cgmPoints={[cgmPoint]} basalBlocks={[]} />)
+    expect(screen.getByRole('img')).toBeTruthy()
+  })
 })
