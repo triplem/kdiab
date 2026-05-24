@@ -17,6 +17,7 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateTreatment
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Settings
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
 
 private val logger = KotlinLogging.logger {}
@@ -234,6 +235,18 @@ class NightscoutV3Service(
         carbsClient.deleteFood(userId, authorization, correlationId, id, permanent)
         logger.info { "Deleted v3 food id=$id userId=$userId permanent=$permanent" }
     }
+
+    @Suppress("LongParameterList")
+    suspend fun getSettings(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        glucoseUnit: String,
+    ): Ns3Settings = Ns3Settings(
+        identifier = userId,
+        units = glucoseUnit,
+        timeZone = "UTC",
+    )
 }
 
 private fun epochMsToIso(epochMs: Long?): String? =

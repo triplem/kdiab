@@ -86,23 +86,7 @@ fun Application.module() {
         )
 
         install(DI) { }
-        dependencies {
-            provide<NightscoutService> {
-                NightscoutService(
-                    measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
-                    treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
-                )
-            }
-            provide<NightscoutV3Service> {
-                NightscoutV3Service(
-                    measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
-                    treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
-                    carbsClient = CarbsClient(httpClient.engine, carbsUrl),
-                )
-            }
-            provide<CarbsClient> { CarbsClient(httpClient.engine, carbsUrl) }
-            provide<ProfilesClient> { ProfilesClient(httpClient.engine, profilesUrl) }
-        }
+        registerDependencies(httpClient, measuresUrl, treatmentsUrl, carbsUrl, profilesUrl)
     }
 
     configureTracing()
@@ -162,5 +146,31 @@ fun Application.module() {
         val maxLimit = environment.config.propertyOrNull("api3.maxLimit")
             ?.getString()?.toInt() ?: DEFAULT_API3_MAX_LIMIT
         nightscoutV3Routes(nightscoutV3Service, maxLimit)
+    }
+}
+
+private fun Application.registerDependencies(
+    httpClient: HttpClient,
+    measuresUrl: String,
+    treatmentsUrl: String,
+    carbsUrl: String,
+    profilesUrl: String,
+) {
+    dependencies {
+        provide<NightscoutService> {
+            NightscoutService(
+                measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
+                treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
+            )
+        }
+        provide<NightscoutV3Service> {
+            NightscoutV3Service(
+                measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
+                treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
+                carbsClient = CarbsClient(httpClient.engine, carbsUrl),
+            )
+        }
+        provide<CarbsClient> { CarbsClient(httpClient.engine, carbsUrl) }
+        provide<ProfilesClient> { ProfilesClient(httpClient.engine, profilesUrl) }
     }
 }
