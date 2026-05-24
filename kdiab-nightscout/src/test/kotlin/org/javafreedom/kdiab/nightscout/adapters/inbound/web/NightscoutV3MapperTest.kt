@@ -1,4 +1,4 @@
-package org.javafreedom.kdiab.nightscout.adapters.inbound.web
+package org.javafreedom.kdiab.nightscout.adapters.outbound.http
 
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put

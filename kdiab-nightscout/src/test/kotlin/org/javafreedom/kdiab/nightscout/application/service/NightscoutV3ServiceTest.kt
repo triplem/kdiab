@@ -7,7 +7,6 @@ import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import org.javafreedom.kdiab.nightscout.adapters.inbound.web.Ns3SearchParams
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureSource
@@ -15,6 +14,7 @@ import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureStat
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.UpdateMeasureRequest
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -30,7 +30,7 @@ class NightscoutV3ServiceTest {
         sortField = "date",
         sortDesc = true,
         fields = emptyList(),
-        filters = emptyMap(),
+        filters = emptyMap<String, List<Pair<String, String>>>(),
     )
 
     private fun measureResponse(id: String, measuredAt: String, sgv: Int = 120) = MeasureResponse(
@@ -103,11 +103,12 @@ class NightscoutV3ServiceTest {
     }
 
     @Test
-    fun `createEntry calls postMeasure and returns the input entry`() = runTest {
-        coJustRun { measuresClient.postMeasure(any(), any(), any(), any()) }
+    fun `createEntry calls postMeasure and returns entry with server-assigned id`() = runTest {
+        val serverResponse = measureResponse("server-assigned-id", "2024-01-01T00:00:00Z", 130)
+        coEvery { measuresClient.postMeasure(any(), any(), any(), any()) } returns serverResponse
 
         val inputEntry = Ns3Entry(
-            identifier = "new-id",
+            identifier = "client-temp-id",
             date = 1704067200000L,
             dateString = "2024-01-01T00:00:00Z",
             type = "sgv",
@@ -116,7 +117,7 @@ class NightscoutV3ServiceTest {
 
         val result = service.createEntry("user1", "Bearer token", "corr", inputEntry, "mg/dL")
 
-        assertEquals(inputEntry, result)
+        assertEquals("server-assigned-id", result.identifier)
         coVerify(exactly = 1) { measuresClient.postMeasure("user1", "Bearer token", "corr", any()) }
     }
 

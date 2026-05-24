@@ -2,17 +2,9 @@ package org.javafreedom.kdiab.nightscout.adapters.inbound.web
 
 import io.ktor.http.*
 import io.ktor.server.application.*
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
 
 private const val DEFAULT_LIMIT = 100
-
-data class Ns3SearchParams(
-    val limit: Int,
-    val skip: Int,
-    val sortField: String?,
-    val sortDesc: Boolean,
-    val fields: List<String>,
-    val filters: Map<String, Pair<String, String>>,
-)
 
 private val ALLOWED_OPERATORS = setOf("\$eq", "\$ne", "\$gt", "\$gte", "\$lt", "\$lte")
 
@@ -40,7 +32,7 @@ internal fun parseNs3SearchParams(params: Parameters, maxLimit: Int): Ns3SearchP
 
     val filters = params.names()
         .mapNotNull { key -> parseFilterEntry(key, params[key]) }
-        .toMap()
+        .groupBy({ it.first }, { it.second })
 
     return Ns3SearchParams(
         limit = limit,

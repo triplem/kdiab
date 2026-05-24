@@ -2,12 +2,12 @@ package org.javafreedom.kdiab.nightscout.application.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.Instant
-import org.javafreedom.kdiab.nightscout.adapters.inbound.web.Ns3SearchParams
-import org.javafreedom.kdiab.nightscout.adapters.inbound.web.toCreateMeasureRequest
-import org.javafreedom.kdiab.nightscout.adapters.inbound.web.toNs3Entry
-import org.javafreedom.kdiab.nightscout.adapters.inbound.web.toUpdateMeasureRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateMeasureRequest
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toNs3Entry
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateMeasureRequest
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
 
 private val logger = KotlinLogging.logger {}
 
@@ -21,12 +21,11 @@ class NightscoutV3Service(private val measuresClient: MeasuresClient) {
         params: Ns3SearchParams,
         glucoseUnit: String,
     ): List<Ns3Entry> {
-        val from = params.filters["date"]?.let { (op, v) ->
-            if (op == "\$gte") epochMsToIso(v.toLongOrNull()) else null
-        }
-        val to = params.filters["date"]?.let { (op, v) ->
-            if (op == "\$lte") epochMsToIso(v.toLongOrNull()) else null
-        }
+        val dateFilters = params.filters["date"] ?: emptyList()
+        val from = dateFilters.firstOrNull { (op, _) -> op == "\$gte" }
+            ?.second?.toLongOrNull()?.let { epochMsToIso(it) }
+        val to = dateFilters.firstOrNull { (op, _) -> op == "\$lte" }
+            ?.second?.toLongOrNull()?.let { epochMsToIso(it) }
         return measuresClient.getMeasures(userId, authorization, correlationId, from, to)
             .map { it.toNs3Entry(glucoseUnit) }
             .let { entries ->
@@ -55,9 +54,9 @@ class NightscoutV3Service(private val measuresClient: MeasuresClient) {
         glucoseUnit: String,
     ): Ns3Entry {
         val request = entry.toCreateMeasureRequest(glucoseUnit) ?: error("Unsupported entry type: ${entry.type}")
-        measuresClient.postMeasure(userId, authorization, correlationId, request)
-        logger.info { "Created v3 entry type=${entry.type} userId=$userId" }
-        return entry
+        val created = measuresClient.postMeasure(userId, authorization, correlationId, request)
+        logger.info { "Created v3 entry type=${entry.type} userId=$userId serverId=${created.id}" }
+        return entry.copy(identifier = created.id)
     }
 
     @Suppress("LongParameterList")

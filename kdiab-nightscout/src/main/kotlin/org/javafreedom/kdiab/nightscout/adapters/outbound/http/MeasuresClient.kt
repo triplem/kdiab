@@ -107,7 +107,7 @@ class MeasuresClient(
         authorization: String,
         correlationId: String,
         request: CreateMeasureRequest,
-    ) {
+    ): MeasureResponse {
         val token = authorization.removePrefix("Bearer ").trim()
         val api = DefaultApi(
             baseUrl = "$baseUrl/api/v1",
@@ -131,6 +131,7 @@ class MeasuresClient(
             )
         }
         logger.info { "Posted measure for nightscout userId=$userId" }
+        return httpResponse.body()
     }
 
     suspend fun getMeasure(

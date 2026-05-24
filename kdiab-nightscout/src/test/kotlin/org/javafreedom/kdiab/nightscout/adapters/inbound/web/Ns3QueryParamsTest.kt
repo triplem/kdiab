@@ -70,13 +70,25 @@ class Ns3QueryParamsTest {
     @Test
     fun `date dollar gte filter is parsed correctly`() {
         val result = parseNs3SearchParams(params("date\$gte" to "1700000000000"), maxLimit = 1000)
-        assertEquals(Pair("\$gte", "1700000000000"), result.filters["date"])
+        assertEquals(listOf(Pair("\$gte", "1700000000000")), result.filters["date"])
     }
 
     @Test
     fun `date dollar lt filter is parsed correctly`() {
         val result = parseNs3SearchParams(params("date\$lt" to "1704067200000"), maxLimit = 1000)
-        assertEquals(Pair("\$lt", "1704067200000"), result.filters["date"])
+        assertEquals(listOf(Pair("\$lt", "1704067200000")), result.filters["date"])
+    }
+
+    @Test
+    fun `date range with both gte and lte preserves both operators`() {
+        val result = parseNs3SearchParams(
+            params("date\$gte" to "1700000000000", "date\$lte" to "1704067200000"),
+            maxLimit = 1000,
+        )
+        val dateFilters = result.filters["date"] ?: emptyList()
+        assertEquals(2, dateFilters.size)
+        assertTrue(dateFilters.any { (op, v) -> op == "\$gte" && v == "1700000000000" })
+        assertTrue(dateFilters.any { (op, v) -> op == "\$lte" && v == "1704067200000" })
     }
 
     @Test
