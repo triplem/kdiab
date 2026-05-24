@@ -176,13 +176,31 @@ describe('GlucoseTrendChart', () => {
   })
 
   test('CGM line has activeDot configured for per-reading hover', () => {
-    // With recharts mocked, just verify the component renders without errors
-    // when cgmPoints are present (activeDot is a prop, not a rendered element in the mock)
     render(
       <GlucoseTrendChart
         {...baseProps}
         chartData={[cgmPoint]}
         cgmPoints={[cgmPoint]}
+      />
+    )
+    expect(screen.getByRole('img')).toBeTruthy()
+  })
+
+  test('renders without crashing when treatmentMarkers are present', () => {
+    const marker = {
+      time: new Date('2024-06-01T01:00:00Z').getTime(),
+      sgv: null,
+      bgm: null,
+      marker: 59,
+      treatmentType: 'BOLUS',
+      label: '4.0U',
+    }
+    render(
+      <GlucoseTrendChart
+        {...baseProps}
+        chartData={[cgmPoint, marker]}
+        cgmPoints={[cgmPoint]}
+        treatmentMarkers={[marker]}
       />
     )
     expect(screen.getByRole('img')).toBeTruthy()
