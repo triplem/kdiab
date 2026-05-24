@@ -27,7 +27,9 @@ import org.javafreedom.kdiab.common.plugins.configureTracing
 import org.javafreedom.kdiab.nightscout.adapters.inbound.web.nightscoutRoutes
 import org.javafreedom.kdiab.nightscout.adapters.inbound.web.nightscoutV3Routes
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
@@ -72,9 +74,16 @@ fun Application.module() {
 
         val measuresUrl = environment.config.property("upstream.measuresUrl").getString()
         val treatmentsUrl = environment.config.property("upstream.treatmentsUrl").getString()
+        val carbsUrl = environment.config.property("upstream.carbsUrl").getString()
+        val profilesUrl = environment.config.property("upstream.profilesUrl").getString()
 
         healthClient = httpClient
-        upstreamHealthUrls = listOf("$measuresUrl/healthz", "$treatmentsUrl/healthz")
+        upstreamHealthUrls = listOf(
+            "$measuresUrl/healthz",
+            "$treatmentsUrl/healthz",
+            "$carbsUrl/healthz",
+            "$profilesUrl/healthz",
+        )
 
         install(DI) { }
         dependencies {
@@ -87,6 +96,8 @@ fun Application.module() {
             provide<NightscoutV3Service> {
                 NightscoutV3Service(measuresClient = MeasuresClient(httpClient.engine, measuresUrl))
             }
+            provide<CarbsClient> { CarbsClient(httpClient.engine, carbsUrl) }
+            provide<ProfilesClient> { ProfilesClient(httpClient.engine, profilesUrl) }
         }
     }
 

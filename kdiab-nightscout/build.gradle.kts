@@ -69,6 +69,8 @@ kotlin {
             kotlin.srcDir("src/main/kotlin")
             kotlin.srcDir("${layout.buildDirectory.get()}/generated/upstream-measures/src/main/kotlin")
             kotlin.srcDir("${layout.buildDirectory.get()}/generated/upstream-treatments/src/main/kotlin")
+            kotlin.srcDir("${layout.buildDirectory.get()}/generated/upstream-carbs/src/main/kotlin")
+            kotlin.srcDir("${layout.buildDirectory.get()}/generated/upstream-profiles/src/main/kotlin")
         }
     }
 }
@@ -175,8 +177,42 @@ val generateTreatmentsModels by tasks.registering(GenerateTask::class) {
     typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
 }
 
+val generateCarbsModels by tasks.registering(GenerateTask::class) {
+    generatorName.set("kotlin")
+    inputSpec.set(layout.projectDirectory.file("../kdiab-carbs/api/openapi.yaml").asFile.absolutePath)
+    outputDir.set("${layout.buildDirectory.get()}/generated/upstream-carbs")
+    packageName.set("org.javafreedom.kdiab.nightscout.api.upstream.carbs")
+    modelPackage.set("org.javafreedom.kdiab.nightscout.api.upstream.carbs.models")
+    apiPackage.set("org.javafreedom.kdiab.nightscout.api.upstream.carbs")
+    globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
+    configOptions.set(mapOf(
+        "library" to "jvm-ktor",
+        "dateLibrary" to "string",
+        "serializationLibrary" to "kotlinx_serialization",
+        "useCoroutines" to "true",
+    ))
+    typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
+}
+
+val generateProfilesModels by tasks.registering(GenerateTask::class) {
+    generatorName.set("kotlin")
+    inputSpec.set(layout.projectDirectory.file("../kdiab-profiles/api/openapi.yaml").asFile.absolutePath)
+    outputDir.set("${layout.buildDirectory.get()}/generated/upstream-profiles")
+    packageName.set("org.javafreedom.kdiab.nightscout.api.upstream.profiles")
+    modelPackage.set("org.javafreedom.kdiab.nightscout.api.upstream.profiles.models")
+    apiPackage.set("org.javafreedom.kdiab.nightscout.api.upstream.profiles")
+    globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
+    configOptions.set(mapOf(
+        "library" to "jvm-ktor",
+        "dateLibrary" to "string",
+        "serializationLibrary" to "kotlinx_serialization",
+        "useCoroutines" to "true",
+    ))
+    typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
+}
+
 tasks.compileKotlin {
-    dependsOn(generateMeasuresModels, generateTreatmentsModels)
+    dependsOn(generateMeasuresModels, generateTreatmentsModels, generateCarbsModels, generateProfilesModels)
 }
 
 kover {
@@ -193,6 +229,8 @@ kover {
                     // Generated upstream client models -- not hand-written, excluded by convention
                     "org.javafreedom.kdiab.nightscout.api.upstream.measures",
                     "org.javafreedom.kdiab.nightscout.api.upstream.treatments",
+                    "org.javafreedom.kdiab.nightscout.api.upstream.carbs",
+                    "org.javafreedom.kdiab.nightscout.api.upstream.profiles",
                     // Adapters require live Ktor test engine or running upstream services;
                     // covered by integration tests, not unit tests (#599)
                     "org.javafreedom.kdiab.nightscout.adapters.inbound.web",
