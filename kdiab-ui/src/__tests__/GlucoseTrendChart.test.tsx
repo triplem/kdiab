@@ -6,6 +6,7 @@ import React from 'react'
 vi.mock('recharts', () => ({
   ComposedChart: ({ children }: { children: React.ReactNode }) => <div data-testid="composed-chart">{children}</div>,
   Line: () => null,
+  Area: () => null,
   XAxis: () => null,
   YAxis: () => null,
   CartesianGrid: () => null,
@@ -159,6 +160,18 @@ describe('GlucoseTrendChart', () => {
         yLabel="mmol/L"
       />
     )
+    expect(screen.getByRole('img')).toBeTruthy()
+  })
+
+  test('renders without crashing when basalBlocks contains a BELOW block (delivered line dips)', () => {
+    const belowBlock: BasalBlock = { startMs: new Date('2024-06-01T00:00:00Z').getTime(), endMs: new Date('2024-06-01T01:00:00Z').getTime(), deliveredRate: 0.45, scheduledRate: 0.9, state: 'BELOW' }
+    render(<GlucoseTrendChart {...baseProps} chartData={[cgmPoint]} cgmPoints={[cgmPoint]} basalBlocks={[belowBlock]} basalProfileLine={mockBasalProfileLine} />)
+    expect(screen.getByRole('img')).toBeTruthy()
+  })
+
+  test('renders without crashing when basalBlocks contains a SUSPENDED block (rate=0)', () => {
+    const suspendBlock: BasalBlock = { startMs: new Date('2024-06-01T00:00:00Z').getTime(), endMs: new Date('2024-06-01T00:05:00Z').getTime(), deliveredRate: 0, scheduledRate: 0.9, state: 'SUSPENDED' }
+    render(<GlucoseTrendChart {...baseProps} chartData={[cgmPoint]} cgmPoints={[cgmPoint]} basalBlocks={[suspendBlock]} basalProfileLine={mockBasalProfileLine} />)
     expect(screen.getByRole('img')).toBeTruthy()
   })
 })
