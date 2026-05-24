@@ -1,0 +1,174 @@
+= ADR-001: Adopt Nightscout API v3 as the Primary External Interface
+
+Status: Accepted
+Date: 2026-05-24
+
+== Context
+
+The kdiab-nightscout service originally exposed a read-only Nightscout v1 API consisting of three endpoints:
+
+* `GET /api/v1/entries.json` — CGM and BGM readings
+* `GET /api/v1/treatments.json` — Treatment events
+* `GET /api/v1/status.json` — Server status
+
+Modern CGM clients have evolved significantly:
+
+* **AAPS 3.x** requires bidirectional v3 sync to upload bolus, carbs, and devicestatus records directly from the pump loop
+* **xDrip+** uses v3 POST/PUT endpoints for remote data entry and conflict resolution
+* **Juggluco** relies on v3 DELETE semantics for accurate CGM history management
+
+The v1 API is read-only by design; POST, PUT, PATCH, and DELETE operations on patient data are not available through it. This means AAPS 3.x and xDrip+ cannot upload treatment events or device status through the existing implementation, requiring users to enter data manually in the kdiab UI — a significant usability gap for closed-loop therapy.
+
+kdiab already owns authoritative data in purpose-built upstream services:
+
+* **kdiab-measures** — CGM and BGM readings
+* **kdiab-treatments** — Bolus, basal, carbs, and ancillary events
+* **kdiab-profiles** — Insulin pump basal profiles
+* **kdiab-carbs** — Food and carbohydrate database
+
+There is no dedicated Nightscout data store. kdiab-nightscout is, and must remain, a translation and BFF (Backend for Frontend) layer only. Duplicating data into a local store would create consistency problems and contradict the kdiab domain ownership model.
+
+== Decision
+
+Implement the full Nightscout v3 collection API (`/api/v3/{collection}`) as a translation layer over the kdiab upstream services. Retain the v1 API (`/api/v1/`) without modification for backward compatibility with legacy and already-configured client installations.
+
+Six collections are in scope:
+
+[cols="1,2,3", options="header"]
+|===
+| Collection
+| Upstream service
+| Notes
+
+| `entries`
+| kdiab-measures
+| CGM readings (type SGV) and BGM readings (type MBG)
+
+| `treatments`
+| kdiab-treatments
+| Bolus, basal, carbs, correction bolus, and all other treatment event types
+
+| `food`
+| kdiab-carbs
+| Food and carbohydrate database entries
+
+| `profile`
+| kdiab-profiles
+| Insulin pump basal profiles — active and historical
+
+| `settings`
+| kdiab-profiles + JWT
+| Per-user settings derived from the active profile and JWT `glucose_unit` claim
+
+| `devicestatus`
+| kdiab-treatments
+| Stored as `DEVICE_STATUS` treatment type; reconstructed on read
+|===
+
+Operations supported per collection:
+
+[cols="1,1,1,1,1,1", options="header"]
+|===
+| Collection
+| GET (list)
+| GET (single)
+| POST
+| PUT / PATCH
+| DELETE
+
+| `entries`
+| yes
+| yes
+| yes
+| yes
+| yes
+
+| `treatments`
+| yes
+| yes
+| yes
+| yes
+| yes
+
+| `food`
+| yes
+| yes
+| yes
+| yes
+| yes
+
+| `profile`
+| yes
+| yes
+| yes (new version)
+| yes (copy-on-write)
+| no
+
+| `settings`
+| yes
+| —
+| —
+| 422 (units are read-only via this API)
+| no
+
+| `devicestatus`
+| yes
+| yes
+| yes
+| no
+| no
+|===
+
+All v3 endpoints require a Bearer JWT issued by Keycloak. The Nightscout API secret (`API_SECRET`) authentication mechanism is not supported in kdiab-nightscout.
+
+== Consequences
+
+=== BFF Pattern — No Local State
+
+kdiab-nightscout does not own any data. Every read and write passes through to the appropriate upstream service via Ktor HTTP clients with the user's JWT forwarded unchanged. The service is therefore stateless and safe to scale horizontally. There is no local cache — upstream services are the single source of truth.
+
+=== Profile Copy-on-Write — Identifier Drift
+
+kdiab-profiles enforces a copy-on-write invariant: any PUT or PATCH on a profile archives the current version and creates a new ACTIVE profile with a new identifier. As a result, PUT and PATCH on the `profile` and `settings` v3 collections will return a response body containing a **different `_id`** than the one in the request URL.
+
+Nightscout clients that cache the profile identifier as a stable reference will receive 404 on the next GET using the old identifier. AAPS and xDrip+ handle this correctly by re-fetching the profile list after each write. This behaviour must be documented in the developer reference; it is a known and accepted consequence of the copy-on-write design (see ADR-015 in kdiab-profiles).
+
+=== devicestatus Storage via kdiab-treatments
+
+POST to `devicestatus` is accepted by kdiab-nightscout and forwarded to kdiab-treatments as a `DEVICE_STATUS` treatment record. This gives a full audit trail within the existing treatments data model and avoids introducing a new data store. GET on `devicestatus` reconstructs the Nightscout `devicestatus` document shape from those treatment records. The mapping between the NS devicestatus JSON structure and the kdiab treatment payload is documented in the Nightscout v3 developer reference.
+
+=== settings Are User-Scoped and Partially Read-Only
+
+`GET /api/v3/settings` is user-specific. The `units` field (mg/dL or mmol/L) derives from the authenticated user's `glucose_unit` JWT claim set in Keycloak — it is not a server-wide configuration. Attempts to change `units` via PUT or PATCH on the `settings` collection are rejected with HTTP 422, with an error body explaining that the glucose unit must be changed via Keycloak user attributes and that a re-login is required for the change to take effect in the JWT.
+
+=== v1 Backward Compatibility Is Permanent
+
+The v1 API (`/api/v1/entries.json`, `/api/v1/treatments.json`, `/api/v1/status.json`) remains unchanged and is kept indefinitely. No deprecation timeline is planned. Operators with AAPS or xDrip+ installations that have not migrated to v3 must not be forced to reconfigure their clients.
+
+=== Authentication — Bearer JWT Only
+
+All v3 endpoints require `Authorization: Bearer <token>` using a Keycloak-issued JWT with the `nightscout` audience. The Nightscout API secret (`API_SECRET` header or query parameter) is explicitly not supported. Operators must configure AAPS, xDrip+, and Juggluco to use OIDC/OAuth2 token authentication against the kdiab Keycloak instance. The root `config/keycloak-realm.json` includes the `kdiab-nightscout` client with the required audience mapper.
+
+=== Error Semantics
+
+Upstream HTTP errors are translated to appropriate Nightscout v3 error responses. A 4xx from an upstream service propagates as a 4xx to the NS client; a 5xx or network failure results in 502 Bad Gateway with a structured error body. This is consistent with the `UpstreamException` pattern used in kdiab-analyze.
+
+== Alternatives Considered
+
+=== 1. Custom REST API (Rejected)
+
+Design a kdiab-specific REST API for CGM client integration instead of adopting the Nightscout protocol.
+
+Rejected because it breaks compatibility with all existing CGM tooling. AAPS, xDrip+, and Juggluco have no plugin point for a custom API; adopting this alternative requires patients to switch to a kdiab-specific app or fork a client. The Nightscout API is a well-understood, widely-supported protocol that kdiab can implement without custom client code.
+
+=== 2. Full Nightscout v1 Parity Only (Rejected)
+
+Extend the v1 implementation to cover more GET endpoints but avoid implementing v3.
+
+Rejected because v1 is architecturally read-only. AAPS 3.x and xDrip+ Sync explicitly require write operations (POST treatments, POST devicestatus) that are not part of the v1 protocol. Extending v1 would require deviating from the spec in ways that make the implementation non-standard and likely incompatible with future client versions.
+
+=== 3. Own Data Store in kdiab-nightscout (Rejected)
+
+Introduce a PostgreSQL database into kdiab-nightscout and store a copy of all Nightscout data locally, syncing asynchronously with upstream services.
+
+Rejected because it duplicates data that is already owned and authoritative in kdiab-measures, kdiab-treatments, kdiab-profiles, and kdiab-carbs. A local copy creates consistency problems (the local store can diverge from upstream during network partition or service downtime), complicates deployments (Liquibase migrations, database credentials, backup requirements), and contradicts the kdiab domain ownership model. The BFF translation approach avoids all of these problems with no meaningful latency cost given the intra-cluster HTTP hop times.
