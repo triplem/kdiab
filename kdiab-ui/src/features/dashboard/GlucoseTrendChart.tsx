@@ -13,7 +13,7 @@ import {
   ReferenceArea,
   ResponsiveContainer,
 } from 'recharts'
-import { type BasalBlock, type BasalProfilePoint, BASAL_COLORS } from './basalUtils'
+import { type BasalBlock, type BasalProfilePoint, BASAL_COLORS, deriveDeliveredLine } from './basalUtils'
 
 interface ChartPoint {
   time: number
@@ -154,15 +154,10 @@ export function GlucoseTrendChart({
     () => basalProfileLine?.map(p => ({ time: p.time, basalSched: -p.sched })) ?? [],
     [basalProfileLine]
   )
-  const negatedDeliveredLine = useMemo(() => {
-    if (!basalBlocks?.length) return []
-    const pts: { time: number; basalDelivered: number }[] = []
-    for (const block of basalBlocks) {
-      pts.push({ time: block.startMs, basalDelivered: -block.deliveredRate })
-      pts.push({ time: block.endMs - 1, basalDelivered: -block.deliveredRate })
-    }
-    return pts.sort((a, b) => a.time - b.time)
-  }, [basalBlocks])
+  const negatedDeliveredLine = useMemo(
+    () => deriveDeliveredLine(basalBlocks ?? []),
+    [basalBlocks]
+  )
   const hasBasal = (basalBlocks?.length ?? 0) > 0 || negatedBasalLine.length > 0
 
   return (
