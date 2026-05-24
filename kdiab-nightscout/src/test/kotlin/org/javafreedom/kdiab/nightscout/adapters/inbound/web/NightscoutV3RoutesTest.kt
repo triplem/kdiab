@@ -19,6 +19,7 @@ import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Settings
 import org.javafreedom.kdiab.nightscout.module
 import kotlin.test.Test
@@ -338,5 +339,108 @@ class NightscoutV3RoutesTest {
         }
 
         assertEquals(HttpStatusCode.UnprocessableEntity, response.status)
+    }
+
+    // ─── Profile routes ────────────────────────────────────────────────────────
+
+    private val sampleProfile = Ns3Profile(
+        identifier = "profile-1",
+        defaultProfile = "My Profile",
+        startDate = "2024-01-01T00:00:00Z",
+        units = "mg/dl",
+        dia = 4.0,
+        basalSegments = emptyList(),
+        carbratio = emptyList(),
+        sens = emptyList(),
+    )
+
+    @Test
+    fun `GET api v3 profile returns 200 with list`() = v3RouteTest { svc ->
+        coEvery { svc.searchProfiles(any(), any(), any(), any()) } returns listOf(sampleProfile)
+
+        val response = client.get("/api/v3/profile") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "profile-1")
+    }
+
+    @Test
+    fun `GET api v3 profile returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.get("/api/v3/profile")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `GET api v3 profile slash id returns 200 when found`() = v3RouteTest { svc ->
+        coEvery { svc.getProfile(any(), any(), any(), "profile-1") } returns sampleProfile
+
+        val response = client.get("/api/v3/profile/profile-1") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+        assertContains(response.bodyAsText(), "profile-1")
+    }
+
+    @Test
+    fun `GET api v3 profile slash id returns 404 when not found`() = v3RouteTest { svc ->
+        coEvery { svc.getProfile(any(), any(), any(), "missing") } returns null
+
+        val response = client.get("/api/v3/profile/missing") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+
+        assertEquals(HttpStatusCode.NotFound, response.status)
+    }
+
+    @Test
+    fun `POST api v3 profile returns 201 with location header`() = v3RouteTest { svc ->
+        coEvery { svc.createProfile(any(), any(), any(), any()) } returns sampleProfile
+
+        val response = client.post("/api/v3/profile") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(sampleProfile))
+        }
+
+        assertEquals(HttpStatusCode.Created, response.status)
+        assertContains(response.headers[HttpHeaders.Location] ?: "", "profile-1")
+    }
+
+    @Test
+    fun `POST api v3 profile returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.post("/api/v3/profile") {
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(sampleProfile))
+        }
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
+    }
+
+    @Test
+    fun `DELETE api v3 profile slash id returns 200 when permanent is false`() = v3RouteTest { svc ->
+        coJustRun { svc.deleteProfile(any(), any(), any(), "profile-1", any()) }
+
+        val response = client.delete("/api/v3/profile/profile-1") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+
+        assertEquals(HttpStatusCode.OK, response.status)
+    }
+
+    @Test
+    fun `DELETE api v3 profile slash id returns 400 when permanent is true`() = v3RouteTest { _ ->
+        val response = client.delete("/api/v3/profile/profile-1?permanent=true") {
+            header(HttpHeaders.Authorization, "Bearer $userToken")
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun `DELETE api v3 profile slash id returns 401 without token`() = v3RouteTest { _ ->
+        val response = client.delete("/api/v3/profile/profile-1")
+        assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 }

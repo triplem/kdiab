@@ -9,6 +9,8 @@ import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.CreateFoodEntryRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.FoodEntryResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.UpdateFoodEntryRequest
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.CreateProfileRequest
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.CreateMeasureRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureSource
@@ -18,8 +20,10 @@ import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.CreateTre
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.UpdateTreatmentRequest
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3BasalSegment
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
 
 private const val DEFAULT_PORTION_GRAMS = 100.0
@@ -172,3 +176,37 @@ fun Ns3Food.toUpdateFoodRequest(): UpdateFoodEntryRequest {
         carbsPer100g = java.math.BigDecimal.valueOf(carbsPer100g),
     )
 }
+
+private const val MINUTES_PER_HOUR = 60.0
+private const val UNKNOWN_INSULIN_TYPE = "Unknown"
+
+fun Profile.toNs3Profile(): Ns3Profile {
+    val nowMs = System.currentTimeMillis()
+    val nowIso = Instant.fromEpochMilliseconds(nowMs).toString()
+    val startDate = createdAt ?: nowIso
+    val createdMs = createdAt?.let {
+        runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrDefault(nowMs)
+    } ?: nowMs
+    val basalSegments = basal?.map { segment ->
+        Ns3BasalSegment(time = segment.startTime, value = segment.value)
+    } ?: emptyList()
+    return Ns3Profile(
+        identifier = id,
+        defaultProfile = name,
+        startDate = startDate,
+        units = "mg/dl",
+        timeZone = timeZone ?: "UTC",
+        dia = durationOfAction / MINUTES_PER_HOUR,
+        basalSegments = basalSegments,
+        carbratio = emptyList(),
+        sens = emptyList(),
+        srvCreated = createdMs,
+        srvModified = createdMs,
+    )
+}
+
+fun Ns3Profile.toCreateProfileRequest(): CreateProfileRequest = CreateProfileRequest(
+    name = defaultProfile,
+    insulinType = UNKNOWN_INSULIN_TYPE,
+    durationOfAction = (dia * MINUTES_PER_HOUR).toInt(),
+)

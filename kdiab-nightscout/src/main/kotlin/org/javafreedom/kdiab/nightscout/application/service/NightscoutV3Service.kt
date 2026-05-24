@@ -4,8 +4,11 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.datetime.Instant
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateFoodRequest
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateProfileRequest
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toNs3Profile
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateMeasureRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toNs3Entry
@@ -16,16 +19,20 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateMeasureRe
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toUpdateTreatmentRequest
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Settings
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
 
 private val logger = KotlinLogging.logger {}
 
+private const val MINUTES_PER_HOUR_SERVICE = 60.0
+
 class NightscoutV3Service(
     private val measuresClient: MeasuresClient,
     private val treatmentsClient: TreatmentsClient,
     private val carbsClient: CarbsClient,
+    private val profilesClient: ProfilesClient,
 ) {
 
     @Suppress("LongParameterList")
@@ -247,6 +254,72 @@ class NightscoutV3Service(
         units = glucoseUnit,
         timeZone = "UTC",
     )
+
+    @Suppress("LongParameterList")
+    suspend fun searchProfiles(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        params: Ns3SearchParams,
+    ): List<Ns3Profile> =
+        profilesClient.listProfiles(userId, authorization, correlationId)
+            .map { it.toNs3Profile() }
+            .sortedByDescending { it.srvModified }
+            .drop(params.skip)
+            .take(params.limit)
+
+    @Suppress("LongParameterList")
+    suspend fun getProfile(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+    ): Ns3Profile? = profilesClient.getProfile(userId, authorization, correlationId, id)?.toNs3Profile()
+
+    @Suppress("LongParameterList")
+    suspend fun createProfile(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        profile: Ns3Profile,
+    ): Ns3Profile {
+        val request = profile.toCreateProfileRequest()
+        val created = profilesClient.createProfile(userId, authorization, correlationId, request)
+        logger.info { "Created v3 profile name=${profile.defaultProfile} userId=$userId serverId=${created.id}" }
+        return created.toNs3Profile()
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun updateProfile(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+        profile: Ns3Profile,
+    ): Ns3Profile {
+        val existing = profilesClient.getProfile(userId, authorization, correlationId, id)
+            ?: error("Profile not found: $id")
+        val updateRequest = existing.copy(
+            name = profile.defaultProfile,
+            durationOfAction = (profile.dia * MINUTES_PER_HOUR_SERVICE).toInt(),
+        )
+        val updated = profilesClient.updateProfile(userId, authorization, correlationId, id, updateRequest)
+        logger.info { "Updated v3 profile id=$id userId=$userId newId=${updated.id}" }
+        return updated.toNs3Profile()
+    }
+
+    @Suppress("LongParameterList")
+    suspend fun deleteProfile(
+        userId: String,
+        authorization: String,
+        correlationId: String,
+        id: String,
+        permanent: Boolean,
+    ) {
+        require(!permanent) { "Permanent deletion is not supported for profiles; use soft-archive only" }
+        profilesClient.archiveProfile(userId, authorization, correlationId, id)
+        logger.info { "Archived v3 profile id=$id userId=$userId" }
+    }
 }
 
 private fun epochMsToIso(epochMs: Long?): String? =

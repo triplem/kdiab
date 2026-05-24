@@ -9,6 +9,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.FoodEntryResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.FoodEntryStatus
@@ -18,20 +19,25 @@ import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureSour
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureStatus
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.UpdateMeasureRequest
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.CreateProfileRequest
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class NightscoutV3ServiceTest {
 
     private val measuresClient = mockk<MeasuresClient>()
     private val treatmentsClient = mockk<TreatmentsClient>()
     private val carbsClient = mockk<CarbsClient>()
-    private val service = NightscoutV3Service(measuresClient, treatmentsClient, carbsClient)
+    private val profilesClient = mockk<ProfilesClient>()
+    private val service = NightscoutV3Service(measuresClient, treatmentsClient, carbsClient, profilesClient)
 
     private val defaultParams = Ns3SearchParams(
         limit = 100,
@@ -290,5 +296,134 @@ class NightscoutV3ServiceTest {
         coVerify(exactly = 1) {
             carbsClient.deleteFood("user1", "Bearer token", "corr", "food-1", permanent = true)
         }
+    }
+
+    // ─── Profile service methods ───────────────────────────────────────────────
+
+    private fun upstreamProfile(
+        id: String = "p1",
+        name: String = "Test Profile",
+        durationOfAction: Int = 240,
+        status: Profile.Status = Profile.Status.ACTIVE,
+    ) = Profile(
+        id = id,
+        userId = "user1",
+        name = name,
+        insulinType = "Novorapid",
+        durationOfAction = durationOfAction,
+        status = status,
+        createdAt = "2024-01-01T00:00:00Z",
+    )
+
+    @Test
+    fun `searchProfiles returns mapped profiles sorted by srvModified desc`() = runTest {
+        coEvery { profilesClient.listProfiles(any(), any(), any(), any()) } returns listOf(
+            upstreamProfile(id = "p1", name = "Profile A"),
+            upstreamProfile(id = "p2", name = "Profile B"),
+        )
+
+        val params = defaultParams.copy(limit = 10, skip = 0)
+        val result = service.searchProfiles("user1", "Bearer token", "corr", params)
+
+        assertEquals(2, result.size)
+        assertEquals("p1", result[0].identifier)
+        assertEquals("p2", result[1].identifier)
+    }
+
+    @Test
+    fun `searchProfiles applies skip and limit`() = runTest {
+        coEvery { profilesClient.listProfiles(any(), any(), any(), any()) } returns listOf(
+            upstreamProfile(id = "p1"),
+            upstreamProfile(id = "p2"),
+            upstreamProfile(id = "p3"),
+        )
+
+        val params = defaultParams.copy(limit = 1, skip = 1)
+        val result = service.searchProfiles("user1", "Bearer token", "corr", params)
+
+        assertEquals(1, result.size)
+    }
+
+    @Test
+    fun `getProfile returns mapped profile when found`() = runTest {
+        coEvery { profilesClient.getProfile("user1", "Bearer token", "corr", "p1") } returns upstreamProfile(id = "p1")
+
+        val result = service.getProfile("user1", "Bearer token", "corr", "p1")
+
+        assertEquals("p1", result?.identifier)
+        assertEquals(4.0, result?.dia)
+    }
+
+    @Test
+    fun `getProfile returns null when not found`() = runTest {
+        coEvery { profilesClient.getProfile(any(), any(), any(), "missing") } returns null
+
+        val result = service.getProfile("user1", "Bearer token", "corr", "missing")
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `createProfile calls createProfile on client and returns mapped result`() = runTest {
+        val created = upstreamProfile(id = "server-id", name = "New Profile")
+        coEvery { profilesClient.createProfile(any(), any(), any(), any()) } returns created
+
+        val input = Ns3Profile(
+            identifier = "temp",
+            defaultProfile = "New Profile",
+            startDate = "2024-01-01T00:00:00Z",
+            units = "mg/dl",
+            dia = 4.0,
+            basalSegments = emptyList(),
+            carbratio = emptyList(),
+            sens = emptyList(),
+        )
+
+        val result = service.createProfile("user1", "Bearer token", "corr", input)
+
+        assertEquals("server-id", result.identifier)
+        coVerify(exactly = 1) { profilesClient.createProfile("user1", "Bearer token", "corr", any<CreateProfileRequest>()) }
+    }
+
+    @Test
+    fun `updateProfile fetches existing then updates and returns new profile`() = runTest {
+        val existing = upstreamProfile(id = "p1", name = "Old Name")
+        val updated = upstreamProfile(id = "p1-new", name = "New Name")
+        coEvery { profilesClient.getProfile("user1", "Bearer token", "corr", "p1") } returns existing
+        coEvery { profilesClient.updateProfile("user1", "Bearer token", "corr", "p1", any()) } returns updated
+
+        val input = Ns3Profile(
+            identifier = "p1",
+            defaultProfile = "New Name",
+            startDate = "2024-01-01T00:00:00Z",
+            units = "mg/dl",
+            dia = 4.0,
+            basalSegments = emptyList(),
+            carbratio = emptyList(),
+            sens = emptyList(),
+        )
+
+        val result = service.updateProfile("user1", "Bearer token", "corr", "p1", input)
+
+        assertEquals("p1-new", result.identifier)
+        coVerify(exactly = 1) { profilesClient.updateProfile("user1", "Bearer token", "corr", "p1", any()) }
+    }
+
+    @Test
+    fun `deleteProfile calls archiveProfile when permanent is false`() = runTest {
+        coJustRun { profilesClient.archiveProfile(any(), any(), any(), any()) }
+
+        service.deleteProfile("user1", "Bearer token", "corr", "p1", permanent = false)
+
+        coVerify(exactly = 1) { profilesClient.archiveProfile("user1", "Bearer token", "corr", "p1") }
+    }
+
+    @Test
+    fun `deleteProfile throws when permanent is true`() = runTest {
+        val result = runCatching {
+            service.deleteProfile("user1", "Bearer token", "corr", "p1", permanent = true)
+        }
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("Permanent deletion") == true)
     }
 }

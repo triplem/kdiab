@@ -6,11 +6,13 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import org.javafreedom.kdiab.common.plugins.ErrorResponse
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3ListResponse
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Response
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Settings
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
@@ -263,6 +265,86 @@ fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
             }
         }
         settingsRoutes(service)
+        nightscoutV3ProfileRoutes(service, maxLimit)
+    }
+}
+
+@Suppress("LongMethod")
+private fun Route.nightscoutV3ProfileRoutes(service: NightscoutV3Service, maxLimit: Int) {
+    route("/api/v3/profile") {
+        get {
+            val principal = call.principal<UserPrincipal>()!!
+            val params = call.parseNs3SearchParams(maxLimit)
+            val profiles = service.searchProfiles(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                params = params,
+            )
+            call.respond(Ns3ListResponse(status = 200, result = profiles))
+        }
+        post {
+            val principal = call.principal<UserPrincipal>()!!
+            val profile = call.receive<Ns3Profile>()
+            val created = service.createProfile(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                profile = profile,
+            )
+            call.response.header("Location", "/api/v3/profile/${created.identifier}")
+            val createResp = Ns3Response<Ns3Profile>(status = 201, identifier = created.identifier)
+            call.respond(HttpStatusCode.Created, createResp)
+        }
+        get("/{identifier}") {
+            val principal = call.principal<UserPrincipal>()!!
+            val id = call.parameters["identifier"]!!
+            val profile = service.getProfile(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                id = id,
+            )
+            if (profile == null) {
+                call.respond(HttpStatusCode.NotFound, Ns3Response<Ns3Profile>(status = 404))
+            } else {
+                call.respond(Ns3Response(status = 200, result = profile))
+            }
+        }
+        put("/{identifier}") {
+            val principal = call.principal<UserPrincipal>()!!
+            val id = call.parameters["identifier"]!!
+            val profile = call.receive<Ns3Profile>()
+            val updated = service.updateProfile(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                id = id,
+                profile = profile,
+            )
+            call.respond(Ns3Response(status = 200, result = updated))
+        }
+        delete("/{identifier}") {
+            val principal = call.principal<UserPrincipal>()!!
+            val id = call.parameters["identifier"]!!
+            val permanent = call.request.queryParameters["permanent"] == "true"
+            if (permanent) {
+                val resp = ErrorResponse(
+                    HttpStatusCode.BadRequest.value,
+                    "Permanent deletion is not supported for profiles",
+                )
+                call.respond(HttpStatusCode.BadRequest, resp)
+                return@delete
+            }
+            service.deleteProfile(
+                userId = principal.userId.toString(),
+                authorization = call.request.header("Authorization") ?: "",
+                correlationId = call.request.header("X-Correlation-ID") ?: "",
+                id = id,
+                permanent = false,
+            )
+            call.respond(Ns3Response<Unit>(status = 200))
+        }
     }
 }
 
