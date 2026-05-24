@@ -11,6 +11,8 @@ servers:
 tags:
   - name: Self
     description: Self-service endpoints — authenticated user managing their own data
+  - name: ApiKeys
+    description: M2M API key management — create, list, revoke Keycloak service-client credentials
   - name: Admin
     description: Admin-only user management
   - name: DoctorPatient
@@ -200,6 +202,84 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /users/me/api-keys:
+    post:
+      operationId: createApiKey
+      summary: Create an M2M API key
+      description: >
+        Creates a Keycloak confidential service client for the authenticated user.
+        The returned clientId and secret are used with the token endpoint
+        (client_credentials grant) to obtain JWTs accepted by all kdiab services.
+        Maximum 20 keys per user.
+      tags: [ApiKeys]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApiKeyRequest"
+      responses:
+        "201":
+          description: API key created — contains the plaintext secret (only returned once)
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the created key resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiKeyCreatedResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    get:
+      operationId: listApiKeys
+      summary: List own API keys
+      description: >
+        Returns all active M2M API keys for the authenticated user.
+        Maximum 20 keys are returned (server-enforced cap); no pagination needed.
+        The secret is never included in list responses.
+      tags: [ApiKeys]
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: List of API keys (secrets omitted)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiKeyResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /users/me/api-keys/{keyId}:
+    delete:
+      operationId: revokeApiKey
+      summary: Revoke an API key
+      description: Permanently deletes the Keycloak service client, immediately invalidating all tokens issued for it.
+      tags: [ApiKeys]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: keyId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+          description: Keycloak client UUID of the API key to revoke
+      responses:
+        "204":
+          description: Key revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -568,6 +648,62 @@ components:
           type: string
           format: uuid
           example: "b0b0b0b0-b0b0-4b00-ab00-b0b0b0b0b0b0"
+
+    CreateApiKeyRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Human-readable label for this key (e.g. device name)
+          example: "My CGM Reader"
+        expiry:
+          type: string
+          enum: [THREE_MONTHS, SIX_MONTHS, TWELVE_MONTHS, NO_EXPIRY]
+          default: NO_EXPIRY
+          description: When the key expires. NO_EXPIRY means the key never expires.
+          example: "NO_EXPIRY"
+
+    ApiKeyResponse:
+      type: object
+      required: [id, clientId, name, createdAt]
+      properties:
+        id:
+          type: string
+          description: Keycloak client UUID — use this as keyId when revoking
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        clientId:
+          type: string
+          description: OAuth2 client_id to present to the token endpoint
+          example: "device-11111111-1111-1111-1111-111111111111-abcdefgh"
+        name:
+          type: string
+          example: "My CGM Reader"
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO-8601 expiry timestamp, null for NO_EXPIRY keys
+          example: "2027-01-01T00:00:00Z"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-05-24T10:00:00Z"
+
+    ApiKeyCreatedResponse:
+      allOf:
+        - $ref: "#/components/schemas/ApiKeyResponse"
+        - type: object
+          required: [secret, tokenEndpoint]
+          properties:
+            secret:
+              type: string
+              description: OAuth2 client_secret — only returned at creation, never retrievable again
+              example: "s3cr3t-v4lue"
+            tokenEndpoint:
+              type: string
+              description: Keycloak token endpoint URL for the client_credentials grant
+              example: "http://keycloak:8080/realms/kdiab/protocol/openid-connect/token"
 
     ErrorResponse:
       type: object
