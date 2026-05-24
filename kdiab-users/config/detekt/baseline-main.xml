@@ -3,8 +3,10 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>RedundantSuspendModifier:KeycloakAdminClient.kt$KeycloakAdminClient$suspend</ID>
-    <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$KeycloakClientInfo( id = id, clientId = clientId, secret = "", name = name, expiresAt = expiresAt, createdAt = kotlinx.datetime.Clock.System.now(), )</ID>
+    <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$KeycloakClientInfo( id = id, clientId = clientId, secret = "", name = name, expiresAt = expiresAt, createdAt = createdAt, )</ID>
     <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val clientId = client.clientId ?: return@mapNotNull null</ID>
+    <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val createdAt = createdAtStr?.let { runCatching { kotlinx.datetime.Instant.parse(it) }.getOrNull() } ?: kotlinx.datetime.Instant.DISTANT_PAST</ID>
+    <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val createdAtStr = client.attributes?.get("kdiab.key.created_at")?.takeIf { it.isNotBlank() }</ID>
     <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val expiresAt = expiresAtStr?.let { runCatching { kotlinx.datetime.Instant.parse(it) }.getOrNull() }</ID>
     <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val expiresAtStr = client.attributes?.get("kdiab.key.expires_at")?.takeIf { it.isNotBlank() }</ID>
     <ID>UnreachableCode:KeycloakAdminClient.kt$KeycloakAdminClient$val id = client.id ?: return@mapNotNull null</ID>

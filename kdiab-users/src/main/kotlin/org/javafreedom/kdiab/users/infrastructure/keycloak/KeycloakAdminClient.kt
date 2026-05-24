@@ -236,6 +236,7 @@ class KeycloakAdminClient(
     ): KeycloakClientInfo {
         val randomSuffix = (1..RANDOM_SUFFIX_LENGTH).map { ('a'..'z').random() }.joinToString("")
         val clientId = "device-$userId-$randomSuffix"
+        val createdAt = kotlinx.datetime.Clock.System.now()
         val auth = authHeader()
 
         val clientUuid = circuitBreaker.execute {
@@ -254,6 +255,7 @@ class KeycloakAdminClient(
                     attributes = buildMap {
                         put("kdiab.owner.userId", userId)
                         put("kdiab.key.name", name)
+                        put("kdiab.key.created_at", createdAt.toString())
                         if (expiresAt != null) put("kdiab.key.expires_at", expiresAt.toString())
                     },
                 ))
@@ -264,43 +266,54 @@ class KeycloakAdminClient(
             location.substringAfterLast("/")
         }
 
-        val secretValue = circuitBreaker.execute {
-            val response = httpClient.get(adminUrl("clients", clientUuid, "client-secret")) {
-                header(HttpHeaders.Authorization, auth)
+        try {
+            val secretValue = circuitBreaker.execute {
+                val response = httpClient.get(adminUrl("clients", clientUuid, "client-secret")) {
+                    header(HttpHeaders.Authorization, auth)
+                }
+                check(response.status.isSuccess()) { "getClientSecret failed: ${response.status}" }
+                response.body<KeycloakClientSecret>().value
+                    ?: error("Keycloak returned no secret value for client $clientUuid")
             }
-            check(response.status.isSuccess()) { "getClientSecret failed: ${response.status}" }
-            response.body<KeycloakClientSecret>().value
-                ?: error("Keycloak returned no secret value for client $clientUuid")
-        }
 
-        val serviceAccountUserId = circuitBreaker.execute {
-            val response = httpClient.get(adminUrl("clients", clientUuid, "service-account-user")) {
-                header(HttpHeaders.Authorization, auth)
+            val serviceAccountUserId = circuitBreaker.execute {
+                val response = httpClient.get(adminUrl("clients", clientUuid, "service-account-user")) {
+                    header(HttpHeaders.Authorization, auth)
+                }
+                check(response.status.isSuccess()) { "getServiceAccountUser failed: ${response.status}" }
+                response.body<KeycloakUser>().id
+                    ?: error("Keycloak returned no id for service account user of client $clientUuid")
             }
-            check(response.status.isSuccess()) { "getServiceAccountUser failed: ${response.status}" }
-            response.body<KeycloakUser>().id
-                ?: error("Keycloak returned no id for service account user of client $clientUuid")
-        }
 
-        val patientRole = getRealmRole("PATIENT")
-        circuitBreaker.execute {
-            val response = httpClient.post(adminUrl("users", serviceAccountUserId, "role-mappings", "realm")) {
-                header(HttpHeaders.Authorization, auth)
-                contentType(ContentType.Application.Json)
-                setBody(listOf(patientRole))
+            val patientRole = getRealmRole("PATIENT")
+            circuitBreaker.execute {
+                val response = httpClient.post(adminUrl("users", serviceAccountUserId, "role-mappings", "realm")) {
+                    header(HttpHeaders.Authorization, auth)
+                    contentType(ContentType.Application.Json)
+                    setBody(listOf(patientRole))
+                }
+                check(response.status.isSuccess()) { "assignRoles to service account failed: ${response.status}" }
             }
-            check(response.status.isSuccess()) { "assignRoles to service account failed: ${response.status}" }
-        }
 
-        logger.info { "keycloak_admin action=create_service_client clientUuid=$clientUuid userId=$userId" }
-        return KeycloakClientInfo(
-            id = clientUuid,
-            clientId = clientId,
-            secret = secretValue,
-            name = name,
-            expiresAt = expiresAt,
-            createdAt = kotlinx.datetime.Clock.System.now(),
-        )
+            logger.info { "keycloak_admin action=create_service_client clientUuid=$clientUuid userId=$userId" }
+            return KeycloakClientInfo(
+                id = clientUuid,
+                clientId = clientId,
+                secret = secretValue,
+                name = name,
+                expiresAt = expiresAt,
+                createdAt = createdAt,
+            )
+        } catch (@Suppress("TooGenericExceptionCaught") ex: Exception) {
+            val cause = ex.message
+            logger.warn { "keycloak_admin action=create_service_client_rollback clientUuid=$clientUuid cause=$cause" }
+            runCatching {
+                httpClient.delete(adminUrl("clients", clientUuid)) {
+                    header(HttpHeaders.Authorization, auth)
+                }
+            }
+            throw ex
+        }
     }
 
     suspend fun listServiceClients(userId: String): List<KeycloakClientInfo> {
@@ -324,13 +337,17 @@ class KeycloakAdminClient(
                 val expiresAt = expiresAtStr?.let {
                     runCatching { kotlinx.datetime.Instant.parse(it) }.getOrNull()
                 }
+                val createdAtStr = client.attributes?.get("kdiab.key.created_at")?.takeIf { it.isNotBlank() }
+                val createdAt = createdAtStr?.let {
+                    runCatching { kotlinx.datetime.Instant.parse(it) }.getOrNull()
+                } ?: kotlinx.datetime.Instant.DISTANT_PAST
                 KeycloakClientInfo(
                     id = id,
                     clientId = clientId,
                     secret = "",
                     name = name,
                     expiresAt = expiresAt,
-                    createdAt = kotlinx.datetime.Clock.System.now(),
+                    createdAt = createdAt,
                 )
             }
     }
