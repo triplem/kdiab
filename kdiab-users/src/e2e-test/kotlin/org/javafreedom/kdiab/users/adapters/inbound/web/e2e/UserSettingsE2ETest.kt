@@ -20,6 +20,7 @@ import io.mockk.mockk
 import java.util.Date
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.common.domain.model.Role
+import org.javafreedom.kdiab.users.application.service.ApiKeyService
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
 import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
@@ -44,6 +45,7 @@ private fun Application.installMockDi(
         provide<UserService> { UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo) }
         provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
         provide<RegistrationService> { RegistrationService(mockIdentityProvider, mockSettingsRepo, false) }
+        provide<ApiKeyService> { mockk(relaxed = true) }
     }
 }
 

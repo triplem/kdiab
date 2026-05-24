@@ -123,6 +123,15 @@ data class Ns3StatusResult(
     val permissions: List<String> = emptyList(),
 )
 
+data class Ns3SearchParams(
+    val limit: Int,
+    val skip: Int,
+    val sortField: String?,
+    val sortDesc: Boolean,
+    val fields: List<String>,
+    val filters: Map<String, List<Pair<String, String>>>,
+)
+
 @Serializable
 data class Ns3LastModifiedResult(
     val srvDate: Long,
