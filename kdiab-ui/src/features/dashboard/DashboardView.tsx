@@ -192,37 +192,86 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
   )
 
   // Combined dataset for ComposedChart root -- enables tooltip cursor to find points.
-  // BGM and treatment entries are merged into CGM entries at the same minute so the
-  // Recharts bisect cursor picks a single merged object; otherwise bgm/marker fields
-  // are null in the tooltip because the cursor lands on the CGM-only object.
+  // BGM and treatment entries are snapped to the nearest actual CGM timestamp so the
+  // Recharts bisect cursor always lands on a merged object. Ownership is determined by
+  // midpoint windows between adjacent CGM readings (dynamic, handles gaps correctly).
   const chartData = useMemo(() => {
-    const MS_PER_MINUTE = 60_000
-    const roundMin = (ms: number) => Math.round(ms / MS_PER_MINUTE) * MS_PER_MINUTE
+    const sortedCgmTimes = cgmPoints.map(p => p.time).sort((a, b) => a - b)
+
+    // Returns the actual CGM timestamp that "owns" the given ms value, or null if
+    // no CGM reading is close enough (point lies outside all ownership windows).
+    const snapToCgm = (ms: number): number | null => {
+      if (sortedCgmTimes.length === 0) return null
+
+      // Binary search: first index where sortedCgmTimes[i] >= ms
+      let lo = 0
+      let hi = sortedCgmTimes.length
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1
+        if ((sortedCgmTimes[mid] as number) < ms) lo = mid + 1
+        else hi = mid
+      }
+
+      // Nearest neighbour among the two candidates bracketing ms
+      let nearestIdx = lo
+      if (lo > 0 && lo < sortedCgmTimes.length) {
+        nearestIdx =
+          Math.abs((sortedCgmTimes[lo] as number) - ms) <=
+          Math.abs((sortedCgmTimes[lo - 1] as number) - ms)
+            ? lo
+            : lo - 1
+      } else if (lo === sortedCgmTimes.length) {
+        nearestIdx = lo - 1
+      }
+
+      const nearest = sortedCgmTimes[nearestIdx] as number
+      const prev = nearestIdx > 0 ? (sortedCgmTimes[nearestIdx - 1] as number) : null
+      const next =
+        nearestIdx < sortedCgmTimes.length - 1
+          ? (sortedCgmTimes[nearestIdx + 1] as number)
+          : null
+
+      // Ownership window: extends halfway to adjacent CGM readings (default 5 min at edges)
+      const DEFAULT_HALF = 5 * 60_000
+      const halfBefore = prev !== null ? (nearest - prev) / 2 : DEFAULT_HALF
+      const halfAfter = next !== null ? (next - nearest) / 2 : DEFAULT_HALF
+
+      return ms >= nearest - halfBefore && ms <= nearest + halfAfter ? nearest : null
+    }
+
     const byTime = new Map<number, ChartPoint>()
 
     for (const p of cgmPoints) {
-      byTime.set(roundMin(p.time), { ...p })
+      byTime.set(p.time, { ...p })
     }
 
     for (const p of bgmPoints) {
-      const key = roundMin(p.time)
-      const existing = byTime.get(key)
-      if (existing) {
-        byTime.set(key, { ...existing, bgm: p.bgm })
+      const cgmTime = snapToCgm(p.time)
+      if (cgmTime !== null) {
+        const existing = byTime.get(cgmTime)
+        if (existing) {
+          byTime.set(cgmTime, { ...existing, bgm: p.bgm })
+        } else {
+          byTime.set(cgmTime, { ...p, time: cgmTime })
+        }
       } else {
-        byTime.set(key, { ...p })
+        byTime.set(p.time, { ...p })
       }
     }
 
     for (const p of treatmentMarkers) {
-      const key = roundMin(p.time)
-      const existing = byTime.get(key)
-      if (existing) {
-        // Accumulate labels so concurrent treatments (e.g. BOLUS + CARBS at same minute) both appear
-        const combinedLabel = [existing.label, p.label].filter(Boolean).join(' · ')
-        byTime.set(key, { ...existing, marker: p.marker, treatmentType: p.treatmentType, label: combinedLabel })
+      const cgmTime = snapToCgm(p.time)
+      if (cgmTime !== null) {
+        const existing = byTime.get(cgmTime)
+        if (existing) {
+          // Accumulate labels so concurrent treatments (e.g. BOLUS + CARBS at same time) both appear
+          const combinedLabel = [existing.label, p.label].filter(Boolean).join(' · ')
+          byTime.set(cgmTime, { ...existing, marker: p.marker, treatmentType: p.treatmentType, label: combinedLabel })
+        } else {
+          byTime.set(cgmTime, { ...p, time: cgmTime })
+        }
       } else {
-        byTime.set(key, { ...p })
+        byTime.set(p.time, { ...p })
       }
     }
 
