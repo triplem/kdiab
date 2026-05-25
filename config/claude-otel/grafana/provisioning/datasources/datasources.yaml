@@ -6,13 +6,16 @@ datasources:
     access: proxy
     url: http://claude-prometheus:9090
     isDefault: true
-    uid: claude-prometheus
+    uid: prometheus
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://claude-loki:3100
+    uid: loki
 
   - name: Jaeger
     type: jaeger
     access: proxy
     url: http://claude-jaeger:16686
     uid: claude-jaeger
-    jsonData:
-      tracesToLogsV2:
-        datasourceUid: ''
