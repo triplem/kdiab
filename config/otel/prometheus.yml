@@ -3,8 +3,23 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  # Scrape metrics that kdiab backends forward via OTLP → prometheus exporter
-  - job_name: kdiab-otel-collector
+  # Full metrics data path:
+  #   kdiab backends (8 services)
+  #     → OTLP gRPC → otel-collector:4317  (internal Docker network)
+  #     → Prometheus exporter endpoint  otel-collector:8889/metrics
+  #   Prometheus → scrapes otel-collector:8889 under this job name
+  #
+  # OTEL_EXPORTER_OTLP_ENDPOINT is set to http://otel-collector:4317 by podman-up.sh
+  # when the otel overlay is active; the default in docker-compose.yml is localhost:4317
+  # (no-op without the overlay).  Each backend sets OTEL_SERVICE_NAME so individual
+  # services are distinguished by the 'service_name' label on every metric series.
+  #
+  # Dashboard PromQL uses job=~"kdiab.*" to filter series from this scrape job.
+  # The job_name MUST start with "kdiab" for that filter to match.  The previous
+  # name "kdiab-otel-collector" also satisfied the regex, but "kdiab-metrics" is
+  # more semantically accurate (the job represents kdiab app metrics, not
+  # collector internals).
+  - job_name: kdiab-metrics
     static_configs:
       - targets:
           - otel-collector:8889
