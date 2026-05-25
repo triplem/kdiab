@@ -14,8 +14,3 @@ datasources:
     url: http://claude-loki:3100
     uid: loki
 
-  - name: Jaeger
-    type: jaeger
-    access: proxy
-    url: http://claude-jaeger:16686
-    uid: claude-jaeger
