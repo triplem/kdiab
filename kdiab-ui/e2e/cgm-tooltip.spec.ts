@@ -15,8 +15,11 @@ async function loginAsSarah(page: import('@playwright/test').Page) {
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20_000 }),
     page.locator('[type=submit]').click(),
   ])
-  await page.waitForLoadState('networkidle', { timeout: 15_000 })
-  await page.waitForTimeout(2000)
+  // Wait for app shell to be present rather than sleeping a fixed duration.
+  await page.waitForSelector('nav a, [role="navigation"] a, svg', {
+    state: 'visible',
+    timeout: 15_000,
+  })
 }
 
 test('CGM chart tooltip shows merged values on hover', async ({ page }) => {
@@ -26,8 +29,8 @@ test('CGM chart tooltip shows merged values on hover', async ({ page }) => {
   const dashLink = page.locator('a, button, [role=tab]').filter({ hasText: /dashboard/i }).first()
   if (await dashLink.isVisible({ timeout: 5000 }).catch(() => false)) {
     await dashLink.click()
-    await page.waitForLoadState('networkidle', { timeout: 10_000 })
-    await page.waitForTimeout(2000)
+    // Wait for the first SVG chart to appear instead of sleeping.
+    await page.waitForSelector('svg', { state: 'visible', timeout: 10_000 }).catch(() => null)
   }
 
   // Find the first large chart SVG
