@@ -1,5 +1,7 @@
 /** Pure formatter for GlucoseTrendChart tooltip entries.
- *  Returns [displayValue, seriesName] or null to suppress the row. */
+ *  Returns [displayValue, seriesName] or null to suppress the row.
+ *  Returns null for null/undefined values so other-series nulls are hidden
+ *  when the cursor is positioned over a point from a different series. */
 export function formatTooltipEntry(
   name: unknown,
   value: unknown,
@@ -7,10 +9,12 @@ export function formatTooltipEntry(
   yLabel: string,
   translate: (key: string, opts?: { defaultValue: string }) => string,
 ): [string, string] | null {
-  if (name === 'sgv' && typeof value === 'number') return [`${value} ${yLabel}`, 'CGM']
-  if (name === 'bgm' && typeof value === 'number') return [`${value} ${yLabel}`, 'BGM']
+  if (name === 'sgv') return typeof value === 'number' ? [`${value} ${yLabel}`, 'CGM'] : null
+  if (name === 'bgm') return typeof value === 'number' ? [`${value} ${yLabel}`, 'BGM'] : null
   if (name === 'marker') {
+    if (value === null || value === undefined) return null
     const ttype = payload?.treatmentType ?? ''
+    if (!ttype) return null
     const lbl = payload?.label ?? ''
     const typeName = translate(`treatmentModal.types.${ttype}`, { defaultValue: ttype })
     return [lbl ? `${typeName}: ${lbl}` : typeName, typeName]

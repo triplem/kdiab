@@ -45,4 +45,28 @@ describe('formatTooltipEntry', () => {
     const result = formatTooltipEntry('marker', 59, { treatmentType: 'UNKNOWN_TYPE', label: '' }, 'mg/dL', t)
     expect(result).toEqual(['UNKNOWN_TYPE', 'UNKNOWN_TYPE'])
   })
+
+  test('sgv null is suppressed — avoids "null" row in tooltip when cursor is on a BGM/treatment point', () => {
+    expect(formatTooltipEntry('sgv', null, undefined, 'mg/dL', t)).toBeNull()
+  })
+
+  test('bgm null is suppressed — avoids "null" row in tooltip when cursor is on a CGM/treatment point', () => {
+    expect(formatTooltipEntry('bgm', null, undefined, 'mg/dL', t)).toBeNull()
+  })
+
+  test('marker null is suppressed — avoids empty row in tooltip when cursor is on a CGM/BGM point', () => {
+    expect(formatTooltipEntry('marker', null, { treatmentType: 'BOLUS', label: '4.0 U' }, 'mg/dL', t)).toBeNull()
+  })
+
+  test('marker with empty treatmentType is suppressed — guards against default empty payload', () => {
+    expect(formatTooltipEntry('marker', 59, { treatmentType: '', label: '' }, 'mg/dL', t)).toBeNull()
+  })
+
+  test('marker with undefined payload treatmentType is suppressed', () => {
+    expect(formatTooltipEntry('marker', 59, { label: '' }, 'mg/dL', t)).toBeNull()
+  })
+
+  test('unknown name is suppressed — no stray rows from unexpected dataKeys', () => {
+    expect(formatTooltipEntry('unknown', 42, undefined, 'mg/dL', t)).toBeNull()
+  })
 })
