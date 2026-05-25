@@ -6,12 +6,17 @@
 #   ./claude-otel-up.sh           # recommended — starts stack and prints service URLs
 #   docker compose -f docker-compose.claude-otel.yml up -d
 #
-# Port map (kdiab otel ports listed for reference — no overlap):
-#   OTLP gRPC   4327:4317  (kdiab: 4317)
-#   OTLP HTTP   4328:4318  (kdiab: 4318)
-#   Jaeger UI   16696:16686 (kdiab: 16686)
-#   Prometheus  9095:9090  (kdiab: 9090)
-#   Grafana     3015:3000  (kdiab: 3010)
+# Claude Code runs on the host machine and connects to its collector via localhost,
+# so this stack uses the standard OTEL ports. The kdiab app OTEL stack
+# (docker-compose.otel.yml) uses remapped host ports (14317, 14318, 16690) because
+# kdiab backends connect via internal Docker hostnames — host-side ports don't matter.
+#
+# Port map:
+#   OTLP gRPC   4317:4317  (kdiab app OTEL: 14317)
+#   OTLP HTTP   4318:4318  (kdiab app OTEL: 14318)
+#   Jaeger UI   16686:16686 (kdiab app OTEL: 16690)
+#   Prometheus  9090:9090  (kdiab app OTEL: n/a)
+#   Grafana     3000:3000  (kdiab app OTEL: n/a)
 
 services:
   claude-otel-collector:
@@ -22,8 +27,8 @@ services:
     volumes:
       - ./config/claude-otel/otel-collector-config.yaml:/etc/otel/otel-collector-config.yaml:ro
     ports:
-      - "4327:4317"   # OTLP gRPC
-      - "4328:4318"   # OTLP HTTP
+      - "4317:4317"   # OTLP gRPC (standard)
+      - "4318:4318"   # OTLP HTTP (standard)
     networks:
       - claude-otel
     restart: unless-stopped
@@ -49,7 +54,7 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
-      - "16696:16686"   # Jaeger UI
+      - "16686:16686"   # Jaeger UI (standard)
     networks:
       - claude-otel
     restart: unless-stopped
@@ -79,7 +84,7 @@ services:
       - ./config/claude-otel/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_claude_data:/prometheus
     ports:
-      - "9095:9090"   # Prometheus UI
+      - "9090:9090"   # Prometheus UI (standard)
     networks:
       - claude-otel
     restart: unless-stopped
@@ -110,7 +115,7 @@ services:
       - ./config/claude-otel/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./config/claude-otel/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
-      - "3015:3000"   # Grafana UI
+      - "3000:3000"   # Grafana UI (standard)
     depends_on:
       claude-prometheus:
         condition: service_healthy
