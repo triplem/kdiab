@@ -75,6 +75,60 @@ cat <<'EOF'
 EOF
 
 # ---------------------------------------------------------------------------
+# Detect yolo / bypass-permissions mode from Claude settings.
+#
+# claude-otel.sh calls the real 'claude' binary, not any shell alias. If the
+# user has an alias like `alias claude='claude --dangerously-skip-permissions'`
+# that alias is shell-session-only and does not apply here.
+#
+# We mirror what Claude itself does: if the user has already confirmed
+# dangerous mode (skipDangerousModePermissionPrompt=true in their settings, or
+# permissions.defaultMode=bypassPermissions), add --dangerously-skip-permissions
+# automatically so the script behaves identically to calling 'claude' directly.
+# ---------------------------------------------------------------------------
+CLAUDE_BYPASS_FLAGS=()
+
+# If the flag is already in "$@", don't add it again.
+_bypass_explicit=false
+for _arg in "$@"; do
+    if [ "$_arg" = "--dangerously-skip-permissions" ]; then
+        _bypass_explicit=true
+        break
+    fi
+done
+
+if [ "$_bypass_explicit" = "false" ] && command -v python3 >/dev/null 2>&1; then
+    _bypass="$(python3 - "$SCRIPT_DIR" <<'PYEOF'
+import json, os, sys
+
+script_dir = sys.argv[1]
+settings_files = [
+    os.path.expanduser("~/.claude/settings.json"),
+    os.path.join(script_dir, ".claude", "settings.json"),
+    os.path.join(script_dir, ".claude", "settings.local.json"),
+]
+for path in settings_files:
+    try:
+        with open(path) as fh:
+            d = json.load(fh)
+        if d.get("skipDangerousModePermissionPrompt"):
+            print("yes")
+            sys.exit(0)
+        if d.get("permissions", {}).get("defaultMode") == "bypassPermissions":
+            print("yes")
+            sys.exit(0)
+    except Exception:
+        pass
+print("no")
+PYEOF
+    )"
+    if [ "$_bypass" = "yes" ]; then
+        CLAUDE_BYPASS_FLAGS=("--dangerously-skip-permissions")
+        echo "  Yolo mode:  enabled (detected from Claude settings)"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # Launch Claude with OTEL env vars
 # ---------------------------------------------------------------------------
 CLAUDE_VERSION="$(claude --version 2>/dev/null | awk '{print $1}' || echo unknown)"
@@ -88,4 +142,4 @@ exec env \
     OTEL_SERVICE_NAME="claude-code" \
     OTEL_RESOURCE_ATTRIBUTES="deployment.environment=local,service.version=${CLAUDE_VERSION}" \
     CLAUDE_CODE_ENABLE_TELEMETRY=1 \
-    claude "$@"
+    claude "${CLAUDE_BYPASS_FLAGS[@]}" "$@"
