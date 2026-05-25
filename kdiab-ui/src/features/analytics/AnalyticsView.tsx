@@ -134,7 +134,7 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
       )}
 
       {/* Basal chart — driven by active profile's scheduled basal segments */}
-      {basalHourlyAvg && <BasalAvgChart hourlyAvg={basalHourlyAvg} />}
+      {basalHourlyAvg?.some(v => v !== null) && <BasalAvgChart hourlyAvg={basalHourlyAvg} />}
 
       {/* Bolus hourly average — computed from BOLUS/CORRECTION_BOLUS timeline treatments */}
       {timelineQuery.isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}

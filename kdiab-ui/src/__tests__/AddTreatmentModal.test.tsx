@@ -217,4 +217,24 @@ describe('AddTreatmentModal', () => {
     // Value must match HH:mm — two-digit hours and minutes separated by colon
     expect(timeInput.value).toMatch(/^\d{2}:\d{2}$/)
   })
+
+  test('time input in edit mode pre-fills with local HH:mm derived from ISO timestamp', () => {
+    render(
+      <AddTreatmentModal
+        {...baseProps}
+        editMode={{
+          id: '42',
+          type: 'BOLUS',
+          treatedAt: '2024-06-15T10:30:00Z',
+          data: { insulin: 3.5 },
+        }}
+      />,
+      { wrapper },
+    )
+    const dialog = screen.getByRole('dialog')
+    const timeInput = dialog.querySelector('input[type="time"]') as HTMLInputElement
+    expect(timeInput).not.toBeNull()
+    // Must match HH:mm — not the raw ISO timestamp
+    expect(timeInput.value).toMatch(/^\d{2}:\d{2}$/)
+  })
 })
