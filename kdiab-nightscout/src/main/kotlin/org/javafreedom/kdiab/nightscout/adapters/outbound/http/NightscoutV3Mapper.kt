@@ -229,7 +229,9 @@ fun TreatmentResponse.toNs3DeviceStatus(): Ns3DeviceStatus {
                 pumpName?.let { put("name", JsonPrimitive(it)) }
                 reservoirUnits?.let { put("reservoir", JsonPrimitive(it)) }
                 batteryLevel?.let { put("battery", buildJsonObject { put("percent", it) }) }
-                pumpConnected?.let { put("status", buildJsonObject { put("status", if (it) "normal" else "suspended") }) }
+                pumpConnected?.let {
+                    put("status", buildJsonObject { put("status", if (it) "normal" else "suspended") })
+                }
             }
         } else null
     return Ns3DeviceStatus(
@@ -248,7 +250,8 @@ fun Ns3DeviceStatus.toCreateTreatmentRequest(): CreateTreatmentRequest {
     val pumpMap = pump
     val pumpName = (pumpMap?.get("name") as? JsonPrimitive)?.content
     val reservoir = (pumpMap?.get("reservoir") as? JsonPrimitive)?.runCatching { double }?.getOrNull()
-    val batteryPct = (pumpMap?.get("battery") as? JsonObject)?.get("percent")?.jsonPrimitive?.runCatching { int }?.getOrNull()
+    val batteryPct = (pumpMap?.get("battery") as? JsonObject)
+        ?.get("percent")?.jsonPrimitive?.runCatching { int }?.getOrNull()
     val pumpStatusNormal = (pumpMap?.get("status") as? JsonObject)?.get("status")?.jsonPrimitive?.content == "normal"
     val dataObj = buildJsonObject {
         device?.let { put("device", it) }
