@@ -430,10 +430,12 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
             <label style={{ ...labelStyle, flex: '0 0 120px' }}>
               <span>{t('modal.measuredTime', { defaultValue: 'Time' })}</span>
               <input
-                type="time"
-                lang="de"
+                type="text"
+                placeholder="HH:mm"
+                pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
+                maxLength={5}
                 value={measuredTime}
-                onChange={(e) => setMeasuredTime(e.target.value)}
+                onChange={(e) => setMeasuredTime(e.target.value.replace(/[^0-9:]/g, '').slice(0, 5))}
                 style={inputStyle}
                 required
               />
