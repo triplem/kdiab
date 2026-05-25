@@ -238,6 +238,7 @@ export function GlucoseTrendChart({
                 dataKey="basalSched"
                 name="basalSched"
                 yAxisId="basal"
+                type="stepAfter"
                 stroke={BASAL_COLORS['SCHEDULED']!}
                 strokeWidth={1}
                 strokeDasharray="4 2"

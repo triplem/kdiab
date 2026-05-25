@@ -194,7 +194,8 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     const toMs = new Date(windowTo).getTime()
     const blocks = reconstructBasalBlocks(fromMs, toMs, basal, windowTimeline?.treatments ?? [])
 
-    // Stepped profile rate line for dashed overlay
+    // Scheduled profile rate line — one point per segment boundary.
+    // The Line uses type="stepAfter" so Recharts renders the staircase natively.
     const sorted = [...basal].sort((a, b) => segToMin(a.startTime) - segToMin(b.startTime))
     const line: Array<{ time: number; sched: number }> = [
       { time: fromMs, sched: scheduledRateAt(sorted, fromMs) },
@@ -203,7 +204,6 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
       for (const seg of sorted) {
         const ms = d + segToMin(seg.startTime) * 60000
         if (ms > fromMs && ms < toMs) {
-          line.push({ time: ms - 1, sched: line[line.length - 1]!.sched })
           line.push({ time: ms, sched: seg.value })
         }
       }
