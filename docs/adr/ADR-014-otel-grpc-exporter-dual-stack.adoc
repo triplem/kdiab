@@ -104,6 +104,64 @@ the Claude Code stack.
 |3000 (standard)
 |===
 
+=== `claude-otel.sh` startup script
+
+A convenience script (`claude-otel.sh`) is provided to automate the
+end-to-end startup:
+
+1. Starts `docker-compose.claude-otel.yml` in detached mode.
+2. Waits for the collector's health endpoint (`/` on port 13133) to return
+   healthy.
+3. Prints the service URLs (Jaeger, Prometheus, Grafana).
+4. `exec`s into `claude` with the OTEL env vars pre-set:
+
+[source,bash]
+----
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+OTEL_TRACES_EXPORTER=otlp
+OTEL_METRICS_EXPORTER=otlp
+OTEL_LOGS_EXPORTER=otlp
+OTEL_SERVICE_NAME=claude-code
+OTEL_RESOURCE_ATTRIBUTES=deployment.environment=local,...
+----
+
+The script detects the available container runtime (`docker compose` or
+`podman compose`) automatically.  All arguments are forwarded to `claude`:
+
+----
+./claude-otel.sh
+./claude-otel.sh --resume
+./claude-otel.sh -p "prompt text"
+----
+
+=== Claude Code OTEL signals
+
+Claude Code exposes three OTEL signals via the above env vars:
+
+* **Traces** — session lifecycle, tool calls, API requests → forwarded to Jaeger
+* **Metrics** — counters, histograms → exposed at collector `:8889`, scraped by Prometheus
+* **Logs** — structured log events → printed to collector container stdout
+
+Additional Claude-specific env vars (all optional):
+
+[cols="1,2"]
+|===
+|Env var |Purpose
+
+|`OTEL_LOG_USER_PROMPTS`
+|Include user prompts in log records (default: off — privacy-sensitive)
+
+|`OTEL_LOG_TOOL_CONTENT`
+|Include tool input/output in log records (default: off)
+
+|`OTEL_LOG_TOOL_DETAILS`
+|Include detailed tool metadata (default: off)
+
+|`OTEL_LOG_RAW_API_BODIES`
+|Log raw API request/response bodies (default: off)
+|===
+
 == Consequences
 
 === Positive
@@ -112,6 +170,8 @@ the Claude Code stack.
   channel lifecycle.
 * Both OTEL stacks can run simultaneously; a developer can observe both kdiab
   app traces and Claude session traces side-by-side.
+* `./claude-otel.sh` is a single command that starts observability and Claude
+  with no manual env var setup.
 * Keycloak continues to use its HTTP-based tracer unchanged.
 * No application code changes are required; only environment variable and compose
   file changes.
@@ -124,6 +184,8 @@ the Claude Code stack.
   the kdiab app stack does not include them.
 * If a developer accidentally starts both stacks without the port remapping,
   Docker will refuse to bind the duplicate host ports and report a clear error.
+* `OTEL_LOG_USER_PROMPTS` and `OTEL_LOG_RAW_API_BODIES` should not be enabled
+  in shared or production environments — they log sensitive user data.
 
 == Alternatives Considered
 
