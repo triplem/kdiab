@@ -50,6 +50,11 @@ services:
     image: jaegertracing/jaeger:2.7.0
     environment:
       - COLLECTOR_OTLP_ENABLED=true
+      # Explicitly bind OTLP ports to all interfaces so the collector container
+      # on the claude-otel network can reach Jaeger. Without these, Jaeger 2.x
+      # may bind only to 127.0.0.1, which is unreachable from other containers.
+      - COLLECTOR_OTLP_GRPC_HOST_PORT=0.0.0.0:4317
+      - COLLECTOR_OTLP_HTTP_HOST_PORT=0.0.0.0:4318
     ports:
       - "16686:16686"   # Jaeger UI (standard)
     networks:
@@ -73,11 +78,12 @@ services:
   claude-loki:
     container_name: claude-loki
     image: grafana/loki:3.4
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
     volumes:
+      - ./config/claude-otel/loki-config.yaml:/etc/loki/loki-config.yaml:ro
       - loki_claude_data:/loki
     ports:
-      - "3100:3100"   # Loki API / UI
+      - "3100:3100"   # Loki API (no web UI — use /ready for health, /metrics for metrics)
     networks:
       - claude-otel
     restart: unless-stopped
