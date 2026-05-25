@@ -142,6 +142,10 @@ exec env \
     OTEL_METRICS_EXPORTER="otlp" \
     OTEL_LOGS_EXPORTER="otlp" \
     OTEL_SERVICE_NAME="claude-code" \
+    OTEL_LOG_USER_PROMPTS=1 \
+    OTEL_METRICS_INCLUDE_SESSION_ID=true \
+    OTEL_METRICS_INCLUDE_VERSION=true \
+    OTEL_METRICS_INCLUDE_ACCOUNT_UUID=true \
     OTEL_RESOURCE_ATTRIBUTES="deployment.environment=local,service.version=${CLAUDE_VERSION}" \
     CLAUDE_CODE_ENABLE_TELEMETRY=1 \
     claude "${CLAUDE_BYPASS_FLAGS[@]}" "$@"
