@@ -53,3 +53,7 @@ secrets.properties
 
 # debug artifacts
 error.txt
+
+# test / coverage output
+test-results/
+kdiab-ui/coverage/
