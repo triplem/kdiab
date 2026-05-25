@@ -8,7 +8,7 @@ import { AgpChart } from './AgpChart'
 import { ProfilesView } from './ProfilesView'
 import { BasalAvgChart } from './BasalAvgChart'
 import { BolusAvgChart } from './BolusAvgChart'
-import { computeBasalHourlyAvg, computeBolusHourlyAvg } from './insulinHourlyUtils'
+import { computeBasalFromProfileSegments, computeBolusHourlyAvg } from './insulinHourlyUtils'
 
 type Window = '1W' | '2W' | '1M' | '90D'
 
@@ -65,10 +65,22 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
     staleTime: 5 * 60 * 1000,
   })
 
-  const basalHourlyAvg = useMemo(
-    () => (timelineQuery.data ? computeBasalHourlyAvg(timelineQuery.data) : null),
-    [timelineQuery.data],
-  )
+  // Profiles query — shared cache key with ProfilesView so no duplicate network calls
+  const profilesQuery = useQuery({
+    queryKey: ['profiles-active', userId, from, to],
+    queryFn: () => analyzeApi.getActiveProfiles(userId, from, to).then(r => r.data),
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  // Use the active profile's scheduled basal segments for the basal chart.
+  // Fall back to null (chart shows "no data") if no active profile is found.
+  const basalHourlyAvg = useMemo(() => {
+    if (!profilesQuery.data) return null
+    const activeProfile = profilesQuery.data.profiles.find(p => p.status === 'ACTIVE')
+    if (!activeProfile) return null
+    return computeBasalFromProfileSegments(activeProfile.basal)
+  }, [profilesQuery.data])
 
   const bolusHourlyAvg = useMemo(
     () => (timelineQuery.data ? computeBolusHourlyAvg(timelineQuery.data) : null),
@@ -121,10 +133,12 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
         </>
       )}
 
-      {/* Basal & Bolus hourly averages — computed from timeline */}
+      {/* Basal chart — driven by active profile's scheduled basal segments */}
+      {basalHourlyAvg && <BasalAvgChart hourlyAvg={basalHourlyAvg} />}
+
+      {/* Bolus hourly average — computed from BOLUS/CORRECTION_BOLUS timeline treatments */}
       {timelineQuery.isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
       {timelineQuery.isError && <div className="error-banner" role="alert">{t('analytics.timelineError')}</div>}
-      {basalHourlyAvg && <BasalAvgChart hourlyAvg={basalHourlyAvg} />}
       {bolusHourlyAvg && <BolusAvgChart hourlyAvg={bolusHourlyAvg} />}
 
       {/* Profiles — shares the same window */}
