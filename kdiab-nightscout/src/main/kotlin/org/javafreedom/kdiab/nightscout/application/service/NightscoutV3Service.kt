@@ -262,7 +262,8 @@ class NightscoutV3Service(
         logger.info { "Deleted v3 food id=$id userId=$userId permanent=$permanent" }
     }
 
-    @Suppress("LongParameterList")
+    // authorization and correlationId kept for API consistency; getSettings derives from JWT claims only
+    @Suppress("LongParameterList", "UnusedParameter")
     suspend fun getSettings(
         userId: String,
         authorization: String,
