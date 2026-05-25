@@ -87,4 +87,5 @@ exec env \
     OTEL_LOGS_EXPORTER="otlp" \
     OTEL_SERVICE_NAME="claude-code" \
     OTEL_RESOURCE_ATTRIBUTES="deployment.environment=local,service.version=${CLAUDE_VERSION}" \
+    CLAUDE_CODE_ENABLE_TELEMETRY=1 \
     claude "$@"

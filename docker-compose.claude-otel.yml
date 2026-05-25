@@ -15,6 +15,7 @@
 #   OTLP gRPC   4317:4317  (kdiab app OTEL: 14317)
 #   OTLP HTTP   4318:4318  (kdiab app OTEL: 14318)
 #   Jaeger UI   16686:16686 (kdiab app OTEL: 16690)
+#   Loki        3100:3100  (kdiab app OTEL: n/a)
 #   Prometheus  9090:9090  (kdiab app OTEL: n/a)
 #   Grafana     3000:3000  (kdiab app OTEL: n/a)
 
@@ -69,6 +70,32 @@ services:
           memory: 128M
           cpus: '0.25'
 
+  claude-loki:
+    container_name: claude-loki
+    image: grafana/loki:3.4
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki_claude_data:/loki
+    ports:
+      - "3100:3100"   # Loki API / UI
+    networks:
+      - claude-otel
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
   claude-prometheus:
     container_name: claude-prometheus
     # Pin to digest when available: prom/prometheus:v3.4.0@sha256:<digest>
@@ -117,6 +144,8 @@ services:
         condition: service_healthy
       claude-jaeger:
         condition: service_healthy
+      claude-loki:
+        condition: service_healthy
     networks:
       - claude-otel
     restart: unless-stopped
@@ -143,3 +172,4 @@ networks:
 volumes:
   prometheus_claude_data:
   grafana_claude_data:
+  loki_claude_data:
