@@ -3,9 +3,19 @@
 # Or via Podman: ./podman-up.sh --build  (OTEL is always included)
 #
 # Requires OTEL_TRACES_EXPORTER=otlp, OTEL_METRICS_EXPORTER=otlp, and
-# OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 in the environment
+# OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317 in the environment
 # so all kdiab backends forward telemetry to the collector (podman-up.sh sets
 # these automatically).
+#
+# kdiab backends connect via internal Docker hostnames — host-side ports don't matter
+# for the app. Host ports are remapped so this stack can coexist with the Claude Code
+# OTEL stack (docker-compose.claude-otel.yml), which occupies the standard ports.
+#
+# Port map (host:container):
+#   OTLP gRPC   14317:4317  (Claude Code OTEL: 4317)
+#   OTLP HTTP   14318:4318  (Claude Code OTEL: 4318)
+#   Jaeger UI   16690:16686 (Claude Code OTEL: 16686)
+#   Jaeger gRPC 24317:4317  (remapped; Claude Code OTEL uses 14317 for its own Jaeger)
 
 services:
   otel-collector:
@@ -16,8 +26,8 @@ services:
     volumes:
       - ./config/otel/otel-collector-config.yaml:/etc/otel/otel-collector-config.yaml:ro
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
+      - "14317:4317"   # OTLP gRPC (standard 4317 reserved for Claude Code OTEL stack)
+      - "14318:4318"   # OTLP HTTP (standard 4318 reserved for Claude Code OTEL stack)
     networks:
       - shared
     restart: unless-stopped
@@ -38,8 +48,8 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
-      - "16686:16686"   # Jaeger UI
-      - "14317:4317"    # Jaeger OTLP gRPC (host-side remapped; otel-collector uses port 4317)
+      - "16690:16686"   # Jaeger UI (standard 16686 reserved for Claude Code OTEL stack)
+      - "24317:4317"    # Jaeger OTLP gRPC (remapped; host 14317 used by otel-collector above)
     networks:
       - shared
     restart: unless-stopped
