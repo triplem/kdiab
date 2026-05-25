@@ -431,6 +431,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
               <span>{t('modal.measuredTime', { defaultValue: 'Time' })}</span>
               <input
                 type="time"
+                lang="de"
                 value={measuredTime}
                 onChange={(e) => setMeasuredTime(e.target.value)}
                 style={inputStyle}

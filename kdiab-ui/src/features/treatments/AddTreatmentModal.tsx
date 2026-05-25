@@ -383,6 +383,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
               <span>{t('modal.measuredTime', { defaultValue: 'Time' })}</span>
               <input
                 type="time"
+                lang="de"
                 value={treatedTime}
                 onChange={(e) => setTreatedTime(e.target.value)}
                 style={inputStyle}
