@@ -200,17 +200,19 @@ export function GlucoseTrendChart({
             <Tooltip
               labelFormatter={(ms: unknown) => formatTime(new Date(typeof ms === 'number' ? ms : 0).toISOString())}
               formatter={(v: unknown, name: unknown, entry: { payload?: { treatmentType?: string; label?: string } }) => {
-                if (name === 'sgv' && typeof v === 'number') return [`${v} ${yLabel}`, 'CGM']
-                if (name === 'bgm' && typeof v === 'number') return [`${v} ${yLabel}`, 'BGM']
+                if (name === 'sgv') return typeof v === 'number' ? [`${v} ${yLabel}`, 'CGM'] : null
+                if (name === 'bgm') return typeof v === 'number' ? [`${v} ${yLabel}`, 'BGM'] : null
                 if (name === 'marker') {
+                  if (v === null || v === undefined) return null
                   const ttype = entry.payload?.treatmentType ?? ''
+                  if (!ttype) return null
                   const lbl = entry.payload?.label ?? ''
                   const typeName = t(`treatmentModal.types.${ttype}`, { defaultValue: ttype })
                   return [lbl ? `${typeName}: ${lbl}` : typeName, typeName]
                 }
                 if (name === 'basalSched') return null
                 if (name === 'basalDelivered') return null
-                return [`${String(v)}`, String(name ?? '')]
+                return null
               }}
               contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
               wrapperStyle={{ outline: 'none' }}
