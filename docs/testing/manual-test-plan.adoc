@@ -1,0 +1,205 @@
+= kdiab Manual Test Plan
+:toc: left
+:toclevels: 3
+:icons: font
+:source-highlighter: rouge
+
+== Overview
+
+This document covers edge cases that automated Playwright tests cannot reliably reproduce:
+OS-locale date formats, mobile viewport layouts, OIDC session lifecycle, and cross-browser divergence.
+
+Run this checklist before every release candidate. Estimated time: *≤ 30 minutes*.
+
+Test accounts (password `password` for all):
+
+[cols="1,1,2"]
+|===
+| Account | Role | Notes
+
+| `sarah` | PATIENT | glucose unit mg/dL, has 30 days seed data
+| `mike` | PATIENT | glucose unit mmol/L
+| `dr_house` | DOCTOR | assigned to sarah
+| `admin` | ADMIN | —
+|===
+
+Stack must be running: `docker compose up` (or `./podman-up.sh`).
+
+---
+
+== 1. Authentication & Session Management
+
+=== 1.1 OIDC Login
+
+[cols="5,1,1"]
+|===
+| Step | Expected | Result
+
+| Navigate to `http://localhost:3005` — confirm redirect to Keycloak login page | Keycloak login form | [ ] Pass [ ] Fail
+| Enter `sarah` / `password`, click *Sign In* | Redirected back to dashboard, glucose hero tile visible | [ ] Pass [ ] Fail
+| Refresh the page | Still logged in (no Keycloak redirect) | [ ] Pass [ ] Fail
+|===
+
+=== 1.2 Logout
+
+[cols="5,1,1"]
+|===
+| Step | Expected | Result
+
+| Click the logout button / user menu | Redirected to Keycloak logout confirmation or back to login page | [ ] Pass [ ] Fail
+| Navigate to `http://localhost:3005` after logout | Redirected to Keycloak login (session is invalidated) | [ ] Pass [ ] Fail
+|===
+
+=== 1.3 Session Expiry During Active Use
+
+[cols="5,1,1"]
+|===
+| Step | Expected | Result
+
+| Log in as `sarah`, then in Keycloak Admin (`http://localhost:8081`) → Sessions → End all sessions for `sarah` | — | [ ] Pass [ ] Fail
+| Without navigating away, try to click a tab or trigger an API call in the UI | App redirects to Keycloak login or shows a session-expired message | [ ] Pass [ ] Fail
+|===
+
+=== 1.4 Keycloak Admin Password Reset
+
+[cols="5,1,1"]
+|===
+| Step | Expected | Result
+
+| In Keycloak Admin, reset `sarah`'s password to `newpassword` | — | [ ] Pass [ ] Fail
+| Log in at `http://localhost:3005` with old password `password` | Login fails | [ ] Pass [ ] Fail
+| Log in with new password `newpassword` | Login succeeds | [ ] Pass [ ] Fail
+| Reset sarah's password back to `password` | — | [ ] Pass [ ] Fail
+|===
+
+---
+
+== 2. Date / Time Input Formatting
+
+The date-time inputs in Add Treatment and Add Measure use `type="text"` with a `dd.MM.yyyy HH:mm` format.
+Chromium uses the OS locale for native `type="date"` inputs, which is why we use a custom text format.
+
+=== 2.1 Add Treatment modal — date-time field
+
+Open Treatments → click *+ Treatment* → observe the *Date / Time* field.
+
+[cols="3,2,1,1"]
+|===
+| Browser + OS | Format displayed | Accepted | Result
+
+| Chrome / Linux | `dd.MM.yyyy HH:mm` | Enter `25.05.2026 14:30` | [ ] Pass [ ] Fail
+| Chrome / macOS | `dd.MM.yyyy HH:mm` | Enter `25.05.2026 14:30` | [ ] Pass [ ] Fail
+| Firefox / Linux | `dd.MM.yyyy HH:mm` | Enter `25.05.2026 14:30` | [ ] Pass [ ] Fail
+| Safari / macOS | `dd.MM.yyyy HH:mm` | Enter `25.05.2026 14:30` | [ ] Pass [ ] Fail
+|===
+
+=== 2.2 Validation rejects invalid date strings
+
+[cols="5,1,1"]
+|===
+| Input | Expected | Result
+
+| `32.05.2026 14:30` (invalid day) | Validation error shown, form not submitted | [ ] Pass [ ] Fail
+| `abc` | Validation error shown | [ ] Pass [ ] Fail
+| Empty field | Validation error or defaults to now | [ ] Pass [ ] Fail
+|===
+
+---
+
+== 3. Mobile Viewport (375 × 812 — iPhone 14 Pro)
+
+Open DevTools → toggle device toolbar → select *iPhone 14 Pro* (375 × 812).
+Log in as `sarah`.
+
+=== 3.1 Dashboard
+
+[cols="5,1,1"]
+|===
+| Check | Expected | Result
+
+| Glucose hero tile is fully visible without horizontal scroll | Visible | [ ] Pass [ ] Fail
+| Time window picker buttons (2h–24h) all fit on one row or wrap gracefully | No overflow | [ ] Pass [ ] Fail
+| CGM trend chart SVG is visible and has non-zero height | Visible | [ ] Pass [ ] Fail
+| Stat tiles (IOB, COB, Basal) wrap without overlapping | Visible | [ ] Pass [ ] Fail
+|===
+
+=== 3.2 Add Treatment Modal
+
+[cols="5,1,1"]
+|===
+| Check | Expected | Result
+
+| Tap *+ Treatment* — modal opens | Modal fully visible within viewport | [ ] Pass [ ] Fail
+| All form fields reachable by scrolling within the modal | No fields cut off | [ ] Pass [ ] Fail
+| *Save* button visible without scrolling past the modal | Visible | [ ] Pass [ ] Fail
+| Keyboard does not push content off-screen on iOS Safari | Content adjusts | [ ] Pass [ ] Fail
+|===
+
+=== 3.3 Analytics View
+
+[cols="5,1,1"]
+|===
+| Check | Expected | Result
+
+| Navigate to Analytics tab | Tab visible in nav | [ ] Pass [ ] Fail
+| HbA1c card is visible | Visible | [ ] Pass [ ] Fail
+| TIR bar renders without overflow | No horizontal scroll | [ ] Pass [ ] Fail
+| AGP chart SVG is rendered at a usable size | Width ≥ 300 px | [ ] Pass [ ] Fail
+|===
+
+---
+
+== 4. Accessibility
+
+=== 4.1 Keyboard Navigation — Add Treatment Form
+
+[cols="5,1,1"]
+|===
+| Check | Expected | Result
+
+| Open Add Treatment modal, press Tab repeatedly | Focus moves through: Type select → Date field → Amount/Carbs field → Notes → Save → Cancel | [ ] Pass [ ] Fail
+| No focus trap outside the modal | Tab does not reach elements behind the modal | [ ] Pass [ ] Fail
+| Pressing Escape closes the modal | Modal closes | [ ] Pass [ ] Fail
+|===
+
+=== 4.2 Chart ARIA Labels
+
+[cols="5,1,1"]
+|===
+| Check | Expected | Result
+
+| Inspect the CGM chart SVG — confirm `role="img"` or `aria-label` is present | Attribute present | [ ] Pass [ ] Fail
+| Screen reader (VoiceOver / NVDA) announces chart region | Region announced | [ ] Pass [ ] Fail
+|===
+
+---
+
+== 5. Cross-Browser Divergence
+
+Known divergence points between Chrome, Firefox, and Safari.
+
+[cols="3,3,1,1"]
+|===
+| Area | Known divergence | Expected behaviour | Result
+
+| Date-time input display | Chrome may show native date picker on `type="date"` fields (not used here) | Our `type="text"` fields look identical | [ ] Pass [ ] Fail
+| SVG chart rendering | Firefox renders SVG `text` elements at slightly different offsets | Chart is readable; labels do not overlap data | [ ] Pass [ ] Fail
+| Scrollbar width | macOS Safari hides scrollbars by default | Layout does not break when scrollbars are hidden | [ ] Pass [ ] Fail
+| CSS `gap` in flex | All modern browsers support it | Stat tile rows render with consistent spacing | [ ] Pass [ ] Fail
+| OIDC redirect handling | Safari may block third-party cookies on Keycloak redirect | Login succeeds with default SameSite=Lax cookies | [ ] Pass [ ] Fail
+|===
+
+---
+
+== 6. Sign-off
+
+[cols="2,3,1"]
+|===
+| Field | Value | —
+
+| Tested by | | —
+| Test date | | —
+| Stack version (`git log --oneline -1`) | | —
+| Overall result | [ ] PASS  [ ] FAIL | —
+| Notes / issues found | | —
+|===
