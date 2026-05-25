@@ -38,15 +38,30 @@ jobs:
         env:
           COMPOSE_HTTP_TIMEOUT: 180
 
-      - name: Wait for kdiab-ui to be reachable
+      - name: Wait for services to be reachable
         run: |
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:3005/ > /dev/null 2>&1; then
-              echo "kdiab-ui is up"
-              break
-            fi
-            echo "Waiting for kdiab-ui... attempt $i"
-            sleep 5
+          declare -A services=(
+            ["kdiab-ui"]="http://localhost:3005/"
+            ["keycloak"]="http://localhost:8081/"
+            ["kdiab-measures"]="http://localhost:8080/swagger"
+            ["kdiab-profiles"]="http://localhost:8082/swagger"
+            ["kdiab-treatments"]="http://localhost:8083/swagger"
+            ["kdiab-analyze"]="http://localhost:8084/swagger"
+          )
+          for name in "${!services[@]}"; do
+            url="${services[$name]}"
+            for i in $(seq 1 30); do
+              if curl -sf "$url" > /dev/null 2>&1; then
+                echo "$name is up ($url)"
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "ERROR: $name did not become reachable at $url" >&2
+                exit 1
+              fi
+              echo "Waiting for $name... attempt $i"
+              sleep 5
+            done
           done
 
       - name: Use Node.js 22

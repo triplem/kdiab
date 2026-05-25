@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('treatment CRUD', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3005/')
+    await page.goto('/')
     await page.waitForLoadState('networkidle', { timeout: 15_000 })
 
     // Navigate to Treatments tab
@@ -72,8 +72,8 @@ test.describe('treatment CRUD', () => {
     const archiveExists = await archiveBtn.isVisible({ timeout: 3_000 }).catch(() => false)
     if (archiveExists) {
       await archiveBtn.click()
-      // Confirm the item is gone from active list
-      await page.waitForTimeout(500)
+      // Wait for the archive button to disappear — item removed from active list.
+      await expect(archiveBtn).not.toBeVisible({ timeout: 5_000 }).catch(() => null)
     }
   })
 })

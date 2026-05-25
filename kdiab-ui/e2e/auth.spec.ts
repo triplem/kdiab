@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test('dashboard loads after OIDC login as sarah', async ({ page }) => {
-  await page.goto('http://localhost:3005/')
+  await page.goto('/')
   await page.waitForLoadState('networkidle', { timeout: 15_000 })
 
   // The storageState from auth.setup.ts keeps sarah logged in.

@@ -4,7 +4,7 @@ import path from 'path'
 const authFile = path.join(__dirname, '.auth/sarah.json')
 
 setup('authenticate as sarah', async ({ page }) => {
-  await page.goto('http://localhost:3005/')
+  await page.goto('/')
   await page.waitForLoadState('domcontentloaded')
 
   const loginBtn = page.locator('button').filter({ hasText: /log.?in/i }).first()

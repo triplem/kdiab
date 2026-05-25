@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('profile management', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3005/')
+    await page.goto('/')
     await page.waitForLoadState('networkidle', { timeout: 15_000 })
 
     // Navigate to Profiles tab
@@ -29,7 +29,7 @@ test.describe('profile management', () => {
   })
 
   test('no error banners on profiles page', async ({ page }) => {
-    await page.waitForTimeout(500)
+    await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => null)
     const body = await page.locator('body').innerText()
     expect(body).not.toContain('[object Object]')
   })

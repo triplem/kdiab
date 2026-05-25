@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('user settings — glucose unit', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3005/')
+    await page.goto('/')
     await page.waitForLoadState('networkidle', { timeout: 15_000 })
 
     // Navigate to Settings tab
@@ -30,11 +30,11 @@ test.describe('user settings — glucose unit', () => {
     await expect(mmolOption).toBeVisible({ timeout: 5_000 })
   })
 
-  test('mike account (pre-seeded mmol/L) shows values in mmol/L range on dashboard', async ({ page, context }) => {
+  test('mike account (pre-seeded mmol/L) shows values in mmol/L range on dashboard', async ({ page }) => {
     // Use mike's context — he is pre-seeded with mmol/L unit so no settings change is needed.
     // This test requires mike's auth state. Since we only have sarah's storageState wired,
     // we check the current user (sarah, mg/dL default) to confirm the unit displayed.
-    await page.goto('http://localhost:3005/')
+    await page.goto('/')
     await page.waitForLoadState('networkidle', { timeout: 15_000 })
 
     const dashTab = page.locator('a, button, [role="tab"]').filter({ hasText: /dashboard/i }).first()

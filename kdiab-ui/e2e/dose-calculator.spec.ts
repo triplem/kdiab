@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('dose calculator', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3005/')
+    await page.goto('/')
     await page.waitForLoadState('networkidle', { timeout: 15_000 })
 
     // Navigate to Dose Calc tab
