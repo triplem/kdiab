@@ -32,6 +32,15 @@ interface StatTileProps {
   color?: string
 }
 
+type ChartPoint = {
+  time: number
+  sgv: number | null
+  bgm: number | null
+  marker: number | null
+  treatmentType: string | null
+  label: string | null
+}
+
 function StatTile({ label, value, sub, color }: StatTileProps) {
   return (
     <div className="card" style={{ padding: '0.75rem 1rem', minWidth: '110px', textAlign: 'center', flex: '1 1 110px' }}>
@@ -187,10 +196,9 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
   // Recharts bisect cursor picks a single merged object; otherwise bgm/marker fields
   // are null in the tooltip because the cursor lands on the CGM-only object.
   const chartData = useMemo(() => {
-    const roundMin = (ms: number) => Math.round(ms / 60000) * 60000
-
-    type ChartEntry = (typeof cgmPoints)[0] | (typeof bgmPoints)[0] | (typeof treatmentMarkers)[0]
-    const byTime = new Map<number, ChartEntry>()
+    const MS_PER_MINUTE = 60_000
+    const roundMin = (ms: number) => Math.round(ms / MS_PER_MINUTE) * MS_PER_MINUTE
+    const byTime = new Map<number, ChartPoint>()
 
     for (const p of cgmPoints) {
       byTime.set(roundMin(p.time), { ...p })
@@ -210,7 +218,9 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
       const key = roundMin(p.time)
       const existing = byTime.get(key)
       if (existing) {
-        byTime.set(key, { ...existing, marker: p.marker, treatmentType: p.treatmentType, label: p.label })
+        // Accumulate labels so concurrent treatments (e.g. BOLUS + CARBS at same minute) both appear
+        const combinedLabel = [existing.label, p.label].filter(Boolean).join(' · ')
+        byTime.set(key, { ...existing, marker: p.marker, treatmentType: p.treatmentType, label: combinedLabel })
       } else {
         byTime.set(key, { ...p })
       }
