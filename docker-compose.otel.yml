@@ -16,6 +16,8 @@
 #   OTLP HTTP   14318:4318  (Claude Code OTEL: 4318)
 #   Jaeger UI   16690:16686 (Claude Code OTEL: 16686)
 #   Jaeger gRPC 24317:4317  (remapped; Claude Code OTEL uses 14317 for its own Jaeger)
+#   Prometheus  9091:9090   (Claude Code OTEL: 9090)
+#   Grafana     3001:3000   (Claude Code OTEL: 3000)
 
 services:
   otel-collector:
@@ -63,9 +65,79 @@ services:
           cpus: '0.25'
 
 
+  kdiab-prometheus:
+    container_name: kdiab-prometheus
+    # Pin to digest when available: prom/prometheus:v3.4.0@sha256:<digest>
+    image: prom/prometheus:v3.4.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    volumes:
+      - ./config/otel/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_kdiab_data:/prometheus
+    ports:
+      - "9091:9090"   # Prometheus UI (standard 9090 reserved for Claude Code OTEL stack)
+    networks:
+      - shared
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+  kdiab-grafana:
+    container_name: kdiab-grafana
+    # Pin to digest when available: grafana/grafana:12.0.1@sha256:<digest>
+    image: grafana/grafana:12.0.1
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_kdiab_data:/var/lib/grafana
+      - ./config/otel/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3001:3000"   # Grafana UI (standard 3000 reserved for Claude Code OTEL stack)
+    depends_on:
+      kdiab-prometheus:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    networks:
+      - shared
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+
   # When OTEL is active, point Keycloak's tracer at the HTTP endpoint (port 4318).
   # Backends use gRPC (port 4317) via OTEL_EXPORTER_OTLP_ENDPOINT; Keycloak
   # requires the HTTP endpoint controlled by KC_OTEL_ENDPOINT.
   keycloak:
     environment:
       KC_OTEL_ENDPOINT: http://otel-collector:4318
+
+volumes:
+  prometheus_kdiab_data:
+  grafana_kdiab_data:
