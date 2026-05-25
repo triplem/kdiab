@@ -126,47 +126,15 @@ npm run test:e2e                 # Playwright e2e tests (requires running app)
 
 ### Observability (OTEL)
 
-Two independent OTEL stacks exist in this repo. They use separate Docker networks and non-overlapping host ports so both can run simultaneously.
+The kdiab app OTEL stack (`docker-compose.otel.yml`) is included automatically by `podman-up.sh`. All eight backends export traces via **gRPC** to the collector; Keycloak uses HTTP via `KC_OTEL_ENDPOINT`. Host ports are remapped so the stack can coexist with the Claude Code OTEL stack — see `ADR-014` for the rationale.
 
-**kdiab app OTEL** (`docker-compose.otel.yml`) — included automatically by `podman-up.sh`:
-| Service | URL (host-side remapped) |
-|---|---|
-| OTLP gRPC collector | localhost:14317 |
-| OTLP HTTP collector | localhost:14318 |
-| Jaeger UI | http://localhost:16690 |
+| Signal path | Internal Docker address | Host port |
+|---|---|---|
+| OTLP gRPC (backends → collector) | otel-collector:4317 | 14317 |
+| OTLP HTTP (Keycloak → collector) | otel-collector:4318 | 14318 |
+| Jaeger UI | — | http://localhost:16690 |
 
-**Claude Code OTEL** (`docker-compose.claude-otel.yml`) — standard ports:
-| Service | URL |
-|---|---|
-| OTLP gRPC collector | localhost:4317 |
-| OTLP HTTP collector | localhost:4318 |
-| Jaeger UI | http://localhost:16686 |
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3000 |
-
-All eight kdiab backends export traces via **gRPC** (port 4317 inside Docker, host 14317). Keycloak uses HTTP (port 4318 inside Docker) via `KC_OTEL_ENDPOINT`. See `ADR-014` for why gRPC was chosen over HTTP.
-
-```bash
-# Start kdiab stack + OTEL (recommended)
-./podman-up.sh --build
-./podman-up.sh --pgadmin --build   # also start pgAdmin (opt-in)
-
-# Start Claude Code OTEL stack + launch Claude with telemetry enabled (recommended)
-./claude-otel.sh                   # starts OTEL stack, waits for health, then execs claude
-./claude-otel.sh --resume          # pass any claude arguments through
-
-# Start Claude Code OTEL stack only (without launching Claude)
-podman compose -f docker-compose.claude-otel.yml up -d
-
-# Stop Claude Code OTEL stack
-podman compose -f docker-compose.claude-otel.yml down
-```
-
-**Config files** (under `config/claude-otel/`):
-- `otel-collector-config.yaml` — collector pipelines (traces→Jaeger, metrics→Prometheus, logs→stdout)
-- `prometheus.yml` — scrapes collector metrics endpoint
-- `grafana/provisioning/datasources/` — pre-wires Prometheus + Jaeger data sources
-- `grafana/provisioning/dashboards/` — dashboard file provider (add `.json` files to `grafana/dashboards/`)
+> **Claude Code OTEL** (`docker-compose.claude-otel.yml` + `claude-otel.sh`) is developer tooling for monitoring Claude sessions — not kdiab application code. See `README.md` § Observability for usage.
 
 ## Architecture
 
