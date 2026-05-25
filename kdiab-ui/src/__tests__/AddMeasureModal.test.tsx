@@ -155,15 +155,16 @@ describe('AddMeasureModal', () => {
     expect(screen.getByText(/edit measure/i)).toBeDefined()
   })
 
-  test('time input uses type="time" so the CSS ampm-field rule applies', () => {
+  test('time input is type="text" with placeholder HH:mm (avoids browser 12h AM/PM display)', () => {
     render(<AddMeasureModal {...baseProps} />)
-    const timeInput = screen.getByRole('dialog').querySelector('input[type="time"]')
+    const timeInput = screen.getByRole('dialog').querySelector('input[placeholder="HH:mm"]')
     expect(timeInput).not.toBeNull()
+    expect(timeInput?.getAttribute('type')).toBe('text')
   })
 
   test('time input value is in HH:mm format', () => {
     render(<AddMeasureModal {...baseProps} />)
-    const timeInput = screen.getByRole('dialog').querySelector('input[type="time"]') as HTMLInputElement
+    const timeInput = screen.getByRole('dialog').querySelector('input[placeholder="HH:mm"]') as HTMLInputElement
     expect(timeInput).not.toBeNull()
     // Value must match HH:mm — 24h format, no am/pm component
     expect(timeInput.value).toMatch(/^\d{2}:\d{2}$/)
@@ -176,7 +177,7 @@ describe('AddMeasureModal', () => {
         editMode={{ id: '1', type: 'BGM', measuredAt: '2024-01-01T14:30:00Z', data: { value: 120 } }}
       />,
     )
-    const timeInput = screen.getByRole('dialog').querySelector('input[type="time"]') as HTMLInputElement
+    const timeInput = screen.getByRole('dialog').querySelector('input[placeholder="HH:mm"]') as HTMLInputElement
     expect(timeInput).not.toBeNull()
     expect(timeInput.value).toMatch(/^\d{2}:\d{2}$/)
   })

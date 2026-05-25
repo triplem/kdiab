@@ -36,6 +36,10 @@ function treatmentAppearance(type: string): { color: string; shape: string } {
 // BGM dot — large transparent hit target ensures Tooltip fires reliably on hover.
 function BgmDot(props: unknown) {
   const p = props as Record<string, unknown>
+  // Guard: check payload.bgm (the merged data entry field) — p['value'] is not reliably set
+  // by Recharts for custom dot components; payload is the authoritative source.
+  const payload = p['payload'] as { bgm?: number | null } | undefined
+  if (typeof payload?.bgm !== 'number') return <g key={`bgm-empty-${String(p['index'])}`} />
   const cx = (p['cx'] as number) ?? 0
   const cy = (p['cy'] as number) ?? 0
   const eventProps: Record<string, unknown> = {}
@@ -65,9 +69,12 @@ function BgmActiveDot(props: unknown) {
 // Treatment marker shape — `unknown` satisfies Recharts' contravariant dot prop type; cast internally.
 function TreatmentDot(props: unknown) {
   const p = props as Record<string, unknown>
+  // Guard: check payload.marker (the merged data entry field) — p['value'] is not reliably set
+  // by Recharts for custom dot components; payload is the authoritative source.
+  const payload = p['payload'] as { marker?: number | null; treatmentType?: string; label?: string } | undefined
+  if (typeof payload?.marker !== 'number') return <g key={`treat-empty-${String(p['index'])}`} />
   const cx = (p['cx'] as number) ?? 0
   const cy = (p['cy'] as number) ?? 0
-  const payload = p['payload'] as { treatmentType?: string; label?: string } | undefined
   const { color, shape } = treatmentAppearance(payload?.treatmentType ?? '')
   const label = payload?.label ?? ''
 
@@ -146,10 +153,10 @@ export function GlucoseTrendChart({
     const deliveredMax = basalBlocks?.length ? Math.max(...basalBlocks.map(b => b.deliveredRate)) : 0
     return Math.max(schedMax, deliveredMax, 1)
   }, [basalProfileLine, basalBlocks])
-  const basalDomain = useMemo(
-    () => [-(maxBasalRate * 4), 0] as [number, number],
-    [maxBasalRate]
-  )
+  const basalDomain = useMemo(() => {
+    const headroom = Math.max(0.8, maxBasalRate * 0.5)
+    return [-(maxBasalRate + headroom) * 3, 0] as [number, number]
+  }, [maxBasalRate])
   const negatedBasalLine = useMemo(
     () => basalProfileLine?.map(p => ({ time: p.time, basalSched: -p.sched })) ?? [],
     [basalProfileLine]
@@ -198,24 +205,27 @@ export function GlucoseTrendChart({
               />
             )}
             <Tooltip
-              labelFormatter={(ms: unknown) => formatTime(new Date(typeof ms === 'number' ? ms : 0).toISOString())}
-              formatter={(v: unknown, name: unknown, entry: { payload?: { treatmentType?: string; label?: string } }) => {
-                if (name === 'sgv') return typeof v === 'number' ? [`${v} ${yLabel}`, 'CGM'] : null
-                if (name === 'bgm') return typeof v === 'number' ? [`${v} ${yLabel}`, 'BGM'] : null
-                if (name === 'marker') {
-                  if (v === null || v === undefined) return null
-                  const ttype = entry.payload?.treatmentType ?? ''
-                  if (!ttype) return null
-                  const lbl = entry.payload?.label ?? ''
-                  const typeName = t(`treatmentModal.types.${ttype}`, { defaultValue: ttype })
-                  return [lbl ? `${typeName}: ${lbl}` : typeName, typeName]
-                }
-                if (name === 'basalSched') return null
-                if (name === 'basalDelivered') return null
-                return null
-              }}
-              contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
               wrapperStyle={{ outline: 'none' }}
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null
+                const entry = payload[0]?.payload as ChartPoint | undefined
+                if (!entry) return null
+                const rows: { key: string; text: string }[] = []
+                if (typeof entry.sgv === 'number') rows.push({ key: 'cgm', text: `CGM: ${entry.sgv} ${yLabel}` })
+                if (typeof entry.bgm === 'number') rows.push({ key: 'bgm', text: `BGM: ${entry.bgm} ${yLabel}` })
+                if (typeof entry.marker === 'number' && entry.treatmentType) {
+                  const typeName = t(`treatmentModal.types.${entry.treatmentType}`, { defaultValue: entry.treatmentType })
+                  rows.push({ key: 'treatment', text: entry.label ? `${typeName}: ${entry.label}` : typeName })
+                }
+                if (!rows.length) return null
+                const timeLabel = formatTime(new Date(typeof label === 'number' ? label : 0).toISOString())
+                return (
+                  <div style={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)', padding: '6px 10px', fontSize: '0.8rem', lineHeight: 1.5 }}>
+                    <p style={{ margin: '0 0 3px', fontWeight: 600 }}>{timeLabel}</p>
+                    {rows.map(r => <p key={r.key} style={{ margin: 0 }}>{r.text}</p>)}
+                  </div>
+                )
+              }}
             />
             <ReferenceLine yAxisId="left" y={tirLow} stroke="#ef4444" strokeDasharray="4 4" />
             <ReferenceLine yAxisId="left" y={tirHigh} stroke="#f59e0b" strokeDasharray="4 4" />

@@ -202,17 +202,18 @@ describe('AddTreatmentModal', () => {
     expect(screen.getByText(/edit treatment/i)).toBeDefined()
   })
 
-  test('time input uses type="time" so the global CSS ampm-field hide rule applies', () => {
+  test('time input is type="text" with placeholder HH:mm (avoids browser 12h AM/PM display)', () => {
     render(<AddTreatmentModal {...baseProps} />, { wrapper })
     const dialog = screen.getByRole('dialog')
-    const timeInput = dialog.querySelector('input[type="time"]')
+    const timeInput = dialog.querySelector('input[placeholder="HH:mm"]')
     expect(timeInput).not.toBeNull()
+    expect(timeInput?.getAttribute('type')).toBe('text')
   })
 
   test('time input value is pre-filled in HH:mm format', () => {
     render(<AddTreatmentModal {...baseProps} />, { wrapper })
     const dialog = screen.getByRole('dialog')
-    const timeInput = dialog.querySelector('input[type="time"]') as HTMLInputElement
+    const timeInput = dialog.querySelector('input[placeholder="HH:mm"]') as HTMLInputElement
     expect(timeInput).not.toBeNull()
     // Value must match HH:mm — two-digit hours and minutes separated by colon
     expect(timeInput.value).toMatch(/^\d{2}:\d{2}$/)
@@ -232,7 +233,7 @@ describe('AddTreatmentModal', () => {
       { wrapper },
     )
     const dialog = screen.getByRole('dialog')
-    const timeInput = dialog.querySelector('input[type="time"]') as HTMLInputElement
+    const timeInput = dialog.querySelector('input[placeholder="HH:mm"]') as HTMLInputElement
     expect(timeInput).not.toBeNull()
     // Must match HH:mm — not the raw ISO timestamp
     expect(timeInput.value).toMatch(/^\d{2}:\d{2}$/)

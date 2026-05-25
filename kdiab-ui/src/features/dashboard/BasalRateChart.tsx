@@ -53,6 +53,10 @@ export function BasalRateChart({
     endMs: b.endMs,
   }))
 
+  const schedMax = basalProfileLine.length ? Math.max(...basalProfileLine.map(p => p.sched)) : 0
+  const delivMax = basalBlocks.length ? Math.max(...basalBlocks.map(b => b.deliveredRate)) : 0
+  const yMax = Math.max(2, schedMax, delivMax)
+
   return (
     <div className="card" style={{ padding: '1rem', marginBottom: '1rem' }}>
       <h3 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '1rem' }}>
@@ -108,7 +112,7 @@ export function BasalRateChart({
               <YAxis
                 tick={{ fontSize: 11 }}
                 label={{ value: 'U/h', angle: -90, position: 'insideLeft', offset: 15, style: { fontSize: 11 }, fill: 'var(--text-secondary)' }}
-                domain={[0, 'auto']}
+                domain={[0, yMax]}
               />
               {basalBlocks.map((block, i) => (
                 <ReferenceArea

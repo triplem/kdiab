@@ -25,6 +25,10 @@ export function BasalAvgChart({ hourlyAvg }: Props) {
 
   const hasData = hourlyAvg.some(v => v !== null)
 
+  // Always show at least 2.0 U/hr on the Y-axis so the chart has visual headroom
+  // above the max rate and the step curve doesn't fill the full chart height.
+  const yMax = Math.max(2, ...hourlyAvg.filter((v): v is number => v !== null))
+
   const formatHour = (h: number) => `${String(h).padStart(2, '0')}:00`
 
   return (
@@ -55,7 +59,7 @@ export function BasalAvgChart({ hourlyAvg }: Props) {
                 label={{ value: t('analytics.agpHour'), position: 'insideBottom', offset: -5, fill: 'var(--text-secondary)' }}
               />
               <YAxis
-                domain={[0, 'auto']}
+                domain={[0, yMax]}
                 label={{ value: 'U/hr', angle: -90, position: 'insideLeft', offset: 10, fill: 'var(--text-secondary)' }}
               />
               <Tooltip
