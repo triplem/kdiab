@@ -165,11 +165,18 @@ Included automatically when you use `podman-up.sh`. All eight kdiab backends exp
 | OTLP gRPC collector | 14317 |
 | OTLP HTTP collector | 14318 |
 | Jaeger UI | http://localhost:16690 |
+| Prometheus | http://localhost:9091 |
+| Grafana | http://localhost:3001 (admin / admin) |
 
 ```bash
 ./podman-up.sh --build           # app + OTEL (always included)
 ./podman-up.sh --pgadmin --build # also start pgAdmin
 ```
+
+Configuration lives under `config/otel/`:
+- `otel-collector-config.yaml` — collector pipelines (traces → Jaeger, metrics → Prometheus)
+- `prometheus.yml` — scrapes the collector's Prometheus exporter
+- `grafana/provisioning/datasources/` — Prometheus and Jaeger pre-wired as data sources
 
 ### Claude Code OTEL (developer tooling)
 
