@@ -1,0 +1,87 @@
+name: kdiab-ui / E2E
+
+on:
+  pull_request:
+    branches: ["**"]
+    paths:
+      - 'kdiab-ui/**'
+      - 'kdiab-measures/**'
+      - 'kdiab-profiles/**'
+      - 'kdiab-treatments/**'
+      - 'kdiab-analyze/**'
+      - 'kdiab-carbs/**'
+      - 'kdiab-calc/**'
+      - 'kdiab-users/**'
+      - 'docker-compose.yml'
+      - 'docker-compose.otel.yml'
+      - '.github/workflows/e2e.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright E2E (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Start kdiab stack
+        run: |
+          docker compose -f docker-compose.yml up -d --wait
+        env:
+          COMPOSE_HTTP_TIMEOUT: 180
+
+      - name: Wait for kdiab-ui to be reachable
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3005/ > /dev/null 2>&1; then
+              echo "kdiab-ui is up"
+              break
+            fi
+            echo "Waiting for kdiab-ui... attempt $i"
+            sleep 5
+          done
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: kdiab-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: kdiab-ui
+        run: npm ci
+
+      - name: Generate API Clients
+        working-directory: kdiab-ui
+        run: npm run api:generate
+
+      - name: Install Playwright Chromium
+        working-directory: kdiab-ui
+        run: npx playwright install chromium --with-deps
+
+      - name: Run E2E tests
+        working-directory: kdiab-ui
+        run: npx playwright test --project=setup --project=chromium
+        env:
+          BASE_URL: http://localhost:3005
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: kdiab-ui/playwright-report/
+          retention-days: 7
+
+      - name: Stop stack
+        if: always()
+        run: docker compose -f docker-compose.yml down -v
