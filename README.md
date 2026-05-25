@@ -180,11 +180,10 @@ Configuration lives under `config/otel/`:
 
 ### Claude Code OTEL (developer tooling)
 
-A separate stack for monitoring Claude Code sessions — traces, metrics, and logs from the AI agent itself.
+A separate stack for monitoring Claude Code sessions — metrics and logs from the AI agent itself.
 
 | Service | URL |
 |---|---|
-| Jaeger UI | http://localhost:16686 |
 | Prometheus | http://localhost:9090 |
 | Loki | http://localhost:3100/ready (API only — no web UI) |
 | Grafana | http://localhost:3000 (admin / admin) |
@@ -206,12 +205,14 @@ podman compose -f docker-compose.claude-otel.yml up -d
 podman compose -f docker-compose.claude-otel.yml down
 ```
 
-`claude-otel.sh` auto-detects `docker compose` or `podman compose`, waits for the OTEL collector to be healthy, then `exec`s into `claude` with all OTEL env vars set (`OTEL_TRACES_EXPORTER=otlp`, `OTEL_METRICS_EXPORTER=otlp`, `OTEL_LOGS_EXPORTER=otlp`, `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`, `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`).
+`claude-otel.sh` auto-detects `docker compose` or `podman compose`, waits for the OTEL collector to be healthy, then `exec`s into `claude` with all OTEL env vars set (`OTEL_METRICS_EXPORTER=otlp`, `OTEL_LOGS_EXPORTER=otlp`, `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`, `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`).
+
+> **Note:** Claude Code v2.x does not emit distributed traces (spans), so no Jaeger service is included.
 
 Configuration lives under `config/claude-otel/`:
-- `otel-collector-config.yaml` — collector pipelines (traces → Jaeger, metrics → Prometheus, logs → Loki)
+- `otel-collector-config.yaml` — collector pipelines (metrics → Prometheus, logs → Loki)
 - `prometheus.yml` — scrapes the collector's Prometheus exporter
-- `grafana/provisioning/datasources/` — Prometheus, Loki, and Jaeger pre-wired as data sources
+- `grafana/provisioning/datasources/` — Prometheus and Loki pre-wired as data sources
 - `grafana/provisioning/dashboards/` — file provider; `grafana/dashboards/` contains the Claude Code Observability dashboard (22 panels, sourced from [ColeMurray/claude-code-otel](https://github.com/ColeMurray/claude-code-otel))
 
 See [ADR-014](docs/adr/ADR-014-otel-grpc-exporter-dual-stack.adoc) for the reasoning behind the dual-stack design and gRPC exporter choice.
