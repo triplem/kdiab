@@ -160,6 +160,7 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
     onSuccess: () => {
       setLogSuccess(true)
       setCarbsGrams('0')
+      setResult(null)
       void queryClient.invalidateQueries({ queryKey: ['latestCgm', userId] })
     },
   })
