@@ -158,7 +158,10 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     [windowTimeline?.measures, glucoseUnit]
   )
 
-  // Treatment markers: merge into same point shape as cgmPoints, at bottom of TIR range
+  // Treatment markers: merge into same point shape as cgmPoints, at bottom of TIR range.
+  // Basal types (BASAL, TEMP_BASAL, COMBO_BOLUS, PUMP_SUSPEND) are intentionally excluded:
+  // they are continuous-rate events that appear as coloured blocks in the basal overlay,
+  // so showing individual per-event dots would add visual noise without new information.
   const treatmentMarkers = useMemo(() =>
     (windowTimeline?.treatments ?? [])
       .filter(t => ['BOLUS', 'CORRECTION_BOLUS', 'CARBS', 'MEAL', 'SITE_CHANGE', 'SENSOR_INSERT', 'INSULIN_CHANGE'].includes(t.type))
