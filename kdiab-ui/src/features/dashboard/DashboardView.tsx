@@ -19,6 +19,7 @@ import {
   STALE_ERROR_MS,
   WINDOWS,
 } from './basalUtils'
+import { snapToCgm } from './chartDataUtils'
 
 interface Props {
   userId: string
@@ -192,37 +193,36 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
   )
 
   // Combined dataset for ComposedChart root -- enables tooltip cursor to find points.
-  // BGM and treatment entries are merged into CGM entries at the same minute so the
-  // Recharts bisect cursor picks a single merged object; otherwise bgm/marker fields
-  // are null in the tooltip because the cursor lands on the CGM-only object.
+  // BGM and treatment entries are snapped to the nearest actual CGM timestamp so the
+  // Recharts bisect cursor always lands on a merged object. See chartDataUtils.ts.
   const chartData = useMemo(() => {
-    const MS_PER_MINUTE = 60_000
-    const roundMin = (ms: number) => Math.round(ms / MS_PER_MINUTE) * MS_PER_MINUTE
+    const sortedCgmTimes = cgmPoints.map(p => p.time).sort((a, b) => a - b)
     const byTime = new Map<number, ChartPoint>()
 
     for (const p of cgmPoints) {
-      byTime.set(roundMin(p.time), { ...p })
+      byTime.set(p.time, { ...p })
     }
 
     for (const p of bgmPoints) {
-      const key = roundMin(p.time)
-      const existing = byTime.get(key)
-      if (existing) {
-        byTime.set(key, { ...existing, bgm: p.bgm })
+      const cgmTime = snapToCgm(sortedCgmTimes, p.time)
+      if (cgmTime !== null) {
+        const existing = byTime.get(cgmTime)
+        // existing is always present: byTime is populated from cgmPoints and cgmTime ∈ sortedCgmTimes
+        byTime.set(cgmTime, { ...existing!, bgm: p.bgm })
       } else {
-        byTime.set(key, { ...p })
+        byTime.set(p.time, { ...p })
       }
     }
 
     for (const p of treatmentMarkers) {
-      const key = roundMin(p.time)
-      const existing = byTime.get(key)
-      if (existing) {
-        // Accumulate labels so concurrent treatments (e.g. BOLUS + CARBS at same minute) both appear
-        const combinedLabel = [existing.label, p.label].filter(Boolean).join(' · ')
-        byTime.set(key, { ...existing, marker: p.marker, treatmentType: p.treatmentType, label: combinedLabel })
+      const cgmTime = snapToCgm(sortedCgmTimes, p.time)
+      if (cgmTime !== null) {
+        const existing = byTime.get(cgmTime)
+        // Accumulate labels so concurrent treatments (e.g. BOLUS + CARBS) both appear
+        const combinedLabel = [existing!.label, p.label].filter(Boolean).join(' · ')
+        byTime.set(cgmTime, { ...existing!, marker: p.marker, treatmentType: p.treatmentType, label: combinedLabel })
       } else {
-        byTime.set(key, { ...p })
+        byTime.set(p.time, { ...p })
       }
     }
 
