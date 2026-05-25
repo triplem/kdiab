@@ -73,11 +73,12 @@ services:
   claude-loki:
     container_name: claude-loki
     image: grafana/loki:3.4
-    command: -config.file=/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/loki-config.yaml
     volumes:
+      - ./config/claude-otel/loki-config.yaml:/etc/loki/loki-config.yaml:ro
       - loki_claude_data:/loki
     ports:
-      - "3100:3100"   # Loki API / UI
+      - "3100:3100"   # Loki API (no web UI — use /ready for health, /metrics for metrics)
     networks:
       - claude-otel
     restart: unless-stopped

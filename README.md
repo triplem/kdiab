@@ -179,7 +179,7 @@ A separate stack for monitoring Claude Code sessions — traces, metrics, and lo
 |---|---|
 | Jaeger UI | http://localhost:16686 |
 | Prometheus | http://localhost:9090 |
-| Loki | http://localhost:3100 |
+| Loki | http://localhost:3100/ready (API only — no web UI) |
 | Grafana | http://localhost:3000 (admin / admin) |
 
 **Quickstart — start OTEL stack and launch Claude in one command:**
