@@ -79,7 +79,8 @@ services:
       KC_LOG_CONSOLE_OUTPUT: json
       KC_TRACING_ENABLED: ${KC_TRACING_ENABLED:-false}
       # KC_TRACING_ENDPOINT and sampler settings are only effective when KC_TRACING_ENABLED=true
-      KC_TRACING_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      # Uses KC_OTEL_ENDPOINT (HTTP/4318) separately from backends (gRPC/4317)
+      KC_TRACING_ENDPOINT: ${KC_OTEL_ENDPOINT:-http://localhost:4318}
     volumes:
       - ./config/keycloak-realm.json:/opt/keycloak/data/import/realm.json:ro
       - ./config/keycloak-theme:/opt/keycloak/themes/kdiab:ro
@@ -237,7 +238,8 @@ services:
       OTEL_SERVICE_NAME: kdiab-carbs
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
       OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}
     ports:
       - "8085:8085"
     healthcheck:
@@ -315,7 +317,8 @@ services:
       OTEL_SERVICE_NAME: kdiab-measures
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
       OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}
     ports:
       - "8080:8080"
     healthcheck:
@@ -364,7 +367,8 @@ services:
       OTEL_SERVICE_NAME: kdiab-profiles
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
       OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}
     ports:
       - "8082:8080"
     healthcheck:
@@ -409,7 +413,8 @@ services:
       OTEL_SERVICE_NAME: kdiab-treatments
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
       OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}
     ports:
       - "8083:8080"
     healthcheck:
@@ -454,7 +459,8 @@ services:
       OTEL_SERVICE_NAME: kdiab-calc
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
       OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}
     ports:
       - "8086:8086"
     healthcheck:
@@ -501,7 +507,8 @@ services:
       OTEL_SERVICE_NAME: kdiab-analyze
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
       OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}
     ports:
       - "8084:8080"
     healthcheck:
@@ -551,7 +558,8 @@ services:
       OTEL_SERVICE_NAME: kdiab-nightscout
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
       OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}
     ports:
       - "8087:8087"
     healthcheck:
@@ -605,7 +613,8 @@ services:
       OTEL_SERVICE_NAME: kdiab-users
       OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-none}
       OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-none}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318}
+      OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4317}
       KEYCLOAK_ADMIN_URL: http://keycloak:8080
       KEYCLOAK_REALM: kdiab
       KEYCLOAK_ADMIN_CLIENT_ID: kdiab-users-service

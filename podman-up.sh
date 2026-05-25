@@ -34,8 +34,10 @@ done
 # Forward telemetry from all backends to the otel-collector defined in docker-compose.otel.yml.
 # Shell env vars take precedence over --env-file values, so these override the
 # OTEL_TRACES_EXPORTER:-none defaults in docker-compose.yml.
+# gRPC (port 4317) avoids the okhttp HTTP/2 ConnectionShutdownException that occurs on port 4318.
 export OTEL_TRACES_EXPORTER=otlp
 export OTEL_METRICS_EXPORTER=otlp
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
 
 exec podman compose --env-file .env.example "${COMPOSE_FILES[@]}" up "${PASS_ARGS[@]}"
