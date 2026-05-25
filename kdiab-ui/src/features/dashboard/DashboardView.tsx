@@ -182,11 +182,42 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     [windowTimeline?.treatments, tirLow]
   )
 
-  // Combined dataset for ComposedChart root -- enables tooltip cursor to find points
-  const chartData = useMemo(
-    () => [...cgmPoints, ...bgmPoints, ...treatmentMarkers].sort((a, b) => a.time - b.time),
-    [cgmPoints, bgmPoints, treatmentMarkers]
-  )
+  // Combined dataset for ComposedChart root -- enables tooltip cursor to find points.
+  // BGM and treatment entries are merged into CGM entries at the same minute so the
+  // Recharts bisect cursor picks a single merged object; otherwise bgm/marker fields
+  // are null in the tooltip because the cursor lands on the CGM-only object.
+  const chartData = useMemo(() => {
+    const roundMin = (ms: number) => Math.round(ms / 60000) * 60000
+
+    type ChartEntry = (typeof cgmPoints)[0] | (typeof bgmPoints)[0] | (typeof treatmentMarkers)[0]
+    const byTime = new Map<number, ChartEntry>()
+
+    for (const p of cgmPoints) {
+      byTime.set(roundMin(p.time), { ...p })
+    }
+
+    for (const p of bgmPoints) {
+      const key = roundMin(p.time)
+      const existing = byTime.get(key)
+      if (existing) {
+        byTime.set(key, { ...existing, bgm: p.bgm })
+      } else {
+        byTime.set(key, { ...p })
+      }
+    }
+
+    for (const p of treatmentMarkers) {
+      const key = roundMin(p.time)
+      const existing = byTime.get(key)
+      if (existing) {
+        byTime.set(key, { ...existing, marker: p.marker, treatmentType: p.treatmentType, label: p.label })
+      } else {
+        byTime.set(key, { ...p })
+      }
+    }
+
+    return Array.from(byTime.values()).sort((a, b) => a.time - b.time)
+  }, [cgmPoints, bgmPoints, treatmentMarkers])
 
   // Basal block reconstruction
   const { basalBlocks, basalProfileLine } = useMemo(() => {
