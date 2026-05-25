@@ -14,13 +14,10 @@
 # Signal support (as of Claude Code v2.x):
 #   metrics → Prometheus → Grafana  (cost, tokens, session counts, etc.)
 #   logs    → Loki → Grafana        (api_request, tool_result, hook events, etc.)
-#   traces  → Jaeger                *** Claude Code does not currently emit spans;
-#                                       Jaeger is included for future use only ***
 #
 # Port map:
 #   OTLP gRPC   4317:4317  (kdiab app OTEL: 14317)
 #   OTLP HTTP   4318:4318  (kdiab app OTEL: 14318)
-#   Jaeger UI   16686:16686 (kdiab app OTEL: 16690) — empty until Claude Code adds spans
 #   Loki        3100:3100  (kdiab app OTEL: n/a)
 #   Prometheus  9090:9090  (kdiab app OTEL: n/a)
 #   Grafana     3000:3000  (kdiab app OTEL: n/a)
@@ -49,37 +46,6 @@ services:
         reservations:
           memory: 64M
           cpus: '0.1'
-
-  claude-jaeger:
-    container_name: claude-jaeger
-    # Pin to digest when available: jaegertracing/jaeger:2.7.0@sha256:<digest>
-    image: jaegertracing/jaeger:2.7.0
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-      # Explicitly bind OTLP ports to all interfaces so the collector container
-      # on the claude-otel network can reach Jaeger. Without these, Jaeger 2.x
-      # may bind only to 127.0.0.1, which is unreachable from other containers.
-      - COLLECTOR_OTLP_GRPC_HOST_PORT=0.0.0.0:4317
-      - COLLECTOR_OTLP_HTTP_HOST_PORT=0.0.0.0:4318
-    ports:
-      - "16686:16686"   # Jaeger UI (standard)
-    networks:
-      - claude-otel
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:16686"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 15s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpus: '1.0'
-        reservations:
-          memory: 128M
-          cpus: '0.25'
 
   claude-loki:
     container_name: claude-loki
@@ -153,8 +119,6 @@ services:
       - "3000:3000"   # Grafana UI (standard)
     depends_on:
       claude-prometheus:
-        condition: service_healthy
-      claude-jaeger:
         condition: service_healthy
       claude-loki:
         condition: service_healthy

@@ -3,9 +3,8 @@
 # OpenTelemetry telemetry enabled. Metrics and logs from Claude are forwarded
 # to the local collector and viewable in Grafana (Prometheus + Loki).
 #
-# NOTE: Claude Code does not currently emit distributed traces (spans). Jaeger
-# is included in the stack for future use but will show no Claude Code services
-# until Anthropic adds span instrumentation to the CLI.
+# Claude Code emits metrics and logs only — no distributed traces (spans).
+# Use Grafana (Prometheus + Loki) to explore Claude Code telemetry.
 #
 # Usage:
 #   ./claude-otel.sh              # start OTEL stack + open Claude
@@ -69,12 +68,11 @@ echo "OTEL collector is ready (${elapsed}s)."
 cat <<'EOF'
 
   Claude Code OTEL stack:
-    Jaeger UI    http://localhost:16686
     Prometheus   http://localhost:9090
     Grafana      http://localhost:3000   (admin / admin)
 
-  OTEL signals enabled:  metrics · logs  (traces: not emitted by Claude Code)
-  Collector endpoint:    localhost:4317 (gRPC)
+  OTEL signals:       metrics · logs
+  Collector endpoint: localhost:4317 (gRPC)
 
 EOF
 

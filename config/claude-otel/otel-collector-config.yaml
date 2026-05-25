@@ -21,10 +21,6 @@ processors:
         action: upsert
 
 exporters:
-  otlp/jaeger:
-    endpoint: claude-jaeger:4317
-    tls:
-      insecure: true
   # Exposes scraped metrics at :8889/metrics — Prometheus polls this endpoint.
   prometheus:
     endpoint: "0.0.0.0:8889"
@@ -40,10 +36,6 @@ exporters:
 service:
   extensions: [health_check]
   pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch, resource]
-      exporters: [otlp/jaeger]
     metrics:
       receivers: [otlp]
       processors: [batch, resource]
