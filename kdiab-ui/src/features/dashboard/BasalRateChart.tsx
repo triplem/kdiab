@@ -135,6 +135,7 @@ export function BasalRateChart({
               />
               <Line
                 dataKey="sched"
+                type="stepAfter"
                 stroke="var(--text-secondary)"
                 strokeDasharray="6 3"
                 strokeWidth={1.5}
