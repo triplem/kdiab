@@ -105,13 +105,14 @@ services:
     volumes:
       - grafana_kdiab_data:/var/lib/grafana
       - ./config/otel/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/otel/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3001:3000"   # Grafana UI (standard 3000 reserved for Claude Code OTEL stack)
     depends_on:
       kdiab-prometheus:
         condition: service_healthy
       jaeger:
-        condition: service_started
+        condition: service_healthy
     networks:
       - shared
     restart: unless-stopped
