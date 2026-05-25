@@ -36,9 +36,10 @@ function treatmentAppearance(type: string): { color: string; shape: string } {
 // BGM dot — large transparent hit target ensures Tooltip fires reliably on hover.
 function BgmDot(props: unknown) {
   const p = props as Record<string, unknown>
-  // Guard: Recharts passes p['value'] = the dataKey value. When bgm is null for this data point
-  // (CGM-only entry), cy is null/0 which would render a spurious dot at the top of the chart.
-  if (typeof p['value'] !== 'number') return <g key={`bgm-empty-${String(p['index'])}`} />
+  // Guard: check payload.bgm (the merged data entry field) — p['value'] is not reliably set
+  // by Recharts for custom dot components; payload is the authoritative source.
+  const payload = p['payload'] as { bgm?: number | null } | undefined
+  if (typeof payload?.bgm !== 'number') return <g key={`bgm-empty-${String(p['index'])}`} />
   const cx = (p['cx'] as number) ?? 0
   const cy = (p['cy'] as number) ?? 0
   const eventProps: Record<string, unknown> = {}
@@ -68,12 +69,12 @@ function BgmActiveDot(props: unknown) {
 // Treatment marker shape — `unknown` satisfies Recharts' contravariant dot prop type; cast internally.
 function TreatmentDot(props: unknown) {
   const p = props as Record<string, unknown>
-  // Guard: Recharts passes p['value'] = the dataKey value. When marker is null (non-treatment entry),
-  // cy is null/0 which would render a spurious marker at the top of the chart.
-  if (typeof p['value'] !== 'number') return <g key={`treat-empty-${String(p['index'])}`} />
+  // Guard: check payload.marker (the merged data entry field) — p['value'] is not reliably set
+  // by Recharts for custom dot components; payload is the authoritative source.
+  const payload = p['payload'] as { marker?: number | null; treatmentType?: string; label?: string } | undefined
+  if (typeof payload?.marker !== 'number') return <g key={`treat-empty-${String(p['index'])}`} />
   const cx = (p['cx'] as number) ?? 0
   const cy = (p['cy'] as number) ?? 0
-  const payload = p['payload'] as { treatmentType?: string; label?: string } | undefined
   const { color, shape } = treatmentAppearance(payload?.treatmentType ?? '')
   const label = payload?.label ?? ''
 
