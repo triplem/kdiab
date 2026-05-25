@@ -36,6 +36,9 @@ function treatmentAppearance(type: string): { color: string; shape: string } {
 // BGM dot — large transparent hit target ensures Tooltip fires reliably on hover.
 function BgmDot(props: unknown) {
   const p = props as Record<string, unknown>
+  // Guard: if bgm data is null/undefined this point is a CGM-only or treatment-only entry;
+  // rendering at cy=0 (top of chart) would produce spurious red dots.
+  if (typeof p['bgm'] !== 'number' || p['bgm'] === null) return <g key={`bgm-empty-${String(p['index'])}`} />
   const cx = (p['cx'] as number) ?? 0
   const cy = (p['cy'] as number) ?? 0
   const eventProps: Record<string, unknown> = {}
@@ -65,6 +68,9 @@ function BgmActiveDot(props: unknown) {
 // Treatment marker shape — `unknown` satisfies Recharts' contravariant dot prop type; cast internally.
 function TreatmentDot(props: unknown) {
   const p = props as Record<string, unknown>
+  // Guard: if marker data is null/undefined this point has no treatment; rendering at cy=0
+  // would produce spurious markers at the top of the chart.
+  if (typeof p['marker'] !== 'number' || p['marker'] === null) return <g key={`treat-empty-${String(p['index'])}`} />
   const cx = (p['cx'] as number) ?? 0
   const cy = (p['cy'] as number) ?? 0
   const payload = p['payload'] as { treatmentType?: string; label?: string } | undefined
@@ -146,10 +152,10 @@ export function GlucoseTrendChart({
     const deliveredMax = basalBlocks?.length ? Math.max(...basalBlocks.map(b => b.deliveredRate)) : 0
     return Math.max(schedMax, deliveredMax, 1)
   }, [basalProfileLine, basalBlocks])
-  const basalDomain = useMemo(
-    () => [-(maxBasalRate * 4), 0] as [number, number],
-    [maxBasalRate]
-  )
+  const basalDomain = useMemo(() => {
+    const headroom = Math.max(0.8, maxBasalRate * 0.5)
+    return [-(maxBasalRate + headroom) * 3, 0] as [number, number]
+  }, [maxBasalRate])
   const negatedBasalLine = useMemo(
     () => basalProfileLine?.map(p => ({ time: p.time, basalSched: -p.sched })) ?? [],
     [basalProfileLine]
