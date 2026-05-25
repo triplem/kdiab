@@ -14,8 +14,7 @@ import {
   sensorExpiryLabel,
   daysSince,
   reconstructBasalBlocks,
-  scheduledRateAt,
-  segToMin,
+  buildBasalProfileLine,
   STALE_WARN_MS,
   STALE_ERROR_MS,
   WINDOWS,
@@ -197,22 +196,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     const toMs = new Date(windowTo).getTime()
     const blocks = reconstructBasalBlocks(fromMs, toMs, basal, windowTimeline?.treatments ?? [])
 
-    // Scheduled profile rate line — one point per segment boundary.
-    // The Line uses type="stepAfter" so Recharts renders the staircase natively.
-    const sorted = [...basal].sort((a, b) => segToMin(a.startTime) - segToMin(b.startTime))
-    const line: Array<{ time: number; sched: number }> = [
-      { time: fromMs, sched: scheduledRateAt(sorted, fromMs) },
-    ]
-    for (let d = Math.floor(fromMs / 86400000) * 86400000; d <= toMs; d += 86400000) {
-      for (const seg of sorted) {
-        const ms = d + segToMin(seg.startTime) * 60000
-        if (ms > fromMs && ms < toMs) {
-          line.push({ time: ms, sched: seg.value })
-        }
-      }
-    }
-    line.push({ time: toMs, sched: line[line.length - 1]!.sched })
-    return { basalBlocks: blocks, basalProfileLine: line }
+    return { basalBlocks: blocks, basalProfileLine: buildBasalProfileLine(fromMs, toMs, basal) }
   }, [activeProfile?.basal, windowFrom, windowTo, windowTimeline?.treatments])
 
   // -- Render ------------------------------------------------------------------

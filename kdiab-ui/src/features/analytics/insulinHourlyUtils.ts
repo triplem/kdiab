@@ -15,8 +15,8 @@ export function computeBasalFromProfileSegments(segments: ProfileSegment[] | nul
   // Parse segments into { hour, value } pairs, sorted ascending
   const parsed = segments
     .map(s => {
-      const [h] = s.startTime.split(':').map(Number)
-      return { hour: h ?? 0, value: s.value }
+      const h = parseInt(s.startTime.split(':')[0] ?? '0', 10)
+      return { hour: isNaN(h) ? 0 : h, value: s.value }
     })
     .sort((a, b) => a.hour - b.hour)
 

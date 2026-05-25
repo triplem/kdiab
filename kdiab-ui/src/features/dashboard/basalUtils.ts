@@ -209,6 +209,36 @@ export function currentBasalRate(basal: Array<{ startTime: string; value: number
   return scheduledRateAt(basal, Date.now())
 }
 
+export interface BasalProfilePoint {
+  time: number
+  sched: number
+}
+
+/**
+ * Build the scheduled basal profile step-line for a time window.
+ * Returns one point per segment boundary that falls inside [fromMs, toMs],
+ * plus anchor points at both ends. The caller renders it with type="stepAfter"
+ * so no duplicate boundary points are needed.
+ */
+export function buildBasalProfileLine(
+  fromMs: number,
+  toMs: number,
+  basal: Array<{ startTime: string; value: number }>,
+): BasalProfilePoint[] {
+  const sorted = [...basal].sort((a, b) => segToMin(a.startTime) - segToMin(b.startTime))
+  const line: BasalProfilePoint[] = [{ time: fromMs, sched: scheduledRateAt(sorted, fromMs) }]
+  for (let d = Math.floor(fromMs / 86400000) * 86400000; d <= toMs; d += 86400000) {
+    for (const seg of sorted) {
+      const ms = d + segToMin(seg.startTime) * 60000
+      if (ms > fromMs && ms < toMs) {
+        line.push({ time: ms, sched: seg.value })
+      }
+    }
+  }
+  line.push({ time: toMs, sched: line[line.length - 1]!.sched })
+  return line
+}
+
 export interface DeliveredLinePoint {
   time: number
   basalDelivered: number

@@ -98,6 +98,15 @@ describe('computeBasalFromProfileSegments', () => {
     expect(result[5]).toBe(1.10)
     expect(result[6]).toBe(1.10)
   })
+
+  test('treats a malformed startTime (NaN hours) as hour 0', () => {
+    // A segment with a non-numeric hour string must not produce NaN in the output.
+    const result = computeBasalFromProfileSegments([{ startTime: 'xx:00', value: 0.9 }])
+    expect(result).toHaveLength(24)
+    result.forEach(v => expect(typeof v === 'number' && !isNaN(v)).toBe(true))
+    // All hours should fall back to the malformed segment (treated as 00:00)
+    expect(result[0]).toBe(0.9)
+  })
 })
 
 // ---------------------------------------------------------------------------

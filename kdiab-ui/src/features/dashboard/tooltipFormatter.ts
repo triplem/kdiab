@@ -21,5 +21,7 @@ export function formatTooltipEntry(
   }
   if (name === 'basalSched') return null
   if (name === 'basalDelivered') return null
+  // Unrecognised series are intentionally suppressed.
+  // If you add a new dataKey to GlucoseTrendChart, add a matching branch above to surface it in the tooltip.
   return null
 }
