@@ -1,6 +1,10 @@
 #!/bin/bash
 # Usage: podman-clean.sh [-v|--volumes]
 #   -v, --volumes   also remove named volumes (postgres_data)
+#
+# Only tears down the kdiab application stack. The Claude Code OTEL stack
+# (docker-compose.claude-otel.yml) is intentionally excluded — manage it
+# separately with: podman compose -f docker-compose.claude-otel.yml down
 
 REMOVE_VOLUMES=false
 
@@ -10,10 +14,15 @@ for arg in "$@"; do
   esac
 done
 
+# Scope down to the kdiab app stack only. Without explicit -f flags,
+# podman-compose stops ALL containers sharing the project name (derived from
+# the working directory), which includes the Claude OTEL containers.
+KDIAB_FILES=(-f docker-compose.yml -f docker-compose.otel.yml)
+
 if $REMOVE_VOLUMES; then
-  podman compose --env-file .env.example down -v
+  podman compose --env-file .env.example "${KDIAB_FILES[@]}" down -v
 else
-  podman compose --env-file .env.example down
+  podman compose --env-file .env.example "${KDIAB_FILES[@]}" down
 fi
 
 # Remove locally-built images only (localhost/ prefix).

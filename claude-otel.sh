@@ -40,7 +40,7 @@ fi
 # Start OTEL stack (idempotent — safe if already running)
 # ---------------------------------------------------------------------------
 echo "Starting Claude Code OTEL stack (${COMPOSE_CMD})..."
-$COMPOSE_CMD -f "$COMPOSE_FILE" up -d
+$COMPOSE_CMD -p claude-otel -f "$COMPOSE_FILE" up -d
 
 # ---------------------------------------------------------------------------
 # Wait for the OTEL collector to accept connections on port 4317 (gRPC).
