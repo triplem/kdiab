@@ -18,6 +18,7 @@
 #   Jaeger gRPC 24317:4317  (remapped; Claude Code OTEL uses 14317 for its own Jaeger)
 #   Prometheus  9091:9090   (Claude Code OTEL: 9090)
 #   Grafana     3001:3000   (Claude Code OTEL: 3000)
+#   Loki        13100:3100  (Claude Code OTEL: 3100)
 
 services:
   otel-collector:
@@ -101,6 +102,34 @@ services:
           memory: 64M
           cpus: '0.1'
 
+  loki:
+    container_name: kdiab-loki
+    # Pin to digest when available: grafana/loki:3.5.0@sha256:<digest>
+    image: grafana/loki:3.5.0
+    command: -config.file=/etc/loki/loki-config.yaml
+    volumes:
+      - ./config/otel/loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "13100:3100"  # Loki API (Claude Code OTEL Loki: 3100)
+    networks:
+      - shared
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3100/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
   kdiab-grafana:
     container_name: kdiab-grafana
     # Pin to digest when available: grafana/grafana:12.0.1@sha256:<digest>
@@ -118,6 +147,8 @@ services:
       kdiab-prometheus:
         condition: service_healthy
       jaeger:
+        condition: service_healthy
+      loki:
         condition: service_healthy
     networks:
       - shared
@@ -148,3 +179,4 @@ services:
 volumes:
   prometheus_kdiab_data:
   grafana_kdiab_data:
+  loki_data:

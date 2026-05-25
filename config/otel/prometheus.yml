@@ -3,8 +3,12 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  # Scrape metrics that kdiab backends forward via OTLP → prometheus exporter
-  - job_name: kdiab-otel-collector
+  # Scrape metrics that kdiab backends forward via OTLP → prometheus exporter.
+  # A single job scrapes the collector's Prometheus exporter endpoint (port 8889).
+  # Individual kdiab service metrics are distinguished by the 'service_name' label
+  # set by each backend's OTEL SDK.  The job label 'kdiab-metrics' matches the
+  # dashboard query filter job=~"kdiab.*".
+  - job_name: kdiab-metrics
     static_configs:
       - targets:
           - otel-collector:8889
