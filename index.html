@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>kdiab — Developer Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1117;
+      color: #e1e4e8;
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #f0f6fc;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      color: #8b949e;
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #8b949e;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-title .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-green  { background: #3fb950; }
+    .dot-blue   { background: #58a6ff; }
+    .dot-purple { background: #bc8cff; }
+    .dot-orange { background: #d29922; }
+    .dot-gray   { background: #8b949e; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    tr + tr td { border-top: 1px solid #21262d; }
+
+    td {
+      padding: 0.45rem 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    td:first-child {
+      color: #8b949e;
+      white-space: nowrap;
+      padding-right: 1rem;
+      width: 1%;
+    }
+
+    a {
+      color: #58a6ff;
+      text-decoration: none;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 3px;
+      margin-left: 0.4rem;
+      vertical-align: middle;
+      background: #21262d;
+      color: #8b949e;
+      border: 1px solid #30363d;
+    }
+
+    .badge-opt { color: #d29922; border-color: #d2992240; }
+
+    .start-hint {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid #21262d;
+      font-size: 0.775rem;
+      color: #8b949e;
+    }
+
+    .start-hint code {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 0.1rem 0.35rem;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 0.78rem;
+      color: #e1e4e8;
+    }
+
+    footer {
+      margin-top: 2.5rem;
+      font-size: 0.78rem;
+      color: #484f58;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<h1>kdiab</h1>
+<p class="subtitle">Developer Dashboard — open in browser from the repository root</p>
+
+<div class="grid">
+
+  <!-- kdiab Application Services -->
+  <div class="card">
+    <div class="card-title"><span class="dot dot-green"></span>kdiab Application Services</div>
+    <table>
+      <tr>
+        <td>kdiab-ui</td>
+        <td><a href="http://localhost:3005" target="_blank">localhost:3005</a></td>
+      </tr>
+      <tr>
+        <td>Keycloak Admin</td>
+        <td><a href="http://localhost:8081" target="_blank">localhost:8081</a></td>
+      </tr>
+      <tr>
+        <td>pgAdmin</td>
+        <td><a href="http://localhost:5050" target="_blank">localhost:5050</a><span class="badge badge-opt">opt-in</span></td>
+      </tr>
+    </table>
+    <div class="start-hint">
+      Start: <code>./podman-up.sh --build</code>
+      &nbsp;|&nbsp; pgAdmin: <code>--pgadmin</code>
+    </div>
+  </div>
+
+  <!-- Backend APIs & Swagger -->
+  <div class="card">
+    <div class="card-title"><span class="dot dot-green"></span>Backend APIs &amp; Swagger UI</div>
+    <table>
+      <tr>
+        <td>measures</td>
+        <td>
+          <a href="http://localhost:8080" target="_blank">:8080</a>
+          &nbsp;<a href="http://localhost:8080/swagger" target="_blank">swagger</a>
+        </td>
+      </tr>
+      <tr>
+        <td>profiles</td>
+        <td>
+          <a href="http://localhost:8082" target="_blank">:8082</a>
+          &nbsp;<a href="http://localhost:8082/swagger" target="_blank">swagger</a>
+        </td>
+      </tr>
+      <tr>
+        <td>treatments</td>
+        <td>
+          <a href="http://localhost:8083" target="_blank">:8083</a>
+          &nbsp;<a href="http://localhost:8083/swagger" target="_blank">swagger</a>
+        </td>
+      </tr>
+      <tr>
+        <td>analyze</td>
+        <td>
+          <a href="http://localhost:8084" target="_blank">:8084</a>
+          &nbsp;<a href="http://localhost:8084/swagger" target="_blank">swagger</a>
+        </td>
+      </tr>
+      <tr>
+        <td>carbs</td>
+        <td>
+          <a href="http://localhost:8085" target="_blank">:8085</a>
+          &nbsp;<a href="http://localhost:8085/swagger" target="_blank">swagger</a>
+        </td>
+      </tr>
+      <tr>
+        <td>calc</td>
+        <td>
+          <a href="http://localhost:8086" target="_blank">:8086</a>
+          &nbsp;<a href="http://localhost:8086/swagger" target="_blank">swagger</a>
+        </td>
+      </tr>
+      <tr>
+        <td>nightscout</td>
+        <td>
+          <a href="http://localhost:8087" target="_blank">:8087</a>
+          &nbsp;<a href="http://localhost:8087/swagger" target="_blank">swagger</a>
+        </td>
+      </tr>
+      <tr>
+        <td>users</td>
+        <td>
+          <a href="http://localhost:8088" target="_blank">:8088</a>
+          &nbsp;<a href="http://localhost:8088/swagger" target="_blank">swagger</a>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- kdiab App OTEL -->
+  <div class="card">
+    <div class="card-title"><span class="dot dot-blue"></span>kdiab App Observability (OTEL)</div>
+    <table>
+      <tr>
+        <td>Jaeger UI</td>
+        <td><a href="http://localhost:16690" target="_blank">localhost:16690</a></td>
+      </tr>
+      <tr>
+        <td>OTLP gRPC</td>
+        <td><span style="color:#8b949e">localhost:14317</span></td>
+      </tr>
+      <tr>
+        <td>OTLP HTTP</td>
+        <td><span style="color:#8b949e">localhost:14318</span></td>
+      </tr>
+    </table>
+    <div class="start-hint">
+      Included automatically by <code>./podman-up.sh</code>
+    </div>
+  </div>
+
+  <!-- Claude Code OTEL -->
+  <div class="card">
+    <div class="card-title"><span class="dot dot-purple"></span>Claude Code Observability (OTEL)</div>
+    <table>
+      <tr>
+        <td>Jaeger UI</td>
+        <td><a href="http://localhost:16686" target="_blank">localhost:16686</a></td>
+      </tr>
+      <tr>
+        <td>Prometheus</td>
+        <td><a href="http://localhost:9090" target="_blank">localhost:9090</a></td>
+      </tr>
+      <tr>
+        <td>Grafana</td>
+        <td><a href="http://localhost:3000" target="_blank">localhost:3000</a><span class="badge">admin / admin</span></td>
+      </tr>
+      <tr>
+        <td>OTLP gRPC</td>
+        <td><span style="color:#8b949e">localhost:4317</span></td>
+      </tr>
+    </table>
+    <div class="start-hint">
+      Start: <code>./claude-otel.sh</code> &nbsp;(starts stack + launches Claude)
+    </div>
+  </div>
+
+  <!-- GitHub -->
+  <div class="card">
+    <div class="card-title"><span class="dot dot-gray"></span>GitHub</div>
+    <table>
+      <tr>
+        <td>Repository</td>
+        <td><a href="https://github.com/triplem/kdiab" target="_blank">github.com/triplem/kdiab</a></td>
+      </tr>
+      <tr>
+        <td>Issues</td>
+        <td><a href="https://github.com/triplem/kdiab/issues" target="_blank">Open issues</a></td>
+      </tr>
+      <tr>
+        <td>Pull Requests</td>
+        <td><a href="https://github.com/triplem/kdiab/pulls" target="_blank">Open PRs</a></td>
+      </tr>
+      <tr>
+        <td>Actions</td>
+        <td><a href="https://github.com/triplem/kdiab/actions" target="_blank">CI / CD runs</a></td>
+      </tr>
+      <tr>
+        <td>Releases</td>
+        <td><a href="https://github.com/triplem/kdiab/releases" target="_blank">Releases</a></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- GitHub Pages Documentation -->
+  <div class="card">
+    <div class="card-title"><span class="dot dot-orange"></span>GitHub Pages — Documentation</div>
+    <table>
+      <tr>
+        <td>Platform docs</td>
+        <td><a href="https://triplem.github.io/kdiab/" target="_blank">triplem.github.io/kdiab</a></td>
+      </tr>
+      <tr>
+        <td>measures</td>
+        <td><a href="https://triplem.github.io/kdiab/measures/" target="_blank">…/measures/</a></td>
+      </tr>
+      <tr>
+        <td>profiles</td>
+        <td><a href="https://triplem.github.io/kdiab/profiles/" target="_blank">…/profiles/</a></td>
+      </tr>
+      <tr>
+        <td>treatments</td>
+        <td><a href="https://triplem.github.io/kdiab/treatments/" target="_blank">…/treatments/</a></td>
+      </tr>
+      <tr>
+        <td>analyze</td>
+        <td><a href="https://triplem.github.io/kdiab/analyze/" target="_blank">…/analyze/</a></td>
+      </tr>
+      <tr>
+        <td>users</td>
+        <td><a href="https://triplem.github.io/kdiab/users/" target="_blank">…/users/</a></td>
+      </tr>
+      <tr>
+        <td>ADRs</td>
+        <td><a href="https://triplem.github.io/kdiab/root/adr/" target="_blank">…/root/adr/</a></td>
+      </tr>
+    </table>
+  </div>
+
+</div><!-- .grid -->
+
+<footer>
+  kdiab &mdash; T1D management platform &mdash;
+  <a href="https://github.com/triplem/kdiab" target="_blank">github.com/triplem/kdiab</a>
+</footer>
+
+</body>
+</html>
