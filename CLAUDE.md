@@ -51,9 +51,10 @@ The root `docker-compose.yml` starts the entire platform (all services + Keycloa
 ```bash
 docker compose up --build        # Start everything
 docker compose down -v           # Tear down and wipe all volumes
-podman compose up --build        # Podman alternative
-# Include pgAdmin (opt-in):
-docker compose -f docker-compose.yml -f docker-compose.pgadmin.yml up --build
+./podman-up.sh --build           # Podman: starts app + OTEL/Jaeger (recommended)
+./podman-up.sh --pgadmin --build # Podman: also include pgAdmin (opt-in)
+# Include pgAdmin with plain docker compose (opt-in):
+docker compose -f docker-compose.yml -f docker-compose.otel.yml -f docker-compose.pgadmin.yml up --build
 ```
 
 The database is automatically initialised by:
