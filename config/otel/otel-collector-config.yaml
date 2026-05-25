@@ -19,6 +19,12 @@ exporters:
   # Exposes scraped metrics at :8889/metrics — Prometheus polls this endpoint.
   prometheus:
     endpoint: "0.0.0.0:8889"
+  # Pushes structured logs from kdiab backends to Loki.
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
+    default_labels_enabled:
+      exporter: false
+      job: true
 
 service:
   pipelines:
@@ -30,3 +36,7 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [prometheus]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [loki]

@@ -167,16 +167,20 @@ Included automatically when you use `podman-up.sh`. All eight kdiab backends exp
 | Jaeger UI | http://localhost:16690 |
 | Prometheus | http://localhost:9091 |
 | Grafana | http://localhost:3001 (admin / admin) |
+| Loki (kdiab app logs) | http://localhost:13100 |
 
 ```bash
 ./podman-up.sh --build           # app + OTEL (always included)
 ./podman-up.sh --pgadmin --build # also start pgAdmin
 ```
 
+Use Grafana Explore with LogQL to query logs: `{service_name="kdiab-measures"}`
+
 Configuration lives under `config/otel/`:
-- `otel-collector-config.yaml` — collector pipelines (traces → Jaeger, metrics → Prometheus)
+- `otel-collector-config.yaml` — collector pipelines (traces → Jaeger, metrics → Prometheus, logs → Loki)
 - `prometheus.yml` — scrapes the collector's Prometheus exporter
-- `grafana/provisioning/datasources/` — Prometheus and Jaeger pre-wired as data sources
+- `loki/loki-config.yaml` — Loki single-binary configuration (boltdb-shipper, filesystem storage)
+- `grafana/provisioning/datasources/` — Prometheus, Jaeger, and Loki pre-wired as data sources
 
 ### Claude Code OTEL (developer tooling)
 
