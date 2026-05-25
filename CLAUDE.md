@@ -151,10 +151,22 @@ All eight kdiab backends export traces via **gRPC** (port 4317 inside Docker, ho
 ./podman-up.sh --build
 ./podman-up.sh --pgadmin --build   # also start pgAdmin (opt-in)
 
-# Start Claude Code OTEL stack separately
-docker compose -f docker-compose.claude-otel.yml up -d
-# or use ./claude-otel-up.sh if it exists
+# Start Claude Code OTEL stack + launch Claude with telemetry enabled (recommended)
+./claude-otel.sh                   # starts OTEL stack, waits for health, then execs claude
+./claude-otel.sh --resume          # pass any claude arguments through
+
+# Start Claude Code OTEL stack only (without launching Claude)
+podman compose -f docker-compose.claude-otel.yml up -d
+
+# Stop Claude Code OTEL stack
+podman compose -f docker-compose.claude-otel.yml down
 ```
+
+**Config files** (under `config/claude-otel/`):
+- `otel-collector-config.yaml` — collector pipelines (traces→Jaeger, metrics→Prometheus, logs→stdout)
+- `prometheus.yml` — scrapes collector metrics endpoint
+- `grafana/provisioning/datasources/` — pre-wires Prometheus + Jaeger data sources
+- `grafana/provisioning/dashboards/` — dashboard file provider (add `.json` files to `grafana/dashboards/`)
 
 ## Architecture
 

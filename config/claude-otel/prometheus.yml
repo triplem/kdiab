@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Scrape metrics that Claude Code forwards via OTLP → prometheus exporter
+  - job_name: claude-otel-collector
+    static_configs:
+      - targets:
+          - claude-otel-collector:8889
+    # The prometheus exporter adds an 'otel_scope_name' label by default;
+    # drop it to keep metric cardinality low.
+    metric_relabel_configs:
+      - action: labeldrop
+        regex: otel_scope_(name|version)
