@@ -205,24 +205,27 @@ export function GlucoseTrendChart({
               />
             )}
             <Tooltip
-              labelFormatter={(ms: unknown) => formatTime(new Date(typeof ms === 'number' ? ms : 0).toISOString())}
-              formatter={(v: unknown, name: unknown, entry: { payload?: { treatmentType?: string; label?: string } }) => {
-                if (name === 'sgv') return typeof v === 'number' ? [`${v} ${yLabel}`, 'CGM'] : null
-                if (name === 'bgm') return typeof v === 'number' ? [`${v} ${yLabel}`, 'BGM'] : null
-                if (name === 'marker') {
-                  if (v === null || v === undefined) return null
-                  const ttype = entry.payload?.treatmentType ?? ''
-                  if (!ttype) return null
-                  const lbl = entry.payload?.label ?? ''
-                  const typeName = t(`treatmentModal.types.${ttype}`, { defaultValue: ttype })
-                  return [lbl ? `${typeName}: ${lbl}` : typeName, typeName]
-                }
-                if (name === 'basalSched') return null
-                if (name === 'basalDelivered') return null
-                return null
-              }}
-              contentStyle={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)' }}
               wrapperStyle={{ outline: 'none' }}
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null
+                const entry = payload[0]?.payload as ChartPoint | undefined
+                if (!entry) return null
+                const rows: { key: string; text: string }[] = []
+                if (typeof entry.sgv === 'number') rows.push({ key: 'cgm', text: `CGM: ${entry.sgv} ${yLabel}` })
+                if (typeof entry.bgm === 'number') rows.push({ key: 'bgm', text: `BGM: ${entry.bgm} ${yLabel}` })
+                if (typeof entry.marker === 'number' && entry.treatmentType) {
+                  const typeName = t(`treatmentModal.types.${entry.treatmentType}`, { defaultValue: entry.treatmentType })
+                  rows.push({ key: 'treatment', text: entry.label ? `${typeName}: ${entry.label}` : typeName })
+                }
+                if (!rows.length) return null
+                const timeLabel = formatTime(new Date(typeof label === 'number' ? label : 0).toISOString())
+                return (
+                  <div style={{ backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', borderRadius: '8px', color: 'var(--tooltip-text)', padding: '6px 10px', fontSize: '0.8rem', lineHeight: 1.5 }}>
+                    <p style={{ margin: '0 0 3px', fontWeight: 600 }}>{timeLabel}</p>
+                    {rows.map(r => <p key={r.key} style={{ margin: 0 }}>{r.text}</p>)}
+                  </div>
+                )
+              }}
             />
             <ReferenceLine yAxisId="left" y={tirLow} stroke="#ef4444" strokeDasharray="4 4" />
             <ReferenceLine yAxisId="left" y={tirHigh} stroke="#f59e0b" strokeDasharray="4 4" />
