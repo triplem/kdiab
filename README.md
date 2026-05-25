@@ -152,6 +152,62 @@ Frontend containers resolve the following variables at startup via `envsubst`:
 | `KEYCLOAK_URL` | Browser-facing Keycloak origin (used in Content-Security-Policy) |
 | `BACKEND_URL` | Internal address nginx uses to proxy `/api/*` to the backend |
 
+## Observability
+
+Two independent OTEL stacks ship in this repo. They use separate Docker networks and non-overlapping host ports so both can run simultaneously.
+
+### kdiab application OTEL
+
+Included automatically when you use `podman-up.sh`. All eight kdiab backends export traces and metrics to the OTEL collector via gRPC.
+
+| Service | Host port |
+|---|---|
+| OTLP gRPC collector | 14317 |
+| OTLP HTTP collector | 14318 |
+| Jaeger UI | http://localhost:16690 |
+
+```bash
+./podman-up.sh --build           # app + OTEL (always included)
+./podman-up.sh --pgadmin --build # also start pgAdmin
+```
+
+### Claude Code OTEL (developer tooling)
+
+A separate stack for monitoring Claude Code sessions — traces, metrics, and logs from the AI agent itself.
+
+| Service | URL |
+|---|---|
+| Jaeger UI | http://localhost:16686 |
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3000 (admin / admin) |
+
+**Quickstart — start OTEL stack and launch Claude in one command:**
+
+```bash
+./claude-otel.sh              # starts containers, waits for health, then opens Claude
+./claude-otel.sh --resume     # pass any claude argument through
+```
+
+**Manual control:**
+
+```bash
+# Start OTEL stack only (without launching Claude)
+podman compose -f docker-compose.claude-otel.yml up -d
+
+# Stop OTEL stack
+podman compose -f docker-compose.claude-otel.yml down
+```
+
+`claude-otel.sh` auto-detects `docker compose` or `podman compose`, waits for the OTEL collector to be healthy, then `exec`s into `claude` with all OTEL env vars set (`OTEL_TRACES_EXPORTER=otlp`, `OTEL_METRICS_EXPORTER=otlp`, `OTEL_LOGS_EXPORTER=otlp`, `OTEL_EXPORTER_OTLP_PROTOCOL=grpc`, `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`).
+
+Configuration lives under `config/claude-otel/`:
+- `otel-collector-config.yaml` — collector pipelines (traces → Jaeger, metrics → Prometheus, logs → stdout)
+- `prometheus.yml` — scrapes the collector's Prometheus exporter
+- `grafana/provisioning/datasources/` — Prometheus + Jaeger pre-wired as data sources
+- `grafana/provisioning/dashboards/` — file provider (drop `.json` dashboards into `grafana/dashboards/`)
+
+See [ADR-014](docs/adr/ADR-014-otel-grpc-exporter-dual-stack.adoc) for the reasoning behind the dual-stack design and gRPC exporter choice.
+
 ## Documentation
 
 - [How to Build and Run](docs/how-to-run.adoc)
