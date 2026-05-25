@@ -32,12 +32,8 @@ services:
     networks:
       - claude-otel
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:13133"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    # No healthcheck: the collector image is distroless (no wget/curl/sh).
+    # claude-otel.sh waits for port 4317 to be reachable from the host instead.
     deploy:
       resources:
         limits:

@@ -16,7 +16,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COMPOSE_FILE="$SCRIPT_DIR/docker-compose.claude-otel.yml"
-CONTAINER_NAME="claude-otel-collector"
 MAX_WAIT_SECS=60
 
 # ---------------------------------------------------------------------------
@@ -24,13 +23,10 @@ MAX_WAIT_SECS=60
 # ---------------------------------------------------------------------------
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     COMPOSE_CMD="docker compose"
-    INSPECT_CMD="docker inspect"
 elif command -v podman >/dev/null 2>&1 && podman compose version >/dev/null 2>&1; then
     COMPOSE_CMD="podman compose"
-    INSPECT_CMD="podman inspect"
 elif command -v podman-compose >/dev/null 2>&1; then
     COMPOSE_CMD="podman-compose"
-    INSPECT_CMD="podman inspect"
 else
     echo "ERROR: neither 'docker compose' nor 'podman compose' is available." >&2
     echo "Install Docker or Podman with the compose plugin to use this script." >&2
@@ -44,18 +40,16 @@ echo "Starting Claude Code OTEL stack (${COMPOSE_CMD})..."
 $COMPOSE_CMD -f "$COMPOSE_FILE" up -d
 
 # ---------------------------------------------------------------------------
-# Wait for the OTEL collector healthcheck
+# Wait for the OTEL collector to accept connections on port 4317 (gRPC).
+# The collector image is distroless so we cannot use a container-side healthcheck
+# (no wget/curl/sh). Instead we test TCP reachability from the host — port 4317
+# is already exposed and is the endpoint Claude Code will use.
 # ---------------------------------------------------------------------------
-echo "Waiting for OTEL collector to become healthy..."
+echo "Waiting for OTEL collector to accept connections on port 4317..."
 elapsed=0
-while true; do
-    status=$($INSPECT_CMD --format='{{.State.Health.Status}}' "$CONTAINER_NAME" 2>/dev/null || echo "not_found")
-    if [ "$status" = "healthy" ]; then
-        echo "OTEL collector is healthy (${elapsed}s)."
-        break
-    fi
+until (echo >/dev/tcp/localhost/4317) 2>/dev/null; do
     if [ $elapsed -ge $MAX_WAIT_SECS ]; then
-        echo "ERROR: OTEL collector did not become healthy within ${MAX_WAIT_SECS}s" >&2
+        echo "ERROR: OTEL collector did not become reachable within ${MAX_WAIT_SECS}s" >&2
         echo "--- collector logs ---" >&2
         $COMPOSE_CMD -f "$COMPOSE_FILE" logs claude-otel-collector 2>&1 | tail -20 >&2
         exit 1
@@ -63,6 +57,7 @@ while true; do
     sleep 2
     elapsed=$((elapsed + 2))
 done
+echo "OTEL collector is ready (${elapsed}s)."
 
 # ---------------------------------------------------------------------------
 # Print service URLs
