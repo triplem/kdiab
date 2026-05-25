@@ -27,16 +27,27 @@ jobs:
   e2e:
     name: Playwright E2E (Chromium)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v6
 
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Build backend JARs
+        run: ./gradlew buildBackends --no-parallel
+        env:
+          GRADLE_OPTS: "-Xmx3g -XX:MaxMetaspaceSize=512m"
+
       - name: Start kdiab stack
         run: |
-          docker compose -f docker-compose.yml up -d --wait
+          docker compose -f docker-compose.yml up --build -d --wait
         env:
-          COMPOSE_HTTP_TIMEOUT: 180
+          COMPOSE_HTTP_TIMEOUT: 300
 
       - name: Wait for services to be reachable
         run: |
