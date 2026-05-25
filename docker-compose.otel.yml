@@ -52,3 +52,10 @@ services:
           memory: 128M
           cpus: '0.25'
 
+
+  # When OTEL is active, point Keycloak's tracer at the HTTP endpoint (port 4318).
+  # Backends use gRPC (port 4317) via OTEL_EXPORTER_OTLP_ENDPOINT; Keycloak
+  # requires the HTTP endpoint controlled by KC_OTEL_ENDPOINT.
+  keycloak:
+    environment:
+      KC_OTEL_ENDPOINT: http://otel-collector:4318
