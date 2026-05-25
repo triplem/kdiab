@@ -151,7 +151,7 @@ services:
       jaeger:
         condition: service_healthy
       loki:
-        condition: service_healthy
+        condition: service_started
     networks:
       - shared
     restart: unless-stopped
