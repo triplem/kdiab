@@ -201,4 +201,20 @@ describe('AddTreatmentModal', () => {
     )
     expect(screen.getByText(/edit treatment/i)).toBeDefined()
   })
+
+  test('time input uses type="time" so the global CSS ampm-field hide rule applies', () => {
+    render(<AddTreatmentModal {...baseProps} />, { wrapper })
+    const dialog = screen.getByRole('dialog')
+    const timeInput = dialog.querySelector('input[type="time"]')
+    expect(timeInput).not.toBeNull()
+  })
+
+  test('time input value is pre-filled in HH:mm format', () => {
+    render(<AddTreatmentModal {...baseProps} />, { wrapper })
+    const dialog = screen.getByRole('dialog')
+    const timeInput = dialog.querySelector('input[type="time"]') as HTMLInputElement
+    expect(timeInput).not.toBeNull()
+    // Value must match HH:mm — two-digit hours and minutes separated by colon
+    expect(timeInput.value).toMatch(/^\d{2}:\d{2}$/)
+  })
 })
