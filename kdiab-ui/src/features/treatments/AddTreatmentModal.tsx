@@ -122,8 +122,15 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
   const [type, setType] = useState<PatientTreatmentType>('MEAL')
   const [treatedDate, setTreatedDate] = useState(nowDate)
   const [treatedTime, setTreatedTime] = useState(nowTime)
+  const [timeError, setTimeError] = useState<string | null>(null)
   const [notes, setNotes] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
+
+  const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
+
+  const handleTimeBlur = () => {
+    setTimeError(TIME_PATTERN.test(treatedTime) ? null : t('modal.invalidTime', { defaultValue: 'Enter time as HH:mm (00:00–23:59)' }))
+  }
 
   // Pending form data from the active sub-form
   const [pendingData, setPendingData] = useState<Record<string, unknown> | null>(null)
@@ -167,6 +174,11 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setValidationError(null)
+
+    if (!TIME_PATTERN.test(treatedTime)) {
+      setTimeError(t('modal.invalidTime', { defaultValue: 'Enter time as HH:mm (00:00–23:59)' }))
+      return
+    }
 
     if (type === 'MEAL') {
       const data = pendingData as { insulin: number; carbs: number } | null
@@ -387,10 +399,12 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
                 pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
                 maxLength={5}
                 value={treatedTime}
-                onChange={(e) => setTreatedTime(e.target.value.replace(/[^0-9:]/g, '').slice(0, 5))}
-                style={inputStyle}
+                onChange={(e) => { setTreatedTime(e.target.value.replace(/[^0-9:]/g, '').slice(0, 5)); setTimeError(null) }}
+                onBlur={handleTimeBlur}
+                style={{ ...inputStyle, borderColor: timeError ? '#ef4444' : undefined }}
                 required
               />
+              {timeError && <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>{timeError}</span>}
             </label>
           </div>
 

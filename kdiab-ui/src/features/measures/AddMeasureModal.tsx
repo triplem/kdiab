@@ -86,7 +86,14 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
   const [type, setType] = useState<MeasureType>('BGM')
   const [measuredDate, setMeasuredDate] = useState(nowDate)
   const [measuredTime, setMeasuredTime] = useState(nowTime)
+  const [timeError, setTimeError] = useState<string | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
+
+  const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/
+
+  const handleTimeBlur = () => {
+    setTimeError(TIME_PATTERN.test(measuredTime) ? null : t('modal.invalidTime', { defaultValue: 'Enter time as HH:mm (00:00–23:59)' }))
+  }
 
   const [bgmValue, setBgmValue] = useState('')
   const [cgmValue, setCgmValue] = useState('')
@@ -183,6 +190,10 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (!TIME_PATTERN.test(measuredTime)) {
+      setTimeError(t('modal.invalidTime', { defaultValue: 'Enter time as HH:mm (00:00–23:59)' }))
+      return
+    }
     const data = buildData()
     if (!data) {
       setValidationError(t('modal.validationError'))
@@ -435,10 +446,12 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
                 pattern="([01][0-9]|2[0-3]):[0-5][0-9]"
                 maxLength={5}
                 value={measuredTime}
-                onChange={(e) => setMeasuredTime(e.target.value.replace(/[^0-9:]/g, '').slice(0, 5))}
-                style={inputStyle}
+                onChange={(e) => { setMeasuredTime(e.target.value.replace(/[^0-9:]/g, '').slice(0, 5)); setTimeError(null) }}
+                onBlur={handleTimeBlur}
+                style={{ ...inputStyle, borderColor: timeError ? '#ef4444' : undefined }}
                 required
               />
+              {timeError && <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>{timeError}</span>}
             </label>
           </div>
 
