@@ -1,10 +1,11 @@
-# Opt-in OpenTelemetry observability overlay.
+# OpenTelemetry observability overlay — included by default in podman-up.sh.
 # Usage: docker compose -f docker-compose.yml -f docker-compose.otel.yml up
-# Or via Podman: ./podman-up.sh -o --build
+# Or via Podman: ./podman-up.sh --build  (OTEL is always included)
 #
-# Sets OTEL_TRACES_EXPORTER/OTEL_METRICS_EXPORTER=otlp and
-# OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 in the shell
-# so all kdiab backends forward telemetry to the collector.
+# Requires OTEL_TRACES_EXPORTER=otlp, OTEL_METRICS_EXPORTER=otlp, and
+# OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 in the environment
+# so all kdiab backends forward telemetry to the collector (podman-up.sh sets
+# these automatically).
 
 services:
   otel-collector:
