@@ -124,6 +124,38 @@ npm run test:e2e                 # Playwright e2e tests (requires running app)
 - Swagger UI: http://localhost:8080/swagger
 - Keycloak Admin: http://localhost:8081
 
+### Observability (OTEL)
+
+Two independent OTEL stacks exist in this repo. They use separate Docker networks and non-overlapping host ports so both can run simultaneously.
+
+**kdiab app OTEL** (`docker-compose.otel.yml`) — included automatically by `podman-up.sh`:
+| Service | URL (host-side remapped) |
+|---|---|
+| OTLP gRPC collector | localhost:14317 |
+| OTLP HTTP collector | localhost:14318 |
+| Jaeger UI | http://localhost:16690 |
+
+**Claude Code OTEL** (`docker-compose.claude-otel.yml`) — standard ports:
+| Service | URL |
+|---|---|
+| OTLP gRPC collector | localhost:4317 |
+| OTLP HTTP collector | localhost:4318 |
+| Jaeger UI | http://localhost:16686 |
+| Prometheus | http://localhost:9090 |
+| Grafana | http://localhost:3000 |
+
+All eight kdiab backends export traces via **gRPC** (port 4317 inside Docker, host 14317). Keycloak uses HTTP (port 4318 inside Docker) via `KC_OTEL_ENDPOINT`. See `ADR-014` for why gRPC was chosen over HTTP.
+
+```bash
+# Start kdiab stack + OTEL (recommended)
+./podman-up.sh --build
+./podman-up.sh --pgadmin --build   # also start pgAdmin (opt-in)
+
+# Start Claude Code OTEL stack separately
+docker compose -f docker-compose.claude-otel.yml up -d
+# or use ./claude-otel-up.sh if it exists
+```
+
 ## Architecture
 
 ### API-First Design

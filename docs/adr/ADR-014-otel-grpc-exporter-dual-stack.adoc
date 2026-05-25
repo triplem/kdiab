@@ -1,0 +1,148 @@
+= ADR-014: OTLP gRPC exporter and dual OTEL stack port separation
+:date: 2026-05-25
+:status: Accepted
+:deciders: triplem
+
+== Context
+
+The kdiab platform ships with an OpenTelemetry observability stack
+(`docker-compose.otel.yml`) that collects traces and metrics from all eight
+backend services.  Two problems emerged during development:
+
+=== Problem 1 — ConnectionShutdownException spam
+
+All backends were configured to export telemetry over *OTLP HTTP/protobuf*
+(port 4318).  The Java OpenTelemetry SDK uses the OkHttp library for the HTTP
+exporter.  OkHttp maintains an HTTP/2 connection pool; when the pool reuses a
+connection that the collector has quietly closed (common after idle periods),
+OkHttp throws:
+
+----
+SEVERE: Failed to export spans
+okhttp3.internal.http2.ConnectionShutdownException: shutdown
+----
+
+This message is logged by the SDK's internal error handler on every export
+attempt until a new connection is established.  It is not fatal but it fills
+logs with noise and obscures real errors.
+
+=== Problem 2 — Port conflict between two OTEL stacks
+
+Claude Code ships its own OTEL stack (`docker-compose.claude-otel.yml`) so
+that Claude session traces and metrics can be inspected locally.  Both stacks
+originally used the same host ports (4317, 4318, 16686), making it impossible
+to run both simultaneously on the same developer machine.
+
+Keycloak added a third consideration: its OTEL tracer is configured separately
+via `KC_TRACING_ENDPOINT` and requires the HTTP endpoint (port 4318); it cannot
+use gRPC.
+
+== Decision
+
+=== Switch kdiab backends to gRPC (port 4317)
+
+Replace the OTLP HTTP exporter with the OTLP gRPC exporter for all eight kdiab
+backend services.  gRPC uses a long-lived bidirectional connection that is
+explicitly managed by the gRPC channel; there is no OkHttp connection pool, so
+the `ConnectionShutdownException` cannot occur.
+
+`podman-up.sh` exports the following environment variables (which take
+precedence over any `--env-file` defaults):
+
+----
+OTEL_TRACES_EXPORTER=otlp
+OTEL_METRICS_EXPORTER=otlp
+OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+----
+
+Keycloak continues to use the HTTP endpoint via a separate variable:
+
+----
+KC_OTEL_ENDPOINT: http://otel-collector:4318   # in docker-compose.otel.yml
+----
+
+=== Remap kdiab app OTEL to non-standard host ports
+
+The kdiab app backends communicate with the collector via the internal Docker
+network hostname (`otel-collector`), so the host-side port number is irrelevant
+to the application.  Remapping the host ports frees the standard OTEL ports for
+the Claude Code stack.
+
+[cols="1,1,1,1"]
+|===
+|Service |Container port |kdiab app host port |Claude Code host port
+
+|OTLP gRPC
+|4317
+|14317
+|4317 (standard)
+
+|OTLP HTTP
+|4318
+|14318
+|4318 (standard)
+
+|Jaeger UI
+|16686
+|16690
+|16686 (standard)
+
+|Jaeger OTLP gRPC
+|4317
+|24317
+|n/a
+
+|Prometheus UI
+|9090
+|n/a
+|9090 (standard)
+
+|Grafana UI
+|3000
+|n/a
+|3000 (standard)
+|===
+
+== Consequences
+
+=== Positive
+
+* `ConnectionShutdownException` noise is eliminated — gRPC manages its own
+  channel lifecycle.
+* Both OTEL stacks can run simultaneously; a developer can observe both kdiab
+  app traces and Claude session traces side-by-side.
+* Keycloak continues to use its HTTP-based tracer unchanged.
+* No application code changes are required; only environment variable and compose
+  file changes.
+
+=== Constraints
+
+* The kdiab app Jaeger UI moves from `http://localhost:16686` to
+  `http://localhost:16690`.  Any bookmarks or runbook links must be updated.
+* The Prometheus and Grafana services are only present in the Claude Code stack;
+  the kdiab app stack does not include them.
+* If a developer accidentally starts both stacks without the port remapping,
+  Docker will refuse to bind the duplicate host ports and report a clear error.
+
+== Alternatives Considered
+
+=== Keep OTLP HTTP; configure OkHttp keepalive
+
+OkHttp connection pooling can be tuned via system properties (`okhttp.keepAlive`,
+`okhttp.keepAliveDuration`).  However this requires patching the SDK exporter
+configuration at a level not exposed by the standard environment variables, and
+does not eliminate the root cause (stale HTTP/2 connections).  *Rejected.*
+
+=== Suppress the log noise
+
+Configure the `io.opentelemetry` logger at WARN level to hide the `SEVERE`
+messages.  This hides real errors alongside the spurious ones and does not fix
+the connection-stability problem.  *Rejected.*
+
+=== Use separate Docker networks only (no port remapping)
+
+Both stacks already use dedicated Docker networks (`shared` vs `claude-otel`).
+Network isolation prevents container-level conflicts but does not resolve
+host-port conflicts when both stacks are running.  Port remapping is still
+required.  *Already done as part of the dual-stack design.*
