@@ -545,3 +545,21 @@ describe('App — handleSaveMeal', () => {
     expect(screen.queryByRole('dialog')).not.toBeNull()
   })
 })
+
+describe('App — logout', () => {
+  test('clicking logout calls signoutRedirect with post_logout_redirect_uri', async () => {
+    const signoutRedirect = vi.fn().mockResolvedValue(undefined)
+    mockedUseAuth.mockReturnValue(makeAuthState({ signoutRedirect }) as ReturnType<typeof useAuth>)
+    renderApp()
+
+    const logoutBtn = screen.getByTestId('logout-btn')
+    await act(async () => {
+      fireEvent.click(logoutBtn)
+    })
+
+    expect(signoutRedirect).toHaveBeenCalledOnce()
+    expect(signoutRedirect).toHaveBeenCalledWith({
+      post_logout_redirect_uri: window.location.origin,
+    })
+  })
+})

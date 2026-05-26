@@ -470,7 +470,8 @@ export default function App() {
             <LanguageSwitcher />
             <button
               className="btn outline"
-              onClick={() => void auth.signoutRedirect()}
+              data-testid="logout-btn"
+              onClick={() => void auth.signoutRedirect({ post_logout_redirect_uri: window.location.origin })}
               style={{ fontSize: '0.85rem', padding: '0.3rem 0.75rem' }}
             >
               {t('app.logout')}
