@@ -1,4 +1,4 @@
-FROM liquibase/liquibase:5.0.1-alpine
+FROM liquibase/liquibase:5.0.3-alpine
 RUN lpm add postgresql --global
 COPY src/main/resources/db /liquibase/db
 CMD ["update"]
