@@ -249,13 +249,15 @@ export default function App() {
     )
   }
 
+  const foodDatabaseEnabled = (import.meta.env as Record<string, string>)['VITE_FOOD_DATABASE_ENABLED'] === 'true'
+
   const tabs: { key: Tab; label: string; adminOnly?: boolean }[] = [
     { key: 'dashboard', label: t('nav.dashboard') },
     { key: 'measures', label: t('nav.measures') },
     { key: 'treatments', label: t('nav.treatments') },
     { key: 'profiles', label: t('nav.profiles') },
     { key: 'analytics', label: t('nav.analytics') },
-    { key: 'carbs', label: t('nav.foodDatabase') },
+    ...(foodDatabaseEnabled ? [{ key: 'carbs' as Tab, label: t('nav.foodDatabase') }] : []),
     { key: 'calc', label: t('nav.doseCalculator') },
     { key: 'settings', label: t('nav.settings') },
     { key: 'admin-users', label: t('nav.adminUsers'), adminOnly: true },
