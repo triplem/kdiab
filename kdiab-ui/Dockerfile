@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --silent
 COPY . .
+ARG VITE_FOOD_DATABASE_ENABLED=false
+ENV VITE_FOOD_DATABASE_ENABLED=$VITE_FOOD_DATABASE_ENABLED
 RUN npm run build
 
 # nginx:alpine (linux/amd64) — update digest after nginx patch releases

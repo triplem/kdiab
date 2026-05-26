@@ -1,23 +1,28 @@
 #!/bin/bash
-# Usage: podman-up.sh [--pgadmin|-p] [podman compose up options]
+# Usage: podman-up.sh [--pgadmin|-p] [--optional|-o] [podman compose up options]
 #
 #   Starts the full stack (app + OTEL observability) using .env.example as the
 #   default env file. Override any value by setting it in the shell environment
 #   before running.
 #
 # Options:
-#   --pgadmin, -p   Also start pgAdmin (opt-in; disabled by default)
+#   --pgadmin, -p    Also start pgAdmin (opt-in; disabled by default)
+#   --optional, -o   Also start optional services: kdiab-nightscout and kdiab-carbs
+#                    food database backend, and enables the Food Database tab in
+#                    the kdiab-ui build (requires --build on first use).
 #
 # Examples:
 #   ./podman-up.sh --build
 #   ./podman-up.sh --build -d
 #   ./podman-up.sh --pgadmin --build
+#   ./podman-up.sh --optional --build
 #   POSTGRES_PASSWORD=mypassword ./podman-up.sh --build
 
 # Docker image format is required for HEALTHCHECK support; OCI (Podman default) silently ignores it.
 export BUILDAH_FORMAT=docker
 
 COMPOSE_FILES=(-f docker-compose.yml -f docker-compose.otel.yml)
+COMPOSE_PROFILES=()
 PASS_ARGS=()
 
 for arg in "$@"; do
@@ -25,11 +30,19 @@ for arg in "$@"; do
         --pgadmin|-p)
             COMPOSE_FILES+=(-f docker-compose.pgadmin.yml)
             ;;
+        --optional|-o)
+            COMPOSE_PROFILES+=(optional)
+            export VITE_FOOD_DATABASE_ENABLED=true
+            ;;
         *)
             PASS_ARGS+=("$arg")
             ;;
     esac
 done
+
+if [ ${#COMPOSE_PROFILES[@]} -gt 0 ]; then
+    export COMPOSE_PROFILES=$(IFS=,; echo "${COMPOSE_PROFILES[*]}")
+fi
 
 # Forward telemetry from all backends to the otel-collector defined in docker-compose.otel.yml.
 # Shell env vars take precedence over --env-file values, so these override the
