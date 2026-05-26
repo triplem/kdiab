@@ -209,9 +209,11 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         const existing = byTime.get(cgmTime)
         // existing is always present: byTime is populated from cgmPoints and cgmTime ∈ sortedCgmTimes
         byTime.set(cgmTime, { ...existing!, bgm: p.bgm })
-      } else {
-        byTime.set(p.time, { ...p })
       }
+      // When snapToCgm returns null the BGM falls outside all CGM windows.
+      // Drop it rather than inserting an isolated entry with sgv=null — isolated
+      // entries cause the Recharts bisect cursor to lock onto that timestamp,
+      // freezing the tooltip.
     }
 
     for (const p of treatmentMarkers) {
@@ -221,9 +223,9 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
         // Accumulate labels so concurrent treatments (e.g. BOLUS + CARBS) both appear
         const combinedLabel = [existing!.label, p.label].filter(Boolean).join(' · ')
         byTime.set(cgmTime, { ...existing!, marker: p.marker, treatmentType: p.treatmentType, label: combinedLabel })
-      } else {
-        byTime.set(p.time, { ...p })
       }
+      // When snapToCgm returns null the treatment falls outside all CGM windows.
+      // Drop it rather than inserting an isolated entry — same reason as BGM above.
     }
 
     return Array.from(byTime.values()).sort((a, b) => a.time - b.time)
