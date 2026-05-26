@@ -1,0 +1,242 @@
+= kdiab-nightscout Operations Guide
+:author: kdiab team
+:toc: left
+:toclevels: 3
+
+== Overview
+
+`kdiab-nightscout` is the Nightscout API v1 compatibility layer for the kdiab platform. It translates Nightscout v1 protocol requests from AAPS, xDrip+, and Juggluco into calls against `kdiab-measures`, `kdiab-treatments`, `kdiab-carbs`, and `kdiab-profiles`. It runs on port 8087.
+
+This service has **no database** — it is a stateless reverse-proxy adapter. All data lives in the upstream services.
+
+NOTE: This service implements **Nightscout API v1** (paths under `/api/v1/`). The `nightscout-v3-mapping.adoc` document describes the v3 data-model alignment but the live wire protocol is always v1.
+
+This service is an **optional** Docker Compose service. It is not started by default. See <<startup-dependencies>> for activation instructions.
+
+== Configuration
+
+All configuration is provided via environment variables (override the defaults in `application.conf`).
+
+=== Required Variables
+
+|===
+| Variable | Description | Example
+
+| `JWKS_URL` | Keycloak JWKS endpoint for JWT verification | `http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs`
+| `JWT_DOMAIN` | JWT issuer domain | `http://localhost:8081/realms/kdiab`
+| `JWT_AUDIENCE` | Expected `aud` claim in JWTs | `nightscout`
+| `MEASURES_URL` | kdiab-measures base URL | `http://measures-backend:8080`
+| `TREATMENTS_URL` | kdiab-treatments base URL | `http://treatments-backend:8080`
+| `CARBS_URL` | kdiab-carbs base URL | `http://carbs-backend:8085`
+| `PROFILES_URL` | kdiab-profiles base URL | `http://profiles-backend:8082`
+|===
+
+=== Optional Variables
+
+|===
+| Variable | Default | Description
+
+| `PORT` | `8087` | HTTP listen port
+| `JWT_REALM` | `kdiab` | Keycloak realm name (cosmetic; not validated)
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated allowed CORS origins
+| `LOGGING_SUPPRESS_HEALTH_CHECKS` | `true` | Suppress health check paths from access logs
+| `JSON_PRETTY_PRINT` | `false` | Pretty-print JSON responses (development only)
+| `API3_MAX_LIMIT` | `1000` | Maximum number of records returned per Nightscout v3 list request
+| `API3_SECURITY_ENABLE` | `true` | Require authentication on all API endpoints
+| `HTTP_CONNECT_TIMEOUT_MS` | `5000` | TCP connect timeout for upstream HTTP calls (ms)
+| `HTTP_REQUEST_TIMEOUT_MS` | `30000` | Total request timeout for upstream HTTP calls (ms)
+| `HTTP_SOCKET_TIMEOUT_MS` | `5000` | Socket read timeout for upstream HTTP calls (ms)
+| `HTTP_RETRY_MAX_RETRIES` | `3` | Maximum retry attempts on upstream server errors
+| `HTTP_RETRY_MAX_DELAY_MS` | `8000` | Maximum delay between retries (exponential backoff cap, ms)
+| `OTEL_SERVICE_NAME` | — | OpenTelemetry service name (set to `kdiab-nightscout`)
+| `OTEL_TRACES_EXPORTER` | `none` | OTLP trace exporter (`otlp` or `none`)
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4317` | OTLP collector gRPC endpoint
+|===
+
+== Health Endpoints
+
+|===
+| Path | Description
+
+| `GET /healthz` | Liveness — returns 200 if the process is up
+| `GET /readyz` | Readiness — returns 200 if all circuit breakers are CLOSED or HALF_OPEN
+|===
+
+Use `/readyz` as the Kubernetes readiness probe and `/healthz` as the liveness probe. A failing `/readyz` means at least one upstream circuit breaker is OPEN — check upstream service health.
+
+[#startup-dependencies]
+== Startup Dependencies
+
+`kdiab-nightscout` is an **optional** service gated behind `profiles: [optional]` in `docker-compose.yml`. It is not started by a plain `docker compose up`.
+
+To start it:
+
+[source,bash]
+----
+# Recommended — starts all optional services together
+./podman-up.sh --optional --build
+
+# Manual
+COMPOSE_PROFILES=optional docker compose up --build
+----
+
+When the `optional` profile is active, the startup order is enforced via:
+
+[source,yaml]
+----
+depends_on:
+  measures-backend:
+    condition: service_healthy
+  treatments-backend:
+    condition: service_healthy
+  carbs-backend:
+    condition: service_healthy
+  profiles-backend:
+    condition: service_healthy
+  keycloak:
+    condition: service_started
+----
+
+If any upstream service fails its healthcheck, `nightscout-backend` will not start.
+
+== Circuit Breakers
+
+`kdiab-nightscout` wraps every upstream HTTP client in a dedicated `CircuitBreaker` instance (from `kdiab-common`). There are four independent breakers:
+
+|===
+| Breaker name | Upstream service | Default port
+
+| `measures` | kdiab-measures | 8080
+| `treatments` | kdiab-treatments | 8083 (internal 8080)
+| `carbs` | kdiab-carbs | 8085
+| `profiles` | kdiab-profiles | 8082
+|===
+
+=== State Machine
+
+----
+CLOSED ──(5 consecutive failures)──► OPEN ──(30 s elapsed)──► HALF_OPEN
+  ▲                                                                │
+  └──────────────(probe succeeds)─────────────────────────────────┘
+----
+
+* **CLOSED** — normal operation; failure count resets on any success.
+* **OPEN** — all requests to that upstream fast-fail with 503 immediately; no network call is made.
+* **HALF_OPEN** — exactly one probe call is allowed; all concurrent callers fast-fail to prevent thundering-herd on recovery.
+
+=== Log Signatures
+
+Monitor these log lines to detect breaker state changes:
+
+[source]
+----
+circuit_breaker service=measures failures=3 threshold=5 reason=...
+circuit_breaker service=measures state=OPEN threshold reached — blocking upstream calls
+circuit_breaker service=treatments state=HALF_OPEN probing upstream
+circuit_breaker service=carbs state=CLOSED upstream recovered
+----
+
+=== Client Device Behaviour During OPEN State
+
+When a circuit breaker is OPEN, affected Nightscout v1 endpoints return `503 Service Unavailable`. AAPS, xDrip+, and Juggluco will retry on their own schedule. The breaker automatically recovers within 30 seconds if the upstream service returns to health.
+
+== Scaling
+
+`kdiab-nightscout` is **stateless** — all state is in the four upstream services. It can be scaled horizontally. Note that each instance maintains independent in-memory circuit breakers; a breaker opened on one instance will not propagate to others.
+
+Resource limits per instance (from `docker-compose.yml`): 256 MB RAM, 0.5 CPU.
+
+== Structured Logging
+
+All logs are emitted as JSON to stdout. Key fields:
+
+* `level`, `timestamp`, `message`
+* `Correlation-ID` — from `X-Correlation-ID` header or generated on ingress
+* `userId` — present in service-layer log entries
+* `circuit_breaker service` — present in all circuit breaker state transition logs
+
+== Common Operations
+
+=== Check upstream connectivity
+
+[source,bash]
+----
+# Confirm measures is reachable from the nightscout container
+docker exec kdiab-nightscout-backend \
+  wget -qO- http://measures-backend:8080/readyz
+----
+
+=== Ingest a CGM reading via Nightscout protocol
+
+[source,bash]
+----
+curl -X POST http://localhost:8087/api/v1/entries.json \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '[{"type":"sgv","sgv":112,"trend":4,"dateString":"2026-01-01T12:00:00Z"}]'
+----
+
+=== List recent CGM entries
+
+[source,bash]
+----
+curl http://localhost:8087/api/v1/entries.json \
+  -H "Authorization: Bearer $TOKEN" \
+  -G -d "count=20" | jq .
+----
+
+=== Force-close a stuck circuit breaker
+
+The circuit breaker resets automatically after 30 seconds. If you need an immediate reset, restart the container:
+
+[source,bash]
+----
+docker compose restart nightscout-backend
+----
+
+== Troubleshooting
+
+=== 503 on all Nightscout requests
+
+One or more circuit breakers are OPEN. Check the logs:
+
+[source,bash]
+----
+docker logs kdiab-nightscout-backend | grep circuit_breaker | tail -20
+----
+
+Identify which upstream is failing (`service=measures`, `service=treatments`, etc.) and check that service's health endpoint:
+
+[source,bash]
+----
+curl http://localhost:8080/readyz   # measures
+curl http://localhost:8083/readyz   # treatments
+curl http://localhost:8085/readyz   # carbs
+curl http://localhost:8082/readyz   # profiles
+----
+
+=== Readiness check fails (`/readyz` returns 500)
+
+At least one upstream circuit breaker is OPEN. Follow the same steps as above.
+
+=== AAPS / xDrip+ stops uploading
+
+1. Confirm the Nightscout URL in the device app is `http://<host>:8087`.
+2. Confirm the device's Bearer token is valid (not expired).
+3. Check `/readyz` — if 500, see the section above.
+4. Check the `circuit_breaker` log lines for the affected upstream.
+
+=== 401 Unauthorized from device app
+
+Confirm the JWT used by the device includes `nightscout` in its `aud` claim. The `kdiab-analyze-frontend` Keycloak client includes an audience mapper for `nightscout`. Devices must obtain their token from this client's login flow.
+
+=== Nightscout service does not start
+
+Confirm all four upstream services are healthy before the optional profile is activated:
+
+[source,bash]
+----
+docker compose ps measures-backend treatments-backend carbs-backend profiles-backend
+----
+
+All four must show `healthy`. If any is `starting` or `unhealthy`, wait for them (or fix them) before starting nightscout.
