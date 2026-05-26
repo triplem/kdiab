@@ -447,7 +447,9 @@
     "errorNoIsf": "Das aktive Profil enthält keine ISF-Segmente. Bitte das Profil ergänzen.",
     "errorNoIcr": "Das aktive Profil enthält keine ICR-Segmente. Bitte das Profil ergänzen.",
     "errorNoTarget": "Das aktive Profil enthält keine Zielbereich-Segmente. Bitte das Profil ergänzen.",
-    "errorGeneric": "Berechnung fehlgeschlagen: {{detail}}"
+    "errorGeneric": "Berechnung fehlgeschlagen: {{detail}}",
+    "toastSaved": "Dosis gespeichert — {{dose}} E Bolus protokolliert um {{time}}",
+    "toastError": "Dosis konnte nicht gespeichert werden — bitte erneut versuchen"
   },
   "dashboard": {
     "delta": "Δ",
