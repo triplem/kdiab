@@ -75,6 +75,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
     recentTimeline,
     windowTimeline,
     isLoading,
+    isError,
     activeProfile,
     deviceAge,
     deviceStatus,
@@ -330,6 +331,13 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
           {windowEnd.toLocaleDateString(navigator.language, { weekday: 'short', day: 'numeric', month: 'short' })}
         </span>
       </div>
+
+      {/* -- Backend error banner ------------------------------------------- */}
+      {isError && !isLoading && (
+        <div role="alert" aria-live="assertive" style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', color: 'var(--accent-danger)', marginBottom: '1rem' }}>
+          {t('dashboard.dataFetchError')}
+        </div>
+      )}
 
       {/* -- Combined glucose + treatment markers chart ---------------------- */}
       <GlucoseTrendChart

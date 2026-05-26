@@ -40,7 +40,7 @@ export function useDashboardData(userId: string) {
     refetchInterval: 5 * 60 * 1000,
   })
 
-  const { data: windowTimeline, isLoading } = useQuery({
+  const { data: windowTimeline, isLoading, isError } = useQuery({
     queryKey: ['dashboard-window', userId, windowFrom, windowTo],
     queryFn: () => analyzeApi.getTimeline(userId, windowFrom, windowTo).then(r => r.data),
     enabled: !!userId,
@@ -97,6 +97,7 @@ export function useDashboardData(userId: string) {
     recentTimeline,
     windowTimeline,
     isLoading,
+    isError,
     activeProfile,
     deviceAge,
     deviceStatus,
