@@ -320,6 +320,18 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
             </tbody>
           </table>
 
+          <p
+            role="note"
+            style={{
+              marginTop: '0.75rem',
+              fontSize: '0.8rem',
+              color: 'var(--text-secondary)',
+              fontStyle: 'italic',
+            }}
+          >
+            {t('doseCalc.disclaimer')}
+          </p>
+
           {result.warnings.length > 0 && (
             <div
               role="alert"
