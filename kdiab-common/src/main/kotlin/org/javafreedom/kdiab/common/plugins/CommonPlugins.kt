@@ -15,4 +15,5 @@ fun Application.configureCommonPlugins() {
     configureLogging()
     configureMetrics()
     configureSecurity()
+    configureRateLimit()
 }

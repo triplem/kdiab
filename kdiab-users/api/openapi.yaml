@@ -100,6 +100,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 
     post:
       operationId: createUser
@@ -131,6 +133,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -154,6 +158,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -184,6 +190,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -202,6 +210,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -318,6 +328,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
 
     post:
       operationId: assignPatient
@@ -346,6 +358,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -372,6 +386,8 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -469,6 +485,25 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+    TooManyRequests:
+      description: Too Many Requests
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+          description: Maximum requests per window
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current window
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until the rate limit resets
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RateLimitErrorResponse"
 
   schemas:
     UserResponse:
@@ -715,3 +750,19 @@ components:
         message:
           type: string
           example: "Admin role required"
+
+    RateLimitErrorResponse:
+      type: object
+      description: Error envelope returned when the rate limit is exceeded
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code identifier
+          example: RATE_LIMIT_EXCEEDED
+        message:
+          type: string
+          description: Human-readable error description
+          example: Too many requests

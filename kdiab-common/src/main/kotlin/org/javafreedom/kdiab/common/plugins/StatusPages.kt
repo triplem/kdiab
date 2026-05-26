@@ -12,6 +12,7 @@ import org.javafreedom.kdiab.common.domain.exception.AuthenticationException
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
+import org.javafreedom.kdiab.common.domain.exception.RateLimitExceededException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 
 private val logger = KotlinLogging.logger {}
@@ -43,6 +44,24 @@ fun Application.configureStatusPages(
             }
             val status = HttpStatusCode.Forbidden
             call.respond(status, ErrorResponse(status.value, cause.message ?: "Forbidden", call.callId))
+        }
+        exception<RateLimitExceededException> { call, cause ->
+            logger.warn {
+                "rate_limit_exceeded " +
+                "path=${call.request.path()} " +
+                "method=${call.request.httpMethod.value} " +
+                "remote=${call.request.local.remoteHost} " +
+                "correlationId=${call.callId ?: "-"} " +
+                "limit=${cause.limit} retryAfter=${cause.retryAfterSeconds}"
+            }
+            val status = HttpStatusCode.TooManyRequests
+            call.response.headers.append("X-RateLimit-Limit", cause.limit.toString())
+            call.response.headers.append("X-RateLimit-Remaining", "0")
+            call.response.headers.append("Retry-After", cause.retryAfterSeconds.toString())
+            call.respond(
+                status,
+                RateLimitErrorResponse("RATE_LIMIT_EXCEEDED", cause.message ?: "Too many requests"),
+            )
         }
         exception<ConflictException> { call, cause ->
             logger.warn(cause) { "Conflict on resource" }
