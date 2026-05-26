@@ -18,6 +18,8 @@ import io.mockk.mockk
 import io.mockk.runs
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.carbs.application.service.FoodEntryService
@@ -177,6 +179,9 @@ class FoodEntryApiTest {
             setBody("""{"name":"White rice","portionGrams":150.0,"carbsPer100g":28.0}""")
         }
         assertEquals(HttpStatusCode.Created, resp.status)
+        val location = resp.headers[HttpHeaders.Location]
+        assertNotNull(location)
+        assertTrue(location.contains(SARAH_ID))
     }
 
     @Test
@@ -244,6 +249,16 @@ class FoodEntryApiTest {
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 
+    @Test
+    fun `PUT update food - 403 doctor cannot update patient food entry`() = carbsApiTest { _ ->
+        val resp = client.put("/api/v1/users/$SARAH_ID/foods/$FOOD_ID") {
+            bearerAuth(doctorToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody("""{"name":"Brown rice","portionGrams":200.0,"carbsPer100g":23.0}""")
+        }
+        assertEquals(HttpStatusCode.Forbidden, resp.status)
+    }
+
     // ── DELETE /api/v1/users/{userId}/foods/{foodId} ──────────────────────────
 
     @Test
@@ -266,6 +281,12 @@ class FoodEntryApiTest {
         assertEquals(HttpStatusCode.NoContent, resp.status)
     }
 
+    @Test
+    fun `DELETE food - 403 doctor cannot delete patient food entry`() = carbsApiTest { _ ->
+        val resp = client.delete("/api/v1/users/$SARAH_ID/foods/$FOOD_ID") { bearerAuth(doctorToken) }
+        assertEquals(HttpStatusCode.Forbidden, resp.status)
+    }
+
     // ── POST /api/v1/users/{userId}/foods/{foodId}/archive ────────────────────
 
     @Test
@@ -281,5 +302,11 @@ class FoodEntryApiTest {
         coEvery { repo.archive(Uuid.parse(FOOD_ID), Uuid.parse(SARAH_ID)) } returns testEntry()
         val resp = client.post("/api/v1/users/$SARAH_ID/foods/$FOOD_ID/archive") { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `POST archive food - 403 doctor cannot archive patient food entry`() = carbsApiTest { _ ->
+        val resp = client.post("/api/v1/users/$SARAH_ID/foods/$FOOD_ID/archive") { bearerAuth(doctorToken) }
+        assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 }
