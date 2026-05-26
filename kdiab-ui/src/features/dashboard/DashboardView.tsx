@@ -334,7 +334,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
 
       {/* -- Backend error banner ------------------------------------------- */}
       {isError && !isLoading && (
-        <div role="alert" aria-live="assertive" style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.3)', color: 'var(--accent-danger)', marginBottom: '1rem' }}>
+        <div role="alert" aria-live="assertive" className="error-banner">
           {t('dashboard.dataFetchError')}
         </div>
       )}

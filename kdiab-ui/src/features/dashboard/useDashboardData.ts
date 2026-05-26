@@ -32,7 +32,7 @@ export function useDashboardData(userId: string) {
   const sixHoursAgo = useMemo(() => new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString(), [now])
   const nowIso = useMemo(() => now.toISOString(), [now])
 
-  const { data: recentTimeline } = useQuery({
+  const { data: recentTimeline, isError: recentTimelineIsError } = useQuery({
     queryKey: ['dashboard-recent', userId],
     queryFn: () => analyzeApi.getTimeline(userId, sixHoursAgo, nowIso).then(r => r.data),
     enabled: !!userId,
@@ -40,7 +40,7 @@ export function useDashboardData(userId: string) {
     refetchInterval: 5 * 60 * 1000,
   })
 
-  const { data: windowTimeline, isLoading, isError } = useQuery({
+  const { data: windowTimeline, isLoading, isError: windowTimelineIsError } = useQuery({
     queryKey: ['dashboard-window', userId, windowFrom, windowTo],
     queryFn: () => analyzeApi.getTimeline(userId, windowFrom, windowTo).then(r => r.data),
     enabled: !!userId,
@@ -97,7 +97,7 @@ export function useDashboardData(userId: string) {
     recentTimeline,
     windowTimeline,
     isLoading,
-    isError,
+    isError: windowTimelineIsError || recentTimelineIsError,
     activeProfile,
     deviceAge,
     deviceStatus,
