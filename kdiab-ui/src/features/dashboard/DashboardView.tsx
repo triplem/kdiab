@@ -224,8 +224,20 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
       // null → outside all CGM windows; drop (same reason as BGM above)
     }
 
-    return Array.from(byTime.values()).sort((a, b) => a.time - b.time)
-  }, [cgmPoints, bgmPoints, treatmentMarkers])
+    const sorted = Array.from(byTime.values()).sort((a, b) => a.time - b.time)
+
+    // When data ends before the window closes, Recharts' bisect cursor freezes on the last
+    // real point for all cursor positions to its right. A sentinel entry (all-null values) placed
+    // one CGM interval after the last real point hands the bisect to a point where the tooltip
+    // returns null — making it disappear instead of freezing.
+    const windowToMs = new Date(windowTo).getTime()
+    const lastTime = sorted.length ? sorted[sorted.length - 1]!.time : windowToMs
+    if (windowToMs - lastTime > 5 * 60_000) {
+      sorted.push({ time: lastTime + 5 * 60_000, sgv: null, bgm: null, marker: null, treatmentType: null, label: null })
+    }
+
+    return sorted
+  }, [cgmPoints, bgmPoints, treatmentMarkers, windowTo])
 
   // Basal block reconstruction
   const { basalBlocks, basalProfileLine } = useMemo(() => {
