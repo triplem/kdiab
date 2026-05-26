@@ -73,7 +73,7 @@
 **Epics:**
 - [#1038 Epic: UX & Platform Enhancements](https://github.com/triplem/kdiab/issues/1038)
 
-**Status:** Open (backlog).
+**Status:** Closed — all stories merged.
 
 **Dependencies:** M4 complete.
 
