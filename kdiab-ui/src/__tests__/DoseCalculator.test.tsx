@@ -303,6 +303,8 @@ describe('DoseCalculator', () => {
     })
     const trendSelect = screen.getByLabelText(/cgm trend/i) as HTMLSelectElement
     expect(trendSelect.value).toBe('SINGLE_UP')
+    // Stale-warning banner must NOT be shown when the reading is fresh
+    expect(screen.queryByText(/min old/i)).not.toBeInTheDocument()
   })
 
   test('disclaimer is rendered when a dose result is present', async () => {
