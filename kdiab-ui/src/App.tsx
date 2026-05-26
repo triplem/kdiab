@@ -31,6 +31,8 @@ import { measuresApi } from './api/measuresApi'
 import { treatmentsApi } from './api/treatmentsApi'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Profile } from './api/profilesApi'
+import { useProposedProfileCount } from './features/profiles/useProposedProfileCount'
+import { ProposedBadge } from './features/profiles/ProposedBadge'
 
 type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'analytics' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors'
 
@@ -113,6 +115,7 @@ export default function App() {
   }, [activePatientId])
 
   const activeGlucoseUnit = isDoctorViewingPatient ? patientGlucoseUnit : glucoseUnit
+  const proposedProfileCount = useProposedProfileCount(viewingUserId)
 
   const handleSaveMeasure = async (measure: {
     type: string
@@ -474,6 +477,7 @@ export default function App() {
               onClick={() => setActiveTab(key)}
             >
               {label}
+              {key === 'profiles' && <ProposedBadge count={proposedProfileCount} />}
             </button>
           ))}
         </nav>

@@ -411,6 +411,8 @@ label {
 .tab-nav { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0; }
 .tab-nav button { border-radius: 6px 6px 0 0; border-bottom: 2px solid transparent; background: transparent; padding: 0.6rem 1.2rem; }
 .tab-nav button.active-tab { border-bottom-color: var(--accent-primary); color: var(--accent-primary); }
+.tab-nav button { position: relative; }
+.proposed-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.1rem; height: 1.1rem; padding: 0 0.25rem; margin-left: 0.4rem; border-radius: 999px; background: var(--accent-warning); color: #000; font-size: 0.65rem; font-weight: 700; line-height: 1; vertical-align: middle; }
 .patient-selector { margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem; }
 .patient-banner { position: sticky; top: 0; z-index: 100; background: #92400e; border-bottom: 2px solid #f59e0b; color: #fef3c7; padding: 0.6rem 1.5rem; display: flex; align-items: center; justify-content: space-between; font-weight: 500; }
 .card { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
