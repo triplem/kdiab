@@ -565,6 +565,10 @@ describe('App — logout', () => {
 })
 
 describe('App — VITE_FOOD_DATABASE_ENABLED feature flag', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   test('Food DB tab is hidden when VITE_FOOD_DATABASE_ENABLED is not set', () => {
     renderApp()
     const nav = document.querySelector('nav.tab-nav')
@@ -578,15 +582,13 @@ describe('App — VITE_FOOD_DATABASE_ENABLED feature flag', () => {
     const nav = document.querySelector('nav.tab-nav')
     const tabLabels = nav ? Array.from(nav.querySelectorAll('button')).map((b) => b.textContent?.trim()) : []
     expect(tabLabels).not.toContain('Food DB')
-    vi.unstubAllEnvs()
   })
 
-  test('Food DB tab is visible when VITE_FOOD_DATABASE_ENABLED is "true"', async () => {
+  test('Food DB tab is visible when VITE_FOOD_DATABASE_ENABLED is "true"', () => {
     vi.stubEnv('VITE_FOOD_DATABASE_ENABLED', 'true')
     renderApp()
     const nav = document.querySelector('nav.tab-nav')
     const tabLabels = nav ? Array.from(nav.querySelectorAll('button')).map((b) => b.textContent?.trim()) : []
     expect(tabLabels).toContain('Food DB')
-    vi.unstubAllEnvs()
   })
 })

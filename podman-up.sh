@@ -22,7 +22,7 @@
 export BUILDAH_FORMAT=docker
 
 COMPOSE_FILES=(-f docker-compose.yml -f docker-compose.otel.yml)
-COMPOSE_PROFILES=()
+EXTRA_PROFILES=()
 PASS_ARGS=()
 
 for arg in "$@"; do
@@ -31,7 +31,7 @@ for arg in "$@"; do
             COMPOSE_FILES+=(-f docker-compose.pgadmin.yml)
             ;;
         --optional|-o)
-            COMPOSE_PROFILES+=(optional)
+            EXTRA_PROFILES+=(optional)
             export VITE_FOOD_DATABASE_ENABLED=true
             ;;
         *)
@@ -40,8 +40,10 @@ for arg in "$@"; do
     esac
 done
 
-if [ ${#COMPOSE_PROFILES[@]} -gt 0 ]; then
-    export COMPOSE_PROFILES=$(IFS=,; echo "${COMPOSE_PROFILES[*]}")
+if [ ${#EXTRA_PROFILES[@]} -gt 0 ]; then
+    EXTRA_STR=$(IFS=,; echo "${EXTRA_PROFILES[*]}")
+    # Merge with any COMPOSE_PROFILES already set in the caller's environment.
+    export COMPOSE_PROFILES="${COMPOSE_PROFILES:+${COMPOSE_PROFILES},}${EXTRA_STR}"
 fi
 
 # Forward telemetry from all backends to the otel-collector defined in docker-compose.otel.yml.
