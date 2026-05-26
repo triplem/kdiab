@@ -276,6 +276,27 @@
     "rejectReasonLabel": "Ablehnungsgrund (optional)",
     "rejectReasonPlaceholder": "z.B. Ich möchte meine aktuellen Einstellungen behalten"
   },
+  "profileDiff": {
+    "title": "Vorgeschlagenes Profil prüfen",
+    "sectionLabel": "Vorgeschlagene Profiländerungen prüfen",
+    "reason": "Klinische Begründung",
+    "current": "Aktuell (Aktiv)",
+    "proposed": "Vorgeschlagen",
+    "name": "Name",
+    "insulin": "Insulin",
+    "duration": "Wirkdauer",
+    "basal": "Basal-Segmente",
+    "icr": "KI-Segmente",
+    "isf": "ISF-Segmente",
+    "targets": "BZ-Zielwerte",
+    "noChanges": "Keine Unterschiede erkannt",
+    "acceptSuccess": "Vorgeschlagenes Profil akzeptiert und ist jetzt aktiv.",
+    "acceptError": "Das vorgeschlagene Profil konnte nicht akzeptiert werden.",
+    "rejectSuccess": "Vorgeschlagenes Profil abgelehnt.",
+    "rejectError": "Das vorgeschlagene Profil konnte nicht abgelehnt werden.",
+    "acceptAriaLabel": "Vorgeschlagenes Profil akzeptieren",
+    "rejectAriaLabel": "Vorgeschlagenes Profil ablehnen"
+  },
   "tabs": {
     "timeline": "Zeitverlauf",
     "analytics": "Analyse",
