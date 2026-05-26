@@ -366,7 +366,8 @@
     "bolusAvgChartAriaLabel": "Bolus average by hour of day chart",
     "bolusAvgChartCaption": "This chart shows the average bolus dose per hour of the day over the selected period.",
     "basalAvgChartAriaLabel": "Basal rate average by hour of day chart",
-    "basalAvgChartCaption": "This chart shows the average basal rate per hour of the day over the selected period."
+    "basalAvgChartCaption": "This chart shows the average basal rate per hour of the day over the selected period.",
+    "printExport": "Print / Export PDF"
   },
   "profile": {
     "id": "Profile ID",

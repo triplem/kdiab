@@ -380,8 +380,18 @@ export default function App() {
           </>
         )
 
-      case 'analytics':
-        return <AnalyticsView userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />
+      case 'analytics': {
+        const analyticsPatientName = isDoctorViewingPatient
+          ? activePatientName
+          : (auth.user?.profile?.preferred_username as string | undefined)
+        return (
+          <AnalyticsView
+            userId={viewingUserId}
+            glucoseUnit={activeGlucoseUnit}
+            {...(analyticsPatientName !== undefined && { patientName: analyticsPatientName })}
+          />
+        )
+      }
 
       case 'carbs':
         return <FoodDatabase userId={viewingUserId} />

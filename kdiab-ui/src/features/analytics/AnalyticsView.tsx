@@ -9,6 +9,8 @@ import { ProfilesView } from './ProfilesView'
 import { BasalAvgChart } from './BasalAvgChart'
 import { BolusAvgChart } from './BolusAvgChart'
 import { computeBasalFromProfileSegments, computeBolusHourlyAvg } from './insulinHourlyUtils'
+import { PrintHeader } from './PrintHeader'
+import './print.css'
 
 type Window = '1W' | '2W' | '1M' | '90D'
 
@@ -31,9 +33,10 @@ function windowDates(days: number): { from: string; to: string } {
 interface Props {
   userId: string
   glucoseUnit: string
+  patientName?: string
 }
 
-export function AnalyticsView({ userId, glucoseUnit }: Props) {
+export function AnalyticsView({ userId, glucoseUnit, patientName }: Props) {
   const { t } = useTranslation()
   const [activeWindow, setActiveWindow] = useState<Window>('2W')
 
@@ -87,10 +90,14 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
     [timelineQuery.data],
   )
 
+  const displayName = patientName ?? userId
+
   return (
     <div>
+      <PrintHeader patientName={displayName} from={from} to={to} />
+
       {/* Shared window filter */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      <div className="window-filters controls" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{t('timeframe.label')}:</span>
         {WINDOWS.map(w => (
           <button
@@ -102,47 +109,64 @@ export function AnalyticsView({ userId, glucoseUnit }: Props) {
             {w.key}
           </button>
         ))}
+        <button
+          className="btn outline"
+          onClick={() => window.print()}
+          style={{ marginLeft: 'auto', padding: '0.4em 0.9em', fontSize: '0.9rem' }}
+        >
+          {t('analytics.printExport')}
+        </button>
       </div>
 
       {/* Glucose Profile (AGP) — first */}
-      {agpQuery.isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
-      {agpQuery.isError && <div className="error-banner" role="alert">{t('analytics.agpError')}</div>}
-      {agpQuery.data && (
-        <AgpChart
-          hourlyData={agpQuery.data.hourlyData}
-          glucoseUnit={glucoseUnit}
-          {...(agpQuery.data.warnings !== undefined && { warnings: agpQuery.data.warnings })}
-          {...(agpQuery.data.totalReadingCount !== undefined && { totalReadingCount: agpQuery.data.totalReadingCount })}
-          {...(agpQuery.data.sensorWearDays !== undefined && { sensorWearDays: agpQuery.data.sensorWearDays })}
-        />
-      )}
+      <div className="chart-section">
+        {agpQuery.isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
+        {agpQuery.isError && <div className="error-banner" role="alert">{t('analytics.agpError')}</div>}
+        {agpQuery.data && (
+          <AgpChart
+            hourlyData={agpQuery.data.hourlyData}
+            glucoseUnit={glucoseUnit}
+            {...(agpQuery.data.warnings !== undefined && { warnings: agpQuery.data.warnings })}
+            {...(agpQuery.data.totalReadingCount !== undefined && { totalReadingCount: agpQuery.data.totalReadingCount })}
+            {...(agpQuery.data.sensorWearDays !== undefined && { sensorWearDays: agpQuery.data.sensorWearDays })}
+          />
+        )}
+      </div>
 
       {/* HbA1c & Time in Range */}
-      {hba1cQuery.isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
-      {hba1cQuery.isError && <div className="error-banner" role="alert">{t('analytics.hba1cError')}</div>}
-      {hba1cQuery.data && (
-        <>
-          <HbA1cCard
-            hba1c={hba1cQuery.data.hba1c}
-            meanGlucose={hba1cQuery.data.meanGlucose}
-            tir={hba1cQuery.data.tir}
-            glucoseUnit={glucoseUnit}
-            {...(hba1cQuery.data.warnings !== undefined && { warnings: hba1cQuery.data.warnings })}
-          />
-          <TimeInRangeBar tir={hba1cQuery.data.tir} glucoseUnit={glucoseUnit} />
-        </>
-      )}
+      <div className="chart-section">
+        {hba1cQuery.isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
+        {hba1cQuery.isError && <div className="error-banner" role="alert">{t('analytics.hba1cError')}</div>}
+        {hba1cQuery.data && (
+          <>
+            <HbA1cCard
+              hba1c={hba1cQuery.data.hba1c}
+              meanGlucose={hba1cQuery.data.meanGlucose}
+              tir={hba1cQuery.data.tir}
+              glucoseUnit={glucoseUnit}
+              {...(hba1cQuery.data.warnings !== undefined && { warnings: hba1cQuery.data.warnings })}
+            />
+            <TimeInRangeBar tir={hba1cQuery.data.tir} glucoseUnit={glucoseUnit} />
+          </>
+        )}
+      </div>
 
       {/* Basal chart — driven by active profile's scheduled basal segments */}
-      {basalHourlyAvg?.some(v => v !== null) && <BasalAvgChart hourlyAvg={basalHourlyAvg} />}
+      <div className="chart-section">
+        {basalHourlyAvg?.some(v => v !== null) && <BasalAvgChart hourlyAvg={basalHourlyAvg} />}
+      </div>
 
       {/* Bolus hourly average — computed from BOLUS/CORRECTION_BOLUS timeline treatments */}
-      {timelineQuery.isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
-      {timelineQuery.isError && <div className="error-banner" role="alert">{t('analytics.timelineError')}</div>}
-      {bolusHourlyAvg && <BolusAvgChart hourlyAvg={bolusHourlyAvg} />}
+      <div className="chart-section">
+        {timelineQuery.isLoading && <p style={{ color: 'var(--text-secondary)' }}>{t('app.loading')}</p>}
+        {timelineQuery.isError && <div className="error-banner" role="alert">{t('analytics.timelineError')}</div>}
+        {bolusHourlyAvg && <BolusAvgChart hourlyAvg={bolusHourlyAvg} />}
+      </div>
 
       {/* Profiles — shares the same window */}
-      <ProfilesView userId={userId} from={from} to={to} />
+      <div className="chart-section">
+        <ProfilesView userId={userId} from={from} to={to} />
+      </div>
     </div>
   )
 }

@@ -1,0 +1,57 @@
+@media screen {
+  .print-header {
+    display: none;
+  }
+}
+
+@media print {
+  nav,
+  .app-header,
+  .patient-selector,
+  .controls,
+  button,
+  [role="navigation"],
+  [role="tablist"],
+  .window-filters {
+    display: none !important;
+  }
+
+  .print-header {
+    display: block !important;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #000;
+    padding-bottom: 0.75rem;
+    color: #000;
+  }
+
+  .print-header h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.2rem;
+  }
+
+  .print-header p {
+    margin: 0.15rem 0;
+    font-size: 0.9rem;
+  }
+
+  svg {
+    max-width: 100% !important;
+  }
+
+  .chart-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 1.5rem;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  @media (max-width: 600px) {
+    .chart-section {
+      width: 100% !important;
+    }
+  }
+}
