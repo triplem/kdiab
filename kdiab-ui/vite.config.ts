@@ -78,7 +78,7 @@ export default defineConfig({
         // treatment sub-forms — thin UI adapters, business logic tested in AddTreatmentModal tests
         'src/features/treatments/forms/**',
       ],
-      // Thresholds reflect measured coverage of non-excluded files — see ADR-015.
+      // Coverage thresholds reflect non-excluded files — see docs/adr/ADR-015-coverage-exclusions.adoc
       thresholds: {
         statements: 72,
         branches: 59,

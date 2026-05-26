@@ -1,10 +1,10 @@
 = ADR-015: Frontend Coverage Exclusions and Threshold Strategy
-:toc:
-:toclevels: 2
+:toc: left
+:icons: font
 
-== Status
-
-Accepted
+* *Status*: Accepted
+* *Date*: 2026-05-26
+* *Deciders*: triplem
 
 == Context
 
