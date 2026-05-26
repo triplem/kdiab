@@ -186,7 +186,8 @@ openApiGenerate {
     modelPackage.set("org.javafreedom.kdiab.treatments.api.models")
     typeMappings.set(mapOf(
         "UUID" to "kotlin.String",
-        "date-time" to "kotlin.String"
+        "date-time" to "kotlin.String",
+        "number" to "kotlin.Double"
     ))
     schemaMappings.set(mapOf(
         "TreatmentPayload" to "kotlinx.serialization.json.JsonObject"
@@ -208,8 +209,14 @@ openApiGenerate {
     templateDir.set(rootDir.parentFile.resolve("config/openapi-templates").path)
 }
 
+tasks.named("openApiGenerate").configure {
+    mustRunAfter("cleanOpenApiGenerate")
+    // Prevent build cache from restoring stale outputs from other services that share the same task type
+    outputs.cacheIf { false }
+}
+
 tasks.compileKotlin {
-    dependsOn(tasks.named("openApiGenerate"))
+    dependsOn("cleanOpenApiGenerate", "openApiGenerate")
 }
 
 tasks.named<ProcessResources>("processResources") {
