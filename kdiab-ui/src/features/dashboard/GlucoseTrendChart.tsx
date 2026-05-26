@@ -189,6 +189,21 @@ export function GlucoseTrendChart({
               tick={{ fontSize: 11 }}
               scale="time"
             />
+            {/* Hidden x-axis for basal overlay Lines. Basal Lines carry their own `data` arrays
+                (separate from chartData). Recharts 3.x includes every series' timestamps in the
+                shared categorical domain used for tooltip index snapping. Isolating basal Lines on
+                a dedicated xAxisId keeps those timestamps out of the main axis domain, so
+                calculateActiveTickIndex always maps cursor position to a chartData index. */}
+            {hasBasal && (
+              <XAxis
+                xAxisId="basal"
+                hide={true}
+                dataKey="time"
+                type="number"
+                scale="time"
+                domain={[new Date(windowFrom).getTime(), new Date(windowTo).getTime()]}
+              />
+            )}
             <YAxis
               yAxisId="left"
               domain={[glucoseUnit === 'mmol/L' ? 2 : 40, glucoseUnit === 'mmol/L' ? 18 : 330]}
@@ -246,6 +261,7 @@ export function GlucoseTrendChart({
             ))}
             {hasBasal && negatedBasalLine.length > 0 && (
               <Line
+                xAxisId="basal"
                 data={negatedBasalLine}
                 dataKey="basalSched"
                 name="basalSched"
@@ -261,6 +277,7 @@ export function GlucoseTrendChart({
             )}
             {hasBasal && negatedDeliveredLine.length > 0 && (
               <Area
+                xAxisId="basal"
                 data={negatedDeliveredLine}
                 dataKey="basalDelivered"
                 name="basalDelivered"
