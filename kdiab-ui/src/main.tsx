@@ -24,7 +24,11 @@ const oidcConfig = {
   redirect_uri: window.location.origin,
   post_logout_redirect_uri: window.location.origin,
   automaticSilentRenew: true,
+  revokeTokensOnSignout: true,
   onSigninCallback: () => {
+    window.history.replaceState({}, document.title, window.location.pathname)
+  },
+  onSignoutCallback: () => {
     window.history.replaceState({}, document.title, window.location.pathname)
   },
 }
