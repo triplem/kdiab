@@ -37,6 +37,7 @@ import org.javafreedom.kdiab.users.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedDoctorPatientRepository
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedUserSettingsRepository
 import org.javafreedom.kdiab.common.plugins.configureMetrics
+import org.javafreedom.kdiab.common.plugins.configureRateLimit
 
 fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 
@@ -107,6 +108,7 @@ fun Application.module() {
     configureLogging()
     configureMetrics()
     configureSecurity()
+    configureRateLimit()
     configureStatusPages {
         exception<CircuitBreakerOpenException> { call, cause ->
             val status = HttpStatusCode.ServiceUnavailable

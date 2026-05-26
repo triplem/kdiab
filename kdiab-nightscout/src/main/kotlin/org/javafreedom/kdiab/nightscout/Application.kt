@@ -36,6 +36,7 @@ import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
 import org.javafreedom.kdiab.nightscout.domain.model.NightscoutStatus
 import org.javafreedom.kdiab.common.plugins.configureMetrics
+import org.javafreedom.kdiab.common.plugins.configureRateLimit
 
 private val logger = KotlinLogging.logger {}
 
@@ -93,6 +94,7 @@ fun Application.module() {
     configureLogging()
     configureMetrics()
     configureSecurity()
+    configureRateLimit()
     configureStatusPages {
         exception<CircuitBreakerOpenException> { call, cause ->
             logger.warn { "circuit_breaker service=${cause.service} state=OPEN returning 503" }
