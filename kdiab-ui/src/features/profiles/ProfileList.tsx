@@ -5,6 +5,7 @@ import type { Profile } from '../../api/profilesApi'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import { ProfileDiffView } from './ProfileDiffView'
 
 interface ProfileListProps {
   userId: string
@@ -123,6 +124,8 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
   if (isError) return <div className="error">{t('profileList.error')} {error instanceof Error ? error.message : t('common.unknownError')}</div>
 
   const proposedProfiles = profiles.filter((p) => p.status === 'PROPOSED')
+  const activeProfile = profiles.find((p) => p.status === 'ACTIVE')
+  const proposedProfile = proposedProfiles[0]
   const otherProfiles = profiles.filter((p) => p.status === 'ACTIVE' || p.status === 'DRAFT')
 
   const toggleExpand = (profileId: string) => {
@@ -381,6 +384,14 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
         <div role="alert" className="error" style={{ marginBottom: '1rem' }}>
           {mutationError}
         </div>
+      )}
+      {!readOnly && activeProfile && proposedProfile && (
+        <ProfileDiffView
+          userId={userId}
+          activeProfile={activeProfile}
+          proposedProfile={proposedProfile}
+          glucoseUnit={glucoseUnit}
+        />
       )}
       {profiles.length === 0 ? (
         <p>{t('profileList.noProfiles')}</p>

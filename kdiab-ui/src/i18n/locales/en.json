@@ -276,6 +276,27 @@
     "rejectReasonLabel": "Reason for rejection (optional)",
     "rejectReasonPlaceholder": "e.g. I prefer to keep my current settings"
   },
+  "profileDiff": {
+    "title": "Review Proposed Profile",
+    "sectionLabel": "Review proposed profile changes",
+    "reason": "Clinical rationale",
+    "current": "Current (Active)",
+    "proposed": "Proposed",
+    "name": "Name",
+    "insulin": "Insulin",
+    "duration": "Duration of Action",
+    "basal": "Basal Segments",
+    "icr": "ICR Segments",
+    "isf": "ISF Segments",
+    "targets": "BG Targets",
+    "noChanges": "No differences detected",
+    "acceptSuccess": "Proposed profile accepted and is now active.",
+    "acceptError": "Failed to accept the proposed profile.",
+    "rejectSuccess": "Proposed profile rejected.",
+    "rejectError": "Failed to reject the proposed profile.",
+    "acceptAriaLabel": "Accept proposed profile",
+    "rejectAriaLabel": "Reject proposed profile"
+  },
   "tabs": {
     "timeline": "Timeline",
     "analytics": "Analytics",
