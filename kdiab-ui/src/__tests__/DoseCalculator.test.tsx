@@ -20,6 +20,12 @@ vi.mock('../api/calcApi', () => ({
   },
 }))
 
+vi.mock('../api/measuresApi', () => ({
+  measuresApi: {
+    listMeasures: vi.fn().mockResolvedValue({ data: { items: [], page: 0, size: 10, totalElements: 0 } }),
+  },
+}))
+
 vi.mock('../api/treatmentsApi', () => ({
   treatmentsApi: {
     listTreatments: vi.fn().mockResolvedValue({ data: { items: [], page: 0, size: 100, totalElements: 0 } }),
@@ -29,10 +35,12 @@ vi.mock('../api/treatmentsApi', () => ({
 
 import { calcApi } from '../api/calcApi'
 import type { DoseResponse } from '../api/calcApi'
+import { measuresApi } from '../api/measuresApi'
 import { treatmentsApi } from '../api/treatmentsApi'
 import { DoseCalculator } from '../features/calc/DoseCalculator'
 
 const mockedCalculateDose = vi.mocked(calcApi.calculateDose)
+const mockedListMeasures = vi.mocked(measuresApi.listMeasures)
 const mockedCreateTreatment = vi.mocked(treatmentsApi.createTreatment)
 
 function makeDoseResponse(overrides: Partial<DoseResponse> = {}): DoseResponse {
@@ -255,6 +263,66 @@ describe('DoseCalculator', () => {
         expect.objectContaining({ duration: 4000 }),
       )
     })
+  })
+
+  test('does not pre-fill BG or trend when CGM reading is stale (> 15 min)', async () => {
+    const staleTs = new Date(Date.now() - 20 * 60_000).toISOString()
+    mockedListMeasures.mockResolvedValueOnce({
+      data: {
+        items: [{ id: 'cgm-1', userId: 'user-1', type: 'CGM', measuredAt: staleTs, createdAt: staleTs, source: 'NIGHTSCOUT', status: 'ACTIVE', data: { value: 55, trend: 'SINGLE_DOWN' } }],
+        page: 0, size: 10, totalElements: 1,
+      },
+    } as never)
+
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" />)
+
+    await waitFor(() => {
+      expect(screen.getByText(/min old/i)).toBeInTheDocument()
+    })
+
+    const bgInput = screen.getByLabelText(/current blood glucose/i) as HTMLInputElement
+    expect(bgInput.value).toBe('')
+    const trendSelect = screen.getByLabelText(/cgm trend/i) as HTMLSelectElement
+    expect(trendSelect.value).toBe('FLAT')
+  })
+
+  test('pre-fills BG and trend from a fresh CGM reading (<= 15 min)', async () => {
+    const freshTs = new Date(Date.now() - 5 * 60_000).toISOString()
+    mockedListMeasures.mockResolvedValueOnce({
+      data: {
+        items: [{ id: 'cgm-2', userId: 'user-1', type: 'CGM', measuredAt: freshTs, createdAt: freshTs, source: 'NIGHTSCOUT', status: 'ACTIVE', data: { value: 180, trend: 'SINGLE_UP' } }],
+        page: 0, size: 10, totalElements: 1,
+      },
+    } as never)
+
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" />)
+
+    await waitFor(() => {
+      const bgInput = screen.getByLabelText(/current blood glucose/i) as HTMLInputElement
+      expect(bgInput.value).toBe('180')
+    })
+    const trendSelect = screen.getByLabelText(/cgm trend/i) as HTMLSelectElement
+    expect(trendSelect.value).toBe('SINGLE_UP')
+    // Stale-warning banner must NOT be shown when the reading is fresh
+    expect(screen.queryByText(/min old/i)).not.toBeInTheDocument()
+  })
+
+  test('disclaimer is rendered when a dose result is present', async () => {
+    mockedCalculateDose.mockResolvedValueOnce({ data: makeDoseResponse() } as never)
+
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" />)
+    fireEvent.change(screen.getByLabelText(/current blood glucose/i), { target: { value: '180' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('note')).toBeInTheDocument()
+    })
+    expect(screen.getByRole('note').textContent).toMatch(/suggested dose/i)
+  })
+
+  test('disclaimer is not shown before a result is calculated', () => {
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" />)
+    expect(screen.queryByRole('note')).not.toBeInTheDocument()
   })
 
   test('log button is disabled while mutation is in flight', async () => {

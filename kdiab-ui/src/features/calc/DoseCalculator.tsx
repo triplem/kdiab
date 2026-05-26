@@ -55,7 +55,7 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
   // Fetch the latest CGM reading to pre-fill BG and trend
   const { data: cgmData } = useQuery({
     queryKey: ['latestCgm', userId],
-    queryFn: () => measuresApi.listMeasures(userId, 0, 10),
+    queryFn: () => measuresApi.listMeasures(userId, 0, 10, 'ACTIVE'),
     staleTime: 60_000,
   })
 
@@ -319,6 +319,19 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
               </tr>
             </tbody>
           </table>
+
+          <p
+            role="note"
+            aria-label="Disclaimer"
+            style={{
+              marginTop: '0.75rem',
+              fontSize: '0.8rem',
+              color: 'var(--text-secondary)',
+              fontStyle: 'italic',
+            }}
+          >
+            {t('doseCalc.disclaimer')}
+          </p>
 
           {result.warnings.length > 0 && (
             <div
