@@ -37,6 +37,7 @@ done
 # gRPC (port 4317) avoids the okhttp HTTP/2 ConnectionShutdownException that occurs on port 4318.
 export OTEL_TRACES_EXPORTER=otlp
 export OTEL_METRICS_EXPORTER=otlp
+export OTEL_LOGS_EXPORTER=otlp
 export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 export OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
 
