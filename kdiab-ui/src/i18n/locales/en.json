@@ -508,6 +508,7 @@
     "alarmUrgentLow": "Urgent low",
     "alarmOrderError": "Alarm thresholds must satisfy: urgent low < low < high < urgent high",
     "jwtBackedHint": "Glucose/weight unit changes will take effect on your next login.",
+    "timezoneHint": "Timezone change takes effect on next login.",
     "savedSuccess": "Settings saved.",
     "savedError": "Failed to save settings. Please try again."
   },

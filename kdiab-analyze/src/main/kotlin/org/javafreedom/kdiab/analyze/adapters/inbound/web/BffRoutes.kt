@@ -86,7 +86,9 @@ fun Route.bffRoutes(
                 correlationId = ctx.correlationId,
             )
 
-            val timezone = runCatching { TimeZone.of(ctx.principal.timezone) }.getOrDefault(TimeZone.UTC)
+            val timezone = runCatching { TimeZone.of(ctx.principal.timezone) }
+                .onFailure { logger.warn { "Invalid timezone '${ctx.principal.timezone}' for user ${ctx.principal.userId}, falling back to UTC" } }
+                .getOrDefault(TimeZone.UTC)
             val result = analyticsService.getAgp(
                 userId = ctx.targetUserId.toString(),
                 from = from,

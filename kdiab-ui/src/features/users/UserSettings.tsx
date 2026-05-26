@@ -111,6 +111,9 @@ export function UserSettings() {
               <option key={tz} value={tz}>{tz}</option>
             ))}
           </select>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>
+            {t('settings.timezoneHint')}
+          </p>
         </div>
 
         <div className="form-group">
