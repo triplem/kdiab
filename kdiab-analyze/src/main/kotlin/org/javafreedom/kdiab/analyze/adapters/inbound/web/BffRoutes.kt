@@ -86,8 +86,9 @@ fun Route.bffRoutes(
                 correlationId = ctx.correlationId,
             )
 
-            // TODO(#859): extract patient timezone from UserPrincipal once it carries a timezone
-            //             field from the JWT claim; until then default to UTC.
+            val timezone = runCatching { TimeZone.of(ctx.principal.timezone) }
+                .onFailure { logger.warn { "Invalid timezone '${ctx.principal.timezone}' for user ${ctx.principal.userId}, falling back to UTC" } }
+                .getOrDefault(TimeZone.UTC)
             val result = analyticsService.getAgp(
                 userId = ctx.targetUserId.toString(),
                 from = from,
@@ -97,7 +98,7 @@ fun Route.bffRoutes(
                 correlationId = ctx.correlationId,
                 tirLow = tirLow,
                 tirHigh = tirHigh,
-                timeZone = TimeZone.UTC,
+                timeZone = timezone,
             )
             call.respond(result.toResponse())
         }

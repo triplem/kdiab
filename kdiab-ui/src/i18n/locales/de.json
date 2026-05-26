@@ -510,6 +510,7 @@
     "alarmUrgentLow": "Kritisch niedrig",
     "alarmOrderError": "Alarmschwellenwerte müssen erfüllen: kritisch niedrig < niedrig < hoch < kritisch hoch",
     "jwtBackedHint": "Änderungen der Glukose- oder Gewichtseinheit werden nach Ihrer nächsten Anmeldung wirksam.",
+    "timezoneHint": "Änderungen an der Zeitzone werden nach dem nächsten Login wirksam.",
     "savedSuccess": "Einstellungen gespeichert.",
     "savedError": "Einstellungen konnten nicht gespeichert werden. Bitte erneut versuchen."
   },

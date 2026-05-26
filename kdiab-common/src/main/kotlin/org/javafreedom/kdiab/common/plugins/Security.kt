@@ -41,7 +41,8 @@ private fun buildPrincipal(credential: JWTCredential, jwtAudience: String): User
         ?: emptySet()
     val audiences = credential.payload.audience ?: emptyList()
     val glucoseUnit = credential.payload.getClaim("glucose_unit").asString() ?: "mg/dL"
-    return UserPrincipal(userId, roles, allowedPatients, audiences, glucoseUnit)
+    val timezone = credential.payload.getClaim("timezone").asString() ?: "UTC"
+    return UserPrincipal(userId, roles, allowedPatients, audiences, glucoseUnit, timezone)
 }
 
 fun Application.configureSecurity() {
@@ -111,6 +112,7 @@ data class UserPrincipal(
     val allowedPatients: Set<Uuid>,
     val audiences: List<String> = emptyList(),
     val glucoseUnit: String = "mg/dL",
+    val timezone: String = "UTC",
 ) {
     fun isAdmin() = roles.contains(Role.ADMIN)
     fun isDoctor() = roles.contains(Role.DOCTOR)
