@@ -1,5 +1,5 @@
 # eclipse-temurin 21-jre-alpine (linux/amd64) — update digest after JRE patch releases
-FROM eclipse-temurin:21-jre-alpine@sha256:089ffb495d17108fd0a9f3f05a87d20e4b37ceea2db3fb55c07d4283b9bebe7d
+FROM eclipse-temurin:21-jre-alpine@sha256:704db3c40204a44f471191446ddd9cda5d60dab40f0e15c6507b815ed897238b
 RUN apk upgrade --no-cache libpng
 RUN addgroup -S ktor && adduser -S ktor -G ktor
 USER ktor
