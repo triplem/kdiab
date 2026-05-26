@@ -37,7 +37,6 @@ interface AnalyticsOperation {
         correlationId: String,
         tirLow: Double = DEFAULT_TIR_LOW,
         tirHigh: Double = DEFAULT_TIR_HIGH,
-        // TODO(#859): wire timezone from JWT claim once UserPrincipal carries a timezone field
         timeZone: TimeZone = TimeZone.UTC,
     ): AgpResult
 }

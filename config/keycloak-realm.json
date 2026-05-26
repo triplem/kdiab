@@ -657,6 +657,20 @@
             "id.token.claim": "false",
             "access.token.claim": "true"
           }
+        },
+        {
+          "name": "timezone",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "userinfo.token.claim": "true",
+            "user.attribute": "timezone",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "timezone",
+            "jsonType.label": "String"
+          }
         }
       ]
     },
