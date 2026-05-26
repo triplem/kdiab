@@ -48,6 +48,7 @@ fun Application.configureStatusPages(
         exception<RateLimitExceededException> { call, cause ->
             logger.warn {
                 "rate_limit_exceeded " +
+                "userId=${cause.userId} " +
                 "path=${call.request.path()} " +
                 "method=${call.request.httpMethod.value} " +
                 "remote=${call.request.local.remoteHost} " +

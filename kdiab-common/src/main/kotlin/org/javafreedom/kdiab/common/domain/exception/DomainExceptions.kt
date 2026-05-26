@@ -15,5 +15,6 @@ class ConflictException(message: String, cause: Throwable? = null) : RuntimeExce
 class RateLimitExceededException(
     val retryAfterSeconds: Long,
     val limit: Int,
+    val userId: String,
     message: String = "Too many requests",
 ) : RuntimeException(message)
