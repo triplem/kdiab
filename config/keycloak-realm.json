@@ -401,7 +401,7 @@
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:3000 http://localhost:3005"
+        "post.logout.redirect.uris": "http://localhost:3000##http://localhost:3000/*##http://localhost:3005##http://localhost:3005/*"
       },
       "protocolMappers": [
         {
@@ -534,7 +534,7 @@
       ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "http://localhost:3000 http://localhost:3005"
+        "post.logout.redirect.uris": "http://localhost:3000##http://localhost:3000/*##http://localhost:3005##http://localhost:3005/*"
       },
       "protocolMappers": [
         {
