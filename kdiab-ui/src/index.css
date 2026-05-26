@@ -409,7 +409,7 @@ label {
 .app-container { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
 .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
 .tab-nav { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0; }
-.tab-nav button { border-radius: 6px 6px 0 0; border-bottom: 2px solid transparent; background: transparent; padding: 0.6rem 1.2rem; }
+.tab-nav button { border-radius: 6px 6px 0 0; border-bottom: 2px solid transparent; background: transparent; padding: 0.75rem 1.2rem; min-height: 44px; display: inline-flex; align-items: center; }
 .tab-nav button.active-tab { border-bottom-color: var(--accent-primary); color: var(--accent-primary); }
 .tab-nav button { position: relative; }
 .proposed-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.1rem; height: 1.1rem; padding: 0 0.25rem; margin-left: 0.4rem; border-radius: 999px; background: var(--accent-warning); color: #000; font-size: 0.65rem; font-weight: 700; line-height: 1; vertical-align: middle; }
