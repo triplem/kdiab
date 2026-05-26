@@ -489,7 +489,8 @@
     "cgmChartAriaLabel": "Blood glucose over time chart",
     "cgmChartCaption": "This chart shows blood glucose readings over the selected time window.",
     "basalChartAriaLabel": "Basal insulin delivery chart",
-    "basalChartCaption": "This chart shows scheduled and delivered basal insulin rates over the selected time window."
+    "basalChartCaption": "This chart shows scheduled and delivered basal insulin rates over the selected time window.",
+    "dataFetchError": "Could not load glucose data — please check your connection or try again."
   },
   "settings": {
     "title": "Settings",

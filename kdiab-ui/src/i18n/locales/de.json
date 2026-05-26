@@ -489,7 +489,8 @@
     "cgmChartAriaLabel": "Glukoseverlauf-Diagramm",
     "cgmChartCaption": "Dieses Diagramm zeigt Glukosemesswerte über das ausgewählte Zeitfenster.",
     "basalChartAriaLabel": "Basalinsulin-Diagramm",
-    "basalChartCaption": "Dieses Diagramm zeigt geplante und abgegebene Basalinsulinraten über das ausgewählte Zeitfenster."
+    "basalChartCaption": "Dieses Diagramm zeigt geplante und abgegebene Basalinsulinraten über das ausgewählte Zeitfenster.",
+    "dataFetchError": "Glukosedaten konnten nicht geladen werden — bitte Verbindung prüfen oder erneut versuchen."
   },
   "settings": {
     "title": "Einstellungen",
