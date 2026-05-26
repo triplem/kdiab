@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { calcApi, type DoseResponse } from '../../api/calcApi'
 import { measuresApi } from '../../api/measuresApi'
 import { treatmentsApi } from '../../api/treatmentsApi'
@@ -29,6 +30,7 @@ const CGM_TRENDS = [
 ]
 
 const CGM_STALE_MIN = 15
+const TOAST_DURATION_MS = 4_000
 
 function toDisplay(mgdl: number, unit: string): number {
   return unit === 'mmol/L' ? Math.round((mgdl / 18.0) * 10) / 10 : Math.round(mgdl)
@@ -157,11 +159,19 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
         })
       }
     },
-    onSuccess: () => {
+    onSuccess: (_data, dose) => {
       setLogSuccess(true)
       setCarbsGrams('0')
       setResult(null)
       void queryClient.invalidateQueries({ queryKey: ['latestCgm', userId] })
+      const now = new Date()
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      toast.success(t('doseCalc.toastSaved', { dose: dose.toFixed(1), time: timeStr }), {
+        duration: 4000,
+      })
+    },
+    onError: () => {
+      toast.error(t('doseCalc.toastError'), { duration: TOAST_DURATION_MS })
     },
   })
 

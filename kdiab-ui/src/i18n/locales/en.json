@@ -447,7 +447,9 @@
     "errorNoIsf": "The active profile has no ISF segments. Please update your profile.",
     "errorNoIcr": "The active profile has no ICR segments. Please update your profile.",
     "errorNoTarget": "The active profile has no target range segments. Please update your profile.",
-    "errorGeneric": "Calculation failed: {{detail}}"
+    "errorGeneric": "Calculation failed: {{detail}}",
+    "toastSaved": "Dose saved — {{dose}} U bolus recorded at {{time}}",
+    "toastError": "Failed to save dose — please try again"
   },
   "dashboard": {
     "delta": "Δ",

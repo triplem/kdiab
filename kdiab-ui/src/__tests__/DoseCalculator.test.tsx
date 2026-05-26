@@ -4,6 +4,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import '../i18n'
 
+const mockToastSuccess = vi.fn()
+const mockToastError = vi.fn()
+vi.mock('sonner', () => ({
+  Toaster: () => null,
+  toast: {
+    success: (...args: unknown[]) => mockToastSuccess(...args),
+    error: (...args: unknown[]) => mockToastError(...args),
+  },
+}))
+
 vi.mock('../api/calcApi', () => ({
   calcApi: {
     calculateDose: vi.fn(),
@@ -19,9 +29,11 @@ vi.mock('../api/treatmentsApi', () => ({
 
 import { calcApi } from '../api/calcApi'
 import type { DoseResponse } from '../api/calcApi'
+import { treatmentsApi } from '../api/treatmentsApi'
 import { DoseCalculator } from '../features/calc/DoseCalculator'
 
 const mockedCalculateDose = vi.mocked(calcApi.calculateDose)
+const mockedCreateTreatment = vi.mocked(treatmentsApi.createTreatment)
 
 function makeDoseResponse(overrides: Partial<DoseResponse> = {}): DoseResponse {
   return {
@@ -53,6 +65,8 @@ function renderWithQuery(ui: ReactNode) {
 describe('DoseCalculator', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockToastSuccess.mockClear()
+    mockToastError.mockClear()
   })
 
   test('renders the form with required fields', () => {
@@ -194,5 +208,74 @@ describe('DoseCalculator', () => {
     // The IOB row shows the label and the formatted value
     expect(screen.getByText(/active iob/i)).toBeInTheDocument()
     expect(screen.getByText('1.75 units')).toBeInTheDocument()
+  })
+
+  test('shows success toast with dose amount after logging', async () => {
+    const doseResponse = makeDoseResponse({ totalRecommended: 3.5 })
+    mockedCalculateDose.mockResolvedValueOnce({ data: doseResponse } as never)
+    mockedCreateTreatment.mockResolvedValue({ data: { id: 'treatment-1' } } as never)
+
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" activeIob={0} />)
+    fireEvent.change(screen.getByLabelText(/current blood glucose/i), { target: { value: '180' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }))
+
+    await waitFor(() => {
+      // doseCalc.acceptLog = "Accept & Log {{dose}} units"
+      expect(screen.getByRole('button', { name: /accept & log/i })).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /accept & log/i }))
+
+    await waitFor(() => {
+      expect(mockToastSuccess).toHaveBeenCalledWith(
+        expect.stringContaining('3.5 U'),
+        expect.objectContaining({ duration: 4000 }),
+      )
+    })
+  })
+
+  test('shows error toast when logging fails', async () => {
+    const doseResponse = makeDoseResponse({ totalRecommended: 2.0 })
+    mockedCalculateDose.mockResolvedValueOnce({ data: doseResponse } as never)
+    mockedCreateTreatment.mockRejectedValueOnce(new Error('Network error'))
+
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" activeIob={0} />)
+    fireEvent.change(screen.getByLabelText(/current blood glucose/i), { target: { value: '160' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /accept & log/i })).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /accept & log/i }))
+
+    await waitFor(() => {
+      expect(mockToastError).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to save dose'),
+        expect.objectContaining({ duration: 4000 }),
+      )
+    })
+  })
+
+  test('log button is disabled while mutation is in flight', async () => {
+    const doseResponse = makeDoseResponse({ totalRecommended: 2.0 })
+    mockedCalculateDose.mockResolvedValueOnce({ data: doseResponse } as never)
+    // Never resolves so mutation stays pending
+    mockedCreateTreatment.mockReturnValue(new Promise(() => undefined) as never)
+
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" activeIob={0} />)
+    fireEvent.change(screen.getByLabelText(/current blood glucose/i), { target: { value: '160' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }))
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /accept & log/i })).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /accept & log/i }))
+
+    await waitFor(() => {
+      // doseCalc.logging = "Logging..."
+      expect(screen.getByRole('button', { name: /logging/i })).toBeDisabled()
+    })
   })
 })
