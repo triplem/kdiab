@@ -366,7 +366,8 @@
     "bolusAvgChartAriaLabel": "Bolus-Durchschnitt nach Tagesstunde",
     "bolusAvgChartCaption": "Dieses Diagramm zeigt die durchschnittliche Bolus-Dosis pro Tagesstunde über den ausgewählten Zeitraum.",
     "basalAvgChartAriaLabel": "Basalrate-Durchschnitt nach Tagesstunde",
-    "basalAvgChartCaption": "Dieses Diagramm zeigt die durchschnittliche Basalrate pro Tagesstunde über den ausgewählten Zeitraum."
+    "basalAvgChartCaption": "Dieses Diagramm zeigt die durchschnittliche Basalrate pro Tagesstunde über den ausgewählten Zeitraum.",
+    "printExport": "Drucken / Als PDF exportieren"
   },
   "profile": {
     "id": "Profil-ID",
