@@ -246,4 +246,26 @@ describe('ProfileDiffView', () => {
       screen.getByRole('region', { name: 'Review proposed profile changes' }),
     ).toBeInTheDocument()
   })
+
+  test('does not show no-changes message when only insulinType differs', () => {
+    const active = makeProfile({ id: 'active-1', insulinType: 'Fiasp' })
+    const proposed = makeProfile({ id: 'proposed-1', insulinType: 'NovoRapid' })
+    renderWithQuery(
+      <ProfileDiffView userId="user-1" activeProfile={active} proposedProfile={proposed} />,
+    )
+    expect(screen.queryByText('No differences detected')).not.toBeInTheDocument()
+    expect(screen.getByText('Fiasp')).toBeInTheDocument()
+    expect(screen.getByText('NovoRapid')).toBeInTheDocument()
+  })
+
+  test('does not show no-changes message when only durationOfAction differs', () => {
+    const active = makeProfile({ id: 'active-1', durationOfAction: 180 })
+    const proposed = makeProfile({ id: 'proposed-1', durationOfAction: 240 })
+    renderWithQuery(
+      <ProfileDiffView userId="user-1" activeProfile={active} proposedProfile={proposed} />,
+    )
+    expect(screen.queryByText('No differences detected')).not.toBeInTheDocument()
+    expect(screen.getByText('180m')).toBeInTheDocument()
+    expect(screen.getByText('240m')).toBeInTheDocument()
+  })
 })

@@ -13,6 +13,16 @@ interface ProfileDiffViewProps {
   glucoseUnit?: string
 }
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (typeof err === 'object' && err !== null) {
+    const e = err as Record<string, unknown>
+    const data = (e['response'] as Record<string, unknown> | undefined)?.['data'] as Record<string, unknown> | undefined
+    if (typeof data?.['message'] === 'string') return data['message']
+    if (typeof e['message'] === 'string') return e['message']
+  }
+  return fallback
+}
+
 function segmentsEqual(a: ProfileSegment[] | undefined, b: ProfileSegment[] | undefined): boolean {
   if ((a?.length ?? 0) !== (b?.length ?? 0)) return false
   return (a ?? []).every((seg, i) => seg.startTime === b![i]!.startTime && seg.value === b![i]!.value)
@@ -87,7 +97,7 @@ function ScalarRow({ label, activeVal, proposedVal }: ScalarRowProps) {
   const style: React.CSSProperties = changed ? { background: 'var(--diff-highlight, #fff8c5)' } : {}
   return (
     <tr style={style}>
-      <td style={{ padding: '0.25rem 0.5rem', fontWeight: 500 }}>{label}</td>
+      <th scope="row" style={{ padding: '0.25rem 0.5rem', fontWeight: 500 }}>{label}</th>
       <td style={{ padding: '0.25rem 0.5rem' }}>{activeVal ?? '—'}</td>
       <td style={{ padding: '0.25rem 0.5rem' }}>{proposedVal ?? '—'}</td>
     </tr>
@@ -106,8 +116,7 @@ export function ProfileDiffView({ userId, activeProfile, proposedProfile, glucos
       void queryClient.invalidateQueries({ queryKey: ['profiles', userId] })
     },
     onError: (err: unknown) => {
-      const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
-      toast.error(apiErr?.response?.data?.message ?? apiErr?.message ?? t('profileDiff.acceptError'))
+      toast.error(extractErrorMessage(err, t('profileDiff.acceptError')))
     },
   })
 
@@ -118,8 +127,7 @@ export function ProfileDiffView({ userId, activeProfile, proposedProfile, glucos
       void queryClient.invalidateQueries({ queryKey: ['profiles', userId] })
     },
     onError: (err: unknown) => {
-      const apiErr = err as { response?: { data?: { message?: string } }; message?: string }
-      toast.error(apiErr?.response?.data?.message ?? apiErr?.message ?? t('profileDiff.rejectError'))
+      toast.error(extractErrorMessage(err, t('profileDiff.rejectError')))
     },
   })
 
@@ -128,6 +136,8 @@ export function ProfileDiffView({ userId, activeProfile, proposedProfile, glucos
   const isfChanged = !segmentsEqual(activeProfile.isf, proposedProfile.isf)
   const targetsChanged = !targetsEqual(activeProfile.targets, proposedProfile.targets)
   const nameChanged = activeProfile.name !== proposedProfile.name
+  const insulinTypeChanged = activeProfile.insulinType !== proposedProfile.insulinType
+  const durationChanged = activeProfile.durationOfAction !== proposedProfile.durationOfAction
 
   return (
     <section
@@ -144,13 +154,9 @@ export function ProfileDiffView({ userId, activeProfile, proposedProfile, glucos
       )}
 
       <div
-        style={{
-          overflowX: 'auto',
-          WebkitOverflowScrolling: 'touch',
-        }}
+        style={{ overflowX: 'auto' }}
       >
         <table
-          role="table"
           style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}
         >
           <colgroup>
@@ -227,7 +233,7 @@ export function ProfileDiffView({ userId, activeProfile, proposedProfile, glucos
                 </td>
               </tr>
             )}
-            {!nameChanged && !basalChanged && !icrChanged && !isfChanged && !targetsChanged && (
+            {!nameChanged && !insulinTypeChanged && !durationChanged && !basalChanged && !icrChanged && !isfChanged && !targetsChanged && (
               <tr>
                 <td colSpan={3} style={{ padding: '0.5rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
                   {t('profileDiff.noChanges')}
