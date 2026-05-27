@@ -1,6 +1,6 @@
 # kdiab-nightscout — Agent Context
 
-Port **8087**. Nightscout API v1 compatibility layer for AAPS, xDrip+, Juggluco. **Optional** service
+Port **8087**. Nightscout API v3 compatibility layer for AAPS, xDrip+, Juggluco (v1 retained for backward compatibility). **Optional** service
 (Docker Compose `profiles: [optional]`). No database — stateless reverse-proxy adapter.
 See root `CLAUDE.md` for shared conventions.
 
@@ -30,8 +30,9 @@ domain/exception/
 
 ## API Version
 
-Implements **Nightscout API v1** (paths under `/api/v1/`). Any reference to "v3" in docs or
-comments is incorrect — the live wire protocol is always v1.
+Implements **Nightscout API v3** (paths under `/api/v3/{collection}`) as a translation layer
+over the kdiab upstream services. The v1 API (`/api/v1/`) is retained unchanged for backward
+compatibility with legacy client installations. See `kdiab-nightscout/docs/adr/ADR-001-nightscout-v3-api-adoption.adoc` for the full decision.
 
 ## Circuit Breakers
 
