@@ -12,10 +12,11 @@ Welcome to the kdiab-analyze documentation hub.
 
 * link:requirements.html[Service Requirements]
 * link:device-usage-reference.html[Device Usage Reference]
+* link:basal-overlay-reference.html[Basal Overlay Reference]
 
 == Architecture Decision Records
 
 Platform ADRs relevant to kdiab-analyze:
 
-* link:../../docs/adr/ADR-004-bff-stateless-aggregator.html[ADR-004 BFF Stateless Aggregator]
-* link:../../docs/adr/ADR-005-api-first-openapi-codegen.html[ADR-005 API-First OpenAPI Codegen]
+* link:../root/adr/ADR-004-bff-stateless-aggregator.html[ADR-004 BFF Stateless Aggregator]
+* link:../root/adr/ADR-005-api-first-openapi-codegen.html[ADR-005 API-First OpenAPI Codegen]

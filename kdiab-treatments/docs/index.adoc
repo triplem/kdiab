@@ -10,19 +10,21 @@ Welcome to the KDiab Treatments project documentation hub. Use the links below t
 * link:architecture.html[Architecture & Design]
 * link:how-to-run.html[How to Run]
 * link:requirements.html[System Requirements]
+* link:operations-guide.html[Operations Guide]
+* link:../root/ai-development.html[AI Development Prompts] (platform-wide)
 
 == Architecture Decision Records (ADR)
 
-ADRs for this service are consolidated at the platform level in `docs/adr/treatments/`
-(relative to the repository root). See the platform ADR index for the rendered version.
+ADRs for this service are consolidated in the platform ADR index under
+link:../root/adr/index.html#kdiab-treatments-adrs[kdiab-treatments ADRs].
 
-* link:../../docs/adr/treatments/101-development-tooling.adoc[101 Development Tooling]
-* link:../../docs/adr/treatments/102-code-quality-standards.adoc[102 Code Quality Standards]
-* link:../../docs/adr/treatments/107-bdd-testing-with-kotest.adoc[107 BDD Testing with Kotest]
-* link:../../docs/adr/treatments/108-main-ktor-server.adoc[108 Main Ktor Server]
-* link:../../docs/adr/treatments/201-flexible-treatments-model.adoc[201 Flexible Treatments Model]
-* link:../../docs/adr/treatments/202-nightscout-treatment-types.adoc[202 Nightscout Treatment Types]
-* link:../../docs/adr/treatments/301-postgresql.adoc[301 PostgreSQL]
-* link:../../docs/adr/treatments/302-implicit-user-management.adoc[302 Implicit User Management]
-* link:../../docs/adr/treatments/303-jwt-authentication.adoc[303 JWT Authentication]
-* link:../../docs/adr/treatments/305-liquibase-init-container.adoc[305 Liquibase Init Container]
+* link:../root/adr/treatments/101-development-tooling.html[101 Development Tooling]
+* link:../root/adr/treatments/102-code-quality-standards.html[102 Code Quality Standards]
+* link:../root/adr/treatments/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
+* link:../root/adr/treatments/108-main-ktor-server.html[108 Main Ktor Server]
+* link:../root/adr/treatments/201-flexible-treatments-model.html[201 Flexible Treatments Model]
+* link:../root/adr/treatments/202-nightscout-treatment-types.html[202 Nightscout Treatment Types]
+* link:../root/adr/treatments/301-postgresql.html[301 PostgreSQL]
+* link:../root/adr/treatments/302-implicit-user-management.html[302 Implicit User Management]
+* link:../root/adr/treatments/303-jwt-authentication.html[303 JWT Authentication]
+* link:../root/adr/treatments/305-liquibase-init-container.html[305 Liquibase Init Container]

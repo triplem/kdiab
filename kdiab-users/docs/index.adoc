@@ -12,8 +12,12 @@ for the kdiab platform.
 * link:requirements.html[Service Requirements]
 * link:operations-guide.html[Operations Guide]
 * link:user-guide.html[User and Admin Guide]
+* link:../root/ai-development.html[AI Development Prompts] (platform-wide)
 
 == Architecture Decision Records
 
-* link:adr/ADR-001-user-settings-split.html[ADR-001 User Settings Split]
-* link:adr/ADR-002-self-registration-workflow.html[ADR-002 Self-Registration Workflow]
+ADRs for this service are consolidated in the platform ADR index under
+link:../root/adr/index.html#kdiab-users-adrs[kdiab-users ADRs].
+
+* link:adr/ADR-001-user-settings-split.html[ADR-001 User Settings Split — Keycloak vs Database]
+* link:adr/ADR-002-self-registration-workflow.html[ADR-002 Feature-Flagged Self-Registration Workflow]

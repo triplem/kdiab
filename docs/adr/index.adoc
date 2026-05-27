@@ -6,6 +6,7 @@ All ADRs for the kdiab platform are consolidated here.
 Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
 (1xx = tooling, 2xx = domain, 3xx = infrastructure) scoped to their service.
 
+[#platform-adrs]
 == Platform ADRs
 
 * link:ADR-001-monorepo-consolidation.html[ADR-001 Monorepo Consolidation]
@@ -20,7 +21,11 @@ Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
 * link:ADR-010-kdiab-carbs-service.html[ADR-010 kdiab-carbs Dedicated Food and Carbohydrate Service]
 * link:ADR-011-cgm-trend-frontend-aggregation.html[ADR-011 Frontend-only CGM Daily Trend Aggregation]
 * link:ADR-012-device-status-separation.html[ADR-012 DEVICE_STATUS Separation into Dedicated Table]
+* link:ADR-013-cio-engine.html[ADR-013 Ktor CIO Engine]
+* link:ADR-014-otel-grpc-exporter-dual-stack.html[ADR-014 OTEL gRPC Exporter Dual-Stack Configuration]
+* link:ADR-015-coverage-exclusions.html[ADR-015 Coverage Exclusions]
 
+[#kdiab-measures-adrs]
 == kdiab-measures ADRs
 
 * link:measures/101-development-tooling.html[101 Development Tooling]
@@ -36,6 +41,7 @@ Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
 * link:measures/303-jwt-authentication.html[303 JWT Authentication]
 * link:measures/305-liquibase-init-container.html[305 Liquibase Init Container]
 
+[#kdiab-profiles-adrs]
 == kdiab-profiles ADRs
 
 * link:profiles/015-profile-history-and-archiving.html[015 Profile History and Archiving]
@@ -63,6 +69,7 @@ Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
 * link:profiles/305-liquibase-init-container.html[305 Liquibase Init Container]
 * link:profiles/306-content-security-policy.html[306 Content Security Policy]
 
+[#kdiab-treatments-adrs]
 == kdiab-treatments ADRs
 
 * link:treatments/101-development-tooling.html[101 Development Tooling]
@@ -75,3 +82,14 @@ Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
 * link:treatments/302-implicit-user-management.html[302 Implicit User Management]
 * link:treatments/303-jwt-authentication.html[303 JWT Authentication]
 * link:treatments/305-liquibase-init-container.html[305 Liquibase Init Container]
+
+[#kdiab-users-adrs]
+== kdiab-users ADRs
+
+* link:../../users/adr/ADR-001-user-settings-split.html[ADR-001 User Settings Split — Keycloak vs Database]
+* link:../../users/adr/ADR-002-self-registration-workflow.html[ADR-002 Feature-Flagged Self-Registration Workflow]
+
+[#kdiab-nightscout-adrs]
+== kdiab-nightscout ADRs
+
+* link:../../nightscout/adr/ADR-001-nightscout-v3-api-adoption.html[ADR-001 Adopt Nightscout API v3 as the Primary External Interface]

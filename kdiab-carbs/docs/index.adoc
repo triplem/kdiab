@@ -1,0 +1,25 @@
+= kdiab-carbs Developer Documentation
+:toc: left
+:icons: font
+:source-highlighter: rouge
+
+Welcome to the kdiab-carbs documentation hub.
+`kdiab-carbs` manages a personal food and carbohydrate database used by the kdiab platform
+to support carbohydrate tracking and dose calculation.
+
+== Core Documents
+
+* link:architecture.html[Architecture & Design]
+* link:../root/ai-development.html[AI Development Prompts] (platform-wide)
+
+== Key Facts
+
+* Patients can create, update, archive, and hard-delete their own food entries.
+* Doctors have read-only access to entries of their assigned patients.
+* Admins have full access to all entries.
+* `carbsForPortion = portionGrams × carbsPer100g / 100` — computed on read, not stored.
+* Soft delete via `POST /users/{userId}/foods/{foodId}/archive`; hard delete via `DELETE`.
+
+== Platform ADRs
+
+* link:../root/adr/ADR-010-kdiab-carbs-service.html[ADR-010 kdiab-carbs Dedicated Food and Carbohydrate Service]
