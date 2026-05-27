@@ -81,4 +81,4 @@ Heterogeneous measurement segments are stored as a JSON blob within the `measure
 * **Why**: Excellent JSONB support which is critical for our flexible measures model.
 
 == Architectural Decision Records (Log)
-* link:adr/201-flexible-measures-model.adoc[ADR-201: Flexible Measures Model with JSONB]
+* link:../root/adr/measures/201-flexible-measures-model.html[ADR-201: Flexible Measures Model with JSONB]

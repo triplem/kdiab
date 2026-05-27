@@ -11,6 +11,7 @@ on:
       - 'kdiab-analyze/docs/**'
       - 'kdiab-carbs/docs/**'
       - 'kdiab-calc/docs/**'
+      - 'kdiab-nightscout/docs/**'
       - 'kdiab-users/docs/**'
       - '.github/workflows/docs-pages.yml'
   release:
@@ -63,15 +64,27 @@ jobs:
       - name: Build users docs
         run: cd kdiab-users && ./gradlew asciidoctor --no-configuration-cache
 
+      - name: Build carbs docs
+        run: cd kdiab-carbs && ./gradlew asciidoctor --no-configuration-cache
+
+      - name: Build calc docs
+        run: cd kdiab-calc && ./gradlew asciidoctor --no-configuration-cache
+
+      - name: Build nightscout docs
+        run: cd kdiab-nightscout && ./gradlew asciidoctor --no-configuration-cache
+
       - name: Assemble pages
         run: |
-          mkdir -p pages/root pages/measures pages/profiles pages/treatments pages/analyze pages/users
-          cp -r build/docs/asciidoc/.                  pages/root/
-          cp -r kdiab-measures/build/docs/asciidoc/.  pages/measures/
-          cp -r kdiab-profiles/build/docs/asciidoc/.  pages/profiles/
-          cp -r kdiab-treatments/build/docs/asciidoc/. pages/treatments/
-          cp -r kdiab-analyze/build/docs/asciidoc/.   pages/analyze/
-          cp -r kdiab-users/build/docs/asciidoc/.     pages/users/
+          mkdir -p pages/root pages/measures pages/profiles pages/treatments pages/analyze pages/users pages/carbs pages/calc pages/nightscout
+          cp -r build/docs/asciidoc/.                    pages/root/
+          cp -r kdiab-measures/build/docs/asciidoc/.    pages/measures/
+          cp -r kdiab-profiles/build/docs/asciidoc/.    pages/profiles/
+          cp -r kdiab-treatments/build/docs/asciidoc/.  pages/treatments/
+          cp -r kdiab-analyze/build/docs/asciidoc/.     pages/analyze/
+          cp -r kdiab-users/build/docs/asciidoc/.       pages/users/
+          cp -r kdiab-carbs/build/docs/asciidoc/.       pages/carbs/
+          cp -r kdiab-calc/build/docs/asciidoc/.        pages/calc/
+          cp -r kdiab-nightscout/build/docs/asciidoc/.  pages/nightscout/
           cat > pages/index.html <<'EOF'
           <!DOCTYPE html>
           <html lang="en">
