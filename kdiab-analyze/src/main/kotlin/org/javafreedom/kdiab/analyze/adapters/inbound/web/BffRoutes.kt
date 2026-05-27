@@ -89,8 +89,8 @@ fun Route.bffRoutes(
             val timezone = runCatching { TimeZone.of(ctx.principal.timezone) }
                 .onFailure {
                     logger.warn {
-                        "Invalid timezone '${ctx.principal.timezone}' for user " +
-                            "${ctx.principal.userId}, falling back to UTC"
+                        "Invalid timezone falling back to UTC " +
+                            "timezone=${ctx.principal.timezone} userId=${ctx.principal.userId}"
                     }
                 }
                 .getOrDefault(TimeZone.UTC)
