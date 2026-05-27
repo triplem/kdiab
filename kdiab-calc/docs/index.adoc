@@ -1,0 +1,25 @@
+= kdiab-calc Developer Documentation
+:toc: left
+:icons: font
+:source-highlighter: rouge
+
+Welcome to the kdiab-calc documentation hub.
+`kdiab-calc` is a stateless dose calculator that produces bolus recommendations from
+an active insulin pump profile, current CGM reading, and carbohydrate intake.
+
+== Core Documents
+
+* link:dose-calculation-reference.html[Dose Calculation Reference]
+* link:../root/ai-development.html[AI Development Prompts] (platform-wide)
+
+== Key Facts
+
+* Stateless — no database. Fetches profile from kdiab-profiles at request time.
+* Output is always labelled a *recommendation*, never a prescription.
+* Safety guardrails: refuses to recommend if BG < 70 mg/dL (hypo guard);
+  warns if dose > 20 U; hard cap at 30 U.
+* Forwards the user's Bearer JWT unchanged to kdiab-profiles.
+
+== Platform ADRs
+
+* link:../root/adr/ADR-009-kdiab-calc-service.html[ADR-009 kdiab-calc Stateless Dose Calculator Service]

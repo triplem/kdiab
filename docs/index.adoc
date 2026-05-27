@@ -2,7 +2,7 @@
 :toc: left
 :icons: font
 
-*kdiab* is a Type 1 Diabetes (T1D) management platform — a monorepo of seven services.
+*kdiab* is a Type 1 Diabetes (T1D) management platform — a monorepo of nine backend services plus a shared library and a React frontend.
 
 == Services
 
@@ -25,34 +25,35 @@
 | link:../users/index.html[kdiab-users]
 | User lifecycle, settings, and doctor–patient relationship management
 
-| kdiab-carbs
+| link:../carbs/index.html[kdiab-carbs]
 | Food / carbohydrate database and entry tracking
 
-| kdiab-calc
+| link:../calc/index.html[kdiab-calc]
 | Stateless dose calculator: bolus recommendation from profile + CGM trend
+
+| link:../nightscout/index.html[kdiab-nightscout]
+| Nightscout API v1/v3 compatibility layer for AAPS, xDrip+, Juggluco (optional service)
 |===
 
 == Platform Documents
 
 * link:how-to-run.html[How to Build and Run]
 * link:architecture.html[Platform Architecture]
-* link:keycloak-setup.html[Keycloak Setup]
 * link:deployment.html[Deployment Guide]
+* link:keycloak-setup.html[Keycloak Setup]
+* link:nfr.html[Non-Functional Requirements]
 * link:glossary.html[T1D Glossary]
+* link:testing/manual-test-plan.html[Manual Test Plan]
 * link:ai-development.html[AI Development Prompts]
 
 == Architecture Decision Records
 
 All ADRs (platform-wide and service-specific) are consolidated in the link:adr/index.html[ADR Index].
 
-=== Platform ADRs
-
-* link:adr/ADR-001-monorepo-consolidation.html[ADR-001 Monorepo Consolidation]
-* link:adr/ADR-002-docker-image-naming.html[ADR-002 Docker Image Naming Convention]
-* link:adr/ADR-003-root-gradle-composite-build.html[ADR-003 Root Gradle Composite Build]
-
 === Service ADRs
 
-* link:adr/index.html#kdiab-measures-adrs[kdiab-measures ADRs] — located in `docs/adr/measures/`
-* link:adr/index.html#kdiab-profiles-adrs[kdiab-profiles ADRs] — located in `docs/adr/profiles/`
-* link:adr/index.html#kdiab-treatments-adrs[kdiab-treatments ADRs] — located in `docs/adr/treatments/`
+* link:adr/index.html#kdiab-measures-adrs[kdiab-measures ADRs]
+* link:adr/index.html#kdiab-profiles-adrs[kdiab-profiles ADRs]
+* link:adr/index.html#kdiab-treatments-adrs[kdiab-treatments ADRs]
+* link:adr/index.html#kdiab-users-adrs[kdiab-users ADRs]
+* link:adr/index.html#kdiab-nightscout-adrs[kdiab-nightscout ADRs]

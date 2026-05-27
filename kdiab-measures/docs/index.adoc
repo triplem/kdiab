@@ -10,22 +10,23 @@ Welcome to the KDiab Measures project documentation hub. Use the links below to 
 * link:architecture.html[Architecture & Design]
 * link:how-to-run.html[How to Run]
 * link:requirements.html[System Requirements]
-* link:../../docs/ai-development.html[AI Development Prompts] (platform-wide)
+* link:operations-guide.html[Operations Guide]
+* link:../root/ai-development.html[AI Development Prompts] (platform-wide)
 
 == Architecture Decision Records (ADR)
 
-ADRs for this service are consolidated at the platform level in `docs/adr/measures/`
-(relative to the repository root). See the platform ADR index for the rendered version.
+ADRs for this service are consolidated in the platform ADR index under
+link:../root/adr/index.html#kdiab-measures-adrs[kdiab-measures ADRs].
 
-* link:../../docs/adr/measures/101-development-tooling.adoc[101 Development Tooling]
-* link:../../docs/adr/measures/102-code-quality-standards.adoc[102 Code Quality Standards]
-* link:../../docs/adr/measures/106-global-exception-handling.adoc[106 Global Exception Handling]
-* link:../../docs/adr/measures/107-bdd-testing-with-kotest.adoc[107 BDD Testing with Kotest]
-* link:../../docs/adr/measures/108-main-ktor-server.adoc[108 Main Ktor Server]
-* link:../../docs/adr/measures/110-correlation-id-logging.adoc[110 Correlation ID Logging]
-* link:../../docs/adr/measures/111-semantic-release-conventional-commits.adoc[111 Semantic Release / Conventional Commits]
-* link:../../docs/adr/measures/201-flexible-measures-model.adoc[201 Flexible Measures Model]
-* link:../../docs/adr/measures/301-postgresql.adoc[301 PostgreSQL]
-* link:../../docs/adr/measures/302-implicit-user-management.adoc[302 Implicit User Management]
-* link:../../docs/adr/measures/303-jwt-authentication.adoc[303 JWT Authentication]
-* link:../../docs/adr/measures/305-liquibase-init-container.adoc[305 Liquibase Init Container]
+* link:../root/adr/measures/101-development-tooling.html[101 Development Tooling]
+* link:../root/adr/measures/102-code-quality-standards.html[102 Code Quality Standards]
+* link:../root/adr/measures/106-global-exception-handling.html[106 Global Exception Handling]
+* link:../root/adr/measures/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
+* link:../root/adr/measures/108-main-ktor-server.html[108 Main Ktor Server]
+* link:../root/adr/measures/110-correlation-id-logging.html[110 Correlation ID Logging]
+* link:../root/adr/measures/111-semantic-release-conventional-commits.html[111 Semantic Release / Conventional Commits]
+* link:../root/adr/measures/201-flexible-measures-model.html[201 Flexible Measures Model]
+* link:../root/adr/measures/301-postgresql.html[301 PostgreSQL]
+* link:../root/adr/measures/302-implicit-user-management.html[302 Implicit User Management]
+* link:../root/adr/measures/303-jwt-authentication.html[303 JWT Authentication]
+* link:../root/adr/measures/305-liquibase-init-container.html[305 Liquibase Init Container]

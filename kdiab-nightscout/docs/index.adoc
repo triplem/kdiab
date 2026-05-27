@@ -1,0 +1,35 @@
+= kdiab-nightscout Developer Documentation
+:toc: left
+:icons: font
+:source-highlighter: rouge
+
+Welcome to the kdiab-nightscout documentation hub.
+`kdiab-nightscout` is a Nightscout API compatibility layer (v1 + planned v3) that allows
+AAPS, xDrip+, and Juggluco to connect to the kdiab platform without modification.
+It is an *optional* service — not started by default.
+
+== Core Documents
+
+* link:architecture.html[Architecture & Design]
+* link:operations-guide.html[Operations Guide]
+* link:client-integration-guide.html[Client Integration Guide]
+* link:nightscout-v3-mapping.html[Nightscout v3 Field Mapping Reference]
+* link:../root/ai-development.html[AI Development Prompts] (platform-wide)
+
+== Starting the Service
+
+The service is declared with a Docker Compose profile and is not started by default:
+
+[source,bash]
+----
+./podman-up.sh --optional --build
+# or
+COMPOSE_PROFILES=optional docker compose up --build
+----
+
+== Architecture Decision Records
+
+ADRs for this service are consolidated in the platform ADR index under
+link:../root/adr/index.html#kdiab-nightscout-adrs[kdiab-nightscout ADRs].
+
+* link:adr/ADR-001-nightscout-v3-api-adoption.html[ADR-001 Adopt Nightscout API v3 as the Primary External Interface]
