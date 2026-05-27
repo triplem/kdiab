@@ -24,7 +24,7 @@ allowed-tools: Read Bash(ls *) Bash(find *) Bash(cat *) Bash(grep -r *) Bash(wc 
 !`ls .claude/rules/ 2>/dev/null || echo "(no rules)"`
 
 **Memory index:**
-!`cat .claude/projects/*/memory/MEMORY.md 2>/dev/null | head -40 || echo "(no memory)"`
+!`cat ~/.claude/projects/*/memory/MEMORY.md 2>/dev/null | head -40 || echo "(no memory)"`
 
 **CLAUDE.md sections:**
 !`grep "^## " CLAUDE.md 2>/dev/null || echo "(no CLAUDE.md)"`
