@@ -87,7 +87,12 @@ fun Route.bffRoutes(
             )
 
             val timezone = runCatching { TimeZone.of(ctx.principal.timezone) }
-                .onFailure { logger.warn { "Invalid timezone '${ctx.principal.timezone}' for user ${ctx.principal.userId}, falling back to UTC" } }
+                .onFailure {
+                    logger.warn {
+                        "Invalid timezone '${ctx.principal.timezone}' for user " +
+                            "${ctx.principal.userId}, falling back to UTC"
+                    }
+                }
                 .getOrDefault(TimeZone.UTC)
             val result = analyticsService.getAgp(
                 userId = ctx.targetUserId.toString(),
