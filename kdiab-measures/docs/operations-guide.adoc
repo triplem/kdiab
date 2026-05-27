@@ -131,11 +131,15 @@ curl -s http://localhost:8080/api/v1/users/$USER_ID/measures \
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8080/api/v1/users/$USER_ID/measures/$MEASURE_ID \
-  -H "Authorization: Bearer $TOKEN"
+curl -X POST http://localhost:8080/api/v1/users/$USER_ID/measures/archive \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"measureIds":["'"$MEASURE_ID"'"]}'
 ----
 
-Returns `204 No Content`. The record is soft-deleted (status → `ARCHIVED`).
+Returns `200 OK`. The record is soft-deleted (status → `ARCHIVED`). Archived records are excluded from all subsequent read queries.
+
+NOTE: `DELETE /api/v1/users/{userId}/measures` is a **permanent hard delete** restricted to DOCTOR and ADMIN roles. Use `POST /archive` to preserve the record for EU MDR audit log retention.
 
 == Troubleshooting
 

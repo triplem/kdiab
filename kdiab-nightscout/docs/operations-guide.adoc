@@ -59,10 +59,10 @@ All configuration is provided via environment variables (override the defaults i
 | Path | Description
 
 | `GET /healthz` | Liveness — returns 200 if the process is up
-| `GET /readyz` | Readiness — returns 200 if all circuit breakers are CLOSED or HALF_OPEN
+| `GET /readyz` | Readiness — returns 200 if all four upstream `/healthz` endpoints respond with 2xx
 |===
 
-Use `/readyz` as the Kubernetes readiness probe and `/healthz` as the liveness probe. A failing `/readyz` means at least one upstream circuit breaker is OPEN — check upstream service health.
+Use `/readyz` as the Kubernetes readiness probe and `/healthz` as the liveness probe. A failing `/readyz` means at least one upstream service is not responding — check the upstream service directly. Note: this probes `/healthz` (process liveness) on each upstream, not the circuit breaker state.
 
 [#startup-dependencies]
 == Startup Dependencies
