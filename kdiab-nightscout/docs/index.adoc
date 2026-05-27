@@ -4,8 +4,9 @@
 :source-highlighter: rouge
 
 Welcome to the kdiab-nightscout documentation hub.
-`kdiab-nightscout` is a Nightscout API compatibility layer (v1 + planned v3) that allows
-AAPS, xDrip+, and Juggluco to connect to the kdiab platform without modification.
+`kdiab-nightscout` is a Nightscout API v3 compatibility layer (with v1 retained for
+backward compatibility) that allows AAPS, xDrip+, and Juggluco to connect to the kdiab
+platform without modification.
 It is an *optional* service — not started by default.
 
 == Core Documents

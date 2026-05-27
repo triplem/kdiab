@@ -32,7 +32,7 @@
 | Stateless dose calculator: bolus recommendation from profile + CGM trend
 
 | link:../nightscout/index.html[kdiab-nightscout]
-| Nightscout API v1/v3 compatibility layer for AAPS, xDrip+, Juggluco (optional service)
+| Nightscout API v3 compatibility layer for AAPS, xDrip+, Juggluco — v1 retained for backward compatibility (optional service)
 |===
 
 == Platform Documents
