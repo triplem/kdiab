@@ -50,6 +50,10 @@
 
 All ADRs (platform-wide and service-specific) are consolidated in the link:adr/index.html[ADR Index].
 
+=== Platform ADRs
+
+link:adr/index.html#platform-adrs[All platform ADRs] (ADR-001 through ADR-015)
+
 === Service ADRs
 
 * link:adr/index.html#kdiab-measures-adrs[kdiab-measures ADRs]
