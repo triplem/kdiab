@@ -1,31 +1,38 @@
 # Rule: Agent Context Files (CLAUDE.md)
 
-## Single Root CLAUDE.md
+## Hierarchical CLAUDE.md (root + per-service)
 
-Maintain **one** `CLAUDE.md` at the monorepo root. Do **not** create per-service or per-directory `CLAUDE.md` files.
+Claude Code reads `CLAUDE.md` files hierarchically: when working inside a service directory it
+loads **both** the root `CLAUDE.md` and the service's own `CLAUDE.md`. Per-service files ADD
+focused context — they do not replace the shared root.
 
-**Why**: Per-service files fragment context across the tree. Agents working in one service miss cross-cutting decisions stored elsewhere. Files diverge and become stale independently. A single root file is always found, always current, and gives every agent the full picture immediately.
-
-**How to organise multi-service content**: Add a `## Service Details` section in the root with subsections per service. Each subsection covers what is unique to that service (package structure, domain model schema, state machine, formulas, env vars). Common patterns (architecture, conventions, commands) stay in the shared sections above.
+**Structure:**
 
 ```
-# CLAUDE.md (root)
-## Architecture        ← shared
-## Commands           ← shared
-## Service Details    ← per-service subsections
-  ### kdiab-measures
-  ### kdiab-profiles
-  ...
-## Issue Tracking     ← shared
+CLAUDE.md                    ← shared: overview, stack, commands, architecture, conventions
+kdiab-measures/CLAUDE.md     ← service-specific: package structure, schema, env vars, behaviours
+kdiab-profiles/CLAUDE.md     ← service-specific: state machine, ADRs, validation rules
+kdiab-analyze/CLAUDE.md      ← service-specific: analytics formulas, JWT forwarding detail
+...
 ```
 
-**Anti-pattern**:
-```
-kdiab-measures/CLAUDE.md   ← DO NOT create these
-kdiab-profiles/CLAUDE.md   ← DO NOT create these
-```
+**What belongs in the root `CLAUDE.md`:**
+- Project overview and service map (one-liners per service, port reference table)
+- Common tech stack and shared build/run/test/lint commands
+- Shared architecture (hexagonal layers, auth pattern, route pattern, domain conventions)
+- Issue tracking, branch naming, commit conventions, quality gates
+- Audit logging, Rules Index, Skills Index
 
-If a service-specific file is found, merge its content into the root `## Service Details` section and delete it.
+**What belongs in a service `CLAUDE.md`:**
+- Root package and full package structure
+- Domain model / DB schema
+- Service-specific env vars
+- Behaviours unique to that service (state machines, access restrictions, safety guardrails)
+- Key ADRs for that service
+
+**Maintenance rule:** If a concept applies to two or more services, it belongs in the root. If it
+applies to exactly one service, it belongs in that service's `CLAUDE.md`. Never duplicate content
+across both levels.
 
 ## Hook Audit Logging
 
