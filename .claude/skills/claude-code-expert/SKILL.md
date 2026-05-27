@@ -171,20 +171,19 @@ hooks:
 
 ## Body content here
 
-# Lines starting with !`cmd` are executed at invocation and injected as output.
-# Example (not executed here — shown as a comment):
-# !`git status --short`
+# A line that starts with a bang-backtick pattern runs at load time.
+# The six injections at the top of this skill are intentional examples.
 
 $arg_name is substituted from arguments.
 ```
 
-**Runtime injection (`` ! `` prefix):**
-- A line starting with `` !`cmd` `` in the skill body is executed at invocation time and its output is injected into the prompt
+**Runtime injection (bang prefix):**
+- A line at the TOP LEVEL of the skill body beginning with `!` followed by a backtick-quoted shell command is executed at skill invocation time; its stdout is injected into the prompt
 - Keeps skills dynamic: load current git status, issue details, file contents, build output
-- Examples (in actual skill files, not in documentation prose):
-  - `` !`git status --short` ``
-  - `` !`gh issue view $issue_id` ``
-  - `` !`cat audit/agent-log.jsonl | tail -5` ``
+- Examples (written in actual skill SKILL.md files, on their own lines):
+  - `!` + backtick + `git status --short` + backtick
+  - `!` + backtick + `gh issue view $issue_id` + backtick
+  - `!` + backtick + `cat audit/agent-log.jsonl | tail -5` + backtick
 
 **Skill composition patterns:**
 - Skills can reference other skills: `After implementation → /write-tests $story_id`
@@ -419,7 +418,7 @@ Load and read:
 - [ ] All specialist reviews have skills (security, QA, architect, DevOps, UX, operations, technical writer)
 - [ ] Each skill has a clear `description` (used by agents to select the right skill)
 - [ ] Internal-only skills have `user-invocable: false`
-- [ ] Skills use runtime injection (`!`cmd``) for dynamic context, not stale static text
+- [ ] Skills use runtime injection (bang-backtick lines) for dynamic context, not stale static text
 - [ ] `allowed-tools` scoped to what the skill actually needs
 
 #### MCP
