@@ -180,8 +180,8 @@ In tests, JWT uses HMAC256 symmetric signing (`jwt.test=true`, `jwt.secret` in c
 - Access control checked at route entry via `checkReadAccess`/`checkWriteAccess` helpers
 - Domain exceptions thrown instead of manual HTTP status codes — caught by `StatusPages`
 
-### JWT Forwarding (kdiab-analyze)
-The BFF receives a user JWT and forwards it unchanged to all upstream services. For this to work, the Keycloak client used to log in must have audience mappers for all eight audiences (`analyze`, `measure`, `profile`, `treatment`, `carbs`, `calc`, `users`, `nightscout`). The root `config/keycloak-realm.json` configures the `kdiab-analyze-frontend` client with audience mappers so a single token is accepted by every upstream service.
+### JWT Forwarding
+kdiab-analyze and kdiab-calc forward the user's `Authorization: Bearer <token>` unchanged to upstream services. The `kdiab-analyze-frontend` Keycloak client has audience mappers for all eight audiences so a single token is accepted by every upstream service. See `kdiab-analyze/CLAUDE.md` for details.
 
 ### Test Suites (Backend)
 ```
@@ -191,9 +191,7 @@ src/e2e-test/         # E2E tests (Kotest, shouldRunAfter integrationTest)
 ```
 
 ### Frontend
-React 19 SPA with OIDC auth (`react-oidc-context`), `@tanstack/react-query`, `react-hook-form` + `zod`. Feature-based structure under `src/features/`. Tests: Vitest + `@testing-library/react`; Playwright for E2E.
-
-Roles are parsed from the JWT access token directly (Keycloak's OIDC profile doesn't reliably include `realm_access`).
+React 19 SPA (`kdiab-ui`). See `kdiab-ui/CLAUDE.md` for feature structure, auth, API generation, and coverage config.
 
 ### Code Quality
 - **Detekt**: config at `config/detekt/detekt.yml`, baseline at `config/detekt/baseline.xml`. Lints `src/main/kotlin` only.
@@ -241,288 +239,22 @@ All use password `password`:
 
 ## Service Details
 
-### kdiab-measures
+Each service has its own `CLAUDE.md` with package structure, domain model, env vars, and
+service-specific design decisions. Claude Code loads both this file and the service's `CLAUDE.md`
+when working inside that directory.
 
-Root package: `org.javafreedom.kdiab.measures`
-
-**Package structure:**
-```
-adapters/inbound/web/
-  MeasureRoutes.kt         # Route handlers — uses generated Paths for type-safe routing
-  MeasureMapper.kt         # Extension functions: API models ↔ domain models
-application/service/
-  MeasureService.kt
-domain/model/
-  Measure.kt               # Measure entity + MeasureType/Source/Status enums
-domain/repository/
-  MeasureRepository.kt
-infrastructure/persistence/
-  ExposedMeasureRepository.kt
-  DatabaseFactory.kt
-```
-
-**Data flow:**
-```
-HTTP Request
-  → MeasureRoutes (authenticate, checkReadAccess/checkWriteAccess)
-  → MeasureMapper.toDomain()
-  → MeasureService (business logic, throws domain exceptions)
-  → MeasureRepository → ExposedMeasureRepository (suspendTransaction on Dispatchers.IO)
-HTTP Response ← MeasureMapper.toApi() ← StatusPages
-```
-
-**Domain model (DB schema):**
-```
-measures table:
-  id, user_id, measured_at, created_at
-  type    (CGM | BGM | BLOOD_PRESSURE | WEIGHT | PULSE)
-  source  (MANUAL | NIGHTSCOUT | GOOGLE_FIT | APPLE_HEALTH)
-  data    (JSONB — structure varies by type, e.g. {"sgv": 120, "trend": "Flat"})
-  status  (ACTIVE | ARCHIVED)
-```
-
-`MeasurePayload`: the `data` field is mapped to `kotlinx.serialization.json.JsonObject` via `schemaMappings` in `build.gradle.kts` so the generator produces properly serializable code. Database migrations managed by Liquibase.
-
----
-
-### kdiab-treatments
-
-Root package: `org.javafreedom.kdiab.treatments`
-
-**Package structure:**
-```
-adapters/inbound/web/
-  TreatmentRoutes.kt       # Route handlers — uses generated Paths for type-safe routing
-  TreatmentMapper.kt       # Extension functions: API models ↔ domain models
-application/service/
-  TreatmentService.kt
-domain/model/
-  Treatment.kt             # Treatment entity + TreatmentType/TreatmentStatus enums
-domain/repository/
-  TreatmentRepository.kt
-infrastructure/persistence/
-  ExposedTreatmentRepository.kt
-  DatabaseFactory.kt
-```
-
-**Domain model (DB schema):**
-```
-treatments table:
-  id, user_id, treated_at, created_at
-  type    (BOLUS | BASAL | CARBS | CORRECTION_BOLUS | COMBO_BOLUS | TEMP_BASAL |
-           EXERCISE | NOTE | BG_CHECK | PUMP_SUSPEND | SITE_CHANGE | SENSOR_INSERT | INSULIN_CHANGE)
-  data    (JSONB — structure varies by type, follows Nightscout conventions)
-  status  (ACTIVE | ARCHIVED)
-  notes   (TEXT, nullable)
-```
-
-`TreatmentPayload`: the `data` field is mapped to `kotlinx.serialization.json.JsonObject` via `schemaMappings`. Delete endpoint is restricted to DOCTOR and ADMIN roles; archive is available to all authorized users. Database migrations managed by Liquibase.
-
----
-
-### kdiab-profiles
-
-Root package: `org.javafreedom.kdiab.profiles`
-
-**Package structure:**
-```
-adapters/inbound/web/   # ProfileRoutes, InsulinRoutes, ProfileMapper
-application/service/    # ProfileService — business logic, owns state machine transitions
-domain/model/           # Profile, Insulin, segment types, ProfileStatus enum
-domain/repository/      # ProfileRepository, InsulinRepository
-infrastructure/persistence/  # ExposedProfileRepository, etc.
-```
-
-**Profile state machine:**
-- DRAFT → ACTIVE (activate)
-- ACTIVE → ARCHIVED + new ACTIVE (copy-on-write on update or activation)
-- PROPOSED → ACTIVE (patient accepts) or ARCHIVED (patient rejects)
-- Active profiles are **immutable** — any update archives current and creates a new ACTIVE version linked via `previousProfileId`. Clients receive a **new profile ID** — local state references must be updated.
-
-**Domain validation:** Clinical safety checks live in `Profile.validate()` in the domain model: max daily basal 150 U/day, ICR/ISF range checks, unit heuristics.
-
-**Database note:** The `IDX_PROFILES_USER_ACTIVE` partial index (`WHERE status = 'ACTIVE'`) enforcing one active profile per user is defined with `dbms: postgresql` — not created in H2. Integration tests use H2 in-memory.
-
-**Key ADRs:**
-- ADR-015 — Copy-on-Write profiles
-- ADR-016 — Doctor-Patient collaboration via PROPOSED status
-- ADR-302 — No Users table (userId from JWT `sub`)
-- ADR-303 — JWT/RBAC via Keycloak `realm_access.roles`
-
----
-
-### kdiab-analyze
-
-Root package: `org.javafreedom.kdiab.analyze`
-
-**Ports:**
-| Component | Standalone compose | Root compose |
-|---|---|---|
-| analyze-backend | 8084 | 8084 |
-| Keycloak | 8085 | — (shared at 8081) |
-
-**Environment variables:**
-| Variable | Default | Description |
-|---|---|---|
-| `MEASURES_URL` | `http://localhost:8080` | kdiab-measures base URL |
-| `PROFILES_URL` | `http://localhost:8082` | kdiab-profiles base URL |
-| `TREATMENTS_URL` | `http://localhost:8083` | kdiab-treatments base URL |
-| `JWT_AUDIENCE` | `analyze` | Expected JWT audience |
-| `JWT_REALM` | `kdiab-analyze` | Keycloak realm name |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3003` | Allowed CORS origins |
-
-In root compose, upstream URLs are internal Docker service names (`http://measures-backend:8080` etc.).
-
-**API endpoints** (all under `/api/v1/users/{userId}/`, require Bearer JWT):
-| Method | Path | Description |
-|---|---|---|
-| GET | `/users/{userId}/timeline` | Combined measures + treatments |
-| GET | `/users/{userId}/analytics/hba1c` | HbA1c estimate + TIR |
-| GET | `/users/{userId}/analytics/agp` | AGP hourly percentiles (24 buckets) |
-| GET | `/users/{userId}/profiles/active` | Active/archived profiles |
-
-All endpoints accept `from` and `to` query parameters (ISO-8601, required).
-
-**Backend package structure:**
-```
-adapters/inbound/web/
-  BffRoutes.kt           # 4 endpoints, manual routing (no generated Paths)
-  BffMapper.kt           # Domain models → API response DTOs
-adapters/outbound/http/
-  MeasuresClient.kt      # Ktor CIO HttpClient → kdiab-measures
-  ProfilesClient.kt      # Ktor CIO HttpClient → kdiab-profiles
-  TreatmentsClient.kt    # Ktor CIO HttpClient → kdiab-treatments
-application/service/
-  TimelineService.kt     # Fetches measures + treatments in parallel (coroutineScope/async)
-  AnalyticsService.kt    # HbA1c (DCCT formula), TIR zone counts, AGP percentile calc
-  ProfilesService.kt     # Returns ACTIVE + ARCHIVED profiles
-domain/model/
-  Timeline.kt            # TimelineMeasure, TimelineTreatment, Timeline
-  Analytics.kt           # TirBreakdown, Hba1cResult, AgpHourlyData, AgpResult, ProfilesResult
-domain/exception/
-  UpstreamException.kt   # Wraps upstream HTTP errors → 502 Bad Gateway
-```
-
-**Analytics formulas:**
-
-*HbA1c* — DCCT formula, CGM readings only:
-```
-mean_glucose_mg_dL = average(sgv values)
-HbA1c (%) = (mean_glucose_mg_dL + 46.7) / 28.7
-```
-If `glucose_unit` JWT claim is `mmol/L`, multiply each value by 18.0 before averaging. Returns `null` if no CGM readings exist in the timeframe.
-
-*Time In Range (mg/dL thresholds):*
-| Zone | Range | Field |
-|---|---|---|
-| Very Low | < 54 mg/dL | `veryLowCount` |
-| Below | 54–70 mg/dL | `belowCount` |
-| Target | 70–180 mg/dL | `inRangeCount` |
-| Above | 180–250 mg/dL | `aboveCount` |
-| High | > 250 mg/dL | `highCount` |
-
-*AGP* — group CGM readings by UTC hour (0–23), compute p10/p25/p50/p75/p90 per bucket using sort-based linear interpolation. Returns 24 `AgpHourlyData` objects; buckets with no readings have `null` percentile values.
-
-**Key design decisions:**
-- No database — purely a read-time aggregator; safe to scale horizontally.
-- No generated Paths — uses manual Ktor routing; aggregation logic doesn't map to generated controller stubs.
-- Parallel upstream calls — `TimelineService` uses `coroutineScope { async {} }` to minimise latency.
-- mmol/L conversion happens in `AnalyticsService` before HbA1c; AGP and TIR thresholds are always mg/dL.
-
-**JWT Forwarding:** The service forwards the user's `Authorization: Bearer <token>` unchanged to all upstream services. The root compose `kdiab-analyze-frontend` Keycloak client has audience mappers for all backends — tokens are accepted everywhere. The standalone compose client only has the `analyze` audience; upstream services need a shared realm or separate configuration.
-
----
-
-### kdiab-users
-
-Root package: `org.javafreedom.kdiab.users`
-
-**Package structure:**
-```
-adapters/inbound/web/
-  UserRoutes.kt            # My profile + settings endpoints
-  RegistrationRoutes.kt    # Self-registration (if enabled)
-  DoctorPatientRoutes.kt   # Doctor-patient relationship management
-  UserMapper.kt            # API ↔ domain mappers
-application/service/
-  UserService.kt           # Settings update with alarm validation
-  RegistrationService.kt   # User creation via Keycloak Admin API
-  DoctorPatientService.kt
-domain/model/
-  User.kt                  # User entity
-  UserSettings.kt          # Glucose unit, timezone, alarm thresholds
-  DoctorPatientRelation.kt
-domain/repository/
-  UserSettingsRepository.kt
-  DoctorPatientRepository.kt
-  IdentityProviderPort.kt  # Port for Keycloak Admin API operations
-infrastructure/keycloak/
-  KeycloakAdminClient.kt   # Keycloak Admin REST client
-  KeycloakIdentityProviderAdapter.kt  # Implements IdentityProviderPort
-infrastructure/persistence/
-  ExposedUserSettingsRepository.kt
-  ExposedDoctorPatientRepository.kt
-  DatabaseFactory.kt
-```
-
-**Environment variables:**
-
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `8088` | HTTP port |
-| `JWT_AUDIENCE` | `users` | Expected JWT audience |
-| `KEYCLOAK_ADMIN_URL` | — | Keycloak base URL for Admin API |
-| `KEYCLOAK_REALM` | `kdiab` | Realm name |
-| `KEYCLOAK_ADMIN_CLIENT_ID` | `kdiab-users-service` | M2M client ID |
-| `KEYCLOAK_ADMIN_CLIENT_SECRET` | — | M2M client secret (rotate post-deploy) |
-| `SELF_REGISTRATION_ENABLED` | `false` | Whether public self-registration is allowed |
-| `SELF_REGISTRATION_REQUIRES_APPROVAL` | `false` | Whether registrations need admin approval |
-| `JDBC_URL` | — | PostgreSQL JDBC URL for `kdiab-users` database |
-| `DB_USER` / `DB_PASSWORD` | — | Database credentials |
-
-**Domain rules:**
-- Alarm thresholds must satisfy `urgentHigh > high > low > urgentLow` (all four must be set or skipped).
-- `urgentLow ≥ 40 mg/dL`; `urgentHigh ≤ 400 mg/dL`.
-- Doctor-patient relationships control which patients a doctor can access via `UserPrincipal.canAccess()`.
-
----
-
-### kdiab-nightscout
-
-Root package: `org.javafreedom.kdiab.nightscout`
-
-**Package structure:**
-```
-adapters/inbound/web/
-  NightscoutRoutes.kt      # GET /api/v1/entries.json, POST /api/v1/entries.json
-                           # GET /api/v1/treatments.json, POST /api/v1/treatments.json
-                           # GET /api/v1/status.json
-  NightscoutMapper.kt      # Nightscout format ↔ kdiab domain model
-adapters/outbound/http/
-  MeasuresClient.kt        # Ktor HTTP client → kdiab-measures
-  TreatmentsClient.kt      # Ktor HTTP client → kdiab-treatments
-  CircuitBreaker.kt        # Local circuit breaker for upstream calls
-application/service/
-  NightscoutService.kt     # Translates Nightscout requests to upstream calls
-domain/model/
-  NightscoutModels.kt      # Nightscout v1 data models (entries, treatments)
-domain/exception/
-  UpstreamException.kt
-```
-
-**Environment variables:**
-
-| Variable | Default | Description |
-|---|---|---|
-| `MEASURES_URL` | `http://localhost:8080` | kdiab-measures base URL |
-| `TREATMENTS_URL` | `http://localhost:8083` | kdiab-treatments base URL |
-| `JWT_AUDIENCE` | `nightscout` | Expected JWT audience |
-| `JWT_REALM` | `kdiab` | Keycloak realm name |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3005` | Allowed CORS origins |
-
-**API version:** Implements **Nightscout API v1** (paths under `/api/v1/`). The README and any docs referring to "v3" are incorrect — the live implementation uses v1 paths.
-
-**Compatible clients:** AAPS, xDrip+, Juggluco, and any app supporting Nightscout API v1.
+| Service | Directory | Port | Notes |
+|---|---|---|---|
+| kdiab-measures | `kdiab-measures/` | 8080 | Primary CGM/BGM/BP/weight store |
+| kdiab-profiles | `kdiab-profiles/` | 8082 | Basal profile management, copy-on-write |
+| kdiab-treatments | `kdiab-treatments/` | 8083 | Treatment events, DOCTOR/ADMIN delete only |
+| kdiab-analyze | `kdiab-analyze/` | 8084 | Stateless BFF, no DB |
+| kdiab-carbs | `kdiab-carbs/` | 8085 | Food / carb entry tracking |
+| kdiab-calc | `kdiab-calc/` | 8086 | Stateless dose calculator, no DB |
+| kdiab-nightscout | `kdiab-nightscout/` | 8087 | Nightscout v1 compat, optional service |
+| kdiab-users | `kdiab-users/` | 8088 | User settings, doctor-patient relations |
+| kdiab-common | `kdiab-common/` | — | Shared library (plugins, exceptions, CircuitBreaker) |
+| kdiab-ui | `kdiab-ui/` | 3005 | React SPA, feature-based structure |
 
 ---
 
