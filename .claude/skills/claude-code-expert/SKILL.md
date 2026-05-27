@@ -171,15 +171,20 @@ hooks:
 
 ## Body content here
 
-!`shell command to inject runtime context`   # ! prefix = bash expansion
+# Lines starting with !`cmd` are executed at invocation and injected as output.
+# Example (not executed here — shown as a comment):
+# !`git status --short`
 
 $arg_name is substituted from arguments.
 ```
 
-**Runtime injection (`!` prefix):**
-- `!`shell`` executes at invocation time and injects output into the prompt
+**Runtime injection (`` ! `` prefix):**
+- A line starting with `` !`cmd` `` in the skill body is executed at invocation time and its output is injected into the prompt
 - Keeps skills dynamic: load current git status, issue details, file contents, build output
-- Examples: `!`git status --short``, `!`gh issue view $issue_id``, `!`cat audit/agent-log.jsonl | tail -5``
+- Examples (in actual skill files, not in documentation prose):
+  - `` !`git status --short` ``
+  - `` !`gh issue view $issue_id` ``
+  - `` !`cat audit/agent-log.jsonl | tail -5` ``
 
 **Skill composition patterns:**
 - Skills can reference other skills: `After implementation → /write-tests $story_id`
