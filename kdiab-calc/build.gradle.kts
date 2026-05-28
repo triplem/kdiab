@@ -1,3 +1,5 @@
+import java.time.LocalDate
+
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
@@ -296,12 +298,15 @@ tasks.asciidoctor {
     baseDirFollowsSourceFile()
     sourceDir(file("docs"))
     setOutputDir(file("build/docs/asciidoc"))
+    // Asciidoctor plugin is not yet compatible with configuration cache
+    notCompatibleWithConfigurationCache("Asciidoctor plugin uses deprecated StartParameter API")
     attributes(
         mapOf(
             "toc" to "left",
             "icons" to "font",
             "source-highlighter" to "rouge",
-            "revnumber" to project.version.toString()
+            "revnumber" to project.version.toString(),
+            "revdate" to LocalDate.now().toString()
         )
     )
 }
