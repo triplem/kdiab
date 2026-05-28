@@ -294,7 +294,8 @@ tasks.asciidoctor {
         mapOf(
             "toc" to "left",
             "icons" to "font",
-            "source-highlighter" to "rouge"
+            "source-highlighter" to "rouge",
+            "revnumber" to project.version.toString()
         )
     )
 }
