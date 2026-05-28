@@ -47,31 +47,31 @@ jobs:
 
       - name: Build root docs
         # (#661) Uses root Gradle asciidoctor task (bundles JRuby + gem) — no system gem install needed.
-        run: ./gradlew asciidoctor --no-configuration-cache
+        run: ./gradlew asciidoctor
 
       - name: Build measures docs
-        run: cd kdiab-measures && ./gradlew asciidoctor --no-configuration-cache
+        run: cd kdiab-measures && ./gradlew asciidoctor
 
       - name: Build profiles docs
-        run: cd kdiab-profiles && ./gradlew asciidoctor --no-configuration-cache
+        run: cd kdiab-profiles && ./gradlew asciidoctor
 
       - name: Build treatments docs
-        run: cd kdiab-treatments && ./gradlew asciidoctor --no-configuration-cache
+        run: cd kdiab-treatments && ./gradlew asciidoctor
 
       - name: Build analyze docs
-        run: cd kdiab-analyze && ./gradlew asciidoctor --no-configuration-cache
+        run: cd kdiab-analyze && ./gradlew asciidoctor
 
       - name: Build users docs
-        run: cd kdiab-users && ./gradlew asciidoctor --no-configuration-cache
+        run: cd kdiab-users && ./gradlew asciidoctor
 
       - name: Build carbs docs
-        run: cd kdiab-carbs && ./gradlew asciidoctor --no-configuration-cache
+        run: cd kdiab-carbs && ./gradlew asciidoctor
 
       - name: Build calc docs
-        run: cd kdiab-calc && ./gradlew asciidoctor --no-configuration-cache
+        run: cd kdiab-calc && ./gradlew asciidoctor
 
       - name: Build nightscout docs
-        run: cd kdiab-nightscout && ./gradlew asciidoctor --no-configuration-cache
+        run: cd kdiab-nightscout && ./gradlew asciidoctor
 
       - name: Assemble pages
         run: |

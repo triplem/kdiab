@@ -1,3 +1,5 @@
+import java.time.LocalDate
+
 plugins {
     alias(libs.plugins.asciidoctor)
     alias(libs.plugins.kotlin.jvm)
@@ -217,6 +219,16 @@ tasks.asciidoctor {
     baseDirFollowsSourceFile()
     sourceDir(file("docs"))
     setOutputDir(file("build/docs/asciidoc"))
-    attributes(mapOf("toc" to "left", "icons" to "font", "source-highlighter" to "rouge"))
+    // Asciidoctor plugin is not yet compatible with configuration cache
+    notCompatibleWithConfigurationCache("Asciidoctor plugin uses deprecated StartParameter API")
+    attributes(
+        mapOf(
+            "toc" to "left",
+            "icons" to "font",
+            "source-highlighter" to "rouge",
+            "revnumber" to project.version.toString(),
+            "revdate" to LocalDate.now().toString()
+        )
+    )
 }
 

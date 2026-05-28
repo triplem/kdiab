@@ -1,3 +1,5 @@
+import java.time.LocalDate
+
 // -- Plugins -------------------------------------------------------------------
 // org.asciidoctor.jvm.convert bundles its own JRuby + Asciidoctor so no
 // system gem install is needed in CI. Registered here for the root docs task.
@@ -80,11 +82,15 @@ tasks.asciidoctor {
     baseDirFollowsSourceFile()
     sourceDir(file("docs"))
     setOutputDir(file("build/docs/asciidoc"))
+    // Asciidoctor plugin is not yet compatible with configuration cache
+    notCompatibleWithConfigurationCache("Asciidoctor plugin uses deprecated StartParameter API")
     attributes(
         mapOf(
             "toc" to "left",
             "icons" to "font",
-            "source-highlighter" to "rouge"
+            "source-highlighter" to "rouge",
+            "revnumber" to project.version.toString(),
+            "revdate" to LocalDate.now().toString()
         )
     )
 }
