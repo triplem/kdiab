@@ -4,7 +4,9 @@ import type { ReportPageId } from './reportPages'
 import { HbA1cCard } from '../analytics/HbA1cCard'
 import { TimeInRangeBar } from '../analytics/TimeInRangeBar'
 import { AgpChart } from '../analytics/AgpChart'
-import { ProfilesView } from '../analytics/ProfilesView'
+import { DailyTrendTable } from './DailyTrendPage'
+import { DailyStatsPage } from './DailyStatsPage'
+import { ProfilePage } from './ProfilePage'
 
 interface Props {
   userId: string
@@ -141,9 +143,10 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
           errorMessage={t('report.error.dailyTrend')}
         >
           {data.dailyTrend.data && (
-            <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-              {t('report.dailyTrendDays', { count: data.dailyTrend.data.days.length })}
-            </p>
+            <DailyTrendTable
+              data={data.dailyTrend.data}
+              glucoseUnit={glucoseUnit}
+            />
           )}
           {!data.dailyTrend.isLoading && !data.dailyTrend.isError && !data.dailyTrend.data && (
             <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
@@ -179,7 +182,12 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
           isError={data.profile.isError}
           errorMessage={t('report.error.profile')}
         >
-          <ProfilesView userId={userId} from={from} to={to} />
+          {data.profile.data && (
+            <ProfilePage profiles={data.profile.data.profiles} glucoseUnit={glucoseUnit} />
+          )}
+          {!data.profile.isLoading && !data.profile.isError && !data.profile.data && (
+            <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
+          )}
         </ReportSection>
       )}
     </div>

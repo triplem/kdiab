@@ -666,6 +666,39 @@
       "median": "Median",
       "summary": "Durchschnitt",
       "showingFirst": "Zeige erste {{shown}} von {{total}} Tagen"
+    },
+    "dailyTrend": {
+      "hourHeader": "Stunde",
+      "tableAriaLabel": "Tagesverlauf Glukosetabelle",
+      "legendAriaLabel": "Farbzone-Legende",
+      "carbsIndicator": "KH",
+      "showingFirst": "Zeige erste {{shown}} von {{total}} Tagen",
+      "zone": {
+        "veryHypo": "Sehr niedrig",
+        "hypo": "Niedrig",
+        "inRange": "Im Zielbereich",
+        "hyper": "Hoch",
+        "veryHyper": "Sehr hoch"
+      }
+    },
+    "profile": {
+      "noActiveProfile": "Kein aktives Insulinprofil für den gewählten Zeitraum gefunden.",
+      "insulinType": "Insulintyp",
+      "durationOfAction": "Wirkdauer",
+      "durationOfActionValue": "{{minutes}} min",
+      "basalRate": "Basalratenprofil",
+      "basalRateUnit": "IE/h",
+      "basalTableAriaLabel": "Basalratenprofil",
+      "basalChartAriaLabel": "Basalraten-Balkendiagramm",
+      "icr": "Kohlenhydrat-Faktor (KHF)",
+      "icrUnit": "IE pro 10 g KH",
+      "isf": "Korrekturfaktor (ISF)",
+      "isfUnitMgdl": "mg/dL pro IE",
+      "isfUnitMmol": "mmol/L pro IE",
+      "targets": "Glukose-Zielbereich",
+      "targetLow": "Unterer Zielwert",
+      "targetHigh": "Oberer Zielwert",
+      "startTime": "Startzeit"
     }
   }
 }
