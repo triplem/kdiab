@@ -11,6 +11,7 @@ import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.profiles.domain.model.PagedProfiles
 import org.javafreedom.kdiab.profiles.domain.model.Profile
+import org.javafreedom.kdiab.profiles.domain.model.ProfileCollaboration
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.domain.repository.ProfileRepository
 import io.github.oshai.kotlinlogging.KotlinLogging
@@ -112,10 +113,12 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                         throw BusinessValidationException("Only PROPOSED profiles can be rejected")
                 }
 
+                val rejectedCollaboration = profile.collaboration?.copy(rejectionReason = reason)
+                        ?: if (reason != null) ProfileCollaboration(rejectionReason = reason) else null
                 val rejected = profile.copy(
                         status = ProfileStatus.ARCHIVED,
                         archivedAt = Clock.System.now(),
-                        rejectionReason = reason
+                        collaboration = rejectedCollaboration
                 )
                 return profileRepository.update(rejected)
         }
@@ -196,54 +199,35 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                 }
 
                 val originalSize = when (segmentType.lowercase()) {
-                        "basal" -> profile.basal.size
-                        "icr" -> profile.icr.size
-                        "isf" -> profile.isf.size
-                        "targets" -> profile.targets.size
+                        "basal" -> profile.schedule.basal.size
+                        "icr" -> profile.schedule.icr.size
+                        "isf" -> profile.schedule.isf.size
+                        "targets" -> profile.schedule.targets.size
                         else -> throw IllegalArgumentException("Unknown segment type: $segmentType")
                 }
 
-                val updatedProfile =
-                        when (segmentType.lowercase()) {
-                                "basal" ->
-                                        profile.copy(
-                                                basal =
-                                                        profile.basal.filterNot {
-                                                                it.startTime == startTime
-                                                        }
-                                        )
-                                "icr" ->
-                                        profile.copy(
-                                                icr =
-                                                        profile.icr.filterNot {
-                                                                it.startTime == startTime
-                                                        }
-                                        )
-                                "isf" ->
-                                        profile.copy(
-                                                isf =
-                                                        profile.isf.filterNot {
-                                                                it.startTime == startTime
-                                                        }
-                                        )
-                                "targets" ->
-                                        profile.copy(
-                                                targets =
-                                                        profile.targets.filterNot {
-                                                                it.startTime == startTime
-                                                        }
-                                        )
-                                else ->
-                                        throw IllegalArgumentException(
-                                                "Unknown segment type: $segmentType"
-                                        )
-                        }
+                val updatedSchedule = when (segmentType.lowercase()) {
+                        "basal" -> profile.schedule.copy(
+                                basal = profile.schedule.basal.filterNot { it.startTime == startTime }
+                        )
+                        "icr" -> profile.schedule.copy(
+                                icr = profile.schedule.icr.filterNot { it.startTime == startTime }
+                        )
+                        "isf" -> profile.schedule.copy(
+                                isf = profile.schedule.isf.filterNot { it.startTime == startTime }
+                        )
+                        "targets" -> profile.schedule.copy(
+                                targets = profile.schedule.targets.filterNot { it.startTime == startTime }
+                        )
+                        else -> throw IllegalArgumentException("Unknown segment type: $segmentType")
+                }
+                val updatedProfile = profile.copy(schedule = updatedSchedule)
 
                 val newSize = when (segmentType.lowercase()) {
-                        "basal" -> updatedProfile.basal.size
-                        "icr" -> updatedProfile.icr.size
-                        "isf" -> updatedProfile.isf.size
-                        else -> updatedProfile.targets.size
+                        "basal" -> updatedProfile.schedule.basal.size
+                        "icr" -> updatedProfile.schedule.icr.size
+                        "isf" -> updatedProfile.schedule.isf.size
+                        else -> updatedProfile.schedule.targets.size
                 }
 
                 if (newSize == originalSize) {

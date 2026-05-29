@@ -49,7 +49,7 @@ class ProfileRepositoryTest {
         assertNotNull(retrieved)
         assertEquals(profile.id, retrieved.id)
         assertEquals(profile.name, retrieved.name)
-        assertEquals(1, retrieved.basal.size)
+        assertEquals(1, retrieved.schedule.basal.size)
     }
 
     @Test
@@ -111,7 +111,7 @@ class ProfileRepositoryTest {
         assertNotNull(retrieved)
         assertEquals(ProfileStatus.ARCHIVED, retrieved.status)
         assertEquals(profile.name, retrieved.name)
-        assertEquals(profile.basal.size, retrieved.basal.size)
+        assertEquals(profile.schedule.basal.size, retrieved.schedule.basal.size)
     }
 
     // ── activateProfile ───────────────────────────────────────────────────────
@@ -275,12 +275,13 @@ class ProfileRepositoryTest {
         Profile(
             userId = userId,
             name = name,
-            insulinType = "Fiasp",
-            durationOfAction = 180,
             status = status,
-            basal = listOf(BasalSegment(LocalTime(0, 0), 0.5)),
-            icr = listOf(IcrSegment(LocalTime(0, 0), 15.0)),
-            isf = listOf(IsfSegment(LocalTime(0, 0), 40.0)),
-            targets = listOf(TargetSegment(LocalTime(0, 0), 100.0, 110.0))
+            settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+            schedule = ProfileSchedule(
+                basal = listOf(BasalSegment(LocalTime(0, 0), 0.5)),
+                icr = listOf(IcrSegment(LocalTime(0, 0), 15.0)),
+                isf = listOf(IsfSegment(LocalTime(0, 0), 40.0)),
+                targets = listOf(TargetSegment(LocalTime(0, 0), 100.0, 110.0))
+            )
         )
 }

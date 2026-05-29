@@ -21,8 +21,10 @@ import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.profiles.application.service.InsulinService
+import org.javafreedom.kdiab.profiles.domain.model.InsulinSettings
 import org.javafreedom.kdiab.profiles.domain.model.PagedProfiles
 import org.javafreedom.kdiab.profiles.domain.model.Profile
+import org.javafreedom.kdiab.profiles.domain.model.ProfileSchedule
 import org.javafreedom.kdiab.profiles.domain.model.ProfileStatus
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import org.javafreedom.kdiab.common.domain.repository.AuditLogRepository
@@ -77,12 +79,8 @@ class ProfileApiTest {
                                 userId = userId,
                                 name = "Test Profile",
                                 status = ProfileStatus.DRAFT,
-                                insulinType = "Fiasp",
-                                durationOfAction = 180,
-                                basal = emptyList(),
-                                icr = emptyList(),
-                                isf = emptyList(),
-                                targets = emptyList()
+                                settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                                schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                         )
                 coEvery { profileService.createProfile(any()) } returns createdProfile
                 coEvery { profileService.getProfiles(userId, any(), any()) } returns PagedProfiles(items = listOf(createdProfile), page = 0, size = 50, totalCount = 1L)
@@ -246,12 +244,8 @@ class ProfileApiTest {
                         userId = patientId,
                         name = "Doctor Plan",
                         status = ProfileStatus.PROPOSED,
-                        insulinType = "Fiasp",
-                        durationOfAction = 180,
-                        basal = emptyList(),
-                        icr = emptyList(),
-                        isf = emptyList(),
-                        targets = emptyList()
+                        settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                        schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                 )
                 coEvery { profileService.createProfile(any()) } returns proposedProfile
 
@@ -332,12 +326,8 @@ class ProfileApiTest {
                         userId = userId,
                         name = "Accepted Plan",
                         status = ProfileStatus.ACTIVE,
-                        insulinType = "Fiasp",
-                        durationOfAction = 180,
-                        basal = emptyList(),
-                        icr = emptyList(),
-                        isf = emptyList(),
-                        targets = emptyList()
+                        settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                        schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                 )
                 coEvery { profileService.acceptProposedProfile(userId, profileId) } returns activatedProfile
 
@@ -365,12 +355,8 @@ class ProfileApiTest {
                         userId = userId,
                         name = "Rejected Plan",
                         status = ProfileStatus.ARCHIVED,
-                        insulinType = "Fiasp",
-                        durationOfAction = 180,
-                        basal = emptyList(),
-                        icr = emptyList(),
-                        isf = emptyList(),
-                        targets = emptyList()
+                        settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                        schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                 )
                 coEvery { profileService.rejectProposedProfile(userId, profileId) } returns archivedProfile
 
@@ -398,12 +384,8 @@ class ProfileApiTest {
                         userId = userId,
                         name = "Profile",
                         status = ProfileStatus.DRAFT,
-                        insulinType = "Fiasp",
-                        durationOfAction = 180,
-                        basal = emptyList(),
-                        icr = emptyList(),
-                        isf = emptyList(),
-                        targets = emptyList()
+                        settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                        schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                 )
                 coEvery { profileService.deleteSegment(userId, profileId, "basal", any()) } returns updatedProfile
 
@@ -432,12 +414,8 @@ class ProfileApiTest {
                         userId = otherUserId,
                         name = "Other's Profile",
                         status = ProfileStatus.DRAFT,
-                        insulinType = "Fiasp",
-                        durationOfAction = 180,
-                        basal = emptyList(),
-                        icr = emptyList(),
-                        isf = emptyList(),
-                        targets = emptyList()
+                        settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                        schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                 )
                 coEvery { profileService.getProfile(profileId) } returns profileOwnedByOther
 
@@ -558,8 +536,9 @@ class ProfileApiTest {
 
                 val profile = Profile(
                         id = Uuid.random(), userId = patientId, name = "Admin Plan",
-                        status = ProfileStatus.DRAFT, insulinType = "Fiasp", durationOfAction = 180,
-                        basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList()
+                        status = ProfileStatus.DRAFT,
+                        settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                        schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                 )
                 coEvery { profileService.createProfile(any()) } returns profile
 
@@ -609,8 +588,8 @@ class ProfileApiTest {
                 val proposedProfile = Profile(
                     id = Uuid.random(), userId = patientId,
                     name = "Doctor Plan", status = ProfileStatus.PROPOSED,
-                    insulinType = "Fiasp", durationOfAction = 180,
-                    basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList(),
+                    settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                    schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                 )
                 coEvery { profileService.createProfile(any()) } returns proposedProfile
 
@@ -638,8 +617,8 @@ class ProfileApiTest {
                 val activeProfile = Profile(
                     id = profileId, userId = patientId,
                     name = "Accepted Plan", status = ProfileStatus.ACTIVE,
-                    insulinType = "Fiasp", durationOfAction = 180,
-                    basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList(),
+                    settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                    schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                 )
                 coEvery { profileService.acceptProposedProfile(patientId, profileId) } returns activeProfile
 
@@ -665,8 +644,8 @@ class ProfileApiTest {
                 val archivedProfile = Profile(
                     id = profileId, userId = patientId,
                     name = "Rejected Plan", status = ProfileStatus.ARCHIVED,
-                    insulinType = "Fiasp", durationOfAction = 180,
-                    basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList(),
+                    settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                    schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                 )
                 coEvery { profileService.rejectProposedProfile(patientId, profileId, null) } returns archivedProfile
 
@@ -693,8 +672,8 @@ class ProfileApiTest {
                 val archivedProfile = Profile(
                     id = profileId, userId = patientId,
                     name = "Rejected Plan", status = ProfileStatus.ARCHIVED,
-                    insulinType = "Fiasp", durationOfAction = 180,
-                    basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList(),
+                    settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+                    schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList())
                 )
                 coEvery { profileService.rejectProposedProfile(patientId, profileId, reason) } returns archivedProfile
 

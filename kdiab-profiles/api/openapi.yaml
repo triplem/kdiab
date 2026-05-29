@@ -546,40 +546,119 @@ components:
         - size
         - totalCount
 
+    InsulinSettings:
+      type: object
+      description: Insulin-related settings for a profile
+      properties:
+        insulinType:
+          type: string
+          description: Name of the insulin type (e.g. "Humalog", "Novolog")
+          example: Fiasp
+        durationOfAction:
+          type: integer
+          description: Duration of insulin action in minutes (DIA)
+          format: int32
+          example: 300
+      required:
+        - insulinType
+        - durationOfAction
+
+    AnalysisRange:
+      type: object
+      description: Blood-glucose analysis range thresholds for TIR reporting
+      properties:
+        low:
+          type: number
+          format: double
+          description: Lower TIR threshold in mg/dL (54–180)
+          example: 70.0
+        high:
+          type: number
+          format: double
+          description: Upper TIR threshold in mg/dL (120–400)
+          example: 180.0
+      required:
+        - low
+        - high
+
+    ProfileSchedule:
+      type: object
+      description: All time-segmented schedule data for a profile
+      properties:
+        basal:
+          type: array
+          description: Basal rate segments (U/hr per time window)
+          items:
+            $ref: '#/components/schemas/BasalSegment'
+        icr:
+          type: array
+          description: Insulin-to-carb ratio segments (g/U per time window)
+          items:
+            $ref: '#/components/schemas/IcrSegment'
+        isf:
+          type: array
+          description: Insulin sensitivity factor segments (mg/dL per U)
+          items:
+            $ref: '#/components/schemas/IsfSegment'
+        targets:
+          type: array
+          description: Blood glucose target range segments
+          items:
+            $ref: '#/components/schemas/TargetSegment'
+      required:
+        - basal
+        - icr
+        - isf
+        - targets
+
+    ProfileCollaboration:
+      type: object
+      description: Doctor-patient collaboration metadata
+      properties:
+        proposalReason:
+          type: ["string", "null"]
+          description: Optional clinical rationale for the proposed profile change (doctor-only).
+          example: Adjusted basal for summer activity pattern
+        rejectionReason:
+          type: ["string", "null"]
+          description: Optional reason provided by the patient when rejecting a proposed profile.
+          example: Values feel too aggressive
+
     Profile:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          description: Unique profile identifier
         userId:
           type: string
           format: uuid
-        previousProfileId:
-          type: ["string", "null"]
-          format: uuid
+          description: ID of the patient this profile belongs to
         name:
           type: string
-        insulinType:
-          type: string
-        units:
-          type: string
-          description: Blood glucose unit system used for ISF and target segments
-          enum: [mg/dL, mmol/L]
-          default: mg/dL
-        durationOfAction:
-          type: integer
-          description: Duration of insulin action in minutes
-        timeZone:
-          type: string
-          description: IANA timezone identifier for segment times (e.g. "Europe/Berlin")
-          example: UTC
+          description: Human-readable profile name
+          example: Summer basal
         status:
           type: string
           enum: [ACTIVE, ARCHIVED, DRAFT, PROPOSED]
+          description: Current lifecycle status
+        settings:
+          $ref: '#/components/schemas/InsulinSettings'
+        schedule:
+          $ref: '#/components/schemas/ProfileSchedule'
+        previousProfileId:
+          type: ["string", "null"]
+          format: uuid
+          description: ID of the profile this one supersedes (copy-on-write chain)
         createdAt:
           type: ["string", "null"]
           format: date-time
+          description: ISO-8601 timestamp of when the profile was created.
+        createdBy:
+          type: ["string", "null"]
+          format: uuid
+          description: UUID of the doctor who created this profile proposal (populated server-side for PROPOSED profiles).
         validFrom:
           type: ["string", "null"]
           format: date-time
@@ -592,104 +671,112 @@ components:
           type: ["string", "null"]
           format: date-time
           description: ISO-8601 timestamp of when the profile was archived (entered ARCHIVED status).
-        proposalReason:
+        analysisRange:
+          $ref: '#/components/schemas/AnalysisRange'
+        collaboration:
+          $ref: '#/components/schemas/ProfileCollaboration'
+        insulinType:
           type: ["string", "null"]
-          description: Optional clinical rationale for the proposed profile change (doctor-only).
-        createdBy:
-          type: ["string", "null"]
-          format: uuid
-          description: UUID of the doctor who created this profile proposal (populated server-side for PROPOSED profiles).
-        rejectionReason:
-          type: ["string", "null"]
-          description: Optional reason provided by the patient when rejecting a proposed profile.
+          description: "Deprecated: use settings.insulinType"
+        durationOfAction:
+          type: ["integer", "null"]
+          description: "Deprecated: use settings.durationOfAction"
         analysisLow:
           type: ["number", "null"]
           format: double
-          description: Lower TIR threshold for analytics (mg/dL). Defaults to 70.0 when null.
+          description: "Deprecated: use analysisRange.low"
         analysisHigh:
           type: ["number", "null"]
           format: double
-          description: Upper TIR threshold for analytics (mg/dL). Defaults to 180.0 when null.
-        carbAbsorptionRateGPerHour:
-          type: ["number", "null"]
-          format: double
-          description: >
-            Default carb absorption rate in grams per hour, used for carbs-on-board (COB) calculation
-            when a treatment does not specify an explicit absorptionTime.
-            Typical values: 10 g/hr (slow/high-fat meal), 20 g/hr (mixed meal), 40 g/hr (fast-acting
-            carbs / juice). Defaults to 20.0 when null.
-          example: 20.0
+          description: "Deprecated: use analysisRange.high"
         basal:
-          type: array
+          type: ["array", "null"]
+          description: "Deprecated: use schedule.basal"
           items:
             $ref: '#/components/schemas/BasalSegment'
         icr:
-          type: array
+          type: ["array", "null"]
+          description: "Deprecated: use schedule.icr"
           items:
             $ref: '#/components/schemas/IcrSegment'
         isf:
-          type: array
+          type: ["array", "null"]
+          description: "Deprecated: use schedule.isf"
           items:
             $ref: '#/components/schemas/IsfSegment'
         targets:
-          type: array
+          type: ["array", "null"]
+          description: "Deprecated: use schedule.targets"
           items:
             $ref: '#/components/schemas/TargetSegment'
+        proposalReason:
+          type: ["string", "null"]
+          description: "Deprecated: use collaboration.proposalReason"
+        rejectionReason:
+          type: ["string", "null"]
+          description: "Deprecated: use collaboration.rejectionReason"
       required:
         - id
         - userId
         - name
         - status
-        - insulinType
-        - durationOfAction
+        - settings
+        - schedule
 
     CreateProfileRequest:
       type: object
       properties:
         name:
           type: string
+          description: Human-readable profile name
+          example: Summer basal
+        settings:
+          $ref: '#/components/schemas/InsulinSettings'
+        schedule:
+          $ref: '#/components/schemas/ProfileSchedule'
+        analysisRange:
+          $ref: '#/components/schemas/AnalysisRange'
+        collaboration:
+          $ref: '#/components/schemas/ProfileCollaboration'
         insulinType:
-          type: string
+          type: ["string", "null"]
+          description: "Deprecated: use settings.insulinType"
         durationOfAction:
-          type: integer
+          type: ["integer", "null"]
+          description: "Deprecated: use settings.durationOfAction"
         proposalReason:
           type: ["string", "null"]
-          description: Optional clinical rationale for the proposed profile change (doctor-only).
+          description: "Deprecated: use collaboration.proposalReason"
         analysisLow:
           type: ["number", "null"]
           format: double
-          description: Lower TIR threshold for analytics (mg/dL). Defaults to 70.0 when null.
+          description: "Deprecated: use analysisRange.low"
         analysisHigh:
           type: ["number", "null"]
           format: double
-          description: Upper TIR threshold for analytics (mg/dL). Defaults to 180.0 when null.
-        carbAbsorptionRateGPerHour:
-          type: ["number", "null"]
-          format: double
-          description: >
-            Default carb absorption rate in grams per hour. Used for COB calculation when a treatment
-            does not specify an explicit absorptionTime. Defaults to 20.0 when null.
-          example: 20.0
+          description: "Deprecated: use analysisRange.high"
         basal:
-          type: array
+          type: ["array", "null"]
+          description: "Deprecated: use schedule.basal"
           items:
             $ref: '#/components/schemas/BasalSegment'
         icr:
-          type: array
+          type: ["array", "null"]
+          description: "Deprecated: use schedule.icr"
           items:
             $ref: '#/components/schemas/IcrSegment'
         isf:
-          type: array
+          type: ["array", "null"]
+          description: "Deprecated: use schedule.isf"
           items:
             $ref: '#/components/schemas/IsfSegment'
         targets:
-          type: array
+          type: ["array", "null"]
+          description: "Deprecated: use schedule.targets"
           items:
             $ref: '#/components/schemas/TargetSegment'
       required:
         - name
-        - insulinType
-        - durationOfAction
 
     BasalSegment:
       type: object

@@ -25,14 +25,15 @@ class ProfileTest {
                         id = id,
                         userId = userId,
                         name = "Test Profile",
-                        insulinType = "Fiasp",
-                        durationOfAction = 180,
+                        settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
                         status = ProfileStatus.ACTIVE,
                         createdAt = now,
-                        basal = listOf(BasalSegment(time, 1.0)),
-                        icr = listOf(IcrSegment(time, 15.0)),
-                        isf = listOf(IsfSegment(time, 50.0)),
-                        targets = listOf(TargetSegment(time, 100.0, 120.0))
+                        schedule = ProfileSchedule(
+                            basal = listOf(BasalSegment(time, 1.0)),
+                            icr = listOf(IcrSegment(time, 15.0)),
+                            isf = listOf(IsfSegment(time, 50.0)),
+                            targets = listOf(TargetSegment(time, 100.0, 120.0))
+                        )
                 )
 
         val jsonString = json.encodeToString(profile)
@@ -46,6 +47,6 @@ class ProfileTest {
         assertEquals(id, decodedProfile.id)
         assertEquals(userId, decodedProfile.userId)
         assertEquals(now, decodedProfile.createdAt)
-        assertEquals(time, decodedProfile.basal[0].startTime)
+        assertEquals(time, decodedProfile.schedule.basal[0].startTime)
     }
 }
