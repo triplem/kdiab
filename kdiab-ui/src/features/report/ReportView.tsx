@@ -4,7 +4,9 @@ import type { ReportPageId } from './reportPages'
 import { HbA1cCard } from '../analytics/HbA1cCard'
 import { TimeInRangeBar } from '../analytics/TimeInRangeBar'
 import { AgpChart } from '../analytics/AgpChart'
-import { ProfilesView } from '../analytics/ProfilesView'
+import { GlucoseDistributionPage } from './GlucoseDistributionPage'
+import { WochengraphikPage } from './WochengraphikPage'
+import { ProfilePage } from './ProfilePage'
 
 interface Props {
   userId: string
@@ -45,7 +47,7 @@ function ReportSection({ title, isLoading, isError, errorMessage, children }: Re
  * Only selected pages are rendered (SUMMARY is always shown).
  * API calls for unselected pages are not made (managed by useReportData).
  */
-export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit, patientName }: Props) {
+export function ReportView({ from, to, selectedPages, data, glucoseUnit, patientName }: Props) {
   const { t } = useTranslation()
 
   const isSelected = (page: ReportPageId) => selectedPages.includes(page)
@@ -151,6 +153,26 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
         </ReportSection>
       )}
 
+      {/* Wochengraphik (Weekly Overlay Chart) */}
+      {isSelected('WOCHENGRAPHIK') && (
+        <ReportSection
+          title={t('report.page.WOCHENGRAPHIK')}
+          isLoading={data.dailyTrend.isLoading}
+          isError={data.dailyTrend.isError}
+          errorMessage={t('report.error.wochengraphik')}
+        >
+          {data.dailyTrend.data && (
+            <WochengraphikPage
+              data={data.dailyTrend.data}
+              glucoseUnit={glucoseUnit}
+            />
+          )}
+          {!data.dailyTrend.isLoading && !data.dailyTrend.isError && !data.dailyTrend.data && (
+            <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
+          )}
+        </ReportSection>
+      )}
+
       {/* Glucose Distribution */}
       {isSelected('GLUCOSE_DISTRIBUTION') && (
         <ReportSection
@@ -160,9 +182,12 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
           errorMessage={t('report.error.glucoseDistribution')}
         >
           {data.glucoseDistribution.data && (
-            <GlucoseDistributionSummary
+            <GlucoseDistributionPage
+              buckets={data.glucoseDistribution.data.buckets}
               zonePercents={data.glucoseDistribution.data.zonePercents}
+              unit={data.glucoseDistribution.data.unit}
               totalCount={data.glucoseDistribution.data.totalCount}
+              {...(data.glucoseDistribution.data.warnings !== undefined && { warnings: data.glucoseDistribution.data.warnings })}
             />
           )}
           {!data.glucoseDistribution.isLoading && !data.glucoseDistribution.isError && !data.glucoseDistribution.data && (
@@ -179,7 +204,12 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
           isError={data.profile.isError}
           errorMessage={t('report.error.profile')}
         >
-          <ProfilesView userId={userId} from={from} to={to} />
+          {data.profile.data && (
+            <ProfilePage profiles={data.profile.data.profiles} glucoseUnit={glucoseUnit} />
+          )}
+          {!data.profile.isLoading && !data.profile.isError && !data.profile.data && (
+            <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
+          )}
         </ReportSection>
       )}
     </div>
@@ -286,54 +316,3 @@ function DailyStatsTable({ rows, summary, glucoseUnit }: DailyStatsTableProps) {
   )
 }
 
-interface GlucoseDistributionSummaryProps {
-  zonePercents: {
-    veryLow: number
-    low: number
-    inRange: number
-    high: number
-    veryHigh: number
-  }
-  totalCount: number
-}
-
-function GlucoseDistributionSummary({ zonePercents, totalCount }: GlucoseDistributionSummaryProps) {
-  const { t } = useTranslation()
-
-  const zones: Array<{ key: keyof typeof zonePercents; labelKey: string; color: string }> = [
-    { key: 'veryLow', labelKey: 'analytics.tirVeryLow', color: '#c0392b' },
-    { key: 'low', labelKey: 'analytics.tirLow', color: '#e67e22' },
-    { key: 'inRange', labelKey: 'analytics.tirInRange', color: '#27ae60' },
-    { key: 'high', labelKey: 'analytics.tirHigh2', color: '#f39c12' },
-    { key: 'veryHigh', labelKey: 'analytics.tirHighLabel', color: '#8e44ad' },
-  ]
-
-  return (
-    <div>
-      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-        {t('analytics.basedOnReadings', { count: totalCount })}
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-        {zones.map(({ key, labelKey, color }) => (
-          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div
-              style={{
-                width: `${Math.max(zonePercents[key], 0.5)}%`,
-                minWidth: 4,
-                maxWidth: '60%',
-                height: 18,
-                background: color,
-                borderRadius: 2,
-                flexShrink: 0,
-              }}
-            />
-            <span style={{ fontSize: '0.85rem', minWidth: 60 }}>{t(labelKey)}</span>
-            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-              {zonePercents[key].toFixed(1)}%
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}

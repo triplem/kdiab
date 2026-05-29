@@ -1,0 +1,481 @@
+= Report Computation Reference
+:toc:
+:toc-title: Contents
+:sectnums:
+:source-highlighter: highlight.js
+
+== Overview
+
+This document is the authoritative developer reference for all clinical formulas, threshold
+definitions, endpoint contracts, and data-flow details for the kdiab-analyze PDF patient
+report feature (epic #1117).
+
+The report aggregates data from `kdiab-measures` (CGM/BGM readings) and `kdiab-profiles`
+(active insulin profile) via six dedicated endpoints, all implemented in `AnalyticsService`
+under `kdiab-analyze`.
+
+See ADR-019 for the architectural rationale behind server-side computation and browser-based
+PDF export.
+
+== Clinical Formulas
+
+All metrics are computed from CGM readings filtered to the requested date range.
+When the user's JWT contains `glucose_unit = mmol/L`, values are converted to mg/dL
+(`mmol/L × 18.0182`) before any formula is applied.
+The response returns values in the user's display unit.
+
+=== Formula Table
+
+[cols="1,2,3,2"]
+|===
+|Metric |Formula |Notes |Source
+
+|eHbA1c
+|`(mean_glucose_mg_dL + 46.7) / 28.7`
+|Returns `null` if no CGM readings in range.
+Per-day eHbA1c computed from same formula applied to daily mean.
+|Nathan et al. 2008 (ADAG study)
+
+|GVI (Glucose Variability Index)
+|`SD(glucose_mg_dL) / mean(glucose_mg_dL)`
+|Returns `null` if fewer than 2 readings.
+Lower is better; values > 0.36 indicate high variability.
+|Peyser et al. 2011
+
+|PGS (Personal Glycaemic Score)
+|`GVI × mean_glucose_mg_dL × (1 + (% > 140 mg/dL / 100))`
+|Full Rodbard 2011 formula; returns `null` if no data.
+Scale: ≤ 35 optimal, 35–100 adequate, > 100 suboptimal.
+|Rodbard 2011
+
+|GRI (Glucose Risk Index)
+|`3.0 × (%<54) + 2.4 × (%54–70) + 1.6 × (%180–250) + 0.8 × (%>250)`
+|Input percentages are values in [0, 100].
+Scale: 0 = no risk, 100 = maximum risk.
+|Klonoff et al. 2023
+
+|CGP axes (Continuous Glucose Profile)
+a|Five axes, each normalised 0–100 relative to reference population:
+
+* **ToR** — Time-on-Range percentage
+* **VarK** — Coefficient of variation (`SD / mean × 100`)
+* **Hypo intensity** — Weighted hypo burden: `sum(max(0, 80 - sgv) × dt_min)`
+* **Hyper intensity** — Weighted hyper burden: `sum(max(0, sgv - 140) × dt_min)`
+* **Mean glucose** — mean CGM in display unit
+|Each axis normalised to reference range defined in Vigersky 2018 Table 1.
+|Vigersky and Sherr 2018
+
+|PGR (Percentage-of-Glucose-at-Range)
+|`100 × (A1 × A2 × A3 × A4 × A5)^(1/5)`
+|Geometric mean of the five normalised CGP axis scores.
+100 = perfect reference; < 70 requires discussion with care team.
+|Vigersky and Sherr 2018
+
+|AGP percentiles
+|Sort-based linear interpolation per 5-min bucket.
+`p(k) = sorted[floor((n-1)×k)] + frac((n-1)×k) × (sorted[ceil((n-1)×k)] - sorted[floor((n-1)×k)])`
+|288 buckets (0–287), each covering one 5-min interval of the 24-hour day.
+Buckets with no readings return `null` percentile values.
+|Standard percentile interpolation
+
+|Histogram bins
+|Frequency count per 5 mg/dL bin from 40 to 400 mg/dL (72 bins).
+For mmol/L users the response bins are rounded to 0.3 mmol/L.
+|Bin index `i = floor((sgv_mg_dL - 40) / 5)`.
+Readings outside [40, 400] are clamped to the nearest bin.
+|—
+|===
+
+== TIR Zone Thresholds
+
+Five-zone model per ATTD/AGC consensus (Battelino et al. 2019).
+
+[cols="1,1,1,2"]
+|===
+|Zone |mg/dL range |mmol/L range |Display colour (CSS)
+
+|Very Low
+|< 54
+|< 3.0
+|`#7b2d2d` (dark red)
+
+|Low
+|54 – 70
+|3.0 – 3.9
+|`#e74c3c` (red)
+
+|In Range
+|70 – 180 (standard) +
+or `Profile.analysisLow` – `Profile.analysisHigh` (custom)
+|3.9 – 10.0 (standard)
+|`#27ae60` (green)
+
+|High
+|180 – 250
+|10.0 – 13.9
+|`#f39c12` (yellow/amber)
+
+|Very High
+|> 250
+|> 13.9
+|`#e67e22` (orange)
+|===
+
+NOTE: The standard 70–180 mg/dL In Range boundary is used for GRI, PGS, and all report summary
+statistics.  The custom `Profile.analysisLow` / `Profile.analysisHigh` boundary is used only for
+the TIR bar displayed on the summary page and the colour overlay on the AGP chart (where a
+non-default target range has been configured by the clinical team).
+
+== Threshold Sources
+
+Which source defines each threshold is clinically significant.  This table is the canonical
+mapping; do not use `UserSettings` alarm fields for report computations.
+
+[cols="1,2,2"]
+|===
+|Usage |Source field |Notes
+
+|**TIR (report summary / AGP overlay)**
+|`Profile.analysisLow`, `Profile.analysisHigh`
+|Defaults to 70 / 180 mg/dL when the profile fields are absent.
+Set by clinical team together with patient; not a user-editable alarm.
+
+|**Target zone line on charts** (AGP, Tagesgrafik, Wochengrafik)
+|`Profile.targets: List<TargetSegment>`
+|Time-of-day segmented target range.
+Rendered as a shaded band on all glucose-over-time charts.
+
+|**Alarm / alert thresholds** (CGM alarm notification)
+|`UserSettings.hypoAlarmThreshold`, `UserSettings.hyperAlarmThreshold`
+|Used exclusively for alert notifications.
+*Must not* be used for report computations or chart overlays.
+
+|**eHbA1c / GVI / PGS / GRI**
+|Fixed mg/dL constants per formula specification
+|See Formula Table above.
+
+|===
+
+== Patient Display Name
+
+The patient's full name is rendered on the report cover page.
+The name is sourced from standard OpenID Connect claims in the Keycloak-issued JWT:
+
+* `given_name` — first name
+* `family_name` — surname
+
+These claims are mapped by Keycloak's built-in OIDC profile claim mapper and extracted in
+`kdiab-common/plugins/Security.kt` when building `UserPrincipal`.
+No separate name lookup call to `kdiab-users` is required.
+
+The display name is formatted as `{given_name} {family_name}` in the frontend.
+If either claim is absent the available claim is used alone; if both are absent the report
+renders the `userId` UUID instead.
+
+== Report API Endpoints
+
+All endpoints share the following common contract:
+
+[cols="1,3"]
+|===
+|Auth |Bearer JWT (same token forwarded to upstream services)
+|Path prefix |`/api/v1/users/{userId}/analytics/`
+|Access control |`UserPrincipal.canAccess(userId)` — self, admin, or doctor with assigned patient
+|Max date range |365 days (`to - from ≤ P365D`); requests exceeding this return `400 Bad Request`
+|Short-period warning |Response includes `"warningShortPeriod": true` when `to - from < P14D`
+|===
+
+=== GET /api/v1/users/{userId}/analytics/report-summary
+
+Returns all single-value summary statistics for the report cover page.
+
+==== Query parameters
+
+[cols="1,1,2"]
+|===
+|Parameter |Type |Description
+|`from` |ISO-8601 date-time |Start of range (inclusive)
+|`to` |ISO-8601 date-time |End of range (exclusive)
+|===
+
+==== Response body (`ReportSummaryResponse`)
+
+[source,json]
+----
+{
+  "userId": "11111111-1111-1111-1111-111111111111",
+  "patientName": "Sarah Müller",
+  "from": "2026-04-01T00:00:00Z",
+  "to": "2026-04-30T00:00:00Z",
+  "daysWithData": 28,
+  "totalReadings": 7832,
+  "meanGlucose": 142.3,
+  "glucoseUnit": "mg/dL",
+  "eHbA1c": 6.9,
+  "gvi": 0.31,
+  "pgs": 72.4,
+  "gri": 18.2,
+  "pgr": 84.0,
+  "tirVeryLow": 1.2,
+  "tirLow": 3.5,
+  "tirInRange": 68.4,
+  "tirHigh": 19.3,
+  "tirVeryHigh": 7.6,
+  "warningShortPeriod": false
+}
+----
+
+==== Upstream calls
+
+`MeasuresClient.getCgmReadings(userId, from, to)` — one page-fetching call.
+No profile call is required for summary statistics.
+
+---
+
+=== GET /api/v1/users/{userId}/analytics/cgp
+
+Returns the five CGP axis values and PGR score for the Pentagon chart.
+
+==== Response body (`CgpResponse`)
+
+[source,json]
+----
+{
+  "userId": "...",
+  "pgr": 84.0,
+  "axes": {
+    "timeOnRange": 68.4,
+    "variabilityK": 28.1,
+    "hypoIntensity": 12.3,
+    "hyperIntensity": 24.7,
+    "meanGlucose": 142.3
+  },
+  "warningShortPeriod": false
+}
+----
+
+All axis values are in the normalised 0–100 scale.
+`pgr` is the geometric mean of the five normalised scores × 100.
+
+==== Upstream calls
+
+`MeasuresClient.getCgmReadings(userId, from, to)`.
+
+---
+
+=== GET /api/v1/users/{userId}/analytics/daily-stats
+
+Returns per-day statistics for the Tagesstatistik table.
+
+==== Response body (`DailyStatsResponse`)
+
+[source,json]
+----
+{
+  "userId": "...",
+  "unit": "mg/dL",
+  "days": [
+    {
+      "date": "2026-04-01",
+      "readingCount": 280,
+      "meanGlucose": 138.4,
+      "eHbA1c": 6.7,
+      "tirVeryLow": 0.0,
+      "tirLow": 2.1,
+      "tirInRange": 71.3,
+      "tirHigh": 21.0,
+      "tirVeryHigh": 5.6,
+      "sensorCoveragePercent": 97.2
+    }
+  ],
+  "warningShortPeriod": false
+}
+----
+
+Days with fewer than 12 readings return `null` for all computed fields.
+`sensorCoveragePercent` = `(readingCount × 5 min) / (1440 min/day) × 100`.
+
+==== Upstream calls
+
+`MeasuresClient.getCgmReadings(userId, from, to)`.
+
+---
+
+=== GET /api/v1/users/{userId}/analytics/daily-trend
+
+Returns per-hour-of-day aggregated statistics for the Tagestrend table.
+
+==== Response body (`DailyTrendResponse`)
+
+[source,json]
+----
+{
+  "userId": "...",
+  "unit": "mg/dL",
+  "hours": [
+    {
+      "hour": 0,
+      "meanGlucose": 128.3,
+      "readingCount": 840,
+      "tirInRangePercent": 74.2
+    }
+  ],
+  "warningShortPeriod": false
+}
+----
+
+24 entries (hours 0–23) are always returned; hours with no readings return `null` fields.
+
+==== Upstream calls
+
+`MeasuresClient.getCgmReadings(userId, from, to)`.
+
+---
+
+=== GET /api/v1/users/{userId}/analytics/glucose-distribution
+
+Returns the histogram bin counts for the Verteilung chart.
+
+==== Response body (`GlucoseDistributionResponse`)
+
+[source,json]
+----
+{
+  "userId": "...",
+  "unit": "mg/dL",
+  "bins": [
+    { "lowerBound": 40, "upperBound": 45, "count": 3, "percent": 0.04 },
+    { "lowerBound": 45, "upperBound": 50, "count": 7, "percent": 0.09 }
+  ],
+  "warningShortPeriod": false
+}
+----
+
+72 bins for mg/dL users (40–400 mg/dL in 5 mg/dL steps).
+For mmol/L users `lowerBound` and `upperBound` are in mmol/L (rounded to 1 decimal place).
+
+==== Upstream calls
+
+`MeasuresClient.getCgmReadings(userId, from, to)`.
+
+---
+
+=== GET /api/v1/users/{userId}/analytics/agp
+
+Returns AGP percentile data as 288 five-minute time-of-day buckets.
+
+This endpoint replaces the legacy 24-bucket hourly endpoint for the report feature (#1133).
+The existing schema is extended with the `bucketMinutes` field; consumers that only requested
+hourly data continue to work by aggregating consecutive 5-minute entries.
+
+==== Response body (`AgpResponse`)
+
+[source,json]
+----
+{
+  "userId": "...",
+  "unit": "mg/dL",
+  "bucketMinutes": 5,
+  "buckets": [
+    {
+      "bucketIndex": 0,
+      "minuteOfDay": 0,
+      "p10": 98.0,
+      "p25": 112.0,
+      "p50": 128.5,
+      "p75": 148.0,
+      "p90": 171.0,
+      "readingCount": 42
+    }
+  ],
+  "warningShortPeriod": false
+}
+----
+
+288 entries are always returned (indices 0–287).
+Buckets with no readings return `null` for all percentile fields and `readingCount: 0`.
+
+==== Upstream calls
+
+`MeasuresClient.getCgmReadings(userId, from, to)`.
+
+---
+
+== Data Flow
+
+[source]
+----
+                           kdiab-analyze AnalyticsService
+                           ┌──────────────────────────────────┐
+Browser → GET /report-summary ──► MeasuresClient.getCgmReadings()
+                           │
+Browser → GET /cgp        ──► MeasuresClient.getCgmReadings()
+                           │
+Browser → GET /daily-stats ──► MeasuresClient.getCgmReadings()
+                           │
+Browser → GET /daily-trend ──► MeasuresClient.getCgmReadings()
+                           │
+Browser → GET /glucose-distribution ──► MeasuresClient.getCgmReadings()
+                           │
+Browser → GET /agp        ──► MeasuresClient.getCgmReadings()
+                           │
+Browser → GET /profiles/active ──► ProfilesClient.getActiveProfile()
+                           └──────────────────────────────────┘
+----
+
+The profile endpoint (`/profiles/active`) is consumed separately by the frontend to render:
+
+* The Profil report page (ICR, ISF, targets, basal segments)
+* The Basalrate chart
+* The `Profile.analysisLow` / `Profile.analysisHigh` TIR overlay
+
+All six metric endpoints consume only `kdiab-measures` (CGM data).
+No treatment data is fetched for the current report pages.
+
+== Basal Rate Computation Algorithm
+
+The Basalrate report page renders the scheduled basal rate at each hour of the day from the
+active profile.
+
+A profile contains a list of `BasalSegment` objects, each with:
+
+* `startTime: LocalTime` — when this rate becomes effective (24-hour, e.g. `06:00`)
+* `rate: Double` — basal rate in U/h for this segment
+
+The algorithm to find the effective rate at a given `targetHour` (0–23):
+
+. Sort segments ascending by `startTime`.
+. Iterate through segments.
+. The effective segment for `targetHour` is the *last segment* whose `startTime.hour ≤ targetHour`.
+. If no segment satisfies the condition (all segment start times are after `targetHour`), wrap
+  around and use the *last segment in the list* (the overnight segment that started before midnight
+  and is still active at hour 0–N).
+
+This mirrors the basal-calculation logic in `reconstructBasalBlocks()` used by the dashboard CGM chart.
+
+[source,kotlin]
+----
+fun effectiveRateAtHour(segments: List<BasalSegment>, targetHour: Int): Double {
+    val sorted = segments.sortedBy { it.startTime }
+    return sorted.lastOrNull { it.startTime.hour <= targetHour }?.rate
+        ?: sorted.last().rate  // wrap-around: overnight segment still active
+}
+----
+
+The Basalrate chart renders 24 bars (one per hour) using this function for hours 0–23.
+
+== Index Update
+
+The `docs/index.adoc` for `kdiab-analyze` links to this document under "Core Documents":
+
+[source,asciidoc]
+----
+* link:report-computation-reference.html[Report Computation Reference]
+----
+
+And the ADR section links to ADR-019:
+
+[source,asciidoc]
+----
+* link:adr/ADR-019-report-computation-architecture.html[ADR-019 Report Computation Architecture]
+----

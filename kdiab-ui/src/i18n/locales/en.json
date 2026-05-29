@@ -642,6 +642,7 @@
       "AGP": "AGP Percentile Chart",
       "DAILY_STATS": "Daily Statistics",
       "DAILY_TREND": "Daily Trend",
+      "WOCHENGRAPHIK": "Weekly Overlay Chart",
       "GLUCOSE_DISTRIBUTION": "Glucose Distribution",
       "PROFILE": "Basal Profile"
     },
@@ -650,8 +651,16 @@
       "agp": "Could not load AGP data.",
       "dailyStats": "Could not load daily statistics.",
       "dailyTrend": "Could not load daily trend data.",
+      "wochengraphik": "Could not load weekly overlay chart data.",
       "glucoseDistribution": "Could not load glucose distribution.",
       "profile": "Could not load profile data."
+    },
+    "wochengraphik": {
+      "weekLabel": "CW",
+      "chartAriaLabel": "Weekly glucose overlay chart",
+      "chartCaption": "Glucose curves for all days overlaid on a 24-hour timeline",
+      "xAxisLabel": "Time of day",
+      "legendAriaLabel": "Day colour legend"
     },
     "dailyTrendDays": "{{count}} day with data",
     "dailyTrendDays_other": "{{count}} days with data",
@@ -665,7 +674,56 @@
       "veryHigh": "Very High",
       "median": "Median",
       "summary": "Average",
-      "showingFirst": "Showing first {{shown}} of {{total}} days"
+      "showingFirst": "Showing first {{shown}} of {{total}} days",
+      "p25": "P25",
+      "p75": "P75",
+      "eHbA1c": "eHbA1c",
+      "warningsLabel": "Warnings",
+      "tableAriaLabel": "Daily statistics table"
+    },
+    "dailyTrend": {
+      "hourHeader": "Hour",
+      "tableAriaLabel": "Daily glucose trend table",
+      "legendAriaLabel": "Zone colour legend",
+      "carbsIndicator": "Carbs",
+      "showingFirst": "Showing first {{shown}} of {{total}} days",
+      "zone": {
+        "veryHypo": "Very Low",
+        "hypo": "Low",
+        "inRange": "In Range",
+        "hyper": "High",
+        "veryHyper": "Very High"
+      }
+    },
+    "glucoseDist": {
+      "chartAriaLabel": "Glucose distribution histogram in {{unit}}",
+      "chartCaption": "Frequency of CGM readings per glucose range over the selected period.",
+      "zoneSummaryAriaLabel": "Zone percentage summary",
+      "readings": "readings",
+      "zoneVeryLow": "Very Low",
+      "zoneLow": "Low",
+      "zoneInRange": "In Range",
+      "zoneHigh": "High",
+      "zoneVeryHigh": "Very High"
+    },
+    "profile": {
+      "noActiveProfile": "No active insulin profile found for the selected period.",
+      "insulinType": "Insulin Type",
+      "durationOfAction": "Duration of Action",
+      "durationOfActionValue": "{{minutes}} min",
+      "basalRate": "Basal Rate Schedule",
+      "basalRateUnit": "IE/h",
+      "basalTableAriaLabel": "Basal rate schedule",
+      "basalChartAriaLabel": "Basal rate bar chart",
+      "icr": "Insulin-to-Carb Ratio (ICR)",
+      "icrUnit": "IE per 10 g carbs",
+      "isf": "Insulin Sensitivity Factor (ISF)",
+      "isfUnitMgdl": "mg/dL per IE",
+      "isfUnitMmol": "mmol/L per IE",
+      "targets": "Glucose Targets",
+      "targetLow": "Low",
+      "targetHigh": "High",
+      "startTime": "Start Time"
     }
   }
 }

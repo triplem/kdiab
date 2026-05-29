@@ -1,0 +1,115 @@
+= ADR-019: Report Computation Architecture — Server-Side Statistics and Browser-Based PDF
+:date: 2026-05-30
+:status: Accepted
+:deciders: triplem
+
+== Context
+
+The PDF patient report feature (epic #1117) introduces seven categories of derived metrics:
+
+* **eHbA1c** — estimated glycated haemoglobin from CGM mean glucose (Nathan 2008 / ADAG)
+* **GVI / PGS** — glucose variability and penalty score indices (Peyser 2011, Rodbard 2011)
+* **GRI** — Glucose Risk Index, a composite hypo/hyper risk score (Klonoff 2023)
+* **CGP axes / PGR** — Continuous Glucose Profile pentagon and overall Percentage-of-Glucose-at-Range score (Vigersky 2018)
+* **AGP percentiles** — Ambulatory Glucose Profile, 5-minute time-of-day buckets with p10/p25/p50/p75/p90
+* **Histogram bins** — glucose-value frequency distribution in 5 mg/dL (0.3 mmol/L) increments
+* **Per-day and per-hour aggregations** — daily TIR, mean, and trend data
+
+Two design dimensions are independent:
+
+=== Computation location
+
+Derived metrics could be computed:
+
+. **Server-side** — in `kdiab-analyze` (`AnalyticsService`), returning pre-computed values via HTTP
+. **Client-side** — in React (`kdiab-ui`), re-computing from raw CGM arrays on each render
+
+=== PDF rendering approach
+
+PDF export of multi-page clinical reports can be accomplished via:
+
+. **Browser-native** — `window.print()` with CSS `@media print` rules, producing a PDF via the browser's built-in print dialog
+. **Server-side rendering** — headless Chrome / Chromium, `wkhtmltopdf`, JasperReports, or a similar server-driven approach that returns a PDF binary
+
+== Decision
+
+=== All statistical computations in `kdiab-analyze`
+
+All report metric computations are implemented in `kdiab-analyze` as new, additive endpoints on `AnalyticsService`.
+The `kdiab-ui` frontend is a rendering layer only — it receives pre-computed values from the BFF and renders them.
+
+=== PDF export via `window.print()` and CSS `@media print`
+
+PDF export uses the browser's native print dialog triggered by `window.print()`.
+A dedicated CSS `@media print` stylesheet controls page breaks, hides navigation elements, and formats each report page for A4 paper.
+No server-side rendering infrastructure is added in the initial version.
+
+== Consequences
+
+=== kdiab-analyze as single source of truth for clinical metrics
+
+All clinical formulas are implemented once, in Kotlin, with full unit-test coverage in `src/test/kotlin`.
+There is no risk of formula divergence between backend and frontend.
+
+=== mmol/L unit conversion before bucketing
+
+When a user's JWT carries `glucose_unit = mmol/L`, `AnalyticsService` converts all CGM values from mmol/L to mg/dL before computing TIR zone counts, histogram bins, GRI, and percentile buckets.
+All thresholds in the implementation use mg/dL constants throughout.
+The API response returns values in the user's display unit as declared in the spec; conversion back to mmol/L occurs after all statistical computations are complete.
+
+=== Additive new endpoints
+
+All six new report endpoints are additive to the existing `/api/v1/users/{userId}/analytics/` namespace.
+Existing endpoints (`/hba1c`, `/agp`, `/profiles/active`, `/timeline`) are not modified.
+
+=== Date-range limit
+
+All report endpoints enforce a maximum `to - from` range of 365 days.
+Requests exceeding this limit receive `400 Bad Request`.
+When the supplied range is fewer than 14 days, the response body includes a `warningShortPeriod: true` field to allow the frontend to display an advisory notice.
+
+=== Access control
+
+All report endpoints call `UserPrincipal.canAccess(targetUserId)` at the route handler entry point.
+A doctor may only generate a report for patients in their `allowedPatients` set.
+Unauthenticated requests and cross-patient access attempts return `401 Unauthorized` or `403 Forbidden` respectively.
+
+=== AGP upgraded to 5-minute buckets
+
+The existing `/analytics/agp` endpoint is upgraded from 24 hourly buckets to 288 five-minute buckets (288 = 24 × 60 / 5) to match the clinical AGP standard and to support accurate overlay rendering in the print report.
+This is a non-breaking change — the response schema is extended, not altered.
+
+=== Print quality and browser dependency
+
+PDF print quality depends on the user's browser and operating system print driver.
+Chrome / Chromium produces the highest-fidelity output; Firefox and Safari are supported but may render slightly differently.
+A user guide recommendation to use Chrome is included in the documentation.
+
+== Alternatives Considered
+
+=== Client-side computation
+
+Computing all metrics in React was evaluated and rejected for the following reasons:
+
+* Formulas cannot be covered by backend unit tests; correctness can only be verified through component-level or E2E tests, which are slower and harder to maintain.
+* The frontend bundle grows to accommodate numeric libraries and formula implementations.
+* Any discrepancy between frontend and backend computations (e.g. in the HbA1c displayed on the dashboard vs. the report) would confuse users.
+* React re-renders on prop changes, risking repeated expensive computation on large 365-day datasets without explicit memoisation.
+
+=== Server-side PDF (headless Chromium)
+
+A server-side PDF rendering approach using headless Chrome (Puppeteer, Playwright, or a dedicated PDF microservice) was considered and rejected for the initial version:
+
+* Adds a significant infrastructure dependency (Chromium binary in the Docker image or a separate container).
+* Increases backend image size and startup time.
+* Requires a dedicated PDF rendering service or complicates the `kdiab-analyze` container.
+* Offers no tangible improvement for the current set of report pages, which are entirely CSS-based with no canvas or WebGL content.
+
+Server-side rendering remains on the backlog and should be reconsidered if print quality issues are reported across multiple browsers or if the report requires content that cannot be reliably reproduced by `@media print`.
+
+== Cross-references
+
+Closes stories: #1121, #1122, #1124, #1126, #1129, #1130 +
+Parent epic: #1117 +
+Developer reference: `kdiab-analyze/docs/report-computation-reference.adoc` +
+User guide: `kdiab-ui/docs/report-user-guide.adoc`

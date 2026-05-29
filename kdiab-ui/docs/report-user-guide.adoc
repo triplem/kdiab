@@ -1,0 +1,305 @@
+= PDF-Patientenbericht — Benutzerhandbuch
+:toc:
+:toc-title: Inhalt
+:sectnums:
+:source-highlighter: highlight.js
+
+// User guide is written in German to match the app's primary display language.
+// An English translation may be added as a separate document in a future iteration.
+
+== Einführung
+
+Der PDF-Patientenbericht (kdiab) fasst Ihre Glukosedaten und Therapieergebnisse für einen
+frei wählbaren Zeitraum auf mehreren Seiten zusammen.
+Er ist als Gesprächsgrundlage für die Konsultation mit Ihrem Diabetesteam gedacht — kein
+Dokument zur Selbsttherapie.
+
+== Bericht aufrufen und drucken
+
+=== Navigation zum Bericht
+
+. Öffnen Sie kdiab im Browser und melden Sie sich an.
+. Wählen Sie in der linken Navigationsleiste den Eintrag **Bericht** (Drucker-Symbol).
+. Die Berichtsansicht öffnet sich mit einem vorausgefüllten Zeitraum der letzten 30 Tage.
+
+=== Zeitraum auswählen
+
+Unter der Seitentitel-Zeile befinden sich vier Schnellauswahl-Schaltflächen:
+
+[cols="1,2"]
+|===
+|Schaltfläche |Zeitraum
+
+|Letzte 14 Tage
+|Minimaler Zeitraum für einen aussagekräftigen Bericht
+
+|Letzte 30 Tage
+|Empfohlener Standardzeitraum (Voreinstellung)
+
+|Letzte 90 Tage
+|Quartalsbericht; ideal vor Quartalskontrollen
+
+|Letztes Jahr
+|Jahresübersicht (max. 365 Tage)
+|===
+
+Sie können Anfangs- und Enddatum auch manuell über die Datumsfelder einstellen.
+
+**Warum werden mindestens 14 Tage empfohlen?**
+Statistiken wie eHbA1c, GVI und AGP-Perzentile erfordern eine ausreichende Datenmenge,
+um klinisch aussagekräftig zu sein.
+Bei weniger als 14 Tagen erscheint ein Hinweistext über der ersten Seite.
+
+=== Bericht als PDF speichern
+
+. Klicken Sie auf die Schaltfläche **Drucken / Als PDF speichern** (oben rechts).
+. Es öffnet sich der Druckdialog Ihres Browsers.
+. Wählen Sie als Drucker **„Als PDF speichern"** (Chrome/Edge) oder **„PDF"** (Safari/Firefox).
+. Stellen Sie das Papierformat auf **A4**, Ausrichtung **Hochformat** ein.
+. Aktivieren Sie **Hintergrundgrafiken**, damit Farbbänder und Zonen korrekt erscheinen.
+. Klicken Sie auf **Speichern**.
+
+**Empfohlener Browser:** Google Chrome oder Microsoft Edge bieten die zuverlässigste
+Druckqualität.
+Firefox und Safari werden unterstützt, können aber bei Seitenumbrüchen leicht abweichen.
+
+NOTE: Der Bericht ist für DIN A4-Hochformat optimiert.
+Andere Papierformate oder Querformat können das Layout beeinträchtigen.
+
+== Seiten im Bericht
+
+=== Auswertung (Zusammenfassung)
+
+Die erste Seite zeigt alle Schlüsselkennzahlen des gewählten Zeitraums auf einen Blick.
+
+[cols="1,3"]
+|===
+|Kennzahl |Bedeutung
+
+|**Zeitraum / Messdaten**
+|Analysierter Zeitraum und Anzahl der ausgewerteten CGM-Messwerte.
+
+|**Mittlerer Glukosewert**
+|Arithmetisches Mittel aller CGM-Werte im Zeitraum.
+
+|**eHbA1c**
+|Geschätzter HbA1c-Wert aus dem CGM-Mittelwert (Nathan 2008 / ADAG-Formel).
+Dies ist ein Schätzwert — das Laborergebnis bleibt der diagnostische Standard.
+
+|**GVI** (Glucose Variability Index)
+|Maß für die Glukosevariabilität (Standardabweichung / Mittelwert).
+Niedrigere Werte sind besser; Werte über 0,36 deuten auf hohe Variabilität hin.
+
+|**PGS** (Personal Glycaemic Score)
+|Kombinierter Qualitätsscore aus GVI und Hyperglykämiebelastung.
+Skala: ≤ 35 optimal, 35–100 ausreichend, > 100 verbesserungswürdig.
+
+|**GRI** (Glucose Risk Index)
+|Gewichteter Risikoindex, der Hypo- und Hyperglykämierisiko kombiniert.
+Skala 0–100; niedrigere Werte bedeuten geringeres Risiko.
+
+|**TIR-Balken**
+|Farbiger Balken mit den prozentualen Anteilen der fünf Glukosezonen:
+sehr niedrig / niedrig / Zielbereich / hoch / sehr hoch.
+|===
+
+TIP: Besprechen Sie auffällige Werte (besonders GRI > 40 oder TIR < 60 %) mit Ihrem Diabetesteam,
+bevor Sie Therapieanpassungen vornehmen.
+
+=== AGP-Perzentilkurve
+
+Das Ambulatory Glucose Profile (AGP) zeigt den typischen Tagesverlauf Ihrer Glukose über
+288 Zeitfenster à 5 Minuten.
+
+[cols="1,3"]
+|===
+|Element |Bedeutung
+
+|**Medianline (p50)**
+|Der mittlere Glukosewert für jede Tageszeit (dunkle Linie).
+
+|**Interquartilband (p25–p75)**
+|Die mittleren 50 % der Messwerte; ein schmales Band bedeutet wenig Variabilität.
+
+|**Außenbänder (p10–p90)**
+|Die äußeren 80 % der Messwerte; zeigt extreme Abweichungen.
+
+|**Grüner Zielbereich**
+|Persönlicher Zielbereich aus Ihrem aktiven Profil (`Profile.targets`).
+|===
+
+Ein ideales AGP zeigt eine schmale Bänderverteilung mit wenigen Ausschlägen nach oben oder
+unten.
+
+=== Tagesgrafik (Tagesgrafiken)
+
+Zeigt die Glukosekurve jedes einzelnen Tages im ausgewählten Zeitraum, übereinander angeordnet.
+
+* **Farbige Kurven** — jeder Tag in einer anderen Farbe (farbenblindfreundliche Okabe-Ito-Palette)
+* **Bolus-Marker** (▲) — dokumentierte Bolus-Injektionen
+* **Kohlenhydrat-Marker** (●) — dokumentierte Mahlzeiten
+* **Basalraten-Overlay** — geplante Basalrate aus dem aktiven Profil (oberer Chartbereich)
+
+=== CGP-Pentagon (Glukoseprofil-Pentagon)
+
+Das Continuous Glucose Profile (CGP) visualisiert fünf unabhängige Qualitätsdimensionen als
+Pentagon (Radardiagramm).
+
+[cols="1,3"]
+|===
+|Achse |Bedeutung
+
+|**ToR** (Time on Range)
+|Anteil der Zeit im Zielbereich.
+Höhere Werte (weiter außen) sind besser.
+
+|**VarK** (Variationskoeffizient)
+|Relative Streuung der Glukose.
+Niedrigere Werte (weiter innen) bedeuten weniger Variabilität.
+Achtung: Diese Achse ist invertiert dargestellt.
+
+|**Hypo-Intensität**
+|Gewichtete Hypoglykämiebelastung.
+Niedrigere Werte (weiter innen) sind besser.
+
+|**Hyper-Intensität**
+|Gewichtete Hyperglykämiebelastung.
+Niedrigere Werte (weiter innen) sind besser.
+
+|**Mittlerer Glukosewert**
+|Mittlerer CGM-Wert im Zeitraum.
+|===
+
+**PGR-Score** (Percentage-of-Glucose-at-Range): Das geometrische Mittel der fünf Achsen × 100.
+Ein Wert von 100 entspricht dem klinischen Referenzprofil.
+Werte unter 70 sollten mit dem Diabetesteam besprochen werden.
+
+Das **grüne Referenzpentagon** zeigt das Zielwertmuster der klinischen Referenzpopulation
+(Vigersky und Sherr 2018).
+
+=== Profil (Aktives Insulinprofil)
+
+Zeigt die Einstellungen Ihres derzeit aktiven Insulinprofils.
+
+[cols="1,3"]
+|===
+|Abschnitt |Inhalt
+
+|**Basalrate**
+|Geplante Basalinsulin-Abgabe pro Stunde (in U/h, zeitlich gestaffelt)
+
+|**ICR** (Insulin-Kohlenhydrat-Verhältnis)
+|Gramm Kohlenhydrate, die 1 Einheit Insulin abdeckt (zeitlich gestaffelt)
+
+|**ISF** (Insulinsensitivitätsfaktor)
+|Glukosesenkung (mg/dL oder mmol/L) pro 1 Einheit Korrekturinsulin
+
+|**Zielbereich**
+|Individueller Glukose-Zielbereich für Korrekturen und AGP-Overlay
+|===
+
+NOTE: Profilwerte sind Einstellungen Ihres Diabetesteams.
+Änderungen sollten ausschließlich in Absprache mit Ihrer medizinischen Fachkraft erfolgen.
+
+=== Tagesstatistik
+
+Tabellarische Übersicht der wichtigsten Kennzahlen für jeden einzelnen Tag.
+
+[cols="1,2"]
+|===
+|Spalte |Bedeutung
+
+|**Datum**
+|Kalenderdatum
+
+|**Messwerte**
+|Anzahl CGM-Lesewerte; wenige Werte deuten auf Sensortragunterbrechungen hin
+
+|**Mittlerer Glukosewert**
+|Tagesmittelwert in Ihrer Einheit
+
+|**eHbA1c**
+|Tagesschätzwert — informativer Anhaltspunkt; kein klinischer Messwert
+
+|**TIR-Balken**
+|Farbiger Miniaturbalken mit den fünf Zonenprozentsätzen für diesen Tag
+|===
+
+WARNING: Der tagesweise eHbA1c ist ein Schätzwert auf Basis weniger Stunden Daten.
+Er ist deutlich weniger zuverlässig als der Gesamtzeitraum-eHbA1c auf der Zusammenfassungsseite.
+
+=== Wochengrafik (Wochenübersicht)
+
+Zeigt alle Tage übereinander, gruppiert nach Wochentag, um Wochenmuster zu erkennen.
+
+* Wochentage sind farblich unterschieden (farbenblindfreundliche Okabe-Ito-Palette)
+* Ein grüner Zielbereich markiert Ihren Glukose-Zielkorridor
+* Auffällige Abweichungen an bestimmten Wochentagen (z. B. Sport, Arbeit, Wochenende) können
+  Hinweise auf Anpassungsbedarf geben
+
+=== Basalrate
+
+Zeigt die geplante Basalinsulin-Abgaberate Ihres aktiven Profils als Stundenbalken.
+
+* Jeder Balken zeigt die Rate für eine Stunde des Tages (0–23 Uhr)
+* Eine Tabelle darunter listet die genauen Rate-Wechselzeiten
+* Temporäre Basalratenanpassungen (TBR) aus der Pumpe werden hier nicht dargestellt
+
+=== Tagestrend (Stundentrend)
+
+Zeigt Durchschnittswerte und TIR-Prozentsatz für jede Stunde des Tages, gemittelt über den
+gesamten Analysezeitraum.
+
+* Hintergundfarben zeigen die Tageszeit an (Nacht / Morgen / Tag / Abend)
+* Der TIR-Prozentsatz gibt an, wie häufig Ihre Glukose zu dieser Tageszeit im Zielbereich lag
+* Stunden mit sehr wenigen Messungen (< 5 Tage mit Werten) werden grau dargestellt
+
+=== Verteilung (Glukoseverteilung)
+
+Histogramm, das zeigt, wie häufig bestimmte Glukosewerte aufgetreten sind.
+
+* Jeder Balken entspricht einem 5 mg/dL-Bereich (0,3 mmol/L für mmol/L-Nutzer)
+* Die Farbgebung entspricht den fünf TIR-Zonen
+* Prozentangaben an den Zonengrenzen erleichtern die Einordnung
+
+**Klinische Bedeutung einer Linksschiefe (häufige niedrige Werte):** Erhöhtes Hypoglykämierisiko;
+bitte mit dem Diabetesteam besprechen.
+
+**Klinische Bedeutung einer Rechtsschiefe (häufige hohe Werte):** Chronische Hyperglykämie;
+die Therapie sollte angepasst werden.
+
+== Klinische Hinweise für Patienten
+
+* **Alle berechneten Werte sind informativ** — sie ersetzen keine medizinische Diagnose und keine
+  Therapieentscheidung.
+  Besprechen Sie auffällige Werte immer mit Ihrem Diabetesteam.
+
+* **eHbA1c ist ein Schätzwert.**
+  Der Laborwert (venöse Blutentnahme) ist der diagnostische Standard für HbA1c.
+  Der eHbA1c-Schätzwert kann vom Laborwert abweichen, insbesondere bei Hämatologika,
+  kurzer Gerätenutzung oder stark schwankenden Glukosewerten.
+
+* **GRI, GVI und PGS sind Forschungsindizes.**
+  Sie wurden in wissenschaftlichen Studien entwickelt und validiert, sind aber nicht für
+  eigenständige Dosierentscheidungen konzipiert.
+  Sie dienen als Gesprächsgrundlage für das Diabetesteam.
+
+* **CGP/PGR-Werte** basieren auf einer Referenzpopulation (Vigersky 2018) und spiegeln nicht
+  notwendigerweise individuelle Therapieziele wider.
+
+== Einschränkungen
+
+* **Sensortragunterbrechungen:** Fehlende CGM-Daten (Sensor nicht getragen, Kalibrierungslücken,
+  Datenübertragungsfehler) verringern die Aussagekraft von AGP und Tagesstatistik.
+  Der Bericht zeigt eine Warnung, wenn die Sensortragdauer unter 70 % liegt.
+
+* **Punktzeitschnappschuss:** Der Bericht repräsentiert den gewählten Zeitraum.
+  Änderungen an Profilen, Medikamenten oder Lebensstil nach dem Analysezeitraum sind nicht
+  enthalten.
+
+* **Behandlungsdaten:** Bolus- und Kohlenhydrateinträge werden nur dann in der Tagesgrafik
+  angezeigt, wenn sie in kdiab erfasst wurden.
+  Nicht dokumentierte Mahlzeiten oder Korrekturen erscheinen nicht.
+
+* **Browserabhängigkeit:** Das Drucklayout ist für Google Chrome / Microsoft Edge optimiert.
+  In anderen Browsern können Seitenumbrüche leicht abweichen.
