@@ -257,7 +257,7 @@ function BasalChart({ segments }: BasalChartProps) {
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip
             formatter={(value: unknown) => [typeof value === 'number' ? value.toFixed(3) : String(value), t('report.profile.basalRateUnit')]}
-            labelFormatter={(label: number | string) =>
+            labelFormatter={(label: unknown) =>
               typeof label === 'number'
                 ? `${String(label).padStart(2, '0')}:00`
                 : String(label)
@@ -396,6 +396,7 @@ function buildHourlyBasalData(segments: ProfileSegment[]): HourlyBasalPoint[] {
 
   for (let i = 0; i < sorted.length; i++) {
     const seg = sorted[i]
+    if (seg == null) continue
     const nextSeg = sorted[i + 1]
 
     const startHour = parseHour(seg.startTime)
