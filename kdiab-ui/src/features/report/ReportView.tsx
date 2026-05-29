@@ -428,6 +428,9 @@ function CgpPentagonChart({ cgp }: CgpPentagonChartProps) {
       >
         {t('report.cgp.citation')}
       </p>
+    </div>
+  )
+}
 
 // ---- Inline sub-components ----
 
