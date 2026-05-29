@@ -147,19 +147,22 @@ export function GlucoseDistributionPage({ buckets, zonePercents, unit, totalCoun
                     style: { fontSize: '0.78rem', fill: 'var(--text-secondary, #666)' },
                   }}
                   tick={{ fontSize: 10 }}
-                  tickFormatter={(v: number) => String(v)}
+                  tickFormatter={(v: unknown) => String(v)}
                 />
                 <YAxis
-                  tickFormatter={(v: number) => `${v}%`}
+                  tickFormatter={(v: unknown) => `${String(v)}%`}
                   domain={[0, 'auto']}
                   tick={{ fontSize: 10 }}
                   width={40}
                 />
                 <Tooltip
-                  formatter={(value: number, _name: string, entry: { payload: { label: string; count: number; zone: string } }) => [
-                    `${value.toFixed(2)}% (${entry.payload.count} ${t('report.glucoseDist.readings')})`,
-                    entry.payload.label,
-                  ]}
+                  formatter={(value: unknown, _name: unknown, entry: unknown) => {
+                    const pct = typeof value === 'number' ? value.toFixed(2) : String(value)
+                    const payload = (entry as { payload?: { label?: string; count?: number } } | undefined)?.payload
+                    const count = payload?.count ?? 0
+                    const label = payload?.label ?? ''
+                    return [`${pct}% (${String(count)} ${t('report.glucoseDist.readings')})`, label]
+                  }}
                   labelFormatter={() => ''}
                   contentStyle={{ fontSize: '0.82rem' }}
                 />
