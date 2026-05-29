@@ -12,11 +12,11 @@ import type { ReportPageId } from './reportPages'
 import type { CgpResponse } from '../../api/analyzeApi'
 import { HbA1cCard } from '../analytics/HbA1cCard'
 import { TimeInRangeBar } from '../analytics/TimeInRangeBar'
-import { ProfilesView } from '../analytics/ProfilesView'
 import { DailyStatsPage } from './DailyStatsPage'
 import { AgpChartPage } from './AgpChartPage'
 import { WochengraphikPage } from './WochengraphikPage'
 import { BasalRatePage } from './BasalRatePage'
+import { ProfilePage } from './ProfilePage'
 
 interface Props {
   userId: string
@@ -57,7 +57,7 @@ function ReportSection({ title, isLoading, isError, errorMessage, children }: Re
  * Only selected pages are rendered (SUMMARY is always shown).
  * API calls for unselected pages are not made (managed by useReportData).
  */
-export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit, patientName }: Props) {
+export function ReportView({ from, to, selectedPages, data, glucoseUnit, patientName }: Props) {
   const { t } = useTranslation()
 
   const isSelected = (page: ReportPageId) => selectedPages.includes(page)
@@ -212,7 +212,15 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
           isError={data.profile.isError}
           errorMessage={t('report.error.profile')}
         >
-          <ProfilesView userId={userId} from={from} to={to} />
+          {data.profile.data && (
+            <ProfilePage
+              profiles={data.profile.data.profiles}
+              glucoseUnit={glucoseUnit}
+            />
+          )}
+          {!data.profile.isLoading && !data.profile.isError && !data.profile.data && (
+            <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
+          )}
         </ReportSection>
       )}
 
