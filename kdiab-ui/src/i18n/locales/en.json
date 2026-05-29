@@ -638,7 +638,7 @@
     "pagesDeselected": "{{count}} page deselected",
     "pagesDeselected_other": "{{count}} pages deselected",
     "page": {
-      "AUSWERTUNG": "Summary Report",
+      "AUSWERTUNG": "Auswertung",
       "SUMMARY": "Summary",
       "AGP": "AGP Percentile Chart",
       "DAILY_STATS": "Daily Statistics",
