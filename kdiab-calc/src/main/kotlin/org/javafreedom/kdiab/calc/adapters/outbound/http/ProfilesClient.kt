@@ -114,8 +114,8 @@ class ProfilesClient(
 
 private fun Profile.toDomain() = ActiveProfile(
     id = id,
-    timeZone = timeZone,
-    isf = isf.orEmpty().map { IsfRatio(it.startTime, it.`value`) },
-    icr = icr.orEmpty().map { IcrRatio(it.startTime, it.`value`) },
-    targets = targets.orEmpty().map { GlucoseTarget(it.startTime, it.low, it.high) },
+    timeZone = null, // timeZone removed from Profile API in #1141; defaults to UTC in DoseCalculationService
+    isf = schedule.isf.map { IsfRatio(it.startTime, it.`value`) },
+    icr = schedule.icr.map { IcrRatio(it.startTime, it.`value`) },
+    targets = schedule.targets.map { GlucoseTarget(it.startTime, it.low, it.high) },
 )
