@@ -694,6 +694,12 @@
       "eHbA1c": "eHbA1c",
       "warningsLabel": "Warnings",
       "tableAriaLabel": "Daily statistics table"
+    },
+    "agp": {
+      "statsSummaryAriaLabel": "AGP statistics summary",
+      "sensorWearDays": "Sensor wear",
+      "totalReadings": "Total readings",
+      "tirSectionTitle": "Time in Range"
     }
   }
 }
