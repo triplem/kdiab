@@ -7,6 +7,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
+import kotlinx.datetime.LocalDate
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.users.domain.model.User
 import org.javafreedom.kdiab.users.domain.model.UserSettings
@@ -67,7 +68,20 @@ class UserMapperTest {
         assertEquals(200, response.alarmHigh)
         assertEquals(75, response.alarmLow)
         assertEquals(55, response.alarmUrgentLow)
+        assertNull(response.birthday)
+        assertNull(response.diabetesSince)
         assertNull(response.jwtBackedNote)
+    }
+
+    @Test
+    fun `UserSettings toResponse maps birthday and diabetesSince when set`() {
+        val settingsWithDates = settings().copy(
+            birthday = LocalDate(1990, 5, 15),
+            diabetesSince = 2010,
+        )
+        val response = settingsWithDates.toResponse()
+        assertEquals("1990-05-15", response.birthday)
+        assertEquals(2010, response.diabetesSince)
     }
 
     @Test
@@ -93,9 +107,22 @@ class UserMapperTest {
     }
 
     @Test
+    fun `PatchSettingsRequest toPatch maps birthday and diabetesSince`() {
+        val req = PatchSettingsRequest(
+            birthday = "1990-05-15",
+            diabetesSince = 2010,
+        )
+        val patch = req.toPatch()
+        assertEquals(LocalDate(1990, 5, 15), patch.birthday)
+        assertEquals(2010, patch.diabetesSince)
+    }
+
+    @Test
     fun `PatchSettingsRequest toPatch handles all nulls`() {
         val patch = PatchSettingsRequest().toPatch()
         assertNull(patch.timezone)
         assertNull(patch.glucoseUnit)
+        assertNull(patch.birthday)
+        assertNull(patch.diabetesSince)
     }
 }

@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/db.changelog-root.yaml
+  - changeSet:
+      id: 005
+      author: javafreedom
+      changes:
+        - addColumn:
+            tableName: user_settings
+            columns:
+              - column:
+                  name: birthday
+                  type: date
+                  constraints:
+                    nullable: true
+              - column:
+                  name: diabetes_since
+                  type: smallint
+                  constraints:
+                    nullable: true

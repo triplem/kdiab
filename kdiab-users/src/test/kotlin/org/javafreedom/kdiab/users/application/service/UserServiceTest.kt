@@ -10,6 +10,7 @@ import kotlin.test.assertFailsWith
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.LocalDate
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.model.Role
@@ -227,6 +228,53 @@ class UserServiceTest {
         val patch = SettingsPatch(
             alarmUrgentHigh = 260, alarmHigh = 200, alarmLow = 75, alarmUrgentLow = 30,
         )
+        assertFailsWith<BusinessValidationException> {
+            service.updateMySettings(principal, patch)
+        }
+    }
+
+    // --- birthday and diabetesSince tests (Issue #1116) ---
+
+    @Test
+    fun `updateMySettings persists birthday and diabetesSince`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(
+            birthday = LocalDate(1990, 5, 15),
+            diabetesSince = 2010,
+        )
+        val result = service.updateMySettings(principal, patch)
+        assertEquals(LocalDate(1990, 5, 15), result.birthday)
+        assertEquals(2010, result.diabetesSince)
+    }
+
+    @Test
+    fun `updateMySettings accepts diabetesSince at boundary year 1900`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(diabetesSince = 1900)
+        val result = service.updateMySettings(principal, patch)
+        assertEquals(1900, result.diabetesSince)
+    }
+
+    @Test
+    fun `updateMySettings throws when diabetesSince is before 1900`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        val patch = SettingsPatch(diabetesSince = 1899)
+        assertFailsWith<BusinessValidationException> {
+            service.updateMySettings(principal, patch)
+        }
+    }
+
+    @Test
+    fun `updateMySettings throws when diabetesSince is in the future`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        // Use a year well beyond any plausible current year
+        val patch = SettingsPatch(diabetesSince = 9999)
         assertFailsWith<BusinessValidationException> {
             service.updateMySettings(principal, patch)
         }
