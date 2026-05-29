@@ -1,0 +1,138 @@
+/* ============================================================
+   Report view — screen styles
+   ============================================================ */
+
+.report-page {
+  padding: 1.5rem 0;
+}
+
+.report-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--surface, #f9f9f9);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.report-view {
+  position: relative;
+}
+
+.report-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.report-section:last-child {
+  border-bottom: none;
+}
+
+.report-section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+}
+
+.report-section-error {
+  padding: 0.6rem 1rem;
+  background: var(--color-error-bg, #fdecea);
+  border: 1px solid var(--color-error, #c0392b);
+  border-radius: 4px;
+  color: var(--color-error, #c0392b);
+  font-size: 0.9rem;
+}
+
+/* ============================================================
+   Print styles — A4 landscape is recommended for reports
+   ============================================================ */
+
+@media print {
+  /* Hide all app chrome — only the report view should be printed */
+  nav,
+  .app-header,
+  .tab-nav,
+  .patient-selector,
+  .report-controls,
+  .controls,
+  button,
+  [role="navigation"],
+  [role="tablist"],
+  .window-filters,
+  .print-header-screen-only {
+    display: none !important;
+  }
+
+  /* Show print header with patient name and date range */
+  .report-print-header {
+    display: block !important;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #000;
+    padding-bottom: 0.75rem;
+    color: #000;
+    break-after: avoid;
+  }
+
+  .report-print-header h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.4rem;
+  }
+
+  .report-print-header p {
+    margin: 0.15rem 0;
+    font-size: 0.9rem;
+    color: #333;
+  }
+
+  /* Each report section starts on its own page */
+  .report-section {
+    break-before: page;
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  /* First section (summary) does not need a forced page break */
+  .report-section:first-of-type {
+    break-before: avoid;
+  }
+
+  /* Section title stays with its content */
+  .report-section-title {
+    break-after: avoid;
+  }
+
+  /* Charts must not be split across pages */
+  .chart-section {
+    break-inside: avoid;
+  }
+
+  svg {
+    max-width: 100% !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 12pt;
+  }
+
+  /* A4 page setup */
+  @page {
+    size: A4 portrait;
+    margin: 15mm 12mm 15mm 12mm;
+  }
+}
+
+/* ============================================================
+   Screen: hide print-only elements
+   ============================================================ */
+
+@media screen {
+  .report-print-header {
+    display: none;
+  }
+}

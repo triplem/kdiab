@@ -21,6 +21,7 @@ import { ProfileHistory } from './features/profiles/ProfileHistory'
 import { AdminInsulinManager } from './features/profiles/AdminInsulinManager'
 import { DashboardView } from './features/dashboard/DashboardView'
 import { AnalyticsView } from './features/analytics/AnalyticsView'
+import { ReportPage } from './features/report/ReportPage'
 import { FoodDatabase } from './features/carbs/FoodDatabase'
 import { DoseCalculator } from './features/calc/DoseCalculator'
 import { UserSettings } from './features/users/UserSettings'
@@ -34,7 +35,7 @@ import type { Profile } from './api/profilesApi'
 import { useProposedProfileCount } from './features/profiles/useProposedProfileCount'
 import { ProposedBadge } from './features/profiles/ProposedBadge'
 
-type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'analytics' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors'
+type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'analytics' | 'report' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors'
 
 export default function App() {
   const auth = useAuth()
@@ -257,6 +258,7 @@ export default function App() {
     { key: 'treatments', label: t('nav.treatments') },
     { key: 'profiles', label: t('nav.profiles') },
     { key: 'analytics', label: t('nav.analytics') },
+    { key: 'report', label: t('nav.report') },
     ...(foodDatabaseEnabled ? [{ key: 'carbs' as Tab, label: t('nav.foodDatabase') }] : []),
     { key: 'calc', label: t('nav.doseCalculator') },
     { key: 'settings', label: t('nav.settings') },
@@ -391,6 +393,19 @@ export default function App() {
             userId={viewingUserId}
             glucoseUnit={activeGlucoseUnit}
             {...(analyticsPatientName !== undefined && { patientName: analyticsPatientName })}
+          />
+        )
+      }
+
+      case 'report': {
+        const reportPatientName = isDoctorViewingPatient
+          ? activePatientName
+          : (auth.user?.profile?.preferred_username as string | undefined)
+        return (
+          <ReportPage
+            userId={viewingUserId}
+            glucoseUnit={activeGlucoseUnit}
+            {...(reportPatientName !== undefined && { patientName: reportPatientName })}
           />
         )
       }
