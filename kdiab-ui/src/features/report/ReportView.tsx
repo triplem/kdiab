@@ -16,6 +16,7 @@ import { ProfilesView } from '../analytics/ProfilesView'
 import { DailyStatsPage } from './DailyStatsPage'
 import { AgpChartPage } from './AgpChartPage'
 import { WochengraphikPage } from './WochengraphikPage'
+import { BasalRatePage } from './BasalRatePage'
 
 interface Props {
   userId: string
@@ -231,6 +232,25 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
           )}
         </ReportSection>
       )}
+
+      {/* Basal Rate Chart */}
+      {isSelected('BASAL_RATE') && (
+        <ReportSection
+          title={t('report.page.BASAL_RATE')}
+          isLoading={data.profile.isLoading}
+          isError={data.profile.isError}
+          errorMessage={t('report.error.basalRate')}
+        >
+          {data.profile.data && (
+            <BasalRatePage
+              segments={data.profile.data.profiles[0]?.basal ?? []}
+            />
+          )}
+          {!data.profile.isLoading && !data.profile.isError && !data.profile.data && (
+            <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
+          )}
+        </ReportSection>
+      )}
     </div>
   )
 }
@@ -408,9 +428,6 @@ function CgpPentagonChart({ cgp }: CgpPentagonChartProps) {
       >
         {t('report.cgp.citation')}
       </p>
-    </div>
-  )
-}
 
 // ---- Inline sub-components ----
 
