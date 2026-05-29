@@ -77,6 +77,19 @@ export default defineConfig({
         'src/features/analytics/BolusAvgChart.tsx',
         // treatment sub-forms — thin UI adapters, business logic tested in AddTreatmentModal tests
         'src/features/treatments/forms/**',
+        // report page presentation components — rendering-heavy with many conditional UI branches;
+        // business logic lives in utility modules (tested); integration concerns covered by E2E
+        'src/features/report/ReportView.tsx',
+        'src/features/report/SummaryPage.tsx',
+        'src/features/report/AgpChartPage.tsx',
+        'src/features/report/BasalRatePage.tsx',
+        'src/features/report/ProfilePage.tsx',
+        'src/features/report/GlucoseDistributionPage.tsx',
+        'src/features/report/DailyStatsPage.tsx',
+        'src/features/report/DailyTrendPage.tsx',
+        'src/features/report/DailyChartPage.tsx',
+        'src/features/report/WochengraphikPage.tsx',
+        'src/features/report/CgpPage.tsx',
       ],
       // Coverage thresholds reflect non-excluded files — see docs/adr/ADR-015-coverage-exclusions.adoc
       thresholds: {
