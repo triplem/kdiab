@@ -27,9 +27,9 @@ export function AgpChartPage({ agp, glucoseUnit, tir }: Props) {
     <div className="agp-chart-page">
       {/* Stats summary row */}
       <AgpStatsSummary
-        totalReadingCount={agp.totalReadingCount}
-        sensorWearDays={agp.sensorWearDays}
-        warnings={agp.warnings}
+        {...(agp.totalReadingCount !== undefined && { totalReadingCount: agp.totalReadingCount })}
+        {...(agp.sensorWearDays !== undefined && { sensorWearDays: agp.sensorWearDays })}
+        {...(agp.warnings !== undefined && { warnings: agp.warnings })}
       />
 
       {/* AGP percentile chart */}
