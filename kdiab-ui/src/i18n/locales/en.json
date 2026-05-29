@@ -149,6 +149,12 @@
     "namePlaceholder": "e.g. White rice",
     "validationError": "Please fill in all fields with valid values."
   },
+  "treatments": {
+    "quickLog": "Quick log:",
+    "quickLogLabel": "Quick log pump events",
+    "quickLogSuccess": "{{event}} logged",
+    "quickLogError": "Failed to log event — please try again"
+  },
   "treatmentModal": {
     "title": "Add Treatment",
     "type": "Type:",

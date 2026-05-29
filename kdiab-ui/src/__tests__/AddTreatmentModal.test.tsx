@@ -178,6 +178,79 @@ describe('AddTreatmentModal', () => {
     expect(screen.queryByPlaceholderText(/optional note/i)).toBeNull()
   })
 
+  test('switching to SITE_CHANGE type shows site change form', () => {
+    render(<AddTreatmentModal {...baseProps} />, { wrapper })
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: 'SITE_CHANGE' } })
+    // SiteChangeForm renders a text input for location
+    const textInputs = screen.getAllByRole('textbox')
+    expect(textInputs.length).toBeGreaterThanOrEqual(1)
+  })
+
+  test('switching to SENSOR_INSERT type shows sensor insert form', () => {
+    render(<AddTreatmentModal {...baseProps} />, { wrapper })
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: 'SENSOR_INSERT' } })
+    // SensorInsertForm renders a text input for sensor model
+    const textInputs = screen.getAllByRole('textbox')
+    expect(textInputs.length).toBeGreaterThanOrEqual(1)
+  })
+
+  test('switching to INSULIN_CHANGE type shows insulin change form', () => {
+    render(<AddTreatmentModal {...baseProps} />, { wrapper })
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: 'INSULIN_CHANGE' } })
+    // InsulinChangeForm renders a text input for insulin type
+    const textInputs = screen.getAllByRole('textbox')
+    expect(textInputs.length).toBeGreaterThanOrEqual(1)
+  })
+
+  test('submitting SITE_CHANGE with a location calls onSave with SITE_CHANGE type', () => {
+    render(<AddTreatmentModal {...baseProps} />, { wrapper })
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: 'SITE_CHANGE' } })
+
+    // Type a location to trigger onDataChange so pendingData is set
+    const locationInput = screen.getByPlaceholderText(/left abdomen/i)
+    fireEvent.change(locationInput, { target: { value: 'Right side' } })
+
+    const form = screen.getByRole('dialog').querySelector('form')!
+    fireEvent.submit(form)
+    expect(baseProps.onSave).toHaveBeenCalledOnce()
+    const call = baseProps.onSave.mock.calls[0][0] as { type: string }
+    expect(call.type).toBe('SITE_CHANGE')
+  })
+
+  test('submitting SENSOR_INSERT with a sensor model calls onSave with SENSOR_INSERT type', () => {
+    render(<AddTreatmentModal {...baseProps} />, { wrapper })
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: 'SENSOR_INSERT' } })
+
+    const sensorInput = screen.getByPlaceholderText(/dexcom/i)
+    fireEvent.change(sensorInput, { target: { value: 'Libre 3' } })
+
+    const form = screen.getByRole('dialog').querySelector('form')!
+    fireEvent.submit(form)
+    expect(baseProps.onSave).toHaveBeenCalledOnce()
+    const call = baseProps.onSave.mock.calls[0][0] as { type: string }
+    expect(call.type).toBe('SENSOR_INSERT')
+  })
+
+  test('submitting INSULIN_CHANGE with an insulin type calls onSave with INSULIN_CHANGE type', () => {
+    render(<AddTreatmentModal {...baseProps} />, { wrapper })
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: 'INSULIN_CHANGE' } })
+
+    const insulinInput = screen.getByPlaceholderText(/novorapid/i)
+    fireEvent.change(insulinInput, { target: { value: 'Fiasp' } })
+
+    const form = screen.getByRole('dialog').querySelector('form')!
+    fireEvent.submit(form)
+    expect(baseProps.onSave).toHaveBeenCalledOnce()
+    const call = baseProps.onSave.mock.calls[0][0] as { type: string }
+    expect(call.type).toBe('INSULIN_CHANGE')
+  })
+
   test('CORRECTION_BOLUS type also uses BolusForm', () => {
     render(<AddTreatmentModal {...baseProps} />, { wrapper })
     const select = screen.getByRole('combobox')

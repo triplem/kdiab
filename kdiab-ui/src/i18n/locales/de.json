@@ -149,6 +149,12 @@
     "namePlaceholder": "z.B. Weißbrot",
     "validationError": "Bitte alle Felder ausfüllen."
   },
+  "treatments": {
+    "quickLog": "Schnell erfassen:",
+    "quickLogLabel": "Pumpen-Ereignisse schnell erfassen",
+    "quickLogSuccess": "{{event}} erfasst",
+    "quickLogError": "Ereignis konnte nicht erfasst werden – bitte erneut versuchen"
+  },
   "treatmentModal": {
     "title": "Behandlung hinzufügen",
     "type": "Typ:",
