@@ -642,7 +642,6 @@
       "AGP": "AGP Perzentilkurve",
       "DAILY_STATS": "Tägliche Statistiken",
       "DAILY_TREND": "Tagesverlauf",
-      "WOCHENGRAPHIK": "Wochengrafik (Überlagerungskurven)",
       "GLUCOSE_DISTRIBUTION": "Glukoseverteilung",
       "PROFILE": "Basalprofil"
     },
@@ -651,16 +650,8 @@
       "agp": "AGP-Daten konnten nicht geladen werden.",
       "dailyStats": "Tägliche Statistiken konnten nicht geladen werden.",
       "dailyTrend": "Tagesverlauf konnte nicht geladen werden.",
-      "wochengraphik": "Wochengrafik konnte nicht geladen werden.",
       "glucoseDistribution": "Glukoseverteilung konnte nicht geladen werden.",
       "profile": "Profildaten konnten nicht geladen werden."
-    },
-    "wochengraphik": {
-      "weekLabel": "KW",
-      "chartAriaLabel": "Wochengrafik Glukosverlauf",
-      "chartCaption": "Glukosekurven aller Tage überlagert auf einer 24-Stunden-Zeitachse",
-      "xAxisLabel": "Tageszeit",
-      "legendAriaLabel": "Tagfarben-Legende"
     },
     "dailyTrendDays": "{{count}} Tag mit Daten",
     "dailyTrendDays_other": "{{count}} Tage mit Daten",
@@ -674,56 +665,7 @@
       "veryHigh": "Sehr hoch",
       "median": "Median",
       "summary": "Durchschnitt",
-      "showingFirst": "Zeige erste {{shown}} von {{total}} Tagen",
-      "p25": "P25",
-      "p75": "P75",
-      "eHbA1c": "eHbA1c",
-      "warningsLabel": "Warnungen",
-      "tableAriaLabel": "Tagesstatistik-Tabelle"
-    },
-    "dailyTrend": {
-      "hourHeader": "Stunde",
-      "tableAriaLabel": "Tagesverlauf Glukosetabelle",
-      "legendAriaLabel": "Farbzone-Legende",
-      "carbsIndicator": "KH",
-      "showingFirst": "Zeige erste {{shown}} von {{total}} Tagen",
-      "zone": {
-        "veryHypo": "Sehr niedrig",
-        "hypo": "Niedrig",
-        "inRange": "Im Zielbereich",
-        "hyper": "Hoch",
-        "veryHyper": "Sehr hoch"
-      }
-    },
-    "glucoseDist": {
-      "chartAriaLabel": "Histogramm der Glukoseverteilung in {{unit}}",
-      "chartCaption": "Häufigkeit der CGM-Messungen je Glukosebereich im gewählten Zeitraum.",
-      "zoneSummaryAriaLabel": "Zonenprozentzusammenfassung",
-      "readings": "Messungen",
-      "zoneVeryLow": "Sehr niedrig",
-      "zoneLow": "Niedrig",
-      "zoneInRange": "Im Zielbereich",
-      "zoneHigh": "Hoch",
-      "zoneVeryHigh": "Sehr hoch"
-    },
-    "profile": {
-      "noActiveProfile": "Kein aktives Insulinprofil für den gewählten Zeitraum gefunden.",
-      "insulinType": "Insulintyp",
-      "durationOfAction": "Wirkdauer",
-      "durationOfActionValue": "{{minutes}} min",
-      "basalRate": "Basalratenprofil",
-      "basalRateUnit": "IE/h",
-      "basalTableAriaLabel": "Basalratenprofil",
-      "basalChartAriaLabel": "Basalraten-Balkendiagramm",
-      "icr": "Kohlenhydrat-Faktor (KHF)",
-      "icrUnit": "IE pro 10 g KH",
-      "isf": "Korrekturfaktor (ISF)",
-      "isfUnitMgdl": "mg/dL pro IE",
-      "isfUnitMmol": "mmol/L pro IE",
-      "targets": "Glukose-Zielbereich",
-      "targetLow": "Unterer Zielwert",
-      "targetHigh": "Oberer Zielwert",
-      "startTime": "Startzeit"
+      "showingFirst": "Zeige erste {{shown}} von {{total}} Tagen"
     }
   }
 }
