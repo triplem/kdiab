@@ -18,6 +18,7 @@ import { WochengraphikPage } from './WochengraphikPage'
 import { BasalRatePage } from './BasalRatePage'
 import { ProfilePage } from './ProfilePage'
 import { DailyChartPage } from './DailyChartPage'
+import { DailyTrendTable } from './DailyTrendPage'
 
 interface Props {
   userId: string
@@ -155,9 +156,10 @@ export function ReportView({ from, to, selectedPages, data, glucoseUnit, patient
           errorMessage={t('report.error.dailyTrend')}
         >
           {data.dailyTrend.data && (
-            <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-              {t('report.dailyTrendDays', { count: data.dailyTrend.data.days.length })}
-            </p>
+            <DailyTrendTable
+              data={data.dailyTrend.data}
+              glucoseUnit={glucoseUnit}
+            />
           )}
           {!data.dailyTrend.isLoading && !data.dailyTrend.isError && !data.dailyTrend.data && (
             <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
