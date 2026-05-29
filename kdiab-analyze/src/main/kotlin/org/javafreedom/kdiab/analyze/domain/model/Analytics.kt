@@ -17,8 +17,8 @@ data class Hba1cResult(
     val warnings: List<String> = emptyList(),
 )
 
-data class AgpHourlyData(
-    val hour: Int,
+data class AgpBucketData(
+    val minuteOfDay: Int,
     val p10: Double?,
     val p25: Double?,
     val median: Double?,
@@ -28,7 +28,7 @@ data class AgpHourlyData(
 )
 
 data class AgpResult(
-    val hourlyData: List<AgpHourlyData>,
+    val bucketData: List<AgpBucketData>,
     val totalReadingCount: Int = 0,
     val sensorWearDays: Int = 0,
     val warnings: List<String> = emptyList(),

@@ -59,15 +59,15 @@ data class TirBreakdownDto(
 
 @Serializable
 data class AgpResponseDto(
-    val hourlyData: List<AgpHourlyDataDto>,
+    val bucketData: List<AgpBucketDataDto>,
     val totalReadingCount: Int = 0,
     val sensorWearDays: Int = 0,
     val warnings: List<String> = emptyList(),
 )
 
 @Serializable
-data class AgpHourlyDataDto(
-    val hour: Int,
+data class AgpBucketDataDto(
+    val minuteOfDay: Int,
     val p10: Double?,
     val p25: Double?,
     val median: Double?,
@@ -168,8 +168,8 @@ fun Hba1cResult.toResponse() = Hba1cResponseDto(
 )
 
 fun AgpResult.toResponse() = AgpResponseDto(
-    hourlyData = hourlyData.map {
-        AgpHourlyDataDto(it.hour, it.p10, it.p25, it.median, it.p75, it.p90, it.count)
+    bucketData = bucketData.map {
+        AgpBucketDataDto(it.minuteOfDay, it.p10, it.p25, it.median, it.p75, it.p90, it.count)
     },
     totalReadingCount = totalReadingCount,
     sensorWearDays = sensorWearDays,

@@ -245,8 +245,8 @@ class BffE2ETest : BehaviorSpec({
             }
         }
 
-        `when`("they GET /analytics/agp with 10 readings all at UTC hour 10") {
-            then("the response contains 24 hourly buckets with count=10 and non-null median at hour 10") {
+        `when`("they GET /analytics/agp with 10 readings spread across UTC hour 10") {
+            then("the response contains 288 five-minute buckets with readings in hour 10 and non-null medians") {
                 val agpEngine = MockEngine { req ->
                     val path = req.url.encodedPath
                     when {
@@ -275,11 +275,22 @@ class BffE2ETest : BehaviorSpec({
                     }
                     resp.status shouldBe HttpStatusCode.OK
                     val result = lenientJson.decodeFromString<AgpResponseDto>(resp.bodyAsText())
-                    result.hourlyData shouldHaveSize 24
-                    val bucket10 = result.hourlyData.first { it.hour == 10 }
-                    bucket10.count shouldBe 10
-                    bucket10.median.shouldNotBeNull()
-                    val bucket0 = result.hourlyData.first { it.hour == 0 }
+                    result.bucketData shouldHaveSize 288
+                    // 10 readings at day*3 minutes past 10:00 UTC (03,06,09,12,15,18,21,24,27,30).
+                    // At 5-min granularity some share buckets: 600(1),605(2),610(1),615(2),620(2),625(1),630(1)
+                    // → 7 distinct occupied buckets, total 10 readings.
+                    result.totalReadingCount shouldBe 10
+                    val occupiedBuckets = result.bucketData.filter { it.count > 0 }
+                    occupiedBuckets.size shouldBe 7
+                    occupiedBuckets.forEach { bucket ->
+                        bucket.minuteOfDay shouldBe (bucket.minuteOfDay / 5 * 5) // must be multiple of 5
+                        bucket.median.shouldNotBeNull()
+                    }
+                    // All occupied buckets are within hour 10 (minuteOfDay 600–659)
+                    occupiedBuckets.forEach { bucket ->
+                        (bucket.minuteOfDay in 600..659) shouldBe true
+                    }
+                    val bucket0 = result.bucketData.first { it.minuteOfDay == 0 }
                     bucket0.count shouldBe 0
                 }
             }

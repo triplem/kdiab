@@ -65,8 +65,8 @@ paths:
   /users/{userId}/analytics/agp:
     get:
       operationId: getAgp
-      summary: Ambulatory Glucose Profile — hourly percentiles
-      description: Groups CGM readings by UTC hour (0–23) and returns p10/p25/p50/p75/p90 percentiles for each bucket. Buckets with no readings have null percentile values.
+      summary: Ambulatory Glucose Profile — 5-minute percentiles
+      description: Groups CGM readings by 5-minute bucket of the patient's local day and returns p10/p25/p50/p75/p90 percentiles for each bucket. Produces 288 buckets (0–1435 in steps of 5). Buckets with no readings have null percentile values.
       parameters:
         - $ref: '#/components/parameters/userId'
         - $ref: '#/components/parameters/from'
@@ -74,7 +74,7 @@ paths:
         - $ref: '#/components/parameters/glucoseUnit'
       responses:
         '200':
-          description: AGP hourly data (24 buckets)
+          description: AGP 5-minute bucket data (288 buckets)
           content:
             application/json:
               schema:
@@ -371,51 +371,60 @@ components:
 
     AgpResponse:
       type: object
-      required: [hourlyData]
+      required: [bucketData]
       properties:
-        hourlyData:
+        bucketData:
           type: array
-          minItems: 24
-          maxItems: 24
+          minItems: 288
+          maxItems: 288
+          description: 288 five-minute buckets covering a full day (minuteOfDay 0, 5, 10, …, 1435).
           items:
-            $ref: '#/components/schemas/AgpHourlyData'
+            $ref: '#/components/schemas/AgpBucketData'
         totalReadingCount:
           type: integer
-          description: Total number of CGM readings used across all hourly buckets.
+          description: Total number of CGM readings used across all 5-minute buckets.
         sensorWearDays:
           type: integer
-          description: Number of distinct calendar days (UTC) with at least one CGM reading.
+          description: Number of distinct calendar days (in the patient's local timezone) with at least one CGM reading.
         warnings:
           type: array
           items:
             type: string
           description: Data quality warnings about CGM data sufficiency
 
-    AgpHourlyData:
+    AgpBucketData:
       type: object
-      required: [hour]
+      required: [minuteOfDay]
       properties:
-        hour:
+        minuteOfDay:
           type: integer
           minimum: 0
-          maximum: 23
+          maximum: 1435
+          description: Start of the 5-minute bucket expressed as minutes since midnight (bucketIndex * 5). Values are 0, 5, 10, …, 1435.
+          example: 0
         p10:
           type: ["number", "null"]
           format: double
+          description: 10th percentile glucose value (mg/dL) for this bucket. Null when the bucket has no readings.
         p25:
           type: ["number", "null"]
           format: double
+          description: 25th percentile glucose value (mg/dL) for this bucket. Null when the bucket has no readings.
         median:
           type: ["number", "null"]
           format: double
+          description: Median (50th percentile) glucose value (mg/dL) for this bucket. Null when the bucket has no readings.
         p75:
           type: ["number", "null"]
           format: double
+          description: 75th percentile glucose value (mg/dL) for this bucket. Null when the bucket has no readings.
         p90:
           type: ["number", "null"]
           format: double
+          description: 90th percentile glucose value (mg/dL) for this bucket. Null when the bucket has no readings.
         count:
           type: integer
+          description: Number of CGM readings in this bucket.
 
     ProfilesResponse:
       type: object

@@ -160,26 +160,38 @@ class AnalyticsServiceTest {
     // ── AGP ──────────────────────────────────────────────────────────────────
 
     @Test
-    fun `getAgp returns 24 hourly buckets`() = runTest {
+    fun `getAgp returns 288 five-minute buckets`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns emptyList()
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
-        assertEquals(24, result.hourlyData.size)
+        assertEquals(288, result.bucketData.size)
     }
 
     @Test
-    fun `getAgp assigns readings to correct UTC hour`() = runTest {
-        // 14:00 UTC
+    fun `getAgp bucket minuteOfDay values are multiples of 5 from 0 to 1435`() = runTest {
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns emptyList()
+        val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
+        result.bucketData.forEachIndexed { index, bucket ->
+            assertEquals(index * 5, bucket.minuteOfDay)
+        }
+    }
+
+    @Test
+    fun `getAgp assigns readings to correct 5-minute bucket`() = runTest {
+        // 14:05 UTC → minute-of-day 845 → bucketIndex 169 → minuteOfDay 845
+        // 14:30 UTC → minute-of-day 870 → bucketIndex 174 → minuteOfDay 870
+        // Both readings at 14:05 land in bucket 169, 14:30 in bucket 174
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(120.0, "2024-01-15T14:05:00Z"),
-            cgmDto(130.0, "2024-01-15T14:30:00Z"),
+            cgmDto(130.0, "2024-01-15T14:05:30Z"),
         )
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
-        val bucket14 = result.hourlyData.first { it.hour == 14 }
-        assertEquals(2, bucket14.count)
+        // 14:05 = 845 min → bucketIndex 169 → minuteOfDay 845
+        val bucket845 = result.bucketData.first { it.minuteOfDay == 845 }
+        assertEquals(2, bucket845.count)
         // linear interpolation: p10 = 120 + 0.1*(130-120) = 121, p90 = 120 + 0.9*(130-120) = 129
-        assertEquals(121.0, bucket14.p10, absoluteTolerance = 0.01)
-        assertEquals(129.0, bucket14.p90, absoluteTolerance = 0.01)
-        assertEquals(125.0, bucket14.median, absoluteTolerance = 0.01)
+        assertEquals(121.0, bucket845.p10, absoluteTolerance = 0.01)
+        assertEquals(129.0, bucket845.p90, absoluteTolerance = 0.01)
+        assertEquals(125.0, bucket845.median, absoluteTolerance = 0.01)
     }
 
     @Test
@@ -188,63 +200,67 @@ class AnalyticsServiceTest {
             cgmDto(100.0, "2024-01-15T10:00:00Z"),
         )
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
-        val emptyBucket = result.hourlyData.first { it.hour == 0 }
+        // bucket at minuteOfDay=0 (midnight) has no readings
+        val emptyBucket = result.bucketData.first { it.minuteOfDay == 0 }
         assertEquals(0, emptyBucket.count)
     }
 
     @Test
     fun `getAgp converts mmol per L before bucketing`() = runTest {
         // 6.0 mmol/L * 18.0182 = 108.1092 mg/dL — uses per-measure storage unit (mmol/L)
+        // 08:00 UTC → minute-of-day 480 → bucketIndex 96 → minuteOfDay 480
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDtoMmol(6.0, "2024-01-15T08:00:00Z"),
         )
         val result = service.getAgp(userId, from, to, auth, "mmol/L", "")
-        val bucket8 = result.hourlyData.first { it.hour == 8 }
-        assertEquals(6.0 * 18.0182, bucket8.median, absoluteTolerance = 0.01)
+        val bucket480 = result.bucketData.first { it.minuteOfDay == 480 }
+        assertEquals(6.0 * 18.0182, bucket480.median, absoluteTolerance = 0.01)
     }
 
     @Test
     fun `getAgp single reading in bucket - all percentiles equal that value`() = runTest {
+        // 06:00 UTC → minute-of-day 360 → bucketIndex 72 → minuteOfDay 360
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(120.0, "2024-01-15T06:00:00Z"),
         )
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
-        val bucket6 = result.hourlyData.first { it.hour == 6 }
-        assertEquals(1, bucket6.count)
-        assertEquals(120.0, bucket6.p10!!, absoluteTolerance = 0.01)
-        assertEquals(120.0, bucket6.p25!!, absoluteTolerance = 0.01)
-        assertEquals(120.0, bucket6.median!!, absoluteTolerance = 0.01)
-        assertEquals(120.0, bucket6.p75!!, absoluteTolerance = 0.01)
-        assertEquals(120.0, bucket6.p90!!, absoluteTolerance = 0.01)
+        val bucket360 = result.bucketData.first { it.minuteOfDay == 360 }
+        assertEquals(1, bucket360.count)
+        assertEquals(120.0, bucket360.p10!!, absoluteTolerance = 0.01)
+        assertEquals(120.0, bucket360.p25!!, absoluteTolerance = 0.01)
+        assertEquals(120.0, bucket360.median!!, absoluteTolerance = 0.01)
+        assertEquals(120.0, bucket360.p75!!, absoluteTolerance = 0.01)
+        assertEquals(120.0, bucket360.p90!!, absoluteTolerance = 0.01)
     }
 
     @Test
     fun `getAgp excludes negative and zero glucose values`() = runTest {
+        // All three readings at 07:xx UTC → 420-424 min → bucketIndex 84 → minuteOfDay 420
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(120.0, "2024-01-15T07:00:00Z"),
-            cgmDto(-5.0, "2024-01-15T07:05:00Z"),
-            cgmDto(0.0, "2024-01-15T07:10:00Z"),
+            cgmDto(-5.0, "2024-01-15T07:01:00Z"),
+            cgmDto(0.0, "2024-01-15T07:02:00Z"),
         )
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
-        val bucket7 = result.hourlyData.first { it.hour == 7 }
-        assertEquals(1, bucket7.count)
-        assertEquals(120.0, bucket7.median!!, absoluteTolerance = 0.01)
+        val bucket420 = result.bucketData.first { it.minuteOfDay == 420 }
+        assertEquals(1, bucket420.count)
+        assertEquals(120.0, bucket420.median!!, absoluteTolerance = 0.01)
     }
 
     @Test
-    fun `getAgp buckets reading at 05_00 UTC into hour 7 when timezone is UTC+2`() = runTest {
+    fun `getAgp buckets reading at 05_00 UTC into minute 420 when timezone is UTC+2`() = runTest {
         // A reading at 2024-01-15T05:00:00Z is 07:00 local time in UTC+2.
-        // With UTC bucketing it would land in hour 5; with UTC+2 it must land in hour 7.
+        // UTC bucket would be minuteOfDay=300 (05:00); UTC+2 bucket is minuteOfDay=420 (07:00).
         val utcPlusTwoHours = TimeZone.of("UTC+2")
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(150.0, "2024-01-15T05:00:00Z"),
         )
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "", timeZone = utcPlusTwoHours)
-        val bucket5 = result.hourlyData.first { it.hour == 5 }
-        val bucket7 = result.hourlyData.first { it.hour == 7 }
-        assertEquals(0, bucket5.count, "UTC hour 5 must be empty when timezone is UTC+2")
-        assertEquals(1, bucket7.count, "Local hour 7 (UTC 05:00 + 2h) must contain the reading")
-        assertEquals(150.0, bucket7.median!!, absoluteTolerance = 0.01)
+        val bucket300 = result.bucketData.first { it.minuteOfDay == 300 }
+        val bucket420 = result.bucketData.first { it.minuteOfDay == 420 }
+        assertEquals(0, bucket300.count, "UTC minute 300 must be empty when timezone is UTC+2")
+        assertEquals(1, bucket420.count, "Local minute 420 (UTC 05:00 + 2h) must contain the reading")
+        assertEquals(150.0, bucket420.median!!, absoluteTolerance = 0.01)
     }
 
     // ── Warnings ──────────────────────────────────────────────────────────────
@@ -279,21 +295,24 @@ class AnalyticsServiceTest {
     }
 
     @Test
-    fun `getAgp warns when fewer than 12 hours have CGM data`() = runTest {
-        // Only hour 8 has data → 1 covered hour < 12
+    fun `getAgp warns when fewer than 144 buckets have CGM data`() = runTest {
+        // Only one 5-minute bucket has data → 1 covered bucket < 144
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(120.0, "2024-01-15T08:00:00Z"),
         )
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
         assertTrue(result.warnings.isNotEmpty())
-        assertTrue(result.warnings.any { it.contains("of 24 hours") })
+        assertTrue(result.warnings.any { it.contains("of 288 five-minute buckets") })
     }
 
     @Test
-    fun `getAgp has no warnings when 12 or more hours have CGM data`() = runTest {
-        // Spread readings across 12 distinct UTC hours
-        val readings = (0 until 12).map { h ->
-            cgmDto(120.0, "2024-01-15T${String.format("%02d", h)}:00:00Z")
+    fun `getAgp has no warnings when 144 or more buckets have CGM data`() = runTest {
+        // Spread 144 readings across 144 distinct 5-minute buckets (one per 10-minute slot)
+        val readings = (0 until 144).map { i ->
+            val minuteOfDay = i * 10
+            val hour = minuteOfDay / 60
+            val minute = minuteOfDay % 60
+            cgmDto(120.0, "2024-01-15T${String.format("%02d", hour)}:${String.format("%02d", minute)}:00Z")
         }
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns readings
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
@@ -301,7 +320,7 @@ class AnalyticsServiceTest {
     }
 
     @Test
-    fun `getAgp returns totalReadingCount equal to sum of all hourly counts`() = runTest {
+    fun `getAgp returns totalReadingCount equal to sum of all bucket counts`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(120.0, "2024-01-15T08:00:00Z"),
             cgmDto(130.0, "2024-01-15T08:30:00Z"),
@@ -378,35 +397,35 @@ class AnalyticsServiceTest {
     }
 
     @Test
-    fun `getAgp returns 24 empty buckets with warning when upstream throws UpstreamException`() = runTest {
+    fun `getAgp returns 288 empty buckets with warning when upstream throws UpstreamException`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } throws
             UpstreamException("measures", 502, "Bad Gateway")
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
-        assertEquals(24, result.hourlyData.size)
-        assertTrue(result.hourlyData.all { it.count == 0 })
+        assertEquals(288, result.bucketData.size)
+        assertTrue(result.bucketData.all { it.count == 0 })
         assertEquals(0, result.totalReadingCount)
         assertEquals(0, result.sensorWearDays)
         assertTrue(result.warnings.any { it.contains("temporarily unavailable") })
     }
 
     @Test
-    fun `getAgp returns 24 empty buckets with warning when circuit breaker is open`() = runTest {
+    fun `getAgp returns 288 empty buckets with warning when circuit breaker is open`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } throws
             CircuitBreakerOpenException("measures")
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
-        assertEquals(24, result.hourlyData.size)
-        assertTrue(result.hourlyData.all { it.count == 0 })
+        assertEquals(288, result.bucketData.size)
+        assertTrue(result.bucketData.all { it.count == 0 })
         assertTrue(result.warnings.any { it.contains("temporarily unavailable") })
     }
 
     @Test
-    fun `getAgp empty buckets returned by graceful degradation have correct hour indices`() = runTest {
+    fun `getAgp empty buckets returned by graceful degradation have correct minuteOfDay values`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } throws
             UpstreamException("measures", 500, "Internal Server Error")
         val result = service.getAgp(userId, from, to, auth, "mg/dL", "")
-        assertEquals(24, result.hourlyData.size)
-        result.hourlyData.forEachIndexed { index, bucket ->
-            assertEquals(index, bucket.hour)
+        assertEquals(288, result.bucketData.size)
+        result.bucketData.forEachIndexed { index, bucket ->
+            assertEquals(index * 5, bucket.minuteOfDay)
             assertNull(bucket.median)
         }
     }
