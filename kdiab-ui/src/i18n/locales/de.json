@@ -694,6 +694,12 @@
       "eHbA1c": "eHbA1c",
       "warningsLabel": "Warnungen",
       "tableAriaLabel": "Tagesstatistik-Tabelle"
+    },
+    "agp": {
+      "statsSummaryAriaLabel": "AGP-Statistikzusammenfassung",
+      "sensorWearDays": "Sensortrage",
+      "totalReadings": "Messungen gesamt",
+      "tirSectionTitle": "Zeit im Zielbereich"
     }
   }
 }

@@ -12,9 +12,9 @@ import type { ReportPageId } from './reportPages'
 import type { CgpResponse } from '../../api/analyzeApi'
 import { HbA1cCard } from '../analytics/HbA1cCard'
 import { TimeInRangeBar } from '../analytics/TimeInRangeBar'
-import { AgpChart } from '../analytics/AgpChart'
 import { ProfilesView } from '../analytics/ProfilesView'
 import { DailyStatsPage } from './DailyStatsPage'
+import { AgpChartPage } from './AgpChartPage'
 
 interface Props {
   userId: string
@@ -109,15 +109,11 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
           errorMessage={t('report.error.agp')}
         >
           {data.agp.data && (
-            <div className="chart-section">
-              <AgpChart
-                hourlyData={data.agp.data.hourlyData}
-                glucoseUnit={glucoseUnit}
-                {...(data.agp.data.warnings !== undefined && { warnings: data.agp.data.warnings })}
-                {...(data.agp.data.totalReadingCount !== undefined && { totalReadingCount: data.agp.data.totalReadingCount })}
-                {...(data.agp.data.sensorWearDays !== undefined && { sensorWearDays: data.agp.data.sensorWearDays })}
-              />
-            </div>
+            <AgpChartPage
+              agp={data.agp.data}
+              glucoseUnit={glucoseUnit}
+              {...(data.summary.data !== null && data.summary.data !== undefined && { tir: data.summary.data.tir })}
+            />
           )}
           {!data.agp.isLoading && !data.agp.isError && !data.agp.data && (
             <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
