@@ -3,6 +3,8 @@ package org.javafreedom.kdiab.analyze.application.service
 import kotlinx.datetime.TimeZone
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatsResult
+import org.javafreedom.kdiab.analyze.domain.model.DailyTrendResult
+import org.javafreedom.kdiab.analyze.domain.model.GlucoseDistributionResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.ReportSummaryResult
 
@@ -43,6 +45,17 @@ interface AnalyticsOperation {
     ): AgpResult
 
     @Suppress("LongParameterList")
+    suspend fun getDailyTrend(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        glucoseUnit: String,
+        correlationId: String,
+        timeZone: TimeZone = TimeZone.UTC,
+    ): DailyTrendResult
+
+    @Suppress("LongParameterList")
     suspend fun getDailyStats(
         userId: String,
         from: String,
@@ -52,6 +65,16 @@ interface AnalyticsOperation {
         correlationId: String,
         timeZone: TimeZone = TimeZone.UTC,
     ): DailyStatsResult
+
+    @Suppress("LongParameterList")
+    suspend fun getGlucoseDistribution(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        glucoseUnit: String,
+        correlationId: String,
+    ): GlucoseDistributionResult
 
     @Suppress("LongParameterList")
     suspend fun getReportSummary(

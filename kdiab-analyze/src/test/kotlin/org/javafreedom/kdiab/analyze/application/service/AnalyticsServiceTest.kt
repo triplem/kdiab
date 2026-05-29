@@ -337,7 +337,7 @@ class AnalyticsServiceTest {
     }
 
     @Test
-    fun `getAgp returns sensorWearDays as count of distinct UTC calendar days with readings`() = runTest {
+    fun `getAgp returns sensorWearDays as count of distinct calendar days with readings`() = runTest {
         coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
             cgmDto(120.0, "2024-01-14T23:00:00Z"),
             cgmDto(130.0, "2024-01-15T00:30:00Z"),

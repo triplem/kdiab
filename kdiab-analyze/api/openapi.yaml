@@ -117,6 +117,117 @@ paths:
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
+  /users/{userId}/analytics/daily-stats:
+    get:
+      operationId: getDailyStats
+      summary: Per-day TIR, percentiles, SD, and eHbA1c statistics
+      description: |
+        Returns a pre-computed per-day array with TIR zones, glucose percentiles (p25/p50/p75),
+        standard deviation, reading count, and eHbA1c — all computed server-side in the patient's
+        local timezone. Includes a summary row averaging each metric across days with at least one
+        reading. Rows are ordered newest first. Up to 365 days. A warning is emitted if fewer
+        than 14 days with readings are found.
+      tags: [Analytics]
+      parameters:
+        - $ref: '#/components/parameters/userId'
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+        - $ref: '#/components/parameters/glucoseUnit'
+      responses:
+        '200':
+          description: Daily statistics result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyStatsResponse'
+        '400':
+          description: Invalid date range or missing parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /users/{userId}/analytics/daily-trend:
+    get:
+      operationId: getDailyTrend
+      summary: Per-day × per-hour glucose trend table
+      description: |
+        Returns a per-day array of 24 hourly rows. Each row contains the mean CGM glucose for that
+        clock hour (in the patient's local timezone), the trend percentage relative to the previous
+        hour, the trend zone classification, the glucose zone, the active basal rate from the
+        patient's insulin pump profile, and the total carbohydrates consumed in that hour.
+
+        Trend zones: risingFast (≥+20%), rising (+10–20%), stable (±10%), falling (-10–20%),
+        fallingFast (≤-20%). Glucose zones: veryHypo (<54), hypo (54–70), inRange (70–180),
+        hyper (180–250), veryHyper (>250), noData (no readings). Hour 0 always has null trendPercent.
+        Up to 365 days. Carbohydrate data is soft-optional: if the treatments service is unavailable
+        carbsG defaults to 0 and a warning is emitted.
+      tags: [Analytics]
+      parameters:
+        - $ref: '#/components/parameters/userId'
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+        - $ref: '#/components/parameters/glucoseUnit'
+      responses:
+        '200':
+          description: Daily trend result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyTrendResponse'
+        '400':
+          description: Invalid date range or missing parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /users/{userId}/analytics/glucose-distribution:
+    get:
+      operationId: getGlucoseDistribution
+      summary: CGM glucose histogram with zone percentages
+      description: |
+        Returns a histogram of CGM readings bucketed by glucose value (5 mg/dL bins for mg/dL,
+        0.3 mmol/L bins for mmol/L), together with zone percentage breakdowns (veryLow / low /
+        inRange / high / veryHigh). Up to 365 days of data.
+      tags: [Analytics]
+      parameters:
+        - $ref: '#/components/parameters/userId'
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+        - $ref: '#/components/parameters/glucoseUnit'
+      responses:
+        '200':
+          description: Glucose distribution histogram
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlucoseDistributionResponse'
+        '400':
+          description: Invalid date range or missing parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
   /users/{userId}/profiles/active:
     get:
       operationId: getActiveProfiles
@@ -187,53 +298,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeviceAgeResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-
-  /users/{userId}/analytics/daily-stats:
-    get:
-      operationId: getDailyStats
-      summary: Per-day CGM statistics (TIR, percentiles, SD, eHbA1c) in patient's local timezone
-      description: >
-        Returns one row per calendar day in the requested window, ordered newest first.
-        Each row includes TIR zone percentages, glucose percentiles (p25/p50/p75),
-        population standard deviation, and an eHbA1c estimate via the DCCT formula.
-        A summary row averages metrics across days with at least one CGM reading.
-        Days with no readings are included with null numeric fields.
-        Maximum window: 365 days.
-      tags:
-        - Analytics
-      parameters:
-        - $ref: '#/components/parameters/userId'
-        - $ref: '#/components/parameters/from'
-        - $ref: '#/components/parameters/to'
-        - name: glucoseUnit
-          in: query
-          required: false
-          schema:
-            type: string
-            enum: [mg/dL, mmol/L]
-            default: mg/dL
-          description: Glucose unit for stored-value conversion (default mg/dL)
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Daily statistics computed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DailyStatsResponse'
-        '400':
-          description: Invalid request parameters (e.g. missing from/to or invalid date format)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -813,6 +877,99 @@ components:
           items:
             type: string
 
+    HourlyTrendRow:
+      type: object
+      description: Hourly row in a daily trend result. All computed fields are null when no CGM readings exist for that hour.
+      required: [hour, carbsG]
+      properties:
+        hour:
+          type: integer
+          description: Clock hour in the patient's local timezone (0–23).
+          example: 14
+        meanGlucose:
+          type: ["number", "null"]
+          format: double
+          description: Mean CGM glucose for this hour in mg/dL. Null if no readings.
+          example: 128.5
+        trendPercent:
+          type: ["number", "null"]
+          format: double
+          description: Percentage change relative to the previous hour's mean glucose. Null for hour 0 or when either hour has no data.
+          example: 12.3
+        trendZone:
+          type: ["string", "null"]
+          description: |
+            Trend classification: risingFast (≥+20%), rising (+10–20%), stable (±10%),
+            falling (-10–20%), fallingFast (≤-20%). Null when trendPercent is null.
+          enum: [risingFast, rising, stable, falling, fallingFast, null]
+          example: rising
+        zone:
+          type: ["string", "null"]
+          description: Glucose zone based on meanGlucose. veryHypo (<54), hypo (54–70), inRange (70–180), hyper (180–250), veryHyper (>250), noData (no readings).
+          enum: [veryHypo, hypo, inRange, hyper, veryHyper, noData, null]
+          example: inRange
+        basalRateIePerH:
+          type: ["number", "null"]
+          format: double
+          description: Active basal rate from the patient's insulin pump profile for this hour (IU/h). Null if no profile is available.
+          example: 0.85
+        carbsG:
+          type: number
+          format: double
+          description: Total carbohydrates consumed in this hour (grams). 0 if no carb entries or treatments service unavailable.
+          example: 45.0
+
+    DailyTrendDay:
+      type: object
+      description: All 24 hourly trend rows for a single calendar day.
+      required: [date, hours]
+      properties:
+        date:
+          type: string
+          description: Calendar date in YYYY-MM-DD format (patient's local timezone).
+          example: "2024-01-15"
+        hours:
+          type: array
+          description: Exactly 24 entries, one per clock hour 0–23 in the patient's local timezone.
+          items:
+            $ref: '#/components/schemas/HourlyTrendRow'
+          minItems: 24
+          maxItems: 24
+
+    DailyTrendResponse:
+      type: object
+      description: Per-day × per-hour glucose trend result.
+      required: [days]
+      properties:
+        days:
+          type: array
+          description: One entry per calendar day with CGM data, ordered chronologically. Up to 365 days.
+          items:
+            $ref: '#/components/schemas/DailyTrendDay'
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Data quality warnings (e.g. range truncated to 365 days, carbohydrate data unavailable).
+
+    GlucoseBucket:
+      type: object
+      description: A single histogram bucket covering a glucose value range.
+      required: [lowerBound, upperBound, count, percent, zone]
+      properties:
+        lowerBound:
+          type: number
+          format: double
+          description: Inclusive lower bound of this bucket (in the requested glucose unit).
+          example: 70.0
+        upperBound:
+          type: number
+          format: double
+          description: Exclusive upper bound of this bucket (in the requested glucose unit).
+          example: 75.0
+        count:
+          type: integer
+          description: Number of CGM readings that fall in this bucket.
     TirZone:
       type: object
       description: A single TIR zone with count and percentage.
@@ -826,9 +983,64 @@ components:
         percent:
           type: number
           format: double
-          description: Percentage of total readings in this zone (0–100).
+          description: Percentage of total readings represented by this bucket (0–100).
           example: 14.6
+        zone:
+          type: string
+          description: Glucose zone this bucket belongs to (veryLow, low, inRange, high, veryHigh).
+          example: inRange
 
+    ZonePercents:
+      type: object
+      description: Percentage of CGM readings in each glucose zone.
+      required: [veryLow, low, inRange, high, veryHigh]
+      properties:
+        veryLow:
+          type: number
+          format: double
+          description: Percentage of readings below 54 mg/dL (Level 2 hypoglycaemia).
+          example: 1.2
+        low:
+          type: number
+          format: double
+          description: Percentage of readings 54–70 mg/dL (Level 1 hypoglycaemia).
+          example: 3.4
+        inRange:
+          type: number
+          format: double
+          description: Percentage of readings 70–180 mg/dL (target range).
+          example: 72.1
+        high:
+          type: number
+          format: double
+          description: Percentage of readings 180–250 mg/dL (elevated).
+          example: 18.9
+        veryHigh:
+          type: number
+          format: double
+          description: Percentage of readings above 250 mg/dL (significantly elevated).
+          example: 4.4
+
+    GlucoseDistributionResponse:
+      type: object
+      description: CGM glucose histogram with zone percentage breakdowns.
+      required: [buckets, zonePercents, unit, totalCount]
+      properties:
+        buckets:
+          type: array
+          description: Histogram buckets ordered by lowerBound ascending.
+          items:
+            $ref: '#/components/schemas/GlucoseBucket'
+        zonePercents:
+          $ref: '#/components/schemas/ZonePercents'
+        unit:
+          type: string
+          description: Glucose unit used for bucket bounds (mg/dL or mmol/L).
+          example: mg/dL
+        totalCount:
+          type: integer
+          description: Total number of CGM readings included in the histogram.
+          example: 8640
     TirResult:
       type: object
       description: Five-zone TIR breakdown with optional custom thresholds from the active basal profile.
