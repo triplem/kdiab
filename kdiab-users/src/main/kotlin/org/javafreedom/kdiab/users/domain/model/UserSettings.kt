@@ -3,6 +3,7 @@ package org.javafreedom.kdiab.users.domain.model
 
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
+import kotlinx.datetime.LocalDate
 
 data class UserSettings(
     val userId: Uuid,
@@ -16,6 +17,8 @@ data class UserSettings(
     val alarmLow: Int? = 75,
     val alarmUrgentLow: Int? = 55,
     val sensorDurationHours: Int = 240,
+    val birthday: LocalDate? = null,
+    val diabetesSince: Int? = null,
     val createdAt: Instant,
     val updatedAt: Instant,
 )

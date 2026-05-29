@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.uuid.Uuid
 import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.datetime.date
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.javafreedom.kdiab.users.domain.model.UserSettings
@@ -30,6 +31,8 @@ object UserSettingsTable : Table("user_settings") {
     val alarmLow = integer("alarm_low").nullable()
     val alarmUrgentLow = integer("alarm_urgent_low").nullable()
     val sensorDurationHours = integer("sensor_duration_hours").default(DEFAULT_SENSOR_DURATION_HOURS)
+    val birthday = date("birthday").nullable()
+    val diabetesSince = integer("diabetes_since").nullable()
     val createdAt = varchar("created_at", ISO_INSTANT_LEN)
     val updatedAt = varchar("updated_at", ISO_INSTANT_LEN)
 
@@ -56,6 +59,8 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
                         alarmLow = row[UserSettingsTable.alarmLow],
                         alarmUrgentLow = row[UserSettingsTable.alarmUrgentLow],
                         sensorDurationHours = row[UserSettingsTable.sensorDurationHours],
+                        birthday = row[UserSettingsTable.birthday],
+                        diabetesSince = row[UserSettingsTable.diabetesSince],
                         createdAt = row[UserSettingsTable.createdAt].parseInstant(),
                         updatedAt = row[UserSettingsTable.updatedAt].parseInstant(),
                     )
@@ -77,6 +82,8 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
                 it[alarmLow] = settings.alarmLow
                 it[alarmUrgentLow] = settings.alarmUrgentLow
                 it[sensorDurationHours] = settings.sensorDurationHours
+                it[birthday] = settings.birthday
+                it[diabetesSince] = settings.diabetesSince
                 it[createdAt] = settings.createdAt.toString()
                 it[updatedAt] = settings.updatedAt.toString()
             }

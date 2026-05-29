@@ -1,6 +1,7 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.users.adapters.inbound.web
 
+import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import org.javafreedom.kdiab.users.application.service.SettingsPatch
 import org.javafreedom.kdiab.users.domain.model.DoctorPatientRelation
@@ -28,6 +29,8 @@ data class UserSettingsResponse(
     val alarmLow: Int?,
     val alarmUrgentLow: Int?,
     val sensorDurationHours: Int,
+    val birthday: String?,
+    val diabetesSince: Int?,
     val updatedAt: String,
     val jwtBackedNote: String? = null,
 )
@@ -58,6 +61,8 @@ data class PatchSettingsRequest(
     val alarmLow: Int? = null,
     val alarmUrgentLow: Int? = null,
     val sensorDurationHours: Int? = null,
+    val birthday: String? = null,
+    val diabetesSince: Int? = null,
 )
 
 @Serializable
@@ -104,6 +109,8 @@ fun UserSettings.toResponse(jwtBackedNote: String? = null): UserSettingsResponse
     alarmLow = alarmLow,
     alarmUrgentLow = alarmUrgentLow,
     sensorDurationHours = sensorDurationHours,
+    birthday = birthday?.toString(),
+    diabetesSince = diabetesSince,
     updatedAt = updatedAt.toString(),
     jwtBackedNote = jwtBackedNote,
 )
@@ -119,6 +126,8 @@ fun PatchSettingsRequest.toPatch() = SettingsPatch(
     alarmLow = alarmLow,
     alarmUrgentLow = alarmUrgentLow,
     sensorDurationHours = sensorDurationHours,
+    birthday = birthday?.let { LocalDate.parse(it) },
+    diabetesSince = diabetesSince,
 )
 
 fun DoctorPatientRelation.toResponse() = DoctorPatientResponse(

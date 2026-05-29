@@ -570,6 +570,17 @@ components:
           type: integer
           description: "How long a CGM sensor lasts (hours). Default: 240 (10 days). Libre 3/Dexcom G7/Libre 2 = 336, Dexcom G6/Guardian 4 = 168."
           example: 240
+        birthday:
+          type: string
+          format: date
+          nullable: true
+          description: "Birthday in YYYY-MM-DD format"
+          example: "1990-05-15"
+        diabetesSince:
+          type: integer
+          nullable: true
+          description: "Year of T1D diagnosis, e.g. 2010"
+          example: 2010
         updatedAt:
           type: string
           format: date-time
@@ -610,6 +621,17 @@ components:
           type: integer
           description: "How long a CGM sensor lasts (hours). Default: 240."
           example: 240
+        birthday:
+          type: string
+          format: date
+          nullable: true
+          description: "Birthday in YYYY-MM-DD format"
+          example: "1990-05-15"
+        diabetesSince:
+          type: integer
+          nullable: true
+          description: "Year of T1D diagnosis, e.g. 2010"
+          example: 2010
 
     CreateUserRequest:
       type: object

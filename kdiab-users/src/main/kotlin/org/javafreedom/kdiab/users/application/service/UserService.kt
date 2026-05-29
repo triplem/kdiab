@@ -8,6 +8,9 @@ import kotlin.uuid.Uuid
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.model.Role
@@ -32,6 +35,7 @@ private const val IDX_URGENT_HIGH = 0
 private const val IDX_HIGH = 1
 private const val IDX_LOW = 2
 private const val IDX_URGENT_LOW = 3
+private const val DIABETES_SINCE_MIN = 1900
 
 class UserService(
     private val identityProvider: IdentityProviderPort,
@@ -61,6 +65,13 @@ class UserService(
                     "Invalid weight unit '$it'. Allowed: ${VALID_WEIGHT_UNITS.joinToString()}"
                 )
         }
+        patch.diabetesSince?.let { year ->
+            val currentYear = Clock.System.now().toLocalDateTime(TimeZone.UTC).year
+            if (year < DIABETES_SINCE_MIN || year > currentYear)
+                throw BusinessValidationException(
+                    "diabetesSince must be between $DIABETES_SINCE_MIN and $currentYear, got $year"
+                )
+        }
         val existing = settingsRepo.findByUserId(principal.userId)
             ?: defaultSettings(principal.userId)
         val now = Clock.System.now()
@@ -75,6 +86,8 @@ class UserService(
             alarmLow = patch.alarmLow ?: existing.alarmLow,
             alarmUrgentLow = patch.alarmUrgentLow ?: existing.alarmUrgentLow,
             sensorDurationHours = patch.sensorDurationHours ?: existing.sensorDurationHours,
+            birthday = patch.birthday ?: existing.birthday,
+            diabetesSince = patch.diabetesSince ?: existing.diabetesSince,
             updatedAt = now,
         )
 
@@ -243,6 +256,8 @@ data class SettingsPatch(
     val alarmLow: Int? = null,
     val alarmUrgentLow: Int? = null,
     val sensorDurationHours: Int? = null,
+    val birthday: LocalDate? = null,
+    val diabetesSince: Int? = null,
 )
 
 private fun IdentityUserProfile.toDomain(settings: UserSettings?, roles: Set<Role>): User {
