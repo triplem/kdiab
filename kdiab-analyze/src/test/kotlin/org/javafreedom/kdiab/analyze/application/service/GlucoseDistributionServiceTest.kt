@@ -7,6 +7,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
 import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
+import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
 import kotlin.test.Test
@@ -17,7 +18,7 @@ class GlucoseDistributionServiceTest {
 
     private val measuresClient = mockk<MeasuresPort>()
     private val profilesClient = mockk<ProfilesPort>()
-    private val service = AnalyticsService(measuresClient, profilesClient)
+    private val service = AnalyticsService(measuresClient, profilesClient, mockk<TreatmentsPort>())
 
     private val userId = "user-1"
     private val auth = "Bearer token"

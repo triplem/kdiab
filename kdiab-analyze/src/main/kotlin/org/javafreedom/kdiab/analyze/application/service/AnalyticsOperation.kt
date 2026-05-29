@@ -2,6 +2,7 @@ package org.javafreedom.kdiab.analyze.application.service
 
 import kotlinx.datetime.TimeZone
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
+import org.javafreedom.kdiab.analyze.domain.model.CgpResult
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatsResult
 import org.javafreedom.kdiab.analyze.domain.model.DailyTrendResult
 import org.javafreedom.kdiab.analyze.domain.model.GlucoseDistributionResult
@@ -87,4 +88,14 @@ interface AnalyticsOperation {
         correlationId: String,
         timeZone: TimeZone = TimeZone.UTC,
     ): ReportSummaryResult
+
+    @Suppress("LongParameterList")
+    suspend fun getCgp(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        glucoseUnit: String,
+        correlationId: String,
+    ): CgpResult
 }

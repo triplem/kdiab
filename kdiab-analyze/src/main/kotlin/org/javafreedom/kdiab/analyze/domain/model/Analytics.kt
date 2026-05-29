@@ -202,26 +202,27 @@ data class ReportSummaryResult(
     val warnings: List<String> = emptyList(),
 )
 
-data class GlucoseBucket(
-    val lowerBound: Double,
-    val upperBound: Double,
-    val count: Int,
-    val percent: Double,
-    val zone: String,
-)
-
-data class ZonePercents(
-    val veryLow: Double,
-    val low: Double,
-    val inRange: Double,
-    val high: Double,
-    val veryHigh: Double,
-)
-
-data class GlucoseDistributionResult(
-    val buckets: List<GlucoseBucket>,
-    val zonePercents: ZonePercents,
-    val unit: String,
-    val totalCount: Int,
+// CGP — Comprehensive Glucose Pentagon (Vigersky et al. 2018)
+// Five axes: ToR, VarK (CV), HypoIntensity, HyperIntensity, MeanGlucose.
+// All normalised to 0.0 (worst) … 1.0 (healthy reference). PGR score = geometric mean × 5.
+@Suppress("LongParameterList")
+data class CgpResult(
+    val tor: Double,              // Time out of range (min/day)
+    val varK: Double,             // Coefficient of variation (%)
+    val hypoIntensity: Double,    // Mean hypo intensity (below 70 mg/dL)
+    val hyperIntensity: Double,   // Mean hyper intensity (above 180 mg/dL)
+    val meanGlucose: Double,      // Mean CGM glucose (mg/dL)
+    val normTor: Double,          // Normalised 0.0–1.0
+    val normVarK: Double,
+    val normHypo: Double,
+    val normHyper: Double,
+    val normMeanGlucose: Double,
+    val refTor: Double,           // Reference values (healthy without diabetes)
+    val refVarK: Double,
+    val refHypo: Double,
+    val refHyper: Double,
+    val refMeanGlucose: Double,
+    val pgr: Double,              // PGR score 0–5 (geometric mean of 5 axes × 5)
+    val pgrRisk: String,          // "very_low", "low", "moderate", "high", "very_high"
     val warnings: List<String> = emptyList(),
 )

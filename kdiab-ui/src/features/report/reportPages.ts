@@ -10,6 +10,7 @@ export const REPORT_PAGE_IDS = [
   'DAILY_TREND',
   'GLUCOSE_DISTRIBUTION',
   'PROFILE',
+  'CGP',
 ] as const
 
 export type ReportPageId = typeof REPORT_PAGE_IDS[number]

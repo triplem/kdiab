@@ -643,7 +643,8 @@
       "DAILY_STATS": "Tägliche Statistiken",
       "DAILY_TREND": "Tagesverlauf",
       "GLUCOSE_DISTRIBUTION": "Glukoseverteilung",
-      "PROFILE": "Basalprofil"
+      "PROFILE": "Basalprofil",
+      "CGP": "Umfassendes Glukosepentagon (CGP)"
     },
     "error": {
       "summary": "Zusammenfassung konnte nicht geladen werden.",
@@ -651,7 +652,29 @@
       "dailyStats": "Tägliche Statistiken konnten nicht geladen werden.",
       "dailyTrend": "Tagesverlauf konnte nicht geladen werden.",
       "glucoseDistribution": "Glukoseverteilung konnte nicht geladen werden.",
-      "profile": "Profildaten konnten nicht geladen werden."
+      "profile": "Profildaten konnten nicht geladen werden.",
+      "cgp": "CGP-Daten konnten nicht geladen werden."
+    },
+    "cgp": {
+      "axisTor": "ToR (min/Tag)",
+      "axisVarK": "VarK (%)",
+      "axisHypo": "Intensität HYPO",
+      "axisHyper": "Intensität HYPER",
+      "axisMeanGluc": "Mittlere Glukose",
+      "pgrScore": "PGR-Wert",
+      "legendRef": "Referenz",
+      "legendPatient": "Patient",
+      "axisLabel": "Achse",
+      "patientValue": "Patient",
+      "referenceValue": "Referenz",
+      "risk": {
+        "very_high": "Sehr hoch",
+        "high": "Hoch",
+        "moderate": "Moderat",
+        "low": "Niedrig",
+        "very_low": "Sehr niedrig"
+      },
+      "citation": "Vigersky et al. (2018). Journal of Diabetes Science and Technology, 12(1), 114–123."
     },
     "dailyTrendDays": "{{count}} Tag mit Daten",
     "dailyTrendDays_other": "{{count}} Tage mit Daten",
