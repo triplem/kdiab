@@ -158,6 +158,10 @@ fun Route.bffRoutes(
         get("/users/{userId}/analytics/glucose-distribution") {
             handleGlucoseDistribution(call, analyticsService)
         }
+
+        get("/users/{userId}/analytics/cgp") {
+            handleCgp(call, analyticsService)
+        }
     }
 }
 
@@ -292,6 +296,31 @@ private suspend fun handleGlucoseDistribution(
     val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
 
     val result = analyticsService.getGlucoseDistribution(
+        userId = ctx.targetUserId.toString(),
+        from = from,
+        to = to,
+        authorization = ctx.authorization,
+        glucoseUnit = glucoseUnit,
+        correlationId = ctx.correlationId,
+    )
+    call.respond(result.toResponse())
+}
+
+private suspend fun handleCgp(
+    call: ApplicationCall,
+    analyticsService: AnalyticsOperation,
+) {
+    val userId = call.parameters["userId"] ?: return call.respond(HttpStatusCode.BadRequest)
+    val ctx = extractContext(call, userId)
+    val from = call.request.queryParameters["from"]
+        ?: throw BusinessValidationException("Missing required query parameter 'from'")
+    val to = call.request.queryParameters["to"]
+        ?: throw BusinessValidationException("Missing required query parameter 'to'")
+    validateDateRange(from, to)
+    auditDoctorAccess(ctx, "analyze.cgp")
+    val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: ctx.principal.glucoseUnit
+
+    val result = analyticsService.getCgp(
         userId = ctx.targetUserId.toString(),
         from = from,
         to = to,

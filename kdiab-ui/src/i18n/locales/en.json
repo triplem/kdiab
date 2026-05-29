@@ -643,7 +643,8 @@
       "DAILY_STATS": "Daily Statistics",
       "DAILY_TREND": "Daily Trend",
       "GLUCOSE_DISTRIBUTION": "Glucose Distribution",
-      "PROFILE": "Basal Profile"
+      "PROFILE": "Basal Profile",
+      "CGP": "Comprehensive Glucose Pentagon (CGP)"
     },
     "error": {
       "summary": "Could not load summary data.",
@@ -651,7 +652,29 @@
       "dailyStats": "Could not load daily statistics.",
       "dailyTrend": "Could not load daily trend data.",
       "glucoseDistribution": "Could not load glucose distribution.",
-      "profile": "Could not load profile data."
+      "profile": "Could not load profile data.",
+      "cgp": "Could not load CGP data."
+    },
+    "cgp": {
+      "axisTor": "ToR (min/day)",
+      "axisVarK": "VarK (%)",
+      "axisHypo": "Hypo Intensity",
+      "axisHyper": "Hyper Intensity",
+      "axisMeanGluc": "Mean Glucose",
+      "pgrScore": "PGR Score",
+      "legendRef": "Reference",
+      "legendPatient": "Patient",
+      "axisLabel": "Axis",
+      "patientValue": "Patient",
+      "referenceValue": "Reference",
+      "risk": {
+        "very_high": "Very High",
+        "high": "High",
+        "moderate": "Moderate",
+        "low": "Low",
+        "very_low": "Very Low"
+      },
+      "citation": "Vigersky et al. (2018). Journal of Diabetes Science and Technology, 12(1), 114–123."
     },
     "dailyTrendDays": "{{count}} day with data",
     "dailyTrendDays_other": "{{count}} days with data",

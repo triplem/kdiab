@@ -228,6 +228,41 @@ paths:
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
+  /users/{userId}/analytics/cgp:
+    get:
+      operationId: getCgp
+      summary: Comprehensive Glucose Pentagon (CGP) with PGR score
+      description: |
+        Computes the five CGP axes from CGM data in the given timeframe (Vigersky et al. 2018):
+        ToR (time out of range, min/day), VarK (CV %), HypoIntensity, HyperIntensity,
+        MeanGlucose. All axes are normalised to 0.0 (worst) … 1.0 (healthy reference).
+        The PGR score is the geometric mean of the five normalised values multiplied by 5.
+      tags: [Analytics]
+      parameters:
+        - $ref: '#/components/parameters/userId'
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+        - $ref: '#/components/parameters/glucoseUnit'
+      responses:
+        '200':
+          description: CGP result with five axes, normalised values, reference values, and PGR score
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CgpResponse'
+        '400':
+          description: Invalid date range or missing parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
   /users/{userId}/profiles/active:
     get:
       operationId: getActiveProfiles
@@ -1226,6 +1261,121 @@ components:
           items:
             type: string
           description: Data quality warnings. Includes "lessThan14Days" when the range is below 14 days.
+          example: []
+
+    CgpResponse:
+      type: object
+      description: Comprehensive Glucose Pentagon result with five axes, normalised scores, reference values, and PGR score.
+      required:
+        - tor
+        - varK
+        - hypoIntensity
+        - hyperIntensity
+        - meanGlucose
+        - normTor
+        - normVarK
+        - normHypo
+        - normHyper
+        - normMeanGlucose
+        - refTor
+        - refVarK
+        - refHypo
+        - refHyper
+        - refMeanGlucose
+        - pgr
+        - pgrRisk
+        - warnings
+      properties:
+        tor:
+          type: number
+          format: double
+          description: Time out of range (minutes per day; glucose < 70 or > 180 mg/dL).
+          example: 120.5
+        varK:
+          type: number
+          format: double
+          description: Coefficient of variation (%).
+          example: 28.3
+        hypoIntensity:
+          type: number
+          format: double
+          description: Mean hypo intensity (sum of (70-g)^2 × 5/1440 per reading / days).
+          example: 45.2
+        hyperIntensity:
+          type: number
+          format: double
+          description: Mean hyper intensity (sum of (g-180)^2 × 5/1440 per reading / days).
+          example: 320.7
+        meanGlucose:
+          type: number
+          format: double
+          description: Mean CGM glucose in mg/dL.
+          example: 145.0
+        normTor:
+          type: number
+          format: double
+          description: Normalised ToR axis value (0.0 = worst, 1.0 = healthy reference).
+          example: 0.72
+        normVarK:
+          type: number
+          format: double
+          description: Normalised VarK axis value.
+          example: 0.43
+        normHypo:
+          type: number
+          format: double
+          description: Normalised HypoIntensity axis value.
+          example: 0.99
+        normHyper:
+          type: number
+          format: double
+          description: Normalised HyperIntensity axis value.
+          example: 0.85
+        normMeanGlucose:
+          type: number
+          format: double
+          description: Normalised MeanGlucose axis value.
+          example: 0.78
+        refTor:
+          type: number
+          format: double
+          description: Reference ToR for healthy subjects without diabetes (min/day).
+          example: 0.0
+        refVarK:
+          type: number
+          format: double
+          description: Reference CV for healthy subjects (%).
+          example: 12.5
+        refHypo:
+          type: number
+          format: double
+          description: Reference HypoIntensity for healthy subjects.
+          example: 0.0
+        refHyper:
+          type: number
+          format: double
+          description: Reference HyperIntensity for healthy subjects.
+          example: 0.0
+        refMeanGlucose:
+          type: number
+          format: double
+          description: Reference mean glucose for healthy subjects (mg/dL).
+          example: 100.0
+        pgr:
+          type: number
+          format: double
+          description: PGR score (geometric mean of 5 normalised axes × 5, range 0–5).
+          example: 3.4
+        pgrRisk:
+          type: string
+          description: PGR risk category.
+          enum: [very_low, low, moderate, high, very_high]
+          example: moderate
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Data quality warnings.
           example: []
 
     ErrorResponse:

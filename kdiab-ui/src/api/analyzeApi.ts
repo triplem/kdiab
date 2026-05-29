@@ -181,6 +181,27 @@ export interface GlucoseDistributionResponse {
   warnings?: string[]
 }
 
+export interface CgpResponse {
+  tor: number
+  varK: number
+  hypoIntensity: number
+  hyperIntensity: number
+  meanGlucose: number
+  normTor: number
+  normVarK: number
+  normHypo: number
+  normHyper: number
+  normMeanGlucose: number
+  refTor: number
+  refVarK: number
+  refHypo: number
+  refHyper: number
+  refMeanGlucose: number
+  pgr: number
+  pgrRisk: string
+  warnings?: string[]
+}
+
 export const analyzeApi = {
   getTimeline: (userId: string, from: string, to: string) =>
     axiosInstance.get<TimelineResponse>(`${BASE}/users/${userId}/timeline`, {
@@ -216,6 +237,10 @@ export const analyzeApi = {
     }),
   getGlucoseDistribution: (userId: string, from: string, to: string, glucoseUnit?: string) =>
     axiosInstance.get<GlucoseDistributionResponse>(`${BASE}/users/${userId}/analytics/glucose-distribution`, {
+      params: { from, to, glucoseUnit },
+    }),
+  getCgp: (userId: string, from: string, to: string, glucoseUnit?: string) =>
+    axiosInstance.get<CgpResponse>(`${BASE}/users/${userId}/analytics/cgp`, {
       params: { from, to, glucoseUnit },
     }),
 }

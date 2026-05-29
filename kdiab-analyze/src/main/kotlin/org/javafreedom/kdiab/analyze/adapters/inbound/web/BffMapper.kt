@@ -3,6 +3,7 @@ package org.javafreedom.kdiab.analyze.adapters.inbound.web
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
+import org.javafreedom.kdiab.analyze.domain.model.CgpResult
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatRow
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatsResult
 import org.javafreedom.kdiab.analyze.domain.model.DailyTrendResult
@@ -462,5 +463,49 @@ fun GlucoseDistributionResult.toResponse() = GlucoseDistributionResponseDto(
     ),
     unit = unit,
     totalCount = totalCount,
+    warnings = warnings,
+)
+
+@Suppress("LongParameterList")
+@Serializable
+data class CgpResponseDto(
+    val tor: Double,
+    val varK: Double,
+    val hypoIntensity: Double,
+    val hyperIntensity: Double,
+    val meanGlucose: Double,
+    val normTor: Double,
+    val normVarK: Double,
+    val normHypo: Double,
+    val normHyper: Double,
+    val normMeanGlucose: Double,
+    val refTor: Double,
+    val refVarK: Double,
+    val refHypo: Double,
+    val refHyper: Double,
+    val refMeanGlucose: Double,
+    val pgr: Double,
+    val pgrRisk: String,
+    val warnings: List<String> = emptyList(),
+)
+
+fun CgpResult.toResponse() = CgpResponseDto(
+    tor = tor,
+    varK = varK,
+    hypoIntensity = hypoIntensity,
+    hyperIntensity = hyperIntensity,
+    meanGlucose = meanGlucose,
+    normTor = normTor,
+    normVarK = normVarK,
+    normHypo = normHypo,
+    normHyper = normHyper,
+    normMeanGlucose = normMeanGlucose,
+    refTor = refTor,
+    refVarK = refVarK,
+    refHypo = refHypo,
+    refHyper = refHyper,
+    refMeanGlucose = refMeanGlucose,
+    pgr = pgr,
+    pgrRisk = pgrRisk,
     warnings = warnings,
 )

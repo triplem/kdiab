@@ -17,6 +17,7 @@ import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.domain.model.AgpBucketData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.BasalSegment
+import org.javafreedom.kdiab.analyze.domain.model.CgpResult
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatRow
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatsResult
 import org.javafreedom.kdiab.analyze.domain.model.DailyTrendDay
@@ -79,10 +80,6 @@ private const val MIN_READINGS_RELIABLE = 288
 private const val MIN_READINGS_MEANINGFUL = 4032
 // At least half of all 288 five-minute buckets must have at least one reading
 private const val MIN_COVERED_BUCKETS = 144
-// At least half of all 24 UTC hours must have at least one reading
-private const val MIN_COVERED_HOURS = 12
-private const val MIN_DAILY_STATS_DAYS = 14
-
 private const val AGP_TENTH_PERCENTILE = 10
 private const val AGP_LOWER_QUARTILE = 25
 private const val AGP_MEDIAN_PERCENTILE = 50
@@ -96,6 +93,7 @@ private const val MAX_REPORT_DAYS = 365
 // Minimum recommended date range for report summary (14 days)
 private const val MIN_REPORT_DAYS = 14
 private const val SECONDS_PER_DAY = 86_400.0
+private const val SECONDS_IN_DAY_L = 86_400L
 // GRI = 3.0×(%<54) + 2.4×(%54–70) + 1.6×(%180–250) + 0.8×(%>250) (Klonoff 2023)
 private const val GRI_VERY_LOW_WEIGHT = 3.0
 private const val GRI_LOW_WEIGHT = 2.4
@@ -134,6 +132,41 @@ private const val ZONE_IN_RANGE_UPPER = TIR_HIGH        // 70–180 mg/dL
 private const val ZONE_HIGH_UPPER = TIR_VERY_HIGH       // 180–250 mg/dL; >250 → veryHigh
 private const val DECIMAL_SCALE = 10.0  // rounding to 1 decimal place
 private const val MAX_DISTRIBUTION_DAYS = 365L
+
+// CGP — Comprehensive Glucose Pentagon constants (Vigersky et al. 2018)
+// Reference values for healthy subjects without diabetes
+private const val CGP_REF_TOR = 0.0           // min/day
+private const val CGP_REF_VARK = 12.5         // %
+private const val CGP_REF_HYPO = 0.0
+private const val CGP_REF_HYPER = 0.0
+private const val CGP_REF_MEAN_GLUCOSE = 100.0 // mg/dL
+
+// Worst-case normalisation denominators (lower-is-better axes)
+private const val CGP_WORST_TOR = 1440.0       // min/day (entire day out of range)
+private const val CGP_WORST_VARK = 50.0        // %
+private const val CGP_WORST_HYPO = 5000.0
+private const val CGP_WORST_HYPER = 50000.0
+private const val CGP_MEAN_GLUCOSE_OFFSET = 100.0  // reference mean glucose
+private const val CGP_WORST_MEAN_GLUCOSE_RANGE = 200.0  // worst = 300 mg/dL
+
+// Hypo/hyper intensity scale factor: per 5-min reading contributing to daily average
+// Formula: sum of (delta)^2 × (5/1440) per reading / daysInRange
+private const val CGP_INTENSITY_READING_WEIGHT = 5.0 / 1440.0
+
+// CGP thresholds
+private const val CGP_HYPO_THRESHOLD = 70.0   // mg/dL
+private const val CGP_HYPER_THRESHOLD = 180.0  // mg/dL
+
+// PGR risk category thresholds (geometric mean × 5, scale 0–5)
+private const val PGR_RISK_VERY_LOW = 2.0
+private const val PGR_RISK_LOW = 3.0
+private const val PGR_RISK_MODERATE = 4.0
+private const val PGR_RISK_HIGH = 4.5
+private const val PGR_SCALE = 5.0
+private const val CGP_AXES_COUNT = 5.0
+
+// Minimum readings for meaningful CGP (14 days × 288 readings/day)
+private const val CGP_MIN_READINGS = 4032
 
 private data class CgmFetchResult(val readings: List<Double>, val mismatchCount: Int)
 private data class MeasuresCacheKey(val userId: String, val from: String, val to: String)
@@ -1056,7 +1089,7 @@ class AnalyticsService(
         val rangeWarnings = buildList {
             if (fromInstant != null && toInstant != null) {
                 val rangeSeconds = (toInstant - fromInstant).inWholeSeconds
-                if (rangeSeconds > MAX_DISTRIBUTION_DAYS * 86_400L) {
+                if (rangeSeconds > MAX_DISTRIBUTION_DAYS * SECONDS_IN_DAY_L) {
                     add("Date range exceeds 365 days — results may be slow to compute.")
                 }
             }
@@ -1185,5 +1218,128 @@ class AnalyticsService(
             totalCount = 0,
             warnings = warnings,
         )
+    }
+
+    // UnreachableCode: detekt false positive inside lambda guard clauses.
+    // ReturnCount: three early-return guards (upstream error, empty readings, and final result) are
+    // all necessary for clarity and cannot be restructured without sacrificing readability.
+    @Suppress("LongParameterList", "UnreachableCode", "ReturnCount")
+    override suspend fun getCgp(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        glucoseUnit: String,
+        correlationId: String,
+    ): CgpResult {
+        val allMeasures = try {
+            getMeasuresCached(userId, from, to, authorization, correlationId)
+        } catch (e: Exception) {
+            logger.warn(e) {
+                "analytics_service action=getCgp status=upstream_error userId=$userId — returning empty result"
+            }
+            return emptyCgpResult(listOf("Glucose data is temporarily unavailable. Please try again later."))
+        }
+
+        val readings = allMeasures.mapNotNull { dto ->
+            if (dto.type != "CGM") return@mapNotNull null
+            val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
+            val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
+            val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * GLUCOSE_CONVERSION_FACTOR else sgv
+            if (mgDl <= 0.0) return@mapNotNull null
+            mgDl
+        }
+
+        val warnings = buildList {
+            if (readings.isEmpty()) {
+                add("No CGM readings found in the selected timeframe.")
+            } else if (readings.size < CGP_MIN_READINGS) {
+                add("Fewer than 14 days of CGM data — CGP values may not be representative.")
+            }
+        }
+
+        if (readings.isEmpty()) return emptyCgpResult(warnings)
+
+        // Compute days in range for intensity normalisation
+        val fromInstant = runCatching { kotlin.time.Instant.parse(from) }.getOrNull()
+        val toInstant = runCatching { kotlin.time.Instant.parse(to) }.getOrNull()
+        val daysInRange = if (fromInstant != null && toInstant != null) {
+            val secs = (toInstant - fromInstant).inWholeSeconds.toDouble()
+            (secs / SECONDS_PER_DAY).coerceAtLeast(1.0)
+        } else 1.0
+
+        val mean = readings.average()
+        val sd = if (readings.size > 1) {
+            sqrt(readings.sumOf { (it - mean) * (it - mean) } / readings.size)
+        } else 0.0
+
+        // ToR: minutes/day where glucose < 70 or > 180
+        val outOfRangeCount = readings.count { it < CGP_HYPO_THRESHOLD || it > CGP_HYPER_THRESHOLD }
+        val tor = outOfRangeCount.toDouble() * CGP_INTENSITY_READING_WEIGHT * MINUTES_PER_HOUR * HOURS_IN_DAY_D
+
+        // VarK: coefficient of variation (%)
+        val varK = if (mean > 0.0) sd / mean * PERCENT_FACTOR else 0.0
+
+        // Hypo intensity: sum of (70-g)^2 × (5/1440) per reading / days
+        val hypoIntensity = readings
+            .filter { it < CGP_HYPO_THRESHOLD }
+            .sumOf { (CGP_HYPO_THRESHOLD - it) * (CGP_HYPO_THRESHOLD - it) * CGP_INTENSITY_READING_WEIGHT } /
+            daysInRange
+
+        // Hyper intensity: sum of (g-180)^2 × (5/1440) per reading / days
+        val hyperIntensity = readings
+            .filter { it > CGP_HYPER_THRESHOLD }
+            .sumOf {
+                (it - CGP_HYPER_THRESHOLD) * (it - CGP_HYPER_THRESHOLD) * CGP_INTENSITY_READING_WEIGHT
+            } / daysInRange
+
+        // Normalise all axes (0=worst, 1=healthy reference)
+        val normTor = 1.0 - (tor / CGP_WORST_TOR).coerceIn(0.0, 1.0)
+        val normVarK = 1.0 - (varK / CGP_WORST_VARK).coerceIn(0.0, 1.0)
+        val normHypo = 1.0 - (hypoIntensity / CGP_WORST_HYPO).coerceIn(0.0, 1.0)
+        val normHyper = 1.0 - (hyperIntensity / CGP_WORST_HYPER).coerceIn(0.0, 1.0)
+        val normMeanGlucose = 1.0 -
+            ((mean - CGP_MEAN_GLUCOSE_OFFSET) / CGP_WORST_MEAN_GLUCOSE_RANGE).coerceIn(0.0, 1.0)
+
+        // PGR score: geometric mean of the 5 normalised values × 5
+        val product = normTor * normVarK * normHypo * normHyper * normMeanGlucose
+        val pgr = Math.pow(product, 1.0 / CGP_AXES_COUNT) * PGR_SCALE
+
+        return CgpResult(
+            tor = tor,
+            varK = varK,
+            hypoIntensity = hypoIntensity,
+            hyperIntensity = hyperIntensity,
+            meanGlucose = mean,
+            normTor = normTor,
+            normVarK = normVarK,
+            normHypo = normHypo,
+            normHyper = normHyper,
+            normMeanGlucose = normMeanGlucose,
+            refTor = CGP_REF_TOR,
+            refVarK = CGP_REF_VARK,
+            refHypo = CGP_REF_HYPO,
+            refHyper = CGP_REF_HYPER,
+            refMeanGlucose = CGP_REF_MEAN_GLUCOSE,
+            pgr = pgr,
+            pgrRisk = pgrRisk(pgr),
+            warnings = warnings,
+        )
+    }
+
+    private fun emptyCgpResult(warnings: List<String>): CgpResult = CgpResult(
+        tor = 0.0, varK = 0.0, hypoIntensity = 0.0, hyperIntensity = 0.0, meanGlucose = 0.0,
+        normTor = 0.0, normVarK = 0.0, normHypo = 0.0, normHyper = 0.0, normMeanGlucose = 0.0,
+        refTor = CGP_REF_TOR, refVarK = CGP_REF_VARK, refHypo = CGP_REF_HYPO,
+        refHyper = CGP_REF_HYPER, refMeanGlucose = CGP_REF_MEAN_GLUCOSE,
+        pgr = 0.0, pgrRisk = "very_low", warnings = warnings,
+    )
+
+    private fun pgrRisk(pgr: Double): String = when {
+        pgr <= PGR_RISK_VERY_LOW -> "very_low"
+        pgr <= PGR_RISK_LOW      -> "low"
+        pgr <= PGR_RISK_MODERATE -> "moderate"
+        pgr <= PGR_RISK_HIGH     -> "high"
+        else                      -> "very_high"
     }
 }

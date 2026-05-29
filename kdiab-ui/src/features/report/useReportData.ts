@@ -7,6 +7,7 @@ import type {
   DailyTrendResponse,
   GlucoseDistributionResponse,
   ProfilesResponse,
+  CgpResponse,
 } from '../../api/analyzeApi'
 import type { ReportPageId } from './reportPages'
 
@@ -24,6 +25,7 @@ export interface ReportDataState {
   dailyTrend: ReportSection<DailyTrendResponse>
   glucoseDistribution: ReportSection<GlucoseDistributionResponse>
   profile: ReportSection<ProfilesResponse>
+  cgp: ReportSection<CgpResponse>
   isAnyLoading: boolean
 }
 
@@ -89,10 +91,17 @@ export function useReportData(
         enabled: enabled && isSelected('PROFILE'),
         staleTime: 5 * 60 * 1000,
       },
+      // CGP — only if selected
+      {
+        queryKey: ['report-cgp', userId, from, to, glucoseUnit] as const,
+        queryFn: () => analyzeApi.getCgp(userId, from, to, glucoseUnit).then(r => r.data),
+        enabled: enabled && isSelected('CGP'),
+        staleTime: 5 * 60 * 1000,
+      },
     ],
   })
 
-  const [summaryQ, agpQ, dailyStatsQ, dailyTrendQ, glucoseDistQ, profileQ] = results
+  const [summaryQ, agpQ, dailyStatsQ, dailyTrendQ, glucoseDistQ, profileQ, cgpQ] = results
 
   return {
     summary: {
@@ -124,6 +133,11 @@ export function useReportData(
       data: profileQ.data ?? null,
       isLoading: profileQ.isLoading,
       isError: profileQ.isError,
+    },
+    cgp: {
+      data: cgpQ.data ?? null,
+      isLoading: cgpQ.isLoading,
+      isError: cgpQ.isError,
     },
     isAnyLoading: results.some(r => r.isLoading),
   }
