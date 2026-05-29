@@ -135,7 +135,7 @@ export function BasalRatePage({ segments }: Props) {
                   <LabelList
                     dataKey="rate"
                     position="top"
-                    formatter={(v: number) => v.toFixed(2)}
+                    formatter={(v: unknown) => (typeof v === 'number' ? v.toFixed(2) : '')}
                     style={{ fontSize: '0.7rem', fill: '#1d4ed8' }}
                   />
                 </Area>
