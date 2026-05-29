@@ -642,15 +642,18 @@
       "AGP": "AGP Perzentilkurve",
       "DAILY_STATS": "Tägliche Statistiken",
       "DAILY_TREND": "Tagesverlauf",
+      "WOCHENGRAPHIK": "Wochengrafik (Überlagerungskurven)",
       "GLUCOSE_DISTRIBUTION": "Glukoseverteilung",
       "PROFILE": "Basalprofil",
-      "CGP": "Umfassendes Glukosepentagon (CGP)"
+      "CGP": "Umfassendes Glukosepentagon (CGP)",
+      "AUSWERTUNG": "Auswertung"
     },
     "error": {
       "summary": "Zusammenfassung konnte nicht geladen werden.",
       "agp": "AGP-Daten konnten nicht geladen werden.",
       "dailyStats": "Tägliche Statistiken konnten nicht geladen werden.",
       "dailyTrend": "Tagesverlauf konnte nicht geladen werden.",
+      "wochengraphik": "Wochengrafik konnte nicht geladen werden.",
       "glucoseDistribution": "Glukoseverteilung konnte nicht geladen werden.",
       "profile": "Profildaten konnten nicht geladen werden.",
       "cgp": "CGP-Daten konnten nicht geladen werden."
@@ -676,6 +679,13 @@
       },
       "citation": "Vigersky et al. (2018). Journal of Diabetes Science and Technology, 12(1), 114–123."
     },
+    "wochengraphik": {
+      "weekLabel": "KW",
+      "chartAriaLabel": "Wochengrafik Glukosverlauf",
+      "chartCaption": "Glukosekurven aller Tage überlagert auf einer 24-Stunden-Zeitachse",
+      "xAxisLabel": "Tageszeit",
+      "legendAriaLabel": "Tagfarben-Legende"
+    },
     "dailyTrendDays": "{{count}} Tag mit Daten",
     "dailyTrendDays_other": "{{count}} Tage mit Daten",
     "dailyStats": {
@@ -700,6 +710,35 @@
       "sensorWearDays": "Sensortrage",
       "totalReadings": "Messungen gesamt",
       "tirSectionTitle": "Zeit im Zielbereich"
+    },
+    "summary": {
+      "patientInfo": "Patientendaten",
+      "daysAnalysed": "Analysierte Tage",
+      "cgmReadings": "CGM-Messungen",
+      "insulinType": "Insulintypen",
+      "insulinChanges": "Reservoirwechsel",
+      "siteChanges": "Katheterwechsel",
+      "sensorInserts": "Sensorwechsel",
+      "tirProfile": "Zeit im Zielbereich (Profilschwellen)",
+      "tirStandard": "Zeit im Zielbereich (Standardschwellen 54/70/180/250)",
+      "tirFallback": "Profil ohne Schwellenwerte, Standard 70/180 verwendet",
+      "glucoseStats": "Glukosestatistik",
+      "minGlucose": "Minimum",
+      "maxGlucose": "Maximum",
+      "meanGlucose": "Mittelwert",
+      "sd": "Standardabweichung",
+      "dailyAverages": "Tägliche Durchschnittswerte",
+      "avgCarbs": "Ø Kohlenhydrate/Tag",
+      "avgBolus": "Ø Bolusinsulin/Tag",
+      "avgBasal": "Ø Basalinsulin/Tag",
+      "avgTotalInsulin": "Ø Gesamtinsulin/Tag",
+      "tir": {
+        "veryLow": "Sehr niedrig",
+        "low": "Niedrig",
+        "inRange": "Im Zielbereich",
+        "high": "Hoch",
+        "veryHigh": "Sehr hoch"
+      }
     }
   }
 }

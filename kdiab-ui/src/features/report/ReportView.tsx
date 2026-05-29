@@ -15,6 +15,7 @@ import { TimeInRangeBar } from '../analytics/TimeInRangeBar'
 import { ProfilesView } from '../analytics/ProfilesView'
 import { DailyStatsPage } from './DailyStatsPage'
 import { AgpChartPage } from './AgpChartPage'
+import { WochengraphikPage } from './WochengraphikPage'
 
 interface Props {
   userId: string
@@ -155,6 +156,26 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
             <p style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
               {t('report.dailyTrendDays', { count: data.dailyTrend.data.days.length })}
             </p>
+          )}
+          {!data.dailyTrend.isLoading && !data.dailyTrend.isError && !data.dailyTrend.data && (
+            <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
+          )}
+        </ReportSection>
+      )}
+
+      {/* Wochengraphik (Weekly Overlay Chart) */}
+      {isSelected('WOCHENGRAPHIK') && (
+        <ReportSection
+          title={t('report.page.WOCHENGRAPHIK')}
+          isLoading={data.dailyTrend.isLoading}
+          isError={data.dailyTrend.isError}
+          errorMessage={t('report.error.wochengraphik')}
+        >
+          {data.dailyTrend.data && (
+            <WochengraphikPage
+              data={data.dailyTrend.data}
+              glucoseUnit={glucoseUnit}
+            />
           )}
           {!data.dailyTrend.isLoading && !data.dailyTrend.isError && !data.dailyTrend.data && (
             <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>

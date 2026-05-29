@@ -642,15 +642,18 @@
       "AGP": "AGP Percentile Chart",
       "DAILY_STATS": "Daily Statistics",
       "DAILY_TREND": "Daily Trend",
+      "WOCHENGRAPHIK": "Weekly Overlay Chart",
       "GLUCOSE_DISTRIBUTION": "Glucose Distribution",
       "PROFILE": "Basal Profile",
-      "CGP": "Comprehensive Glucose Pentagon (CGP)"
+      "CGP": "Comprehensive Glucose Pentagon (CGP)",
+      "AUSWERTUNG": "Summary Report"
     },
     "error": {
       "summary": "Could not load summary data.",
       "agp": "Could not load AGP data.",
       "dailyStats": "Could not load daily statistics.",
       "dailyTrend": "Could not load daily trend data.",
+      "wochengraphik": "Could not load weekly overlay chart data.",
       "glucoseDistribution": "Could not load glucose distribution.",
       "profile": "Could not load profile data.",
       "cgp": "Could not load CGP data."
@@ -676,6 +679,13 @@
       },
       "citation": "Vigersky et al. (2018). Journal of Diabetes Science and Technology, 12(1), 114–123."
     },
+    "wochengraphik": {
+      "weekLabel": "CW",
+      "chartAriaLabel": "Weekly glucose overlay chart",
+      "chartCaption": "Glucose curves for all days overlaid on a 24-hour timeline",
+      "xAxisLabel": "Time of day",
+      "legendAriaLabel": "Day colour legend"
+    },
     "dailyTrendDays": "{{count}} day with data",
     "dailyTrendDays_other": "{{count}} days with data",
     "dailyStats": {
@@ -700,6 +710,35 @@
       "sensorWearDays": "Sensor wear",
       "totalReadings": "Total readings",
       "tirSectionTitle": "Time in Range"
+    },
+    "summary": {
+      "patientInfo": "Patient information",
+      "daysAnalysed": "Days analysed",
+      "cgmReadings": "CGM readings",
+      "insulinType": "Insulin types",
+      "insulinChanges": "Reservoir changes",
+      "siteChanges": "Site changes",
+      "sensorInserts": "Sensor inserts",
+      "tirProfile": "Time in range (profile thresholds)",
+      "tirStandard": "Time in range (standard thresholds 54/70/180/250)",
+      "tirFallback": "Profile has no thresholds; using standard 70/180",
+      "glucoseStats": "Glucose statistics",
+      "minGlucose": "Minimum",
+      "maxGlucose": "Maximum",
+      "meanGlucose": "Mean glucose",
+      "sd": "Std. deviation",
+      "dailyAverages": "Daily averages",
+      "avgCarbs": "Avg carbs/day",
+      "avgBolus": "Avg bolus/day",
+      "avgBasal": "Avg basal/day",
+      "avgTotalInsulin": "Avg total insulin/day",
+      "tir": {
+        "veryLow": "Very low",
+        "low": "Low",
+        "inRange": "In range",
+        "high": "High",
+        "veryHigh": "Very high"
+      }
     }
   }
 }

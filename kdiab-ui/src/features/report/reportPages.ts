@@ -8,6 +8,7 @@ export const REPORT_PAGE_IDS = [
   'AGP',
   'DAILY_STATS',
   'DAILY_TREND',
+  'WOCHENGRAPHIK',
   'GLUCOSE_DISTRIBUTION',
   'PROFILE',
   'CGP',
