@@ -715,6 +715,17 @@
       "totalReadings": "Messungen gesamt",
       "tirSectionTitle": "Zeit im Zielbereich"
     },
+    "glucoseDist": {
+      "chartAriaLabel": "Histogramm der Glukoseverteilung in {{unit}}",
+      "chartCaption": "Häufigkeit der CGM-Messungen je Glukosebereich im gewählten Zeitraum.",
+      "zoneSummaryAriaLabel": "Zonenprozentzusammenfassung",
+      "readings": "Messungen",
+      "zoneVeryLow": "Sehr niedrig",
+      "zoneLow": "Niedrig",
+      "zoneInRange": "Im Zielbereich",
+      "zoneHigh": "Hoch",
+      "zoneVeryHigh": "Sehr hoch"
+    },
     "summary": {
       "patientInfo": "Patientendaten",
       "daysAnalysed": "Analysierte Tage",

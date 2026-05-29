@@ -19,6 +19,7 @@ import { BasalRatePage } from './BasalRatePage'
 import { ProfilePage } from './ProfilePage'
 import { DailyChartPage } from './DailyChartPage'
 import { DailyTrendTable } from './DailyTrendPage'
+import { GlucoseDistributionPage } from './GlucoseDistributionPage'
 
 interface Props {
   userId: string
@@ -213,9 +214,12 @@ export function ReportView({ from, to, selectedPages, data, glucoseUnit, patient
           errorMessage={t('report.error.glucoseDistribution')}
         >
           {data.glucoseDistribution.data && (
-            <GlucoseDistributionSummary
+            <GlucoseDistributionPage
+              buckets={data.glucoseDistribution.data.buckets}
               zonePercents={data.glucoseDistribution.data.zonePercents}
+              unit={data.glucoseDistribution.data.unit}
               totalCount={data.glucoseDistribution.data.totalCount}
+              {...(data.glucoseDistribution.data.warnings !== undefined && { warnings: data.glucoseDistribution.data.warnings })}
             />
           )}
           {!data.glucoseDistribution.isLoading && !data.glucoseDistribution.isError && !data.glucoseDistribution.data && (
@@ -462,54 +466,3 @@ function CgpPentagonChart({ cgp }: CgpPentagonChartProps) {
 
 // ---- Inline sub-components ----
 
-interface GlucoseDistributionSummaryProps {
-  zonePercents: {
-    veryLow: number
-    low: number
-    inRange: number
-    high: number
-    veryHigh: number
-  }
-  totalCount: number
-}
-
-function GlucoseDistributionSummary({ zonePercents, totalCount }: GlucoseDistributionSummaryProps) {
-  const { t } = useTranslation()
-
-  const zones: Array<{ key: keyof typeof zonePercents; labelKey: string; color: string }> = [
-    { key: 'veryLow', labelKey: 'analytics.tirVeryLow', color: '#c0392b' },
-    { key: 'low', labelKey: 'analytics.tirLow', color: '#e67e22' },
-    { key: 'inRange', labelKey: 'analytics.tirInRange', color: '#27ae60' },
-    { key: 'high', labelKey: 'analytics.tirHigh2', color: '#f39c12' },
-    { key: 'veryHigh', labelKey: 'analytics.tirHighLabel', color: '#8e44ad' },
-  ]
-
-  return (
-    <div>
-      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-        {t('analytics.basedOnReadings', { count: totalCount })}
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-        {zones.map(({ key, labelKey, color }) => (
-          <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div
-              style={{
-                width: `${Math.max(zonePercents[key], 0.5)}%`,
-                minWidth: 4,
-                maxWidth: '60%',
-                height: 18,
-                background: color,
-                borderRadius: 2,
-                flexShrink: 0,
-              }}
-            />
-            <span style={{ fontSize: '0.85rem', minWidth: 60 }}>{t(labelKey)}</span>
-            <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-              {zonePercents[key].toFixed(1)}%
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
