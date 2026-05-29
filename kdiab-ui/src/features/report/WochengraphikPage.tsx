@@ -187,7 +187,7 @@ function WeekChart({ weekKey, days, glucoseUnit, targetLow, targetHigh, locale }
               type="number"
               domain={[0, 23]}
               ticks={xTicks}
-              tickFormatter={(h: number) => `${String(h).padStart(2, '0')}:00`}
+              tickFormatter={(h: unknown) => typeof h === 'number' ? `${String(h).padStart(2, '0')}:00` : String(h)}
               label={{
                 value: t('report.wochengraphik.xAxisLabel'),
                 position: 'insideBottom',
@@ -209,8 +209,10 @@ function WeekChart({ weekKey, days, glucoseUnit, targetLow, targetHigh, locale }
                 fill: 'var(--text-secondary)',
                 fontSize: 11,
               }}
-              tickFormatter={(v: number) =>
-                glucoseUnit === 'mmol/L' ? v.toFixed(1) : String(Math.round(v))
+              tickFormatter={(v: unknown) =>
+                typeof v === 'number'
+                  ? (glucoseUnit === 'mmol/L' ? v.toFixed(1) : String(Math.round(v)))
+                  : String(v)
               }
               width={50}
             />
@@ -228,8 +230,10 @@ function WeekChart({ weekKey, days, glucoseUnit, targetLow, targetHigh, locale }
                 fill: 'var(--text-secondary)',
                 fontSize: 11,
               }}
-              tickFormatter={(v: number) =>
-                glucoseUnit === 'mmol/L' ? v.toFixed(1) : String(Math.round(v))
+              tickFormatter={(v: unknown) =>
+                typeof v === 'number'
+                  ? (glucoseUnit === 'mmol/L' ? v.toFixed(1) : String(Math.round(v)))
+                  : String(v)
               }
               width={50}
             />
