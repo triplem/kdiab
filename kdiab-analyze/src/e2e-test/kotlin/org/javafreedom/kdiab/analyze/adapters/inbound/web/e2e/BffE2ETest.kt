@@ -108,7 +108,10 @@ class BffE2ETest : BehaviorSpec({
         """"treatedAt":"2024-01-15T12:00:00Z","createdAt":"2024-01-15T12:00:00Z","type":"BOLUS","data":{"units":3.5},"status":"ACTIVE"}"""
     val activeProfileJson =
         """{"id":"dddddddd-dddd-dddd-dddd-dddddddddddd","userId":"$sarahId","status":"ACTIVE",""" +
-        """"name":"Sarah Basal Profile","insulinType":"rapid","durationOfAction":180,""" +
+        """"name":"Sarah Basal Profile",""" +
+        """"settings":{"insulinType":"rapid","durationOfAction":180},""" +
+        """"schedule":{"basal":[{"startTime":"00:00","value":1.0}],"icr":[],"isf":[],"targets":[]},""" +
+        """"insulinType":"rapid","durationOfAction":180,""" +
         """"createdAt":"2024-01-01T00:00:00Z","validFrom":"2024-01-01T00:00:00Z"}"""
 
     val measuresPagedJson = """{"items":[$cgmMeasureJson],"page":0,"size":200,"totalCount":1}"""

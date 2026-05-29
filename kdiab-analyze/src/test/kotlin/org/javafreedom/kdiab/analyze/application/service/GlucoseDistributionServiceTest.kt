@@ -18,7 +18,8 @@ class GlucoseDistributionServiceTest {
 
     private val measuresClient = mockk<MeasuresPort>()
     private val profilesClient = mockk<ProfilesPort>()
-    private val service = AnalyticsService(measuresClient, profilesClient, mockk<TreatmentsPort>())
+    private val treatmentsClient = mockk<TreatmentsPort>()
+    private val service = AnalyticsService(measuresClient, profilesClient, treatmentsClient)
 
     private val userId = "user-1"
     private val auth = "Bearer token"
