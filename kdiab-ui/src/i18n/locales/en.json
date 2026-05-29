@@ -643,6 +643,7 @@
       "DAILY_STATS": "Daily Statistics",
       "DAILY_TREND": "Daily Trend",
       "WOCHENGRAPHIK": "Weekly Overlay Chart",
+      "DAILY_CHARTS": "Daily Charts (Tagesgrafik)",
       "GLUCOSE_DISTRIBUTION": "Glucose Distribution",
       "PROFILE": "Basal Profile",
       "CGP": "Comprehensive Glucose Pentagon (CGP)",
@@ -658,7 +659,8 @@
       "glucoseDistribution": "Could not load glucose distribution.",
       "profile": "Could not load profile data.",
       "cgp": "Could not load CGP data.",
-      "basalRate": "Could not load basal rate data."
+      "basalRate": "Could not load basal rate data.",
+      "dailyCharts": "Could not load daily chart data."
     },
     "cgp": {
       "axisTor": "ToR (min/day)",
@@ -785,6 +787,19 @@
       "targetLow": "Low",
       "targetHigh": "High",
       "startTime": "Start Time"
+    },
+    "dailyChart": {
+      "sectionAriaLabel": "Daily charts — one chart per day",
+      "chartAriaLabel": "Glucose chart for {{date}}",
+      "chartCaption": "CGM glucose trace with treatment markers for {{date}}",
+      "glucoseLabel": "Glucose",
+      "noData": "No CGM data available for the selected period.",
+      "capped": "Showing the most recent {{count}} days.",
+      "totalBolus": "Bolus {{units}} U",
+      "totalCarbs": "Carbs {{grams}} g",
+      "siteChanges": "Site change ×{{count}}",
+      "sensorInserts": "Sensor insert ×{{count}}",
+      "insulinChanges": "Insulin change ×{{count}}"
     }
   }
 }

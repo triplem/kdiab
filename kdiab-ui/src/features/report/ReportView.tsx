@@ -17,6 +17,7 @@ import { AgpChartPage } from './AgpChartPage'
 import { WochengraphikPage } from './WochengraphikPage'
 import { BasalRatePage } from './BasalRatePage'
 import { ProfilePage } from './ProfilePage'
+import { DailyChartPage } from './DailyChartPage'
 
 interface Props {
   userId: string
@@ -179,6 +180,23 @@ export function ReportView({ from, to, selectedPages, data, glucoseUnit, patient
             />
           )}
           {!data.dailyTrend.isLoading && !data.dailyTrend.isError && !data.dailyTrend.data && (
+            <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
+          )}
+        </ReportSection>
+      )}
+
+      {/* Daily Charts */}
+      {isSelected('DAILY_CHARTS') && (
+        <ReportSection
+          title={t('report.page.DAILY_CHARTS')}
+          isLoading={data.dailyCharts.isLoading}
+          isError={data.dailyCharts.isError}
+          errorMessage={t('report.error.dailyCharts')}
+        >
+          {data.dailyCharts.data && (
+            <DailyChartPage timeline={data.dailyCharts.data} glucoseUnit={glucoseUnit} />
+          )}
+          {!data.dailyCharts.isLoading && !data.dailyCharts.isError && !data.dailyCharts.data && (
             <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
           )}
         </ReportSection>

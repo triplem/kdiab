@@ -643,6 +643,7 @@
       "DAILY_STATS": "Tägliche Statistiken",
       "DAILY_TREND": "Tagesverlauf",
       "WOCHENGRAPHIK": "Wochengrafik (Überlagerungskurven)",
+      "DAILY_CHARTS": "Tagesgrafik",
       "GLUCOSE_DISTRIBUTION": "Glukoseverteilung",
       "PROFILE": "Basalprofil",
       "CGP": "Umfassendes Glukosepentagon (CGP)",
@@ -658,7 +659,8 @@
       "glucoseDistribution": "Glukoseverteilung konnte nicht geladen werden.",
       "profile": "Profildaten konnten nicht geladen werden.",
       "cgp": "CGP-Daten konnten nicht geladen werden.",
-      "basalRate": "Basalraten-Daten konnten nicht geladen werden."
+      "basalRate": "Basalraten-Daten konnten nicht geladen werden.",
+      "dailyCharts": "Tagesgrafik konnte nicht geladen werden."
     },
     "cgp": {
       "axisTor": "ToR (min/Tag)",
@@ -785,6 +787,19 @@
       "targetLow": "Unterer Zielwert",
       "targetHigh": "Oberer Zielwert",
       "startTime": "Startzeit"
+    },
+    "dailyChart": {
+      "sectionAriaLabel": "Tagesgrafiken — ein Diagramm pro Tag",
+      "chartAriaLabel": "Glukoseverlauf für {{date}}",
+      "chartCaption": "CGM-Glukoseverlauf mit Behandlungsmarkierungen für {{date}}",
+      "glucoseLabel": "Glukose",
+      "noData": "Keine CGM-Daten für den gewählten Zeitraum verfügbar.",
+      "capped": "Es werden die neuesten {{count}} Tage angezeigt.",
+      "totalBolus": "Bolus {{units}} E",
+      "totalCarbs": "KH {{grams}} g",
+      "siteChanges": "Katheterwechsel ×{{count}}",
+      "sensorInserts": "Sensorwechsel ×{{count}}",
+      "insulinChanges": "Insulinwechsel ×{{count}}"
     }
   }
 }
