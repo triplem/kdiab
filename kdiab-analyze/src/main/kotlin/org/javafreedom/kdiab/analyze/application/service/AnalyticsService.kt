@@ -4,7 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
 import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
 import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
-import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
+import org.javafreedom.kdiab.analyze.domain.model.AgpBucketData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
@@ -31,15 +31,17 @@ private const val TIR_LOW = 70.0       // below: Level 1 hypoglycaemia
 private const val TIR_HIGH = 180.0     // above: hyperglycaemia
 private const val TIR_VERY_HIGH = 250.0 // high: severe hyperglycaemia
 
-private const val HOURS_IN_DAY = 24
+private const val MINUTES_IN_HOUR = 60
+private const val BUCKET_SIZE_MINUTES = 5
+private const val BUCKET_COUNT = 288  // 1440 minutes/day / 5 minutes/bucket
 
 // Clinical thresholds for data quality warnings
 // < 1 day of 5-min CGM readings (288 = 24h * 12 readings/h)
 private const val MIN_READINGS_RELIABLE = 288
 // < 14 days of 5-min CGM readings (4032 = 14 * 288)
 private const val MIN_READINGS_MEANINGFUL = 4032
-// At least half of all 24 UTC hours must have at least one reading
-private const val MIN_COVERED_HOURS = 12
+// At least half of all 288 five-minute buckets must have at least one reading
+private const val MIN_COVERED_BUCKETS = 144
 
 private const val AGP_TENTH_PERCENTILE = 10
 private const val AGP_LOWER_QUARTILE = 25
@@ -178,8 +180,11 @@ class AnalyticsService(
                 "analytics_service action=getAgp status=upstream_error userId=$userId — returning empty result"
             }
             return AgpResult(
-                hourlyData = (0 until HOURS_IN_DAY).map { hour ->
-                    AgpHourlyData(hour = hour, p10 = null, p25 = null, median = null, p75 = null, p90 = null, count = 0)
+                bucketData = (0 until BUCKET_COUNT).map { bucketIndex ->
+                    AgpBucketData(
+                        minuteOfDay = bucketIndex * BUCKET_SIZE_MINUTES,
+                        p10 = null, p25 = null, median = null, p75 = null, p90 = null, count = 0,
+                    )
                 },
                 totalReadingCount = 0,
                 sensorWearDays = 0,
@@ -187,7 +192,7 @@ class AnalyticsService(
             )
         }
 
-        val byHour = Array(HOURS_IN_DAY) { mutableListOf<Double>() }
+        val byBucket = Array(BUCKET_COUNT) { mutableListOf<Double>() }
 
         allMeasures.forEach { dto ->
             if (dto.type != "CGM") return@forEach
@@ -196,8 +201,10 @@ class AnalyticsService(
             val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
             val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * GLUCOSE_CONVERSION_FACTOR else sgv
             if (mgDl <= 0.0) return@forEach
-            val hour = t.toLocalDateTime(timeZone).hour
-            byHour[hour].add(mgDl)
+            val localTime = t.toLocalDateTime(timeZone)
+            val localMinuteOfDay = localTime.hour * MINUTES_IN_HOUR + localTime.minute
+            val bucketIndex = localMinuteOfDay / BUCKET_SIZE_MINUTES
+            byBucket[bucketIndex].add(mgDl)
         }
 
         val sensorWearDays = allMeasures.mapNotNull { dto ->
@@ -206,13 +213,16 @@ class AnalyticsService(
                 ?.toLocalDateTime(timeZone)?.date
         }.toSet().size
 
-        val hourlyData = byHour.mapIndexed { hour, values ->
+        val bucketData = byBucket.mapIndexed { bucketIndex, values ->
             if (values.isEmpty()) {
-                AgpHourlyData(hour = hour, p10 = null, p25 = null, median = null, p75 = null, p90 = null, count = 0)
+                AgpBucketData(
+                    minuteOfDay = bucketIndex * BUCKET_SIZE_MINUTES,
+                    p10 = null, p25 = null, median = null, p75 = null, p90 = null, count = 0,
+                )
             } else {
                 values.sort()
-                AgpHourlyData(
-                    hour = hour,
+                AgpBucketData(
+                    minuteOfDay = bucketIndex * BUCKET_SIZE_MINUTES,
                     p10 = percentile(values, AGP_TENTH_PERCENTILE),
                     p25 = percentile(values, AGP_LOWER_QUARTILE),
                     median = percentile(values, AGP_MEDIAN_PERCENTILE),
@@ -223,16 +233,19 @@ class AnalyticsService(
             }
         }
 
-        val coveredHours = hourlyData.count { it.count > 0 }
-        val totalReadingCount = hourlyData.sumOf { it.count }
+        val coveredBuckets = bucketData.count { it.count > 0 }
+        val totalReadingCount = bucketData.sumOf { it.count }
         val agpWarnings = buildList {
-            if (coveredHours < MIN_COVERED_HOURS) {
-                add("Only $coveredHours of 24 hours have CGM data — AGP pattern may not be representative.")
+            if (coveredBuckets < MIN_COVERED_BUCKETS) {
+                add(
+                    "Only $coveredBuckets of 288 five-minute buckets have CGM data " +
+                        "— AGP pattern may not be representative."
+                )
             }
         }
 
         return AgpResult(
-            hourlyData = hourlyData,
+            bucketData = bucketData,
             totalReadingCount = totalReadingCount,
             sensorWearDays = sensorWearDays,
             warnings = agpWarnings,

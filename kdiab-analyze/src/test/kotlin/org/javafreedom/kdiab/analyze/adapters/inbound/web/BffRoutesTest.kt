@@ -20,7 +20,7 @@ import org.javafreedom.kdiab.analyze.application.service.AnalyticsOperation
 import org.javafreedom.kdiab.analyze.application.service.DeviceUsageOperation
 import org.javafreedom.kdiab.analyze.application.service.ProfilesOperation
 import org.javafreedom.kdiab.analyze.application.service.TimelineOperation
-import org.javafreedom.kdiab.analyze.domain.model.AgpHourlyData
+import org.javafreedom.kdiab.analyze.domain.model.AgpBucketData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.DeviceUsageResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
@@ -86,8 +86,8 @@ class BffRoutesTest {
 
     private val emptyTimeline = Timeline(emptyList(), emptyList())
     private val emptyHba1c = Hba1cResult(hba1c = null, meanGlucose = 0.0, readingCount = 0, tir = TirBreakdown())
-    private val emptyAgp = AgpResult((0 until 24).map { h ->
-        AgpHourlyData(hour = h, p10 = 0.0, p25 = 0.0, median = 0.0, p75 = 0.0, p90 = 0.0, count = 0)
+    private val emptyAgp = AgpResult((0 until 288).map { i ->
+        AgpBucketData(minuteOfDay = i * 5, p10 = 0.0, p25 = 0.0, median = 0.0, p75 = 0.0, p90 = 0.0, count = 0)
     })
     private val emptyProfiles = ProfilesResult(emptyList())
     private val emptyDeviceUsage = DeviceUsageResult(

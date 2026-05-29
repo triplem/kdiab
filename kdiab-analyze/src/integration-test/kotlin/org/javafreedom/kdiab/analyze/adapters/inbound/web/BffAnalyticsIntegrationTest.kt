@@ -196,7 +196,7 @@ class BffAnalyticsIntegrationTest {
     }
 
     @Test
-    fun `agp - correct hourly bucket assignment`() {
+    fun `agp - correct 5-minute bucket assignment`() {
         val (timelineService, analyticsService, profilesService) = buildServices(tenCgmReadingsJson)
         testApplication {
             setupApp(timelineService, analyticsService, profilesService)
@@ -206,21 +206,24 @@ class BffAnalyticsIntegrationTest {
             assertEquals(HttpStatusCode.OK, resp.status)
             val body = resp.bodyAsText()
             val result = lenientJson.decodeFromString<AgpResponseDto>(body)
-            assertEquals(24, result.hourlyData.size)
+            assertEquals(288, result.bucketData.size)
 
-            // All 10 readings are at hour 10 UTC
-            val hour10 = result.hourlyData.find { it.hour == 10 }
-            assertNotNull(hour10)
-            assertEquals(10, hour10.count)
-            assertNotNull(hour10.median, "Median should be non-null for hour 10")
-            assertNotNull(hour10.p10, "p10 should be non-null for hour 10")
-            assertNotNull(hour10.p25, "p25 should be non-null for hour 10")
-            assertNotNull(hour10.p75, "p75 should be non-null for hour 10")
-            assertNotNull(hour10.p90, "p90 should be non-null for hour 10")
+            // 10 readings at 10:00–10:09 UTC split across two 5-minute buckets:
+            //   minutes 600–604 → bucketIndex 120 → minuteOfDay 600 (5 readings: 00–04)
+            //   minutes 605–609 → bucketIndex 121 → minuteOfDay 605 (5 readings: 05–09)
+            val bucket600 = result.bucketData.find { it.minuteOfDay == 600 }
+            val bucket605 = result.bucketData.find { it.minuteOfDay == 605 }
+            assertNotNull(bucket600)
+            assertNotNull(bucket605)
+            assertEquals(5, bucket600.count)
+            assertEquals(5, bucket605.count)
+            assertNotNull(bucket600.median, "Median should be non-null for bucket 600")
+            assertNotNull(bucket605.median, "Median should be non-null for bucket 605")
+            assertEquals(10, result.totalReadingCount)
 
-            // All other 23 buckets should have count=0
-            result.hourlyData.filter { it.hour != 10 }.forEach { bucket ->
-                assertEquals(0, bucket.count, "Expected 0 readings for hour ${bucket.hour}")
+            // All other 286 buckets should have count=0
+            result.bucketData.filter { it.minuteOfDay != 600 && it.minuteOfDay != 605 }.forEach { bucket ->
+                assertEquals(0, bucket.count, "Expected 0 readings for minuteOfDay ${bucket.minuteOfDay}")
             }
         }
     }
