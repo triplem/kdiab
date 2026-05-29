@@ -140,6 +140,10 @@ fun Route.bffRoutes(
         get("/users/{userId}/device-age") { handleDeviceAge(call, treatmentsClient) }
 
         get("/users/{userId}/device-status") { handleDeviceStatus(call, treatmentsClient) }
+
+        get("/users/{userId}/analytics/daily-stats") {
+            handleDailyStats(call, analyticsService)
+        }
     }
 }
 
@@ -154,6 +158,39 @@ private suspend fun handleDeviceAge(call: ApplicationCall, treatmentsClient: Tre
         correlationId = ctx.correlationId,
     )
     call.respond(deviceAge.toResponse())
+}
+
+private suspend fun handleDailyStats(
+    call: ApplicationCall,
+    analyticsService: AnalyticsOperation,
+) {
+    val userId = call.parameters["userId"] ?: return call.respond(HttpStatusCode.BadRequest)
+    val ctx = extractContext(call, userId)
+    val from = call.request.queryParameters["from"]
+        ?: throw BusinessValidationException("Missing required query parameter 'from'")
+    val to = call.request.queryParameters["to"]
+        ?: throw BusinessValidationException("Missing required query parameter 'to'")
+    val (validFrom, validTo) = validateDateRange(from, to)
+    auditDoctorAccess(ctx, "analyze.daily-stats")
+    val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
+    val timezone = runCatching { TimeZone.of(ctx.principal.timezone) }
+        .onFailure {
+            logger.warn {
+                "Invalid timezone falling back to UTC " +
+                    "timezone=${ctx.principal.timezone} userId=${ctx.principal.userId}"
+            }
+        }
+        .getOrDefault(TimeZone.UTC)
+    val result = analyticsService.getDailyStats(
+        userId = ctx.targetUserId.toString(),
+        from = validFrom,
+        to = validTo,
+        authorization = ctx.authorization,
+        glucoseUnit = glucoseUnit,
+        correlationId = ctx.correlationId,
+        timeZone = timezone,
+    )
+    call.respond(result.toResponse())
 }
 
 private suspend fun handleDeviceStatus(call: ApplicationCall, treatmentsClient: TreatmentsClient?) {

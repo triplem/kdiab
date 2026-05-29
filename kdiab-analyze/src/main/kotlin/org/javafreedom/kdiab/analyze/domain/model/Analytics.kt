@@ -89,3 +89,24 @@ data class DeviceStatus(
     val batteryLevel: Int?,
     val pumpConnected: Boolean?,
 )
+
+data class DailyStatRow(
+    val date: String,           // YYYY-MM-DD in patient's local timezone, or "summary"
+    val cgmCount: Int,
+    val veryLowPercent: Double?,    // null if no readings
+    val lowPercent: Double?,
+    val inRangePercent: Double?,
+    val highPercent: Double?,
+    val veryHighPercent: Double?,
+    val p25: Double?,
+    val median: Double?,
+    val p75: Double?,
+    val sd: Double?,
+    val eHbA1c: Double?,
+)
+
+data class DailyStatsResult(
+    val rows: List<DailyStatRow>,  // ordered newest first (reverse chronological)
+    val summary: DailyStatRow,     // averages across days with ≥1 reading; date="summary"
+    val warnings: List<String> = emptyList(),
+)

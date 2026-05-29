@@ -3,6 +3,8 @@ package org.javafreedom.kdiab.analyze.adapters.inbound.web
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
+import org.javafreedom.kdiab.analyze.domain.model.DailyStatRow
+import org.javafreedom.kdiab.analyze.domain.model.DailyStatsResult
 import org.javafreedom.kdiab.analyze.domain.model.DeviceAge
 import org.javafreedom.kdiab.analyze.domain.model.DeviceStatus
 import org.javafreedom.kdiab.analyze.domain.model.DeviceUsageResult
@@ -239,4 +241,48 @@ fun DeviceStatus.toResponse() = DeviceStatusResponseDto(
     reservoirUnits = reservoirUnits,
     batteryLevel = batteryLevel,
     pumpConnected = pumpConnected,
+)
+
+@Serializable
+data class DailyStatRowDto(
+    val date: String,
+    val cgmCount: Int,
+    val veryLowPercent: Double?,
+    val lowPercent: Double?,
+    val inRangePercent: Double?,
+    val highPercent: Double?,
+    val veryHighPercent: Double?,
+    val p25: Double?,
+    val median: Double?,
+    val p75: Double?,
+    val sd: Double?,
+    val eHbA1c: Double?,
+)
+
+@Serializable
+data class DailyStatsResponseDto(
+    val rows: List<DailyStatRowDto>,
+    val summary: DailyStatRowDto,
+    val warnings: List<String> = emptyList(),
+)
+
+private fun DailyStatRow.toDto() = DailyStatRowDto(
+    date = date,
+    cgmCount = cgmCount,
+    veryLowPercent = veryLowPercent,
+    lowPercent = lowPercent,
+    inRangePercent = inRangePercent,
+    highPercent = highPercent,
+    veryHighPercent = veryHighPercent,
+    p25 = p25,
+    median = median,
+    p75 = p75,
+    sd = sd,
+    eHbA1c = eHbA1c,
+)
+
+fun DailyStatsResult.toResponse() = DailyStatsResponseDto(
+    rows = rows.map { it.toDto() },
+    summary = summary.toDto(),
+    warnings = warnings,
 )

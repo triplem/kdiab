@@ -6,6 +6,8 @@ import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
 import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
 import org.javafreedom.kdiab.analyze.domain.model.AgpBucketData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
+import org.javafreedom.kdiab.analyze.domain.model.DailyStatRow
+import org.javafreedom.kdiab.analyze.domain.model.DailyStatsResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
 import org.javafreedom.kdiab.common.domain.model.GLUCOSE_CONVERSION_FACTOR
@@ -13,8 +15,13 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
+import kotlin.math.sqrt
 
 private val logger = KotlinLogging.logger {}
 
@@ -34,6 +41,16 @@ private const val TIR_VERY_HIGH = 250.0 // high: severe hyperglycaemia
 private const val MINUTES_IN_HOUR = 60
 private const val BUCKET_SIZE_MINUTES = 5
 private const val BUCKET_COUNT = 288  // 1440 minutes/day / 5 minutes/bucket
+
+// Daily-stats constants
+// ADA consensus: very low <54, low 54–70, in-range 70–180, high 180–250, very high >250 mg/dL
+private const val DS_VERY_LOW = 54.0
+private const val DS_LOW = 70.0
+private const val DS_HIGH = 180.0
+private const val DS_VERY_HIGH = 250.0
+private const val DAILY_STATS_MAX_DAYS = 365
+private const val DAILY_STATS_MIN_DAYS_WARN = 14
+private const val DAILY_STATS_SUMMARY_DATE = "summary"
 
 // Clinical thresholds for data quality warnings
 // < 1 day of 5-min CGM readings (288 = 24h * 12 readings/h)
@@ -309,5 +326,150 @@ class AnalyticsService(
         val upper = (lower + 1).coerceAtMost(sorted.size - 1)
         val fraction = index - lower
         return sorted[lower] + fraction * (sorted[upper] - sorted[lower])
+    }
+
+    // UnreachableCode: detekt false positive — guard clauses inside lambdas flagged as unreachable.
+    @Suppress("LongParameterList", "UnreachableCode")
+    override suspend fun getDailyStats(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        glucoseUnit: String,
+        correlationId: String,
+        timeZone: TimeZone,
+    ): DailyStatsResult {
+        val allMeasures = try {
+            getMeasuresCached(userId, from, to, authorization, correlationId)
+        } catch (e: Exception) {
+            logger.warn(e) {
+                "analytics_service action=getDailyStats status=upstream_error userId=$userId — returning empty result"
+            }
+            val emptyRow = DailyStatRow(
+                date = DAILY_STATS_SUMMARY_DATE, cgmCount = 0,
+                veryLowPercent = null, lowPercent = null, inRangePercent = null,
+                highPercent = null, veryHighPercent = null,
+                p25 = null, median = null, p75 = null, sd = null, eHbA1c = null,
+            )
+            return DailyStatsResult(
+                rows = emptyList(),
+                summary = emptyRow,
+                warnings = listOf("Glucose data is temporarily unavailable. Please try again later."),
+            )
+        }
+
+        // Convert CGM readings to (date, mgDl) pairs, bucketed by patient-local date
+        val readingsByDate = mutableMapOf<String, MutableList<Double>>()
+        allMeasures.forEach { dto ->
+            if (dto.type != "CGM") return@forEach
+            val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach
+            val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach
+            val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
+            val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * GLUCOSE_CONVERSION_FACTOR else sgv
+            if (mgDl <= 0.0) return@forEach
+            val date = t.toLocalDateTime(timeZone).date.toString()
+            readingsByDate.getOrPut(date) { mutableListOf() }.add(mgDl)
+        }
+
+        // Generate all dates in range (capped at 365), then build rows newest-first
+        val allDates = generateDatesInRange(from, to, timeZone)
+        val rows = allDates.map { date ->
+            val readings = readingsByDate[date]
+            if (readings.isNullOrEmpty()) emptyDailyStatRow(date)
+            else buildDailyStatRow(date, readings)
+        }.reversed() // newest first
+
+        val daysWithReadings = rows.count { it.cgmCount > 0 }
+        val warnings = buildList {
+            if (daysWithReadings in 1 until DAILY_STATS_MIN_DAYS_WARN) {
+                add(
+                    "Fewer than $DAILY_STATS_MIN_DAYS_WARN days with CGM readings — " +
+                        "summary statistics may not be representative.",
+                )
+            }
+        }
+
+        return DailyStatsResult(
+            rows = rows,
+            summary = buildSummaryRow(rows),
+            warnings = warnings,
+        )
+    }
+
+    private fun buildDailyStatRow(date: String, readings: List<Double>): DailyStatRow {
+        val sorted = readings.sorted()
+        val total = sorted.size.toDouble()
+        // ADA consensus thresholds (closed upper bounds for in-range and very high):
+        // very low: <54, low: 54–<70, in-range: 70–180, high: >180–250, very high: >250
+        val veryLow = sorted.count { it < DS_VERY_LOW }
+        val low = sorted.count { it >= DS_VERY_LOW && it < DS_LOW }
+        val inRange = sorted.count { it >= DS_LOW && it <= DS_HIGH }
+        val high = sorted.count { it > DS_HIGH && it <= DS_VERY_HIGH }
+        val veryHigh = sorted.count { it > DS_VERY_HIGH }
+        val mean = sorted.average()
+        val sd = if (sorted.size < 2) 0.0 else {
+            sqrt(sorted.sumOf { (it - mean) * (it - mean) } / sorted.size)
+        }
+        val eHbA1c = (mean + DCCT_ADDEND) / DCCT_DIVISOR
+        return DailyStatRow(
+            date = date,
+            cgmCount = sorted.size,
+            veryLowPercent = veryLow / total * PERCENT_FACTOR,
+            lowPercent = low / total * PERCENT_FACTOR,
+            inRangePercent = inRange / total * PERCENT_FACTOR,
+            highPercent = high / total * PERCENT_FACTOR,
+            veryHighPercent = veryHigh / total * PERCENT_FACTOR,
+            p25 = percentile(sorted, AGP_LOWER_QUARTILE),
+            median = percentile(sorted, AGP_MEDIAN_PERCENTILE),
+            p75 = percentile(sorted, AGP_UPPER_QUARTILE),
+            sd = sd,
+            eHbA1c = eHbA1c,
+        )
+    }
+
+    private fun emptyDailyStatRow(date: String) = DailyStatRow(
+        date = date, cgmCount = 0,
+        veryLowPercent = null, lowPercent = null, inRangePercent = null,
+        highPercent = null, veryHighPercent = null,
+        p25 = null, median = null, p75 = null, sd = null, eHbA1c = null,
+    )
+
+    @Suppress("ReturnCount")
+    private fun buildSummaryRow(rows: List<DailyStatRow>): DailyStatRow {
+        val active = rows.filter { it.cgmCount > 0 }
+        if (active.isEmpty()) {
+            return emptyDailyStatRow(DAILY_STATS_SUMMARY_DATE)
+        }
+        fun avg(selector: (DailyStatRow) -> Double?) =
+            active.mapNotNull(selector).let { if (it.isEmpty()) null else it.average() }
+        return DailyStatRow(
+            date = DAILY_STATS_SUMMARY_DATE,
+            cgmCount = active.sumOf { it.cgmCount },
+            veryLowPercent = avg { it.veryLowPercent },
+            lowPercent = avg { it.lowPercent },
+            inRangePercent = avg { it.inRangePercent },
+            highPercent = avg { it.highPercent },
+            veryHighPercent = avg { it.veryHighPercent },
+            p25 = avg { it.p25 },
+            median = avg { it.median },
+            p75 = avg { it.p75 },
+            sd = avg { it.sd },
+            eHbA1c = avg { it.eHbA1c },
+        )
+    }
+
+    private fun generateDatesInRange(from: String, to: String, timeZone: TimeZone): List<String> {
+        val fromInstant = runCatching { Instant.parse(from) }.getOrNull()
+        val toInstant = runCatching { Instant.parse(to) }.getOrNull()
+        if (fromInstant == null || toInstant == null) return emptyList()
+        val startDate = fromInstant.toLocalDateTime(timeZone).date
+        val endDate = toInstant.toLocalDateTime(timeZone).date
+        val result = mutableListOf<String>()
+        var current = startDate
+        while (current <= endDate && result.size < DAILY_STATS_MAX_DAYS) {
+            result.add(current.toString())
+            current = current.plus(DatePeriod(days = 1))
+        }
+        return result
     }
 }

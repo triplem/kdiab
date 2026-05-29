@@ -2,6 +2,7 @@ package org.javafreedom.kdiab.analyze.application.service
 
 import kotlinx.datetime.TimeZone
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
+import org.javafreedom.kdiab.analyze.domain.model.DailyStatsResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 
 // Default TIR thresholds in mg/dL — ADA/EASD consensus targets for T1D
@@ -39,4 +40,15 @@ interface AnalyticsOperation {
         tirHigh: Double = DEFAULT_TIR_HIGH,
         timeZone: TimeZone = TimeZone.UTC,
     ): AgpResult
+
+    @Suppress("LongParameterList")
+    suspend fun getDailyStats(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        glucoseUnit: String,
+        correlationId: String,
+        timeZone: TimeZone = TimeZone.UTC,
+    ): DailyStatsResult
 }

@@ -161,6 +161,53 @@ paths:
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
+  /users/{userId}/analytics/daily-stats:
+    get:
+      operationId: getDailyStats
+      summary: Per-day CGM statistics (TIR, percentiles, SD, eHbA1c) in patient's local timezone
+      description: >
+        Returns one row per calendar day in the requested window, ordered newest first.
+        Each row includes TIR zone percentages, glucose percentiles (p25/p50/p75),
+        population standard deviation, and an eHbA1c estimate via the DCCT formula.
+        A summary row averages metrics across days with at least one CGM reading.
+        Days with no readings are included with null numeric fields.
+        Maximum window: 365 days.
+      tags:
+        - Analytics
+      parameters:
+        - $ref: '#/components/parameters/userId'
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+        - name: glucoseUnit
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [mg/dL, mmol/L]
+            default: mg/dL
+          description: Glucose unit for stored-value conversion (default mg/dL)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Daily statistics computed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyStatsResponse'
+        '400':
+          description: Invalid request parameters (e.g. missing from/to or invalid date format)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
   /users/{userId}/device-status:
     get:
       operationId: getLatestDeviceStatus
@@ -654,6 +701,84 @@ components:
           type: ["number", "null"]
           format: double
           description: Population standard deviation of battery wear duration in days.
+
+    DailyStatRow:
+      type: object
+      description: Per-day CGM statistics row. Numeric fields are null when no CGM readings exist for that day.
+      required:
+        - date
+        - cgmCount
+      properties:
+        date:
+          type: string
+          description: Calendar date in patient's local timezone (YYYY-MM-DD), or "summary" for the aggregate row.
+          example: "2024-01-15"
+        cgmCount:
+          type: integer
+          format: int32
+          description: Number of CGM readings on this day.
+          example: 288
+        veryLowPercent:
+          type: ["number", "null"]
+          format: double
+          description: Percentage of readings below 54 mg/dL (Level 2 hypoglycaemia). Null if no readings.
+        lowPercent:
+          type: ["number", "null"]
+          format: double
+          description: Percentage of readings in 54–70 mg/dL (Level 1 hypoglycaemia). Null if no readings.
+        inRangePercent:
+          type: ["number", "null"]
+          format: double
+          description: Percentage of readings in 70–180 mg/dL (target range). Null if no readings.
+        highPercent:
+          type: ["number", "null"]
+          format: double
+          description: Percentage of readings in 180–250 mg/dL (hyperglycaemia). Null if no readings.
+        veryHighPercent:
+          type: ["number", "null"]
+          format: double
+          description: Percentage of readings above 250 mg/dL (severe hyperglycaemia). Null if no readings.
+        p25:
+          type: ["number", "null"]
+          format: double
+          description: 25th percentile glucose in mg/dL. Null if no readings.
+        median:
+          type: ["number", "null"]
+          format: double
+          description: Median (50th percentile) glucose in mg/dL. Null if no readings.
+        p75:
+          type: ["number", "null"]
+          format: double
+          description: 75th percentile glucose in mg/dL. Null if no readings.
+        sd:
+          type: ["number", "null"]
+          format: double
+          description: Population standard deviation of glucose in mg/dL. Null if no readings.
+        eHbA1c:
+          type: ["number", "null"]
+          format: double
+          description: Estimated HbA1c (%) via DCCT formula — (mean_mg_dL + 46.7) / 28.7. Null if no readings.
+
+    DailyStatsResponse:
+      type: object
+      description: Per-day CGM statistics for the requested date range.
+      required:
+        - rows
+        - summary
+      properties:
+        rows:
+          type: array
+          description: One row per calendar day, ordered newest first. Includes days with zero readings.
+          items:
+            $ref: '#/components/schemas/DailyStatRow'
+        summary:
+          $ref: '#/components/schemas/DailyStatRow'
+          description: Average of all metrics across days with at least one CGM reading. date="summary".
+        warnings:
+          type: array
+          description: Clinical or data-quality warnings (e.g. fewer than 14 days with readings).
+          items:
+            type: string
 
     ErrorResponse:
       type: object
