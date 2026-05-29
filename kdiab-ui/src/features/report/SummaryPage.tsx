@@ -41,7 +41,7 @@ export function SummaryPage({ data, glucoseUnit }: Props) {
       {/* ---- 2. TIR profile thresholds ---- */}
       <TirSection
         title={t('report.summary.tirProfile')}
-        subtitle={data.tirProfile.customTirFallback ? t('report.summary.tirFallback') : undefined}
+        {...(data.tirProfile.customTirFallback ? { subtitle: t('report.summary.tirFallback') } : {})}
         tir={data.tirProfile}
         glucoseUnit={unit}
         t={t}
