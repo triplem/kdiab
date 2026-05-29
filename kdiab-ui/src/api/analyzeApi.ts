@@ -202,6 +202,87 @@ export interface CgpResponse {
   warnings?: string[]
 }
 
+// ---- Report Summary endpoint ----
+
+/** A single 5-zone TIR bucket (count + percent) */
+export interface TirZone {
+  count: number
+  percent: number
+  zone?: string
+}
+
+/** Aggregated 5-zone TIR result (profile thresholds or standard 54/70/180/250) */
+export interface TirResult {
+  veryLow: TirZone
+  low: TirZone
+  inRange: TirZone
+  high: TirZone
+  veryHigh: TirZone
+  /** true when the profile had no custom targets and standard thresholds were used as fallback */
+  customTirFallback: boolean
+}
+
+export interface ReportSummaryResponse {
+  /** Patient display name */
+  displayName: string
+  /** Number of days analysed */
+  daysAnalysed: number
+  /** Total CGM readings in the period */
+  cgmReadingCount: number
+  /** CGM measurement interval in minutes (typically 5) */
+  cgmIntervalMinutes: number
+  /** Insulin type(s) from active profile(s) */
+  insulinTypes: string[]
+  /** Number of insulin reservoir / cartridge changes */
+  insulinChanges: number
+  /** Average days between cartridge changes (null when fewer than 2 changes) */
+  avgDaysPerCartridge: number | null
+  /** Number of infusion site changes */
+  siteChanges: number
+  /** Average days between site changes (null when fewer than 2 changes) */
+  avgDaysPerSite: number | null
+  /** Number of CGM sensor insertions */
+  sensorInserts: number
+  /** Average days between sensor insertions (null when fewer than 2 insertions) */
+  avgDaysPerSensor: number | null
+  /** TIR using custom profile targets (or standard fallback if no profile) */
+  tirProfile: TirResult
+  /** TIR using standard thresholds: <54 / 54–70 / 70–180 / 180–250 / >250 */
+  tirStandard: TirResult
+  /** Minimum glucose reading in mg/dL (null when no data) */
+  minGlucose: number | null
+  /** Maximum glucose reading in mg/dL (null when no data) */
+  maxGlucose: number | null
+  /** Mean glucose in mg/dL (null when no data) */
+  meanGlucose: number | null
+  /** Standard deviation of glucose in mg/dL (null when no data) */
+  sd: number | null
+  /** Glucose Variability Index (null when no data) */
+  gvi: number | null
+  /** Patient Glycaemic Status (null when no data) */
+  pgs: number | null
+  /** Glycaemia Risk Index 0–100 (null when no data) */
+  gri: number | null
+  /** GRI zone letter A–E (null when gri is null) */
+  griZone: string | null
+  /** Estimated HbA1c % (null when no data) */
+  eHbA1c: number | null
+  /** Average carbohydrate intake per day in grams */
+  avgCarbsPerDayG: number | null
+  /** Average bolus insulin per day in IE */
+  avgBolusPerDayIe: number | null
+  /** Bolus as a percent of total insulin */
+  bolusPercent: number | null
+  /** Average basal insulin per day in IE */
+  avgBasalPerDayIe: number | null
+  /** Basal as a percent of total insulin */
+  basalPercent: number | null
+  /** Average total insulin (bolus + basal) per day in IE */
+  avgTotalInsulinPerDayIe: number | null
+  /** Advisory warnings (e.g. 'lessThan14Days') */
+  warnings: string[]
+}
+
 export const analyzeApi = {
   getTimeline: (userId: string, from: string, to: string) =>
     axiosInstance.get<TimelineResponse>(`${BASE}/users/${userId}/timeline`, {
@@ -241,6 +322,10 @@ export const analyzeApi = {
     }),
   getCgp: (userId: string, from: string, to: string, glucoseUnit?: string) =>
     axiosInstance.get<CgpResponse>(`${BASE}/users/${userId}/analytics/cgp`, {
+      params: { from, to, glucoseUnit },
+    }),
+  getReportSummary: (userId: string, from: string, to: string, glucoseUnit?: string) =>
+    axiosInstance.get<ReportSummaryResponse>(`${BASE}/users/${userId}/analytics/report-summary`, {
       params: { from, to, glucoseUnit },
     }),
 }

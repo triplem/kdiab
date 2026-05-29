@@ -20,6 +20,7 @@ import { ProfilePage } from './ProfilePage'
 import { DailyChartPage } from './DailyChartPage'
 import { DailyTrendTable } from './DailyTrendPage'
 import { GlucoseDistributionPage } from './GlucoseDistributionPage'
+import { SummaryPage } from './SummaryPage'
 
 interface Props {
   userId: string
@@ -80,6 +81,21 @@ export function ReportView({ from, to, selectedPages, data, glucoseUnit, patient
           {t('report.generatedAt')}: {new Date().toLocaleString()}
         </p>
       </div>
+
+      {/* AUSWERTUNG — always rendered (comprehensive report summary) */}
+      <ReportSection
+        title={t('report.page.AUSWERTUNG')}
+        isLoading={data.reportSummary.isLoading}
+        isError={data.reportSummary.isError}
+        errorMessage={t('report.error.reportSummary')}
+      >
+        {data.reportSummary.data && (
+          <SummaryPage data={data.reportSummary.data} glucoseUnit={glucoseUnit} />
+        )}
+        {!data.reportSummary.isLoading && !data.reportSummary.isError && !data.reportSummary.data && (
+          <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
+        )}
+      </ReportSection>
 
       {/* SUMMARY — always rendered */}
       <ReportSection

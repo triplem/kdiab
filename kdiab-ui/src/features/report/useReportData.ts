@@ -9,6 +9,7 @@ import type {
   ProfilesResponse,
   CgpResponse,
   TimelineResponse,
+  ReportSummaryResponse,
 } from '../../api/analyzeApi'
 import type { ReportPageId } from './reportPages'
 
@@ -19,6 +20,8 @@ export interface ReportSection<T> {
 }
 
 export interface ReportDataState {
+  /** Comprehensive report summary (Auswertung) — always fetched */
+  reportSummary: ReportSection<ReportSummaryResponse>
   /** Summary (HbA1c + TIR) — always fetched regardless of page selection */
   summary: ReportSection<Hba1cResponse>
   agp: ReportSection<AgpResponse>
@@ -50,6 +53,13 @@ export function useReportData(
 
   const results = useQueries({
     queries: [
+      // AUSWERTUNG (report-summary) — always fetched
+      {
+        queryKey: ['report-summary-page', userId, from, to, glucoseUnit] as const,
+        queryFn: () => analyzeApi.getReportSummary(userId, from, to, glucoseUnit).then(r => r.data),
+        enabled,
+        staleTime: 5 * 60 * 1000,
+      },
       // SUMMARY (HbA1c) — always fetched
       {
         queryKey: ['report-summary', userId, from, to, glucoseUnit] as const,
@@ -110,9 +120,14 @@ export function useReportData(
     ],
   })
 
-  const [summaryQ, agpQ, dailyStatsQ, dailyTrendQ, dailyChartsQ, glucoseDistQ, profileQ, cgpQ] = results
+  const [reportSummaryQ, summaryQ, agpQ, dailyStatsQ, dailyTrendQ, dailyChartsQ, glucoseDistQ, profileQ, cgpQ] = results
 
   return {
+    reportSummary: {
+      data: reportSummaryQ.data ?? null,
+      isLoading: reportSummaryQ.isLoading,
+      isError: reportSummaryQ.isError,
+    },
     summary: {
       data: summaryQ.data ?? null,
       isLoading: summaryQ.isLoading,
