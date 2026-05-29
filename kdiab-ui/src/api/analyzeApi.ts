@@ -114,6 +114,73 @@ export interface DeviceStatusResponse {
   pumpConnected?: boolean | null
 }
 
+// ---- Report endpoints (Wave 1 — daily-stats, daily-trend, glucose-distribution) ----
+
+export interface DailyStatRow {
+  date: string
+  cgmCount: number
+  veryLowPercent: number | null
+  lowPercent: number | null
+  inRangePercent: number | null
+  highPercent: number | null
+  veryHighPercent: number | null
+  p25: number | null
+  median: number | null
+  p75: number | null
+  sd: number | null
+  eHbA1c: number | null
+}
+
+export interface DailyStatsResponse {
+  rows: DailyStatRow[]
+  summary: DailyStatRow
+  warnings?: string[]
+}
+
+export interface HourlyTrendRow {
+  hour: number
+  meanGlucose: number | null
+  trendPercent: number | null
+  trendZone: 'risingFast' | 'rising' | 'stable' | 'falling' | 'fallingFast' | null
+  zone: 'veryHypo' | 'hypo' | 'inRange' | 'hyper' | 'veryHyper' | 'noData' | null
+  basalRateIePerH: number | null
+  carbsG: number
+}
+
+export interface DailyTrendDay {
+  date: string
+  hours: HourlyTrendRow[]
+}
+
+export interface DailyTrendResponse {
+  days: DailyTrendDay[]
+  warnings?: string[]
+}
+
+export interface GlucoseBucket {
+  lowerBound: number
+  upperBound: number
+  count: number
+  percent: number
+  zone: string
+}
+
+export interface ZonePercents {
+  veryLow: number
+  low: number
+  inRange: number
+  high: number
+  veryHigh: number
+}
+
+export interface GlucoseDistributionResponse {
+  buckets: GlucoseBucket[]
+  zonePercents: ZonePercents
+  unit: string
+  totalCount: number
+  warnings?: string[]
+}
+
 export const analyzeApi = {
   getTimeline: (userId: string, from: string, to: string) =>
     axiosInstance.get<TimelineResponse>(`${BASE}/users/${userId}/timeline`, {
@@ -139,4 +206,16 @@ export const analyzeApi = {
     axiosInstance.get<DeviceAgeResponse>(`${BASE}/users/${userId}/device-age`),
   getLatestDeviceStatus: (userId: string) =>
     axiosInstance.get<DeviceStatusResponse>(`${BASE}/users/${userId}/device-status`),
+  getDailyStats: (userId: string, from: string, to: string, glucoseUnit?: string) =>
+    axiosInstance.get<DailyStatsResponse>(`${BASE}/users/${userId}/analytics/daily-stats`, {
+      params: { from, to, glucoseUnit },
+    }),
+  getDailyTrend: (userId: string, from: string, to: string, glucoseUnit?: string) =>
+    axiosInstance.get<DailyTrendResponse>(`${BASE}/users/${userId}/analytics/daily-trend`, {
+      params: { from, to, glucoseUnit },
+    }),
+  getGlucoseDistribution: (userId: string, from: string, to: string, glucoseUnit?: string) =>
+    axiosInstance.get<GlucoseDistributionResponse>(`${BASE}/users/${userId}/analytics/glucose-distribution`, {
+      params: { from, to, glucoseUnit },
+    }),
 }
