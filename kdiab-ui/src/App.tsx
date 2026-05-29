@@ -15,6 +15,7 @@ import { MeasureList } from './features/measures/MeasureList'
 import { AddMeasureModal } from './features/measures/AddMeasureModal'
 import { TreatmentList } from './features/treatments/TreatmentList'
 import { AddTreatmentModal } from './features/treatments/AddTreatmentModal'
+import { QuickLogButtons } from './features/treatments/QuickLogButtons'
 import { ProfileList } from './features/profiles/ProfileList'
 import { ProfileEditor } from './features/profiles/ProfileEditor'
 import { ProfileHistory } from './features/profiles/ProfileHistory'
@@ -305,8 +306,15 @@ export default function App() {
       case 'treatments':
         return (
           <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <div />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {!isDoctorViewingPatient ? (
+                <QuickLogButtons
+                  userId={viewingUserId}
+                  onLogged={() => void queryClient.invalidateQueries({ queryKey: ['treatments', viewingUserId] })}
+                />
+              ) : (
+                <div />
+              )}
               {!isDoctorViewingPatient && (
                 <button
                   className="primary"

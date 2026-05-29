@@ -14,6 +14,29 @@ interface TreatmentListProps {
   canArchive: boolean
 }
 
+const TREATMENT_ICONS: Record<string, string> = {
+  INSULIN_CHANGE: '\u{1F489}',
+  SITE_CHANGE: '\u{1F4CD}',
+  SENSOR_INSERT: '\u{1F4F6}',
+  BOLUS: '\u{1F489}',
+  CORRECTION_BOLUS: '\u{1F489}',
+  COMBO_BOLUS: '\u{1F489}',
+  BASAL: '\u{1F489}',
+  TEMP_BASAL: '\u{1F489}',
+  PUMP_SUSPEND: '⏸️',
+  PUMP_BATTERY_CHANGE: '\u{1F50B}',
+  CARBS: '\u{1F35E}',
+  MEAL: '\u{1F37D}️',
+  HYPO_TREATMENT: '\u{1F36C}',
+  EXERCISE: '\u{1F3C3}',
+  ACTIVITY: '\u{1F3C3}',
+  NOTE: '\u{1F4DD}',
+}
+
+function getTreatmentIcon(type: string): string {
+  return TREATMENT_ICONS[type] ?? ''
+}
+
 const FIELD_LABELS: Record<string, string> = {
   insulin: 'Insulin (U)',
   insulinType: 'Insulin Type',
@@ -407,6 +430,11 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                         color: 'var(--text-primary)',
                       }}
                     >
+                      {getTreatmentIcon(tr.type) && (
+                        <span aria-hidden="true" style={{ marginRight: '4px' }}>
+                          {getTreatmentIcon(tr.type)}
+                        </span>
+                      )}
                       {t(`treatmentModal.types.${tr.type}`, { defaultValue: tr.type })}
                     </span>
                     {tr.source && (
