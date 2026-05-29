@@ -112,7 +112,7 @@ fun Application.module() {
         install(DI) { }
         dependencies {
             provide<TimelineOperation> { TimelineService(measuresClient, realTreatmentsClient) }
-            provide<AnalyticsOperation> { AnalyticsService(measuresClient, realProfilesClient) }
+            provide<AnalyticsOperation> { AnalyticsService(measuresClient, realProfilesClient, realTreatmentsClient) }
             provide<ProfilesOperation> { ProfilesService(realProfilesClient) }
             provide<DeviceUsageOperation> { DeviceUsageService(realTreatmentsClient) }
             provide<TreatmentsClient> { realTreatmentsClient }

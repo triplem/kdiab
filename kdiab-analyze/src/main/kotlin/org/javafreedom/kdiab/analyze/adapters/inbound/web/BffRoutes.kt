@@ -26,6 +26,7 @@ private val logger = KotlinLogging.logger {}
 
 private const val DEFAULT_DEVICE_USAGE_DAYS = 90
 
+@Suppress("LongParameterList")
 fun Route.bffRoutes(
     timelineService: TimelineOperation,
     analyticsService: AnalyticsOperation,
@@ -144,7 +145,48 @@ fun Route.bffRoutes(
         get("/users/{userId}/analytics/daily-stats") {
             handleDailyStats(call, analyticsService)
         }
+
+        get("/users/{userId}/analytics/report-summary") {
+            handleReportSummary(call, analyticsService)
+        }
     }
+}
+
+private suspend fun handleReportSummary(call: ApplicationCall, analyticsService: AnalyticsOperation) {
+    val userId = call.parameters["userId"] ?: return call.respond(HttpStatusCode.BadRequest)
+    val ctx = extractContext(call, userId)
+    auditDoctorAccess(ctx, "analyze.report-summary")
+
+    val from = call.request.queryParameters["from"]
+        ?: throw BusinessValidationException("Missing required parameter: from")
+    val to = call.request.queryParameters["to"]
+        ?: throw BusinessValidationException("Missing required parameter: to")
+    validateDateRange(from, to)
+
+    val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: ctx.principal.glucoseUnit
+    val timezone = runCatching { TimeZone.of(ctx.principal.timezone) }
+        .onFailure {
+            logger.warn {
+                "Invalid timezone falling back to UTC " +
+                    "timezone=${ctx.principal.timezone} userId=${ctx.principal.userId}"
+            }
+        }
+        .getOrDefault(TimeZone.UTC)
+
+    // displayName: use userId as display name since UserPrincipal has no displayName field
+    val displayName = ctx.targetUserId.toString()
+
+    val result = analyticsService.getReportSummary(
+        userId = ctx.targetUserId.toString(),
+        displayName = displayName,
+        from = from,
+        to = to,
+        authorization = ctx.authorization,
+        glucoseUnit = glucoseUnit,
+        correlationId = ctx.correlationId,
+        timeZone = timezone,
+    )
+    call.respond(result.toResponse())
 }
 
 private suspend fun handleDeviceAge(call: ApplicationCall, treatmentsClient: TreatmentsClient?) {

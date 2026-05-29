@@ -140,6 +140,39 @@ paths:
         '429':
           $ref: '#/components/responses/TooManyRequests'
 
+  /users/{userId}/analytics/report-summary:
+    get:
+      operationId: getReportSummary
+      summary: Comprehensive report summary for PDF generation
+      description: Returns a single pre-computed summary with eHbA1c, GVI, PGS, GRI, five-zone TIR (profile and standard), treatment averages, and pump event counts for the given timeframe.
+      tags: [Analytics]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/userId'
+        - $ref: '#/components/parameters/from'
+        - $ref: '#/components/parameters/to'
+        - $ref: '#/components/parameters/glucoseUnit'
+      responses:
+        '200':
+          description: Report summary result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportSummaryResponse'
+        '400':
+          description: Invalid date range (e.g. range exceeds 365 days)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
   /users/{userId}/device-age:
     get:
       operationId: getDeviceAge
@@ -779,6 +812,209 @@ components:
           description: Clinical or data-quality warnings (e.g. fewer than 14 days with readings).
           items:
             type: string
+
+    TirZone:
+      type: object
+      description: A single TIR zone with count and percentage.
+      required: [count, percent]
+      properties:
+        count:
+          type: integer
+          format: int32
+          description: Number of CGM readings in this zone.
+          example: 42
+        percent:
+          type: number
+          format: double
+          description: Percentage of total readings in this zone (0–100).
+          example: 14.6
+
+    TirResult:
+      type: object
+      description: Five-zone TIR breakdown with optional custom thresholds from the active basal profile.
+      required: [veryLow, low, inRange, high, veryHigh, customTirFallback]
+      properties:
+        veryLow:
+          $ref: '#/components/schemas/TirZone'
+          description: Readings < 54 mg/dL (Level 2 hypoglycaemia).
+        low:
+          $ref: '#/components/schemas/TirZone'
+          description: Readings in the low zone (54 mg/dL to analysisLow or 70 mg/dL).
+        inRange:
+          $ref: '#/components/schemas/TirZone'
+          description: Readings in the target range (analysisLow to analysisHigh, or 70–180 mg/dL).
+        high:
+          $ref: '#/components/schemas/TirZone'
+          description: Readings in the high zone (analysisHigh to 250 mg/dL, or 180–250 mg/dL).
+        veryHigh:
+          $ref: '#/components/schemas/TirZone'
+          description: Readings > 250 mg/dL (severe hyperglycaemia).
+        customTirFallback:
+          type: boolean
+          description: True when the profile had no analysisLow/High and standard 70/180 thresholds were used.
+          example: false
+
+    ReportSummaryResponse:
+      type: object
+      description: Comprehensive report summary for PDF generation.
+      required:
+        - displayName
+        - daysAnalysed
+        - cgmReadingCount
+        - cgmIntervalMinutes
+        - insulinTypes
+        - insulinChanges
+        - siteChanges
+        - sensorInserts
+        - tirProfile
+        - tirStandard
+        - warnings
+      properties:
+        displayName:
+          type: string
+          description: User display name (userId string when no display name is available).
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        daysAnalysed:
+          type: integer
+          format: int32
+          description: Number of days covered by the report range.
+          example: 30
+        cgmReadingCount:
+          type: integer
+          format: int32
+          description: Total CGM readings used for the analysis.
+          example: 8640
+        cgmIntervalMinutes:
+          type: integer
+          format: int32
+          description: Estimated CGM sampling interval in minutes.
+          example: 5
+        insulinTypes:
+          type: array
+          items:
+            type: string
+          description: Distinct insulin type names from all active/archived profiles in the period.
+          example: ["NovoRapid"]
+        insulinChanges:
+          type: integer
+          format: int32
+          description: Number of INSULIN_CHANGE treatment events in the period.
+          example: 6
+        avgDaysPerCartridge:
+          type: ["number", "null"]
+          format: double
+          description: Average days per cartridge (daysAnalysed / insulinChanges). Null if zero events.
+          example: 5.0
+        siteChanges:
+          type: integer
+          format: int32
+          description: Number of SITE_CHANGE treatment events in the period.
+          example: 10
+        avgDaysPerSite:
+          type: ["number", "null"]
+          format: double
+          description: Average days per infusion site (daysAnalysed / siteChanges). Null if zero events.
+          example: 3.0
+        sensorInserts:
+          type: integer
+          format: int32
+          description: Number of SENSOR_INSERT treatment events in the period.
+          example: 4
+        avgDaysPerSensor:
+          type: ["number", "null"]
+          format: double
+          description: Average days per CGM sensor (daysAnalysed / sensorInserts). Null if zero events.
+          example: 7.5
+        tirProfile:
+          $ref: '#/components/schemas/TirResult'
+          description: Five-zone TIR using analysisLow/High thresholds from the active profile (falls back to 70/180).
+        tirStandard:
+          $ref: '#/components/schemas/TirResult'
+          description: Five-zone TIR using fixed standard thresholds (54/70/180/250 mg/dL).
+        minGlucose:
+          type: ["number", "null"]
+          format: double
+          description: Minimum CGM glucose value in mg/dL. Null if no readings.
+          example: 48.0
+        maxGlucose:
+          type: ["number", "null"]
+          format: double
+          description: Maximum CGM glucose value in mg/dL. Null if no readings.
+          example: 312.0
+        meanGlucose:
+          type: ["number", "null"]
+          format: double
+          description: Mean CGM glucose in mg/dL. Null if no readings.
+          example: 138.5
+        sd:
+          type: ["number", "null"]
+          format: double
+          description: Population standard deviation of CGM glucose in mg/dL. Null if fewer than 2 readings.
+          example: 34.2
+        gvi:
+          type: ["number", "null"]
+          format: double
+          description: Glycaemic Variability Index (SD / mean glucose, Peyser 2011). Null if no readings.
+          example: 0.247
+        pgs:
+          type: ["number", "null"]
+          format: double
+          description: >
+            Patient Glycaemic Status (Rodbard 2011):
+            mean_BG × (%time≥180 fraction) + (110 − mean_BG) × (%time≤70 fraction); floored at 0.
+          example: 4.3
+        gri:
+          type: ["number", "null"]
+          format: double
+          description: >
+            Glycaemia Risk Index (Klonoff 2023):
+            3.0×(%<54) + 2.4×(%54–70) + 1.6×(%180–250) + 0.8×(%>250). Range 0–100.
+          example: 18.4
+        griZone:
+          type: ["string", "null"]
+          description: GRI zone letter (A ≤20, B ≤40, C ≤60, D ≤80, E >80). Null if no readings.
+          example: "A"
+        eHbA1c:
+          type: ["number", "null"]
+          format: double
+          description: Estimated HbA1c in % (DCCT/ADAG formula). Null if no readings.
+          example: 6.7
+        avgCarbsPerDayG:
+          type: ["number", "null"]
+          format: double
+          description: Average carbohydrate intake per day in grams. Null if no CARBS events.
+          example: 185.0
+        avgBolusPerDayIe:
+          type: ["number", "null"]
+          format: double
+          description: Average bolus insulin per day in units (BOLUS + CORRECTION_BOLUS + COMBO_BOLUS).
+          example: 18.4
+        bolusPercent:
+          type: ["number", "null"]
+          format: double
+          description: Bolus insulin as a percentage of total daily insulin. Null if total is zero.
+          example: 42.5
+        avgBasalPerDayIe:
+          type: ["number", "null"]
+          format: double
+          description: Average basal insulin per day in units (scheduled basal adjusted by TEMP_BASAL events).
+          example: 24.9
+        basalPercent:
+          type: ["number", "null"]
+          format: double
+          description: Basal insulin as a percentage of total daily insulin. Null if total is zero.
+          example: 57.5
+        avgTotalInsulinPerDayIe:
+          type: ["number", "null"]
+          format: double
+          description: Average total daily insulin (bolus + basal). Null if no insulin data.
+          example: 43.3
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Data quality warnings. Includes "lessThan14Days" when the range is below 14 days.
+          example: []
 
     ErrorResponse:
       type: object

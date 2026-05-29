@@ -110,3 +110,47 @@ data class DailyStatsResult(
     val summary: DailyStatRow,     // averages across days with ≥1 reading; date="summary"
     val warnings: List<String> = emptyList(),
 )
+
+data class TirZone(val count: Int, val percent: Double)
+
+data class TirResult(
+    val veryLow: TirZone,
+    val low: TirZone,
+    val inRange: TirZone,
+    val high: TirZone,
+    val veryHigh: TirZone,
+    val customTirFallback: Boolean = false,
+)
+
+@Suppress("LongParameterList")
+data class ReportSummaryResult(
+    val displayName: String,
+    val daysAnalysed: Int,
+    val cgmReadingCount: Int,
+    val cgmIntervalMinutes: Int,
+    val insulinTypes: List<String>,
+    val insulinChanges: Int,
+    val avgDaysPerCartridge: Double?,
+    val siteChanges: Int,
+    val avgDaysPerSite: Double?,
+    val sensorInserts: Int,
+    val avgDaysPerSensor: Double?,
+    val tirProfile: TirResult,
+    val tirStandard: TirResult,
+    val minGlucose: Double?,
+    val maxGlucose: Double?,
+    val meanGlucose: Double?,
+    val sd: Double?,
+    val gvi: Double?,
+    val pgs: Double?,
+    val gri: Double?,
+    val griZone: String?,
+    val eHbA1c: Double?,
+    val avgCarbsPerDayG: Double?,
+    val avgBolusPerDayIe: Double?,
+    val bolusPercent: Double?,
+    val avgBasalPerDayIe: Double?,
+    val basalPercent: Double?,
+    val avgTotalInsulinPerDayIe: Double?,
+    val warnings: List<String> = emptyList(),
+)
