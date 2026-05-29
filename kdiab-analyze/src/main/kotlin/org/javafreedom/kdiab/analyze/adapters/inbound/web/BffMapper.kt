@@ -5,9 +5,11 @@ import kotlinx.serialization.json.JsonObject
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatRow
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatsResult
+import org.javafreedom.kdiab.analyze.domain.model.DailyTrendResult
 import org.javafreedom.kdiab.analyze.domain.model.DeviceAge
 import org.javafreedom.kdiab.analyze.domain.model.DeviceStatus
 import org.javafreedom.kdiab.analyze.domain.model.DeviceUsageResult
+import org.javafreedom.kdiab.analyze.domain.model.GlucoseDistributionResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.ProfilesResult
 import org.javafreedom.kdiab.analyze.domain.model.ReportSummaryResult
@@ -130,6 +132,29 @@ data class DeviceStatusResponseDto(
     val pumpConnected: Boolean?,
 )
 
+@Serializable
+data class HourlyTrendRowDto(
+    val hour: Int,
+    val meanGlucose: Double?,
+    val trendPercent: Double?,
+    val trendZone: String?,
+    val zone: String?,
+    val basalRateIePerH: Double?,
+    val carbsG: Double,
+)
+
+@Serializable
+data class DailyTrendDayDto(
+    val date: String,
+    val hours: List<HourlyTrendRowDto>,
+)
+
+@Serializable
+data class DailyTrendResponseDto(
+    val days: List<DailyTrendDayDto>,
+    val warnings: List<String> = emptyList(),
+)
+
 fun Timeline.toResponse() = TimelineResponse(
     measures = measures.map {
         TimelineMeasureDto(
@@ -242,6 +267,26 @@ fun DeviceStatus.toResponse() = DeviceStatusResponseDto(
     reservoirUnits = reservoirUnits,
     batteryLevel = batteryLevel,
     pumpConnected = pumpConnected,
+)
+
+fun DailyTrendResult.toResponse() = DailyTrendResponseDto(
+    days = days.map { day ->
+        DailyTrendDayDto(
+            date = day.date,
+            hours = day.hours.map { row ->
+                HourlyTrendRowDto(
+                    hour = row.hour,
+                    meanGlucose = row.meanGlucose,
+                    trendPercent = row.trendPercent,
+                    trendZone = row.trendZone,
+                    zone = row.zone,
+                    basalRateIePerH = row.basalRateIePerH,
+                    carbsG = row.carbsG,
+                )
+            },
+        )
+    },
+    warnings = warnings,
 )
 
 @Serializable
@@ -374,5 +419,48 @@ fun ReportSummaryResult.toResponse() = ReportSummaryResponseDto(
     avgBasalPerDayIe = avgBasalPerDayIe,
     basalPercent = basalPercent,
     avgTotalInsulinPerDayIe = avgTotalInsulinPerDayIe,
+    warnings = warnings,
+)
+
+@Serializable
+data class GlucoseBucketDto(
+    val lowerBound: Double,
+    val upperBound: Double,
+    val count: Int,
+    val percent: Double,
+    val zone: String,
+)
+
+@Serializable
+data class ZonePercentsDto(
+    val veryLow: Double,
+    val low: Double,
+    val inRange: Double,
+    val high: Double,
+    val veryHigh: Double,
+)
+
+@Serializable
+data class GlucoseDistributionResponseDto(
+    val buckets: List<GlucoseBucketDto>,
+    val zonePercents: ZonePercentsDto,
+    val unit: String,
+    val totalCount: Int,
+    val warnings: List<String> = emptyList(),
+)
+
+fun GlucoseDistributionResult.toResponse() = GlucoseDistributionResponseDto(
+    buckets = buckets.map {
+        GlucoseBucketDto(it.lowerBound, it.upperBound, it.count, it.percent, it.zone)
+    },
+    zonePercents = ZonePercentsDto(
+        veryLow = zonePercents.veryLow,
+        low = zonePercents.low,
+        inRange = zonePercents.inRange,
+        high = zonePercents.high,
+        veryHigh = zonePercents.veryHigh,
+    ),
+    unit = unit,
+    totalCount = totalCount,
     warnings = warnings,
 )

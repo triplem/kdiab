@@ -90,6 +90,29 @@ data class DeviceStatus(
     val pumpConnected: Boolean?,
 )
 
+data class HourlyTrendRow(
+    val hour: Int,                // 0–23
+    val meanGlucose: Double?,     // null if no CGM readings in this hour
+    val trendPercent: Double?,    // null for hour 0 or if meanGlucose or prev hour is null
+    // "risingFast"(≥20%), "rising"(10–20%), "stable"(±10%), "falling"(10–20% drop),
+    // "fallingFast"(≥20% drop), null if no trend data
+    val trendZone: String?,
+    val zone: String?,            // "inRange","hypo","veryHypo","hyper","veryHyper","noData"
+    val basalRateIePerH: Double?, // from active profile BasalSegment at this hour; null if no profile
+    val carbsG: Double,           // sum of carb entries in this hour; 0 if none
+)
+
+data class DailyTrendDay(
+    val date: String,                 // YYYY-MM-DD in patient's local timezone
+    val hours: List<HourlyTrendRow>,  // 24 entries, one per clock hour 0–23
+)
+
+data class DailyTrendResult(
+    val days: List<DailyTrendDay>,
+    val warnings: List<String> = emptyList(),
+)
+
+
 data class DailyStatRow(
     val date: String,           // YYYY-MM-DD in patient's local timezone, or "summary"
     val cgmCount: Int,
@@ -152,5 +175,29 @@ data class ReportSummaryResult(
     val avgBasalPerDayIe: Double?,
     val basalPercent: Double?,
     val avgTotalInsulinPerDayIe: Double?,
+    val warnings: List<String> = emptyList(),
+)
+
+data class GlucoseBucket(
+    val lowerBound: Double,
+    val upperBound: Double,
+    val count: Int,
+    val percent: Double,
+    val zone: String,
+)
+
+data class ZonePercents(
+    val veryLow: Double,
+    val low: Double,
+    val inRange: Double,
+    val high: Double,
+    val veryHigh: Double,
+)
+
+data class GlucoseDistributionResult(
+    val buckets: List<GlucoseBucket>,
+    val zonePercents: ZonePercents,
+    val unit: String,
+    val totalCount: Int,
     val warnings: List<String> = emptyList(),
 )

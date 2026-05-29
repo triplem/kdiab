@@ -26,7 +26,8 @@ private val logger = KotlinLogging.logger {}
 
 private const val DEFAULT_DEVICE_USAGE_DAYS = 90
 
-@Suppress("LongParameterList")
+// LongMethod: routing DSL — each block is a single delegating call; logic lives in handlers below.
+@Suppress("LongMethod")
 fun Route.bffRoutes(
     timelineService: TimelineOperation,
     analyticsService: AnalyticsOperation,
@@ -149,6 +150,14 @@ fun Route.bffRoutes(
         get("/users/{userId}/analytics/report-summary") {
             handleReportSummary(call, analyticsService)
         }
+
+        get("/users/{userId}/analytics/daily-trend") {
+            handleDailyTrend(call, analyticsService)
+        }
+
+        get("/users/{userId}/analytics/glucose-distribution") {
+            handleGlucoseDistribution(call, analyticsService)
+        }
     }
 }
 
@@ -231,6 +240,64 @@ private suspend fun handleDailyStats(
         glucoseUnit = glucoseUnit,
         correlationId = ctx.correlationId,
         timeZone = timezone,
+    )
+    call.respond(result.toResponse())
+}
+
+private suspend fun handleDailyTrend(
+    call: ApplicationCall,
+    analyticsService: AnalyticsOperation,
+) {
+    val userId = call.parameters["userId"] ?: return call.respond(HttpStatusCode.BadRequest)
+    val ctx = extractContext(call, userId)
+    val from = call.request.queryParameters["from"]
+        ?: throw BusinessValidationException("Missing required query parameter 'from'")
+    val to = call.request.queryParameters["to"]
+        ?: throw BusinessValidationException("Missing required query parameter 'to'")
+    val (validFrom, validTo) = validateDateRange(from, to)
+    auditDoctorAccess(ctx, "analyze.daily-trend")
+    val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
+    val timezone = runCatching { TimeZone.of(ctx.principal.timezone) }
+        .onFailure {
+            logger.warn {
+                "Invalid timezone falling back to UTC " +
+                    "timezone=${ctx.principal.timezone} userId=${ctx.principal.userId}"
+            }
+        }
+        .getOrDefault(TimeZone.UTC)
+    val result = analyticsService.getDailyTrend(
+        userId = ctx.targetUserId.toString(),
+        from = validFrom,
+        to = validTo,
+        authorization = ctx.authorization,
+        glucoseUnit = glucoseUnit,
+        correlationId = ctx.correlationId,
+        timeZone = timezone,
+    )
+    call.respond(result.toResponse())
+}
+
+private suspend fun handleGlucoseDistribution(
+    call: ApplicationCall,
+    analyticsService: AnalyticsOperation,
+) {
+    val userId = call.parameters["userId"] ?: return call.respond(HttpStatusCode.BadRequest)
+    val ctx = extractContext(call, userId)
+    val from = call.request.queryParameters["from"]
+        ?: throw BusinessValidationException("Missing required query parameter 'from'")
+    val to = call.request.queryParameters["to"]
+        ?: throw BusinessValidationException("Missing required query parameter 'to'")
+    validateDateRange(from, to)
+    auditDoctorAccess(ctx, "analyze.glucose-distribution")
+    val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
+
+    val result = analyticsService.getGlucoseDistribution(
+        userId = ctx.targetUserId.toString(),
+        from = from,
+        to = to,
+        authorization = ctx.authorization,
+        glucoseUnit = glucoseUnit,
+        correlationId = ctx.correlationId,
     )
     call.respond(result.toResponse())
 }

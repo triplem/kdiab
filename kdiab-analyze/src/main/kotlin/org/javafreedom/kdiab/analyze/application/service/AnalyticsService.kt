@@ -4,6 +4,13 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.math.sqrt
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.plus
+import kotlinx.datetime.toInstant
+import kotlinx.datetime.toLocalDateTime
 import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
 import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
 import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
@@ -12,7 +19,12 @@ import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.BasalSegment
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatRow
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatsResult
+import org.javafreedom.kdiab.analyze.domain.model.DailyTrendDay
+import org.javafreedom.kdiab.analyze.domain.model.DailyTrendResult
+import org.javafreedom.kdiab.analyze.domain.model.GlucoseBucket
+import org.javafreedom.kdiab.analyze.domain.model.GlucoseDistributionResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
+import org.javafreedom.kdiab.analyze.domain.model.HourlyTrendRow
 import org.javafreedom.kdiab.analyze.domain.model.ReportSummaryResult
 import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
 import org.javafreedom.kdiab.analyze.domain.model.TirResult
@@ -20,6 +32,7 @@ import org.javafreedom.kdiab.analyze.domain.model.TirZone
 import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
 import org.javafreedom.kdiab.analyze.domain.model.UpstreamProfile
 import org.javafreedom.kdiab.analyze.domain.model.UpstreamTreatment
+import org.javafreedom.kdiab.analyze.domain.model.ZonePercents
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.model.GLUCOSE_CONVERSION_FACTOR
 import java.util.concurrent.ConcurrentHashMap
@@ -27,13 +40,6 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
-import kotlinx.datetime.DatePeriod
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.plus
-import kotlinx.datetime.toInstant
-import kotlinx.datetime.toLocalDateTime
-import kotlin.math.sqrt
 
 private val logger = KotlinLogging.logger {}
 
@@ -53,6 +59,8 @@ private const val TIR_VERY_HIGH = 250.0 // high: severe hyperglycaemia
 private const val MINUTES_IN_HOUR = 60
 private const val BUCKET_SIZE_MINUTES = 5
 private const val BUCKET_COUNT = 288  // 1440 minutes/day / 5 minutes/bucket
+private const val HOURS_IN_DAY = 24
+private const val MAX_TREND_DAYS = 365
 
 // Daily-stats constants
 // ADA consensus: very low <54, low 54–70, in-range 70–180, high 180–250, very high >250 mg/dL
@@ -71,6 +79,9 @@ private const val MIN_READINGS_RELIABLE = 288
 private const val MIN_READINGS_MEANINGFUL = 4032
 // At least half of all 288 five-minute buckets must have at least one reading
 private const val MIN_COVERED_BUCKETS = 144
+// At least half of all 24 UTC hours must have at least one reading
+private const val MIN_COVERED_HOURS = 12
+private const val MIN_DAILY_STATS_DAYS = 14
 
 private const val AGP_TENTH_PERCENTILE = 10
 private const val AGP_LOWER_QUARTILE = 25
@@ -103,10 +114,34 @@ private const val MINUTES_IN_DAY = 24 * MINUTES_PER_HOUR
 private const val TEMP_BASAL_DURATION_TO_HOURS = 60.0
 private const val HOURS_IN_DAY_D = 24.0
 
+// Trend zone thresholds (percent change from prev hour)
+private const val TREND_RISING_FAST = 20.0
+private const val TREND_RISING = 10.0
+private const val TREND_FALLING = -10.0
+private const val TREND_FALLING_FAST = -20.0
+
+// Glucose distribution histogram constants
+// mg/dL: 5 mg/dL bins from 0 to 400 (80 buckets: 0–5, 5–10, ..., 395–400)
+private const val DIST_MGDL_STEP = 5.0
+private const val DIST_MGDL_MAX = 400.0
+// mmol/L: 0.3 mmol/L bins from 0.0 to 22.2 (74 buckets)
+private const val DIST_MMOL_STEP = 0.3
+private const val DIST_MMOL_MAX = 22.2
+// Zone thresholds in mg/dL (ADA/EASD consensus on TIR — Battelino et al. 2019)
+private const val ZONE_VERY_LOW_UPPER = TIR_VERY_LOW   // < 54 mg/dL
+private const val ZONE_LOW_UPPER = TIR_LOW              // 54–<70 mg/dL
+private const val ZONE_IN_RANGE_UPPER = TIR_HIGH        // 70–180 mg/dL
+private const val ZONE_HIGH_UPPER = TIR_VERY_HIGH       // 180–250 mg/dL; >250 → veryHigh
+private const val DECIMAL_SCALE = 10.0  // rounding to 1 decimal place
+private const val MAX_DISTRIBUTION_DAYS = 365L
+
 private data class CgmFetchResult(val readings: List<Double>, val mismatchCount: Int)
 private data class MeasuresCacheKey(val userId: String, val from: String, val to: String)
 private data class MeasuresCacheEntry(val measures: List<UpstreamMeasure>, val fetchedAt: Instant)
 
+// TooManyFunctions/LargeClass: all functions implement AnalyticsOperation or are private helpers
+// directly supporting those implementations — the class cannot be usefully split further.
+@Suppress("TooManyFunctions", "LargeClass")
 class AnalyticsService(
     private val measuresPort: MeasuresPort,
     private val profilesPort: ProfilesPort,
@@ -306,6 +341,141 @@ class AnalyticsService(
         )
     }
 
+    // UnreachableCode: detekt false positive — `return@forEach` / `return@mapNotNull` guard clauses
+    // inside lambdas cause subsequent lambda body lines to be flagged as unreachable; they are not.
+    // LongMethod: complex hourly trend aggregation — cannot be split without losing cohesion.
+    @Suppress("LongParameterList", "UnreachableCode", "LongMethod")
+    override suspend fun getDailyTrend(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        glucoseUnit: String,
+        correlationId: String,
+        timeZone: TimeZone,
+    ): DailyTrendResult {
+        val warnings = mutableListOf<String>()
+
+        // Fetch CGM measures and profiles in parallel; treatments separately (soft failure)
+        val (allMeasures, profiles) = try {
+            coroutineScope {
+                val measuresDeferred = async {
+                    getMeasuresCached(userId, from, to, authorization, correlationId)
+                }
+                val profilesDeferred = async {
+                    runCatching {
+                        profilesPort.getProfiles(userId, authorization, correlationId)
+                    }.getOrElse { e ->
+                        logger.warn(e) {
+                            "analytics_service action=getDailyTrend status=profiles_error userId=$userId"
+                        }
+                        emptyList()
+                    }
+                }
+                measuresDeferred.await() to profilesDeferred.await()
+            }
+        } catch (e: Exception) {
+            logger.warn(e) {
+                "analytics_service action=getDailyTrend status=upstream_error userId=$userId — returning empty result"
+            }
+            return DailyTrendResult(
+                days = emptyList(),
+                warnings = listOf("Glucose data is temporarily unavailable. Please try again later."),
+            )
+        }
+
+        // Fetch treatments (carbs) — soft failure: missing treatments produce zero carbsG
+        val allTreatments = treatmentsPort.let { port ->
+            runCatching {
+                port.getTreatments(userId, authorization, correlationId, from, to)
+            }.getOrElse { e ->
+                logger.warn(e) {
+                    "analytics_service action=getDailyTrend status=treatments_error " +
+                        "userId=$userId — continuing without carbs"
+                }
+                warnings.add("Carbohydrate data is temporarily unavailable.")
+                emptyList()
+            }
+        }
+
+        // Group CGM readings by (localDate, hour) → list of mg/dL values
+        val cgmByDayHour = mutableMapOf<LocalDate, Array<MutableList<Double>>>()
+        allMeasures.forEach { dto ->
+            if (dto.type != "CGM") return@forEach
+            val t = runCatching { Instant.parse(dto.measuredAt) }.getOrNull() ?: return@forEach
+            val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@forEach
+            val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
+            val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * GLUCOSE_CONVERSION_FACTOR else sgv
+            if (mgDl <= 0.0) return@forEach
+            val ldt = t.toLocalDateTime(timeZone)
+            val date = ldt.date
+            val hour = ldt.hour
+            cgmByDayHour.getOrPut(date) { Array(HOURS_IN_DAY) { mutableListOf() } }[hour].add(mgDl)
+        }
+
+        // Group CARBS treatments by (localDate, hour) → sum of carbsG
+        val carbsByDayHour = mutableMapOf<LocalDate, Array<Double>>()
+        allTreatments.forEach { dto ->
+            if (dto.type != "CARBS") return@forEach
+            val t = runCatching { Instant.parse(dto.treatedAt) }.getOrNull() ?: return@forEach
+            val carbs = dto.data["carbsG"]?.toString()?.toDoubleOrNull()
+                ?: dto.data["amount"]?.toString()?.toDoubleOrNull()
+                ?: return@forEach
+            if (carbs <= 0.0) return@forEach
+            val ldt = t.toLocalDateTime(timeZone)
+            val date = ldt.date
+            val hour = ldt.hour
+            val dayArr = carbsByDayHour.getOrPut(date) { Array(HOURS_IN_DAY) { 0.0 } }
+            dayArr[hour] += carbs
+        }
+
+        // Warn if range exceeds max days
+        if (cgmByDayHour.size > MAX_TREND_DAYS) {
+            warnings.add(
+                "Range exceeds $MAX_TREND_DAYS days — results are truncated to the most recent $MAX_TREND_DAYS days.",
+            )
+        }
+
+        val sortedDates = cgmByDayHour.keys.sorted().takeLast(MAX_TREND_DAYS)
+
+        val days = sortedDates.map { date ->
+            val byHour = cgmByDayHour[date] ?: Array(HOURS_IN_DAY) { mutableListOf() }
+            val carbsHour = carbsByDayHour[date]
+
+            // Find the profile active on this date
+            val activeProfile = findActiveProfileForDate(profiles, date)
+
+            val hourlyMeans = Array<Double?>(HOURS_IN_DAY) { h ->
+                val values = byHour[h]
+                if (values.isEmpty()) null else values.average()
+            }
+
+            val hours = (0 until HOURS_IN_DAY).map { hour ->
+                val meanGlucose = hourlyMeans[hour]
+                val prevMean = if (hour == 0) null else hourlyMeans[hour - 1]
+                val trendPercent = computeTrendPercent(meanGlucose, prevMean)
+                val trendZone = computeTrendZone(trendPercent)
+                val zone = computeGlucoseZone(meanGlucose)
+                val basalRate = findBasalRateForHour(activeProfile, hour)
+                val carbsG = carbsHour?.get(hour) ?: 0.0
+
+                HourlyTrendRow(
+                    hour = hour,
+                    meanGlucose = meanGlucose,
+                    trendPercent = trendPercent,
+                    trendZone = trendZone,
+                    zone = zone,
+                    basalRateIePerH = basalRate,
+                    carbsG = carbsG,
+                )
+            }
+
+            DailyTrendDay(date = date.toString(), hours = hours)
+        }
+
+        return DailyTrendResult(days = days, warnings = warnings)
+    }
+
     // UnreachableCode: detekt false positive — `return@mapNotNull null` guard clauses inside lambdas
     // cause subsequent lambda body lines to be flagged as unreachable; they are not.
     @Suppress("LongParameterList", "UnreachableCode")
@@ -365,8 +535,76 @@ class AnalyticsService(
         return sorted[lower] + fraction * (sorted[upper] - sorted[lower])
     }
 
-    // UnreachableCode: detekt false positive — guard clauses inside lambdas flagged as unreachable.
-    @Suppress("LongParameterList", "UnreachableCode")
+    private fun computeTrendPercent(meanGlucose: Double?, prevMean: Double?): Double? {
+        if (meanGlucose == null || prevMean == null || prevMean == 0.0) return null
+        return (meanGlucose - prevMean) / prevMean * PERCENT_FACTOR
+    }
+
+    private fun computeTrendZone(trendPercent: Double?): String? {
+        if (trendPercent == null) return null
+        return when {
+            trendPercent >= TREND_RISING_FAST  -> "risingFast"
+            trendPercent >= TREND_RISING       -> "rising"
+            trendPercent > TREND_FALLING       -> "stable"
+            trendPercent > TREND_FALLING_FAST  -> "falling"
+            else                               -> "fallingFast"
+        }
+    }
+
+    private fun computeGlucoseZone(meanGlucose: Double?): String {
+        if (meanGlucose == null) return "noData"
+        return when {
+            meanGlucose < TIR_VERY_LOW   -> "veryHypo"
+            meanGlucose < TIR_LOW        -> "hypo"
+            meanGlucose <= TIR_HIGH      -> "inRange"
+            meanGlucose <= TIR_VERY_HIGH -> "hyper"
+            else                         -> "veryHyper"
+        }
+    }
+
+    // Find the profile that was active on a given date.
+    // Uses activatedAt (when ACTIVE state was entered) or validFrom as fallback.
+    // Returns the most recently activated profile whose activation date is ≤ the given date.
+    // UnreachableCode: return@mapNotNull null guards are falsely flagged as unreachable by detekt.
+    @Suppress("UnreachableCode")
+    private fun findActiveProfileForDate(profiles: List<UpstreamProfile>, date: LocalDate): UpstreamProfile? =
+        profiles
+            .mapNotNull { profile ->
+                val activationStr = profile.activatedAt ?: profile.validFrom ?: return@mapNotNull null
+                val activationDate = runCatching {
+                    Instant.parse(activationStr).toLocalDateTime(TimeZone.UTC).date
+                }.getOrNull() ?: return@mapNotNull null
+                profile to activationDate
+            }
+            .filter { (_, activationDate) -> activationDate <= date }
+            .maxByOrNull { (_, activationDate) -> activationDate }
+            ?.first
+
+    // Find the basal rate from the profile's basal schedule for a given clock hour.
+    // The schedule is a list of segments with startTime in "HH:MM" format.
+    // Returns the rate of the last segment whose startTime ≤ hour:00.
+    // UnreachableCode: return@mapNotNull null guards are falsely flagged as unreachable by detekt.
+    @Suppress("UnreachableCode", "ReturnCount")
+    private fun findBasalRateForHour(profile: UpstreamProfile?, hour: Int): Double? {
+        val segments = profile?.basal?.takeIf { it.isNotEmpty() } ?: return null
+        // startTime format: "HH:MM"; convert to total minutes so the latest segment before `hour` wins
+        val minutesPerHour = MINUTES_PER_HOUR
+        val active = segments
+            .mapNotNull { seg ->
+                val parts = seg.startTime.split(":")
+                if (parts.size < 2) return@mapNotNull null
+                val h = parts[0].toIntOrNull() ?: return@mapNotNull null
+                val m = parts[1].toIntOrNull() ?: return@mapNotNull null
+                Triple(h, m, seg.value)
+            }
+            .filter { (h, _, _) -> h <= hour }
+            .maxByOrNull { (h, m, _) -> h * minutesPerHour + m }
+        return active?.third
+    }
+
+    // UnreachableCode: detekt false positive — `return@forEach` / `return@mapNotNull` guard clauses
+    // inside lambdas cause subsequent lambda body lines to be flagged as unreachable; they are not.
+    @Suppress("LongParameterList", "UnreachableCode", "LongMethod")
     override suspend fun getDailyStats(
         userId: String,
         from: String,
@@ -529,7 +767,7 @@ class AnalyticsService(
         val tirStandard = computeTirResult(readings, TIR_LOW, TIR_HIGH, customTirFallback = false)
 
         val gri = if (readings.isNotEmpty()) computeGri(tirStandard) else null
-        // PGS (Rodbard 2011): Mean_BG * (%time \u2265180 fraction) + (110 – Mean_BG) * (%time ≤70 fraction)
+        // PGS (Rodbard 2011): Mean_BG * (%time ≥180 fraction) + (110 – Mean_BG) * (%time ≤70 fraction)
         val pgs = cgm.mean?.let { mean ->
             val highFrac = (tirStandard.high.count + tirStandard.veryHigh.count).toDouble() / readings.size
             val lowFrac = (tirStandard.low.count + tirStandard.veryLow.count).toDouble() / readings.size
@@ -797,5 +1035,155 @@ class AnalyticsService(
         }
         return totalForDay * fractionOfDay
     }
-}
 
+    // UnreachableCode: detekt false positive — `return@mapNotNull null` guard clauses inside lambdas
+    // cause subsequent lambda body lines to be flagged as unreachable; they are not.
+    @Suppress("LongParameterList", "UnreachableCode")
+    override suspend fun getGlucoseDistribution(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        glucoseUnit: String,
+        correlationId: String,
+    ): GlucoseDistributionResult {
+        val isMmol = glucoseUnit.lowercase() == "mmol/l"
+        val step = if (isMmol) DIST_MMOL_STEP else DIST_MGDL_STEP
+        val maxBound = if (isMmol) DIST_MMOL_MAX else DIST_MGDL_MAX
+
+        val fromInstant = runCatching { Instant.parse(from) }.getOrNull()
+        val toInstant = runCatching { Instant.parse(to) }.getOrNull()
+        val rangeWarnings = buildList {
+            if (fromInstant != null && toInstant != null) {
+                val rangeSeconds = (toInstant - fromInstant).inWholeSeconds
+                if (rangeSeconds > MAX_DISTRIBUTION_DAYS * 86_400L) {
+                    add("Date range exceeds 365 days — results may be slow to compute.")
+                }
+            }
+        }
+
+        val allMeasures = try {
+            getMeasuresCached(userId, from, to, authorization, correlationId)
+        } catch (e: Exception) {
+            logger.warn(e) {
+                "analytics_service action=getGlucoseDistribution status=upstream_error userId=$userId"
+            }
+            return emptyDistribution(step, maxBound, glucoseUnit, isMmol,
+                listOf("Glucose data is temporarily unavailable. Please try again later."))
+        }
+
+        val values = allMeasures.mapNotNull { dto ->
+            if (dto.type != "CGM") return@mapNotNull null
+            val sgv = dto.data["value"]?.toString()?.toDoubleOrNull() ?: return@mapNotNull null
+            val storageUnit = dto.data["unit"]?.toString()?.trim('"') ?: glucoseUnit
+            val mgDl = if (storageUnit.lowercase() == "mmol/l") sgv * GLUCOSE_CONVERSION_FACTOR else sgv
+            if (mgDl <= 0.0) return@mapNotNull null
+            if (isMmol) mgDl / GLUCOSE_CONVERSION_FACTOR else mgDl
+        }
+
+        val totalCount = values.size
+        val buckets = buildBuckets(values, step, maxBound, totalCount, isMmol)
+        val zonePercents = computeZonePercents(buckets)
+        val warnings = rangeWarnings + buildList {
+            if (totalCount == 0) add("No CGM readings found in the selected timeframe.")
+        }
+
+        return GlucoseDistributionResult(
+            buckets = buckets,
+            zonePercents = zonePercents,
+            unit = glucoseUnit,
+            totalCount = totalCount,
+            warnings = warnings,
+        )
+    }
+
+    private fun buildBuckets(
+        values: List<Double>,
+        step: Double,
+        maxBound: Double,
+        totalCount: Int,
+        isMmol: Boolean,
+    ): List<GlucoseBucket> {
+        val counts = mutableMapOf<Int, Int>()
+        values.forEach { v ->
+            val idx = (v / step).toInt().coerceAtMost(((maxBound / step) - 1).toInt())
+            counts[idx] = (counts[idx] ?: 0) + 1
+        }
+        val numBuckets = (maxBound / step).toInt()
+        return (0 until numBuckets).map { idx ->
+            val lower = idx * step
+            val upper = (idx + 1) * step
+            val count = counts[idx] ?: 0
+            val percent = if (totalCount == 0) 0.0
+                else Math.round(count.toDouble() / totalCount * PERCENT_FACTOR * DECIMAL_SCALE) / DECIMAL_SCALE
+            GlucoseBucket(
+                lowerBound = lower,
+                upperBound = upper,
+                count = count,
+                percent = percent,
+                zone = zoneForBucket(lower, upper, isMmol),
+            )
+        }
+    }
+
+    private fun zoneForBucket(lowerBound: Double, upperBound: Double, isMmol: Boolean): String {
+        val factor = if (isMmol) GLUCOSE_CONVERSION_FACTOR else 1.0
+        val veryLowUpper = ZONE_VERY_LOW_UPPER / factor
+        val lowUpper = ZONE_LOW_UPPER / factor
+        val inRangeUpper = ZONE_IN_RANGE_UPPER / factor
+        val highUpper = ZONE_HIGH_UPPER / factor
+        return when {
+            upperBound <= veryLowUpper -> "veryLow"
+            lowerBound < lowUpper -> "low"
+            lowerBound < inRangeUpper -> "inRange"
+            lowerBound < highUpper -> "high"
+            else -> "veryHigh"
+        }
+    }
+
+    private fun computeZonePercents(buckets: List<GlucoseBucket>): ZonePercents {
+        var veryLow = 0.0
+        var low = 0.0
+        var inRange = 0.0
+        var high = 0.0
+        var veryHigh = 0.0
+        buckets.forEach { b ->
+            when (b.zone) {
+                "veryLow" -> veryLow += b.percent
+                "low" -> low += b.percent
+                "inRange" -> inRange += b.percent
+                "high" -> high += b.percent
+                "veryHigh" -> veryHigh += b.percent
+            }
+        }
+        return ZonePercents(
+            veryLow = Math.round(veryLow * DECIMAL_SCALE) / DECIMAL_SCALE,
+            low = Math.round(low * DECIMAL_SCALE) / DECIMAL_SCALE,
+            inRange = Math.round(inRange * DECIMAL_SCALE) / DECIMAL_SCALE,
+            high = Math.round(high * DECIMAL_SCALE) / DECIMAL_SCALE,
+            veryHigh = Math.round(veryHigh * DECIMAL_SCALE) / DECIMAL_SCALE,
+        )
+    }
+
+    private fun emptyDistribution(
+        step: Double,
+        maxBound: Double,
+        glucoseUnit: String,
+        isMmol: Boolean,
+        warnings: List<String>,
+    ): GlucoseDistributionResult {
+        val numBuckets = (maxBound / step).toInt()
+        val emptyBuckets = (0 until numBuckets).map { idx ->
+            val lower = idx * step
+            val upper = (idx + 1) * step
+            GlucoseBucket(lower, upper, 0, 0.0, zoneForBucket(lower, upper, isMmol))
+        }
+        return GlucoseDistributionResult(
+            buckets = emptyBuckets,
+            zonePercents = ZonePercents(0.0, 0.0, 0.0, 0.0, 0.0),
+            unit = glucoseUnit,
+            totalCount = 0,
+            warnings = warnings,
+        )
+    }
+}
