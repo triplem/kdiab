@@ -666,39 +666,6 @@
       "median": "Median",
       "summary": "Average",
       "showingFirst": "Showing first {{shown}} of {{total}} days"
-    },
-    "dailyTrend": {
-      "hourHeader": "Hour",
-      "tableAriaLabel": "Daily glucose trend table",
-      "legendAriaLabel": "Zone colour legend",
-      "carbsIndicator": "Carbs",
-      "showingFirst": "Showing first {{shown}} of {{total}} days",
-      "zone": {
-        "veryHypo": "Very Low",
-        "hypo": "Low",
-        "inRange": "In Range",
-        "hyper": "High",
-        "veryHyper": "Very High"
-      }
-    },
-    "profile": {
-      "noActiveProfile": "No active insulin profile found for the selected period.",
-      "insulinType": "Insulin Type",
-      "durationOfAction": "Duration of Action",
-      "durationOfActionValue": "{{minutes}} min",
-      "basalRate": "Basal Rate Schedule",
-      "basalRateUnit": "IE/h",
-      "basalTableAriaLabel": "Basal rate schedule",
-      "basalChartAriaLabel": "Basal rate bar chart",
-      "icr": "Insulin-to-Carb Ratio (ICR)",
-      "icrUnit": "IE per 10 g carbs",
-      "isf": "Insulin Sensitivity Factor (ISF)",
-      "isfUnitMgdl": "mg/dL per IE",
-      "isfUnitMmol": "mmol/L per IE",
-      "targets": "Glucose Targets",
-      "targetLow": "Low",
-      "targetHigh": "High",
-      "startTime": "Start Time"
     }
   }
 }
