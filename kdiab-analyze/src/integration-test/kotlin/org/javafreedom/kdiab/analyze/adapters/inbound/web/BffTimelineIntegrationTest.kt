@@ -128,7 +128,7 @@ class BffTimelineIntegrationTest {
             val profilesClient   = ProfilesClient(mockEngine, "http://mock-profiles")
             return Triple(
                 TimelineService(measuresClient, treatmentsClient),
-                AnalyticsService(measuresClient, profilesClient),
+                AnalyticsService(measuresClient, profilesClient, treatmentsClient),
                 ProfilesService(profilesClient),
             )
         }
@@ -158,7 +158,7 @@ class BffTimelineIntegrationTest {
             val treatmentsClient = TreatmentsClient(mockEngine, "http://mock-treatments")
             val profilesClient = ProfilesClient(mockEngine, "http://mock-profiles")
             val timelineService = TimelineService(measuresClient, treatmentsClient)
-            val analyticsService = AnalyticsService(measuresClient, profilesClient)
+            val analyticsService = AnalyticsService(measuresClient, profilesClient, treatmentsClient)
             val profilesService = ProfilesService(profilesClient)
             return Triple(timelineService, analyticsService, profilesService)
         }

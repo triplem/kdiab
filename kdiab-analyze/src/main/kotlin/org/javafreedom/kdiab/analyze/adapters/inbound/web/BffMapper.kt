@@ -10,6 +10,7 @@ import org.javafreedom.kdiab.analyze.domain.model.DeviceStatus
 import org.javafreedom.kdiab.analyze.domain.model.DeviceUsageResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.ProfilesResult
+import org.javafreedom.kdiab.analyze.domain.model.ReportSummaryResult
 import org.javafreedom.kdiab.analyze.domain.model.Timeline
 
 @Serializable
@@ -284,5 +285,94 @@ private fun DailyStatRow.toDto() = DailyStatRowDto(
 fun DailyStatsResult.toResponse() = DailyStatsResponseDto(
     rows = rows.map { it.toDto() },
     summary = summary.toDto(),
+    warnings = warnings,
+)
+
+@Serializable
+data class TirZoneDto(val count: Int, val percent: Double)
+
+@Serializable
+data class TirResultDto(
+    val veryLow: TirZoneDto,
+    val low: TirZoneDto,
+    val inRange: TirZoneDto,
+    val high: TirZoneDto,
+    val veryHigh: TirZoneDto,
+    val customTirFallback: Boolean,
+)
+
+@Suppress("LongParameterList")
+@Serializable
+data class ReportSummaryResponseDto(
+    val displayName: String,
+    val daysAnalysed: Int,
+    val cgmReadingCount: Int,
+    val cgmIntervalMinutes: Int,
+    val insulinTypes: List<String>,
+    val insulinChanges: Int,
+    val avgDaysPerCartridge: Double?,
+    val siteChanges: Int,
+    val avgDaysPerSite: Double?,
+    val sensorInserts: Int,
+    val avgDaysPerSensor: Double?,
+    val tirProfile: TirResultDto,
+    val tirStandard: TirResultDto,
+    val minGlucose: Double?,
+    val maxGlucose: Double?,
+    val meanGlucose: Double?,
+    val sd: Double?,
+    val gvi: Double?,
+    val pgs: Double?,
+    val gri: Double?,
+    val griZone: String?,
+    val eHbA1c: Double?,
+    val avgCarbsPerDayG: Double?,
+    val avgBolusPerDayIe: Double?,
+    val bolusPercent: Double?,
+    val avgBasalPerDayIe: Double?,
+    val basalPercent: Double?,
+    val avgTotalInsulinPerDayIe: Double?,
+    val warnings: List<String>,
+)
+
+private fun org.javafreedom.kdiab.analyze.domain.model.TirZone.toDto() = TirZoneDto(count, percent)
+private fun org.javafreedom.kdiab.analyze.domain.model.TirResult.toDto() = TirResultDto(
+    veryLow = veryLow.toDto(),
+    low = low.toDto(),
+    inRange = inRange.toDto(),
+    high = high.toDto(),
+    veryHigh = veryHigh.toDto(),
+    customTirFallback = customTirFallback,
+)
+
+fun ReportSummaryResult.toResponse() = ReportSummaryResponseDto(
+    displayName = displayName,
+    daysAnalysed = daysAnalysed,
+    cgmReadingCount = cgmReadingCount,
+    cgmIntervalMinutes = cgmIntervalMinutes,
+    insulinTypes = insulinTypes,
+    insulinChanges = insulinChanges,
+    avgDaysPerCartridge = avgDaysPerCartridge,
+    siteChanges = siteChanges,
+    avgDaysPerSite = avgDaysPerSite,
+    sensorInserts = sensorInserts,
+    avgDaysPerSensor = avgDaysPerSensor,
+    tirProfile = tirProfile.toDto(),
+    tirStandard = tirStandard.toDto(),
+    minGlucose = minGlucose,
+    maxGlucose = maxGlucose,
+    meanGlucose = meanGlucose,
+    sd = sd,
+    gvi = gvi,
+    pgs = pgs,
+    gri = gri,
+    griZone = griZone,
+    eHbA1c = eHbA1c,
+    avgCarbsPerDayG = avgCarbsPerDayG,
+    avgBolusPerDayIe = avgBolusPerDayIe,
+    bolusPercent = bolusPercent,
+    avgBasalPerDayIe = avgBasalPerDayIe,
+    basalPercent = basalPercent,
+    avgTotalInsulinPerDayIe = avgTotalInsulinPerDayIe,
     warnings = warnings,
 )

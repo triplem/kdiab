@@ -9,9 +9,14 @@ import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
 import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
 import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
+import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.domain.exception.UpstreamException
 import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamProfile
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamTreatment
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -21,7 +26,8 @@ class AnalyticsServiceTest {
 
     private val measuresClient = mockk<MeasuresPort>()
     private val profilesClient = mockk<ProfilesPort>()
-    private val service = AnalyticsService(measuresClient, profilesClient)
+    private val treatmentsClient = mockk<TreatmentsPort>()
+    private val service = AnalyticsService(measuresClient, profilesClient, treatmentsClient)
 
     private val userId = "user-1"
     private val auth = "Bearer token"
@@ -428,6 +434,170 @@ class AnalyticsServiceTest {
             assertEquals(index * 5, bucket.minuteOfDay)
             assertNull(bucket.median)
         }
+    }
+
+    // ── Report Summary ────────────────────────────────────────────────────────
+
+    private fun treatmentDto(type: String, treatedAt: String = "2024-01-15T12:00:00Z") = UpstreamTreatment(
+        id = "t-1",
+        userId = userId,
+        treatedAt = treatedAt,
+        type = type,
+        notes = null,
+        data = buildJsonObject { },
+    )
+
+    private fun activeProfile() = UpstreamProfile(
+        id = "p-1",
+        userId = userId,
+        status = "ACTIVE",
+        name = "Test Profile",
+        insulinType = "NovoRapid",
+        durationOfAction = 240,
+        analysisLow = null,
+        analysisHigh = null,
+        createdAt = null,
+        validFrom = null,
+        previousProfileId = null,
+        activatedAt = null,
+        archivedAt = null,
+        basal = null,
+        icr = null,
+        isf = null,
+        targets = null,
+    )
+
+    @Test
+    fun `getReportSummary throws BusinessValidationException when range exceeds 365 days`() = runTest {
+        assertFailsWith<BusinessValidationException> {
+            service.getReportSummary(userId, "Test User", "2024-01-01T00:00:00Z", "2025-01-01T00:00:00Z", auth, "mg/dL", "")
+        }
+    }
+
+    @Test
+    fun `getReportSummary adds lessThan14Days warning when range is under 14 days`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { profilesClient.getProfiles(any(), any(), any()) } returns emptyList()
+        val result = service.getReportSummary(userId, "Test User", "2024-01-01T00:00:00Z", "2024-01-07T00:00:00Z", auth, "mg/dL", "")
+        assertTrue(result.warnings.any { it.contains("lessThan14Days") })
+    }
+
+    @Test
+    fun `getReportSummary adds no CGM warning when measures list is empty`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { profilesClient.getProfiles(any(), any(), any()) } returns emptyList()
+        val result = service.getReportSummary(userId, "Test User", from, to, auth, "mg/dL", "")
+        assertTrue(result.warnings.any { it.contains("No CGM readings") })
+        assertEquals(0, result.cgmReadingCount)
+        assertNull(result.meanGlucose)
+        assertNull(result.eHbA1c)
+    }
+
+    @Test
+    fun `getReportSummary computes CGM stats correctly`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any(), any(), any()) } returns listOf(
+            cgmDto(100.0), cgmDto(120.0), cgmDto(140.0),
+        )
+        coEvery { treatmentsClient.getTreatments(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { profilesClient.getProfiles(any(), any(), any()) } returns emptyList()
+        val result = service.getReportSummary(userId, "Test User", from, to, auth, "mg/dL", "")
+        assertEquals(3, result.cgmReadingCount)
+        assertEquals(100.0, result.minGlucose, absoluteTolerance = 0.01)
+        assertEquals(140.0, result.maxGlucose, absoluteTolerance = 0.01)
+        assertEquals(120.0, result.meanGlucose, absoluteTolerance = 0.01)
+        assertNotNull(result.eHbA1c)
+        val expectedEHba1c = (120.0 + 46.7) / 28.7
+        assertEquals(expectedEHba1c, result.eHbA1c, absoluteTolerance = 0.01)
+        assertNotNull(result.gri)
+        assertNotNull(result.griZone)
+    }
+
+    @Test
+    fun `getReportSummary computes insulin device metrics from treatments`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { profilesClient.getProfiles(any(), any(), any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(any(), any(), any(), any(), any()) } returns listOf(
+            treatmentDto("INSULIN_CHANGE", "2024-01-05T10:00:00Z"),
+            treatmentDto("INSULIN_CHANGE", "2024-01-20T10:00:00Z"),
+            treatmentDto("SITE_CHANGE", "2024-01-08T10:00:00Z"),
+            treatmentDto("SENSOR_INSERT", "2024-01-10T10:00:00Z"),
+        )
+        val result = service.getReportSummary(userId, "Test User", from, to, auth, "mg/dL", "")
+        assertEquals(2, result.insulinChanges)
+        assertEquals(1, result.siteChanges)
+        assertEquals(1, result.sensorInserts)
+        assertNotNull(result.avgDaysPerCartridge)
+        assertNotNull(result.avgDaysPerSite)
+        assertNotNull(result.avgDaysPerSensor)
+    }
+
+    @Test
+    fun `getReportSummary computes bolus and carbs averages per day`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { profilesClient.getProfiles(any(), any(), any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(any(), any(), any(), any(), any()) } returns listOf(
+            UpstreamTreatment("t1", userId, "2024-01-05T10:00:00Z", "BOLUS", null, buildJsonObject { put("amount", 5.0) }),
+            UpstreamTreatment("t2", userId, "2024-01-06T10:00:00Z", "CARBS", null, buildJsonObject { put("amount", 40.0) }),
+        )
+        val result = service.getReportSummary(userId, "Test User", from, to, auth, "mg/dL", "")
+        assertNotNull(result.avgBolusPerDayIe)
+        assertNotNull(result.avgCarbsPerDayG)
+        assertTrue(result.avgBolusPerDayIe > 0.0)
+        assertTrue(result.avgCarbsPerDayG > 0.0)
+    }
+
+    @Test
+    fun `getReportSummary uses displayName in result`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { profilesClient.getProfiles(any(), any(), any()) } returns emptyList()
+        val result = service.getReportSummary(userId, "Sarah Müller", from, to, auth, "mg/dL", "")
+        assertEquals("Sarah Müller", result.displayName)
+    }
+
+    @Test
+    fun `getReportSummary picks up insulinType from active profile`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { profilesClient.getProfiles(any(), any(), any()) } returns listOf(activeProfile())
+        val result = service.getReportSummary(userId, "Test User", from, to, auth, "mg/dL", "")
+        assertTrue(result.insulinTypes.contains("NovoRapid"))
+    }
+
+    @Test
+    fun `getReportSummary degrades gracefully when measures upstream fails`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any(), any(), any()) } throws
+            UpstreamException("measures", 503, "Service Unavailable")
+        coEvery { treatmentsClient.getTreatments(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { profilesClient.getProfiles(any(), any(), any()) } returns emptyList()
+        val result = service.getReportSummary(userId, "Test User", from, to, auth, "mg/dL", "")
+        assertEquals(0, result.cgmReadingCount)
+        assertNull(result.meanGlucose)
+        assertNull(result.eHbA1c)
+    }
+
+    @Test
+    fun `getReportSummary degrades gracefully when treatments upstream fails`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(any(), any(), any(), any(), any()) } throws
+            UpstreamException("treatments", 503, "Service Unavailable")
+        coEvery { profilesClient.getProfiles(any(), any(), any()) } returns emptyList()
+        val result = service.getReportSummary(userId, "Test User", from, to, auth, "mg/dL", "")
+        assertEquals(0, result.insulinChanges)
+        assertEquals(0, result.siteChanges)
+        assertEquals(0, result.sensorInserts)
+    }
+
+    @Test
+    fun `getReportSummary degrades gracefully when profiles upstream fails`() = runTest {
+        coEvery { measuresClient.getMeasures(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { treatmentsClient.getTreatments(any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { profilesClient.getProfiles(any(), any(), any()) } throws
+            UpstreamException("profiles", 503, "Service Unavailable")
+        val result = service.getReportSummary(userId, "Test User", from, to, auth, "mg/dL", "")
+        assertTrue(result.insulinTypes.isEmpty())
     }
 }
 

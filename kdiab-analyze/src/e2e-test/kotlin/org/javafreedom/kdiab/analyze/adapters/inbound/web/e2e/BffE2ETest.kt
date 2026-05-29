@@ -170,7 +170,7 @@ class BffE2ETest : BehaviorSpec({
         val profilesClient = ProfilesClient(mockEngine, "http://mock-profiles")
         return Triple(
             TimelineService(measuresClient, treatmentsClient),
-            AnalyticsService(measuresClient, profilesClient),
+            AnalyticsService(measuresClient, profilesClient, treatmentsClient),
             ProfilesService(profilesClient),
         )
     }
@@ -264,7 +264,8 @@ class BffE2ETest : BehaviorSpec({
                 }
                 val agpMeasuresClient = MeasuresClient(agpEngine, "http://mock-measures")
                 val agpProfilesClient = ProfilesClient(agpEngine, "http://mock-profiles")
-                val agpAnalyticsService = AnalyticsService(agpMeasuresClient, agpProfilesClient)
+                val agpTreatmentsClient = TreatmentsClient(agpEngine, "http://mock-treatments")
+                val agpAnalyticsService = AnalyticsService(agpMeasuresClient, agpProfilesClient, agpTreatmentsClient)
                 val agpServices = Triple(timelineService, agpAnalyticsService, profilesService)
 
                 testApplication {

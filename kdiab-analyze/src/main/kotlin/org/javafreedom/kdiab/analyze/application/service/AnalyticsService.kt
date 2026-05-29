@@ -1,18 +1,30 @@
 package org.javafreedom.kdiab.analyze.application.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.math.sqrt
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import org.javafreedom.kdiab.analyze.application.port.outbound.MeasuresPort
 import org.javafreedom.kdiab.analyze.application.port.outbound.ProfilesPort
-import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
+import org.javafreedom.kdiab.analyze.application.port.outbound.TreatmentsPort
 import org.javafreedom.kdiab.analyze.domain.model.AgpBucketData
 import org.javafreedom.kdiab.analyze.domain.model.AgpResult
+import org.javafreedom.kdiab.analyze.domain.model.BasalSegment
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatRow
 import org.javafreedom.kdiab.analyze.domain.model.DailyStatsResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
+import org.javafreedom.kdiab.analyze.domain.model.ReportSummaryResult
 import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
+import org.javafreedom.kdiab.analyze.domain.model.TirResult
+import org.javafreedom.kdiab.analyze.domain.model.TirZone
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamMeasure
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamProfile
+import org.javafreedom.kdiab.analyze.domain.model.UpstreamTreatment
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.model.GLUCOSE_CONVERSION_FACTOR
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlinx.datetime.DatePeriod
@@ -67,6 +79,30 @@ private const val AGP_UPPER_QUARTILE = 75
 private const val AGP_NINETIETH_PERCENTILE = 90
 private const val PERCENT_FACTOR = 100.0
 
+// Report summary constants
+// Max date range for report summary (365 days)
+private const val MAX_REPORT_DAYS = 365
+// Minimum recommended date range for report summary (14 days)
+private const val MIN_REPORT_DAYS = 14
+private const val SECONDS_PER_DAY = 86_400.0
+// GRI = 3.0×(%<54) + 2.4×(%54–70) + 1.6×(%180–250) + 0.8×(%>250) (Klonoff 2023)
+private const val GRI_VERY_LOW_WEIGHT = 3.0
+private const val GRI_LOW_WEIGHT = 2.4
+private const val GRI_HIGH_WEIGHT = 1.6
+private const val GRI_VERY_HIGH_WEIGHT = 0.8
+// GRI zone thresholds
+private const val GRI_ZONE_A_MAX = 20.0
+private const val GRI_ZONE_B_MAX = 40.0
+private const val GRI_ZONE_C_MAX = 60.0
+private const val GRI_ZONE_D_MAX = 80.0
+// Estimated CGM interval in minutes (standard 5-min CGM interval)
+private const val CGM_INTERVAL_MINUTES = 5
+private const val PGS_REFERENCE_GLUCOSE = 110.0
+private const val MINUTES_PER_HOUR = 60
+private const val MINUTES_IN_DAY = 24 * MINUTES_PER_HOUR
+private const val TEMP_BASAL_DURATION_TO_HOURS = 60.0
+private const val HOURS_IN_DAY_D = 24.0
+
 private data class CgmFetchResult(val readings: List<Double>, val mismatchCount: Int)
 private data class MeasuresCacheKey(val userId: String, val from: String, val to: String)
 private data class MeasuresCacheEntry(val measures: List<UpstreamMeasure>, val fetchedAt: Instant)
@@ -74,6 +110,7 @@ private data class MeasuresCacheEntry(val measures: List<UpstreamMeasure>, val f
 class AnalyticsService(
     private val measuresPort: MeasuresPort,
     private val profilesPort: ProfilesPort,
+    private val treatmentsPort: TreatmentsPort,
 ) : AnalyticsOperation {
     // In-process cache keyed by (userId, from, to). Avoids double-fetching when getHba1c and
     // getAgp are called in the same request burst for the same time window.
@@ -396,6 +433,165 @@ class AnalyticsService(
         )
     }
 
+    private data class CgmStats(
+        val min: Double?, val max: Double?, val mean: Double?, val sd: Double?,
+        val gvi: Double?, val eHbA1c: Double?,
+    )
+
+    private fun computeCgmStats(readings: List<Double>): CgmStats {
+        if (readings.isEmpty()) return CgmStats(null, null, null, null, null, null)
+        val mean = readings.average()
+        val sd = if (readings.size > 1) sqrt(readings.sumOf { (it - mean) * (it - mean) } / readings.size) else null
+        val gvi = if (mean > 0.0 && sd != null) sd / mean else null
+        val eHbA1c = (mean + DCCT_ADDEND) / DCCT_DIVISOR
+        return CgmStats(readings.min(), readings.max(), mean, sd, gvi, eHbA1c)
+    }
+
+    private data class InsulinMetrics(
+        val insulinChanges: Int, val avgDaysPerCartridge: Double?,
+        val siteChanges: Int, val avgDaysPerSite: Double?,
+        val sensorInserts: Int, val avgDaysPerSensor: Double?,
+    )
+
+    private fun computeInsulinMetrics(treatments: List<UpstreamTreatment>, daysAnalysed: Int): InsulinMetrics {
+        val insulinCount = treatments.count { it.type == "INSULIN_CHANGE" }
+        val siteCount = treatments.count { it.type == "SITE_CHANGE" }
+        val sensorCount = treatments.count { it.type == "SENSOR_INSERT" }
+        return InsulinMetrics(
+            insulinChanges = insulinCount,
+            avgDaysPerCartridge = if (insulinCount > 0) daysAnalysed.toDouble() / insulinCount else null,
+            siteChanges = siteCount,
+            avgDaysPerSite = if (siteCount > 0) daysAnalysed.toDouble() / siteCount else null,
+            sensorInserts = sensorCount,
+            avgDaysPerSensor = if (sensorCount > 0) daysAnalysed.toDouble() / sensorCount else null,
+        )
+    }
+
+    // UnreachableCode: detekt false positive inside lambda guard clauses.
+    @Suppress("LongParameterList", "LongMethod", "UnreachableCode")
+    override suspend fun getReportSummary(
+        userId: String,
+        displayName: String,
+        from: String,
+        to: String,
+        authorization: String,
+        glucoseUnit: String,
+        correlationId: String,
+        timeZone: TimeZone,
+    ): ReportSummaryResult {
+        val fromInstant = Instant.parse(from)
+        val toInstant = Instant.parse(to)
+        val rangeDays = (toInstant - fromInstant).inWholeSeconds / SECONDS_PER_DAY
+        if (rangeDays > MAX_REPORT_DAYS) {
+            throw BusinessValidationException(
+                "Report date range must not exceed $MAX_REPORT_DAYS days (requested ${rangeDays.toInt()} days)"
+            )
+        }
+        val daysAnalysed = rangeDays.toInt().coerceAtLeast(1)
+
+        val (cgmReadings, treatments, profiles) = coroutineScope {
+            val cgmAsync = async {
+                runCatching {
+                    fetchCgmReadings(userId, from, to, authorization, glucoseUnit, correlationId)
+                }.getOrNull()
+            }
+            val treatAsync = async {
+                runCatching {
+                    treatmentsPort.getTreatments(userId, authorization, correlationId, from, to)
+                }.getOrElse { emptyList() }
+            }
+            val profAsync = async {
+                runCatching {
+                    profilesPort.getProfiles(userId, authorization, correlationId)
+                }.getOrElse { emptyList() }
+            }
+            Triple(cgmAsync.await(), treatAsync.await(), profAsync.await())
+        }
+
+        val readings = cgmReadings?.readings ?: emptyList()
+        val activeProfile = profiles.firstOrNull { it.status == "ACTIVE" }
+
+        val warnings = buildList {
+            if (rangeDays < MIN_REPORT_DAYS) add("lessThan14Days")
+            if (readings.isEmpty()) add("No CGM readings found in the selected timeframe.")
+        }
+
+        val cgm = computeCgmStats(readings)
+        val insulinMetrics = computeInsulinMetrics(treatments, daysAnalysed)
+
+        // TIR profile (uses profile analysisLow/High if available, else standard 70/180)
+        val profileTirLow = activeProfile?.analysisLow
+        val profileTirHigh = activeProfile?.analysisHigh
+        val tirProfile = computeTirResult(
+            readings, profileTirLow ?: TIR_LOW, profileTirHigh ?: TIR_HIGH,
+            customTirFallback = profileTirLow == null || profileTirHigh == null,
+        )
+        val tirStandard = computeTirResult(readings, TIR_LOW, TIR_HIGH, customTirFallback = false)
+
+        val gri = if (readings.isNotEmpty()) computeGri(tirStandard) else null
+        // PGS (Rodbard 2011): Mean_BG * (%time \u2265180 fraction) + (110 – Mean_BG) * (%time ≤70 fraction)
+        val pgs = cgm.mean?.let { mean ->
+            val highFrac = (tirStandard.high.count + tirStandard.veryHigh.count).toDouble() / readings.size
+            val lowFrac = (tirStandard.low.count + tirStandard.veryLow.count).toDouble() / readings.size
+            maxOf(0.0, mean * highFrac + (PGS_REFERENCE_GLUCOSE - mean) * lowFrac)
+        }
+
+        val bolusTotalIe = treatments
+            .filter { it.type in listOf("BOLUS", "CORRECTION_BOLUS", "COMBO_BOLUS") }
+            .sumOf { it.data["amount"]?.toString()?.toDoubleOrNull() ?: 0.0 }
+        val carbsTotalG = treatments
+            .filter { it.type == "CARBS" }
+            .sumOf { it.data["amount"]?.toString()?.toDoubleOrNull() ?: 0.0 }
+        val basalTotalIe = computeBasalTotalIe(activeProfile?.basal, treatments, fromInstant, toInstant)
+
+        val avgBolusPerDayIe = if (daysAnalysed > 0) bolusTotalIe / daysAnalysed else null
+        val avgBasalPerDayIe = if (daysAnalysed > 0) basalTotalIe / daysAnalysed else null
+        val avgTotalInsulinPerDayIe = if (avgBolusPerDayIe != null && avgBasalPerDayIe != null) {
+            avgBolusPerDayIe + avgBasalPerDayIe
+        } else avgBolusPerDayIe ?: avgBasalPerDayIe
+
+        val bolusPercent = if (avgTotalInsulinPerDayIe != null && avgTotalInsulinPerDayIe > 0.0 &&
+            avgBolusPerDayIe != null
+        ) avgBolusPerDayIe / avgTotalInsulinPerDayIe * PERCENT_FACTOR else null
+        val basalPercent = if (avgTotalInsulinPerDayIe != null && avgTotalInsulinPerDayIe > 0.0 &&
+            avgBasalPerDayIe != null
+        ) avgBasalPerDayIe / avgTotalInsulinPerDayIe * PERCENT_FACTOR else null
+
+        val insulinTypes = profiles.mapNotNull { it.insulinType }.distinct()
+
+        return ReportSummaryResult(
+            displayName = displayName,
+            daysAnalysed = daysAnalysed,
+            cgmReadingCount = readings.size,
+            cgmIntervalMinutes = CGM_INTERVAL_MINUTES,
+            insulinTypes = insulinTypes,
+            insulinChanges = insulinMetrics.insulinChanges,
+            avgDaysPerCartridge = insulinMetrics.avgDaysPerCartridge,
+            siteChanges = insulinMetrics.siteChanges,
+            avgDaysPerSite = insulinMetrics.avgDaysPerSite,
+            sensorInserts = insulinMetrics.sensorInserts,
+            avgDaysPerSensor = insulinMetrics.avgDaysPerSensor,
+            tirProfile = tirProfile,
+            tirStandard = tirStandard,
+            minGlucose = cgm.min,
+            maxGlucose = cgm.max,
+            meanGlucose = cgm.mean,
+            sd = cgm.sd,
+            gvi = cgm.gvi,
+            pgs = pgs,
+            gri = gri,
+            griZone = gri?.let { griZone(it) },
+            eHbA1c = cgm.eHbA1c,
+            avgCarbsPerDayG = if (daysAnalysed > 0) carbsTotalG / daysAnalysed else null,
+            avgBolusPerDayIe = avgBolusPerDayIe,
+            bolusPercent = bolusPercent,
+            avgBasalPerDayIe = avgBasalPerDayIe,
+            basalPercent = basalPercent,
+            avgTotalInsulinPerDayIe = avgTotalInsulinPerDayIe,
+            warnings = warnings,
+        )
+    }
+
     private fun buildDailyStatRow(date: String, readings: List<Double>): DailyStatRow {
         val sorted = readings.sorted()
         val total = sorted.size.toDouble()
@@ -472,4 +668,134 @@ class AnalyticsService(
         }
         return result
     }
+
+    private fun computeTirResult(
+        readings: List<Double>,
+        tirLow: Double,
+        tirHigh: Double,
+        customTirFallback: Boolean,
+    ): TirResult {
+        if (readings.isEmpty()) {
+            return TirResult(
+                veryLow = TirZone(0, 0.0),
+                low = TirZone(0, 0.0),
+                inRange = TirZone(0, 0.0),
+                high = TirZone(0, 0.0),
+                veryHigh = TirZone(0, 0.0),
+                customTirFallback = customTirFallback,
+            )
+        }
+        var veryLowCount = 0
+        var lowCount = 0
+        var inRangeCount = 0
+        var highCount = 0
+        var veryHighCount = 0
+        readings.forEach { v ->
+            when {
+                v < TIR_VERY_LOW -> veryLowCount++
+                v < tirLow -> lowCount++
+                v <= tirHigh -> inRangeCount++
+                v <= TIR_VERY_HIGH -> highCount++
+                else -> veryHighCount++
+            }
+        }
+        val total = readings.size.toDouble()
+        return TirResult(
+            veryLow = TirZone(veryLowCount, veryLowCount / total * PERCENT_FACTOR),
+            low = TirZone(lowCount, lowCount / total * PERCENT_FACTOR),
+            inRange = TirZone(inRangeCount, inRangeCount / total * PERCENT_FACTOR),
+            high = TirZone(highCount, highCount / total * PERCENT_FACTOR),
+            veryHigh = TirZone(veryHighCount, veryHighCount / total * PERCENT_FACTOR),
+            customTirFallback = customTirFallback,
+        )
+    }
+
+    // GRI = 3.0×(%<54) + 2.4×(%54–70) + 1.6×(%180–250) + 0.8×(%>250), Klonoff 2023
+    private fun computeGri(tir: TirResult): Double {
+        return GRI_VERY_LOW_WEIGHT * tir.veryLow.percent +
+            GRI_LOW_WEIGHT * tir.low.percent +
+            GRI_HIGH_WEIGHT * tir.high.percent +
+            GRI_VERY_HIGH_WEIGHT * tir.veryHigh.percent
+    }
+
+    private fun griZone(gri: Double): String = when {
+        gri <= GRI_ZONE_A_MAX -> "A"
+        gri <= GRI_ZONE_B_MAX -> "B"
+        gri <= GRI_ZONE_C_MAX -> "C"
+        gri <= GRI_ZONE_D_MAX -> "D"
+        else -> "E"
+    }
+
+    // UnreachableCode: detekt false positive inside lambda guard clauses.
+    @Suppress("UnreachableCode")
+    private fun computeBasalTotalIe(
+        basalSchedule: List<BasalSegment>?,
+        treatments: List<UpstreamTreatment>,
+        from: Instant,
+        to: Instant,
+    ): Double {
+        // If no basal profile available, sum any BASAL treatment events directly.
+        if (basalSchedule.isNullOrEmpty()) {
+            return treatments
+                .filter { it.type == "BASAL" }
+                .sumOf { it.data["amount"]?.toString()?.toDoubleOrNull() ?: 0.0 }
+        }
+
+        // Build full-day scheduled basal schedule as list of (startMinute, rate) pairs.
+        // Segments are in HH:MM format; convert to minutes from midnight.
+        val scheduleMinutes = basalSchedule.mapNotNull { seg ->
+            val parts = seg.startTime.split(":")
+            if (parts.size != 2) return@mapNotNull null
+            val h = parts[0].toIntOrNull() ?: return@mapNotNull null
+            val m = parts[1].toIntOrNull() ?: return@mapNotNull null
+            Pair(h * MINUTES_PER_HOUR + m, seg.value)
+        }.sortedBy { it.first }
+
+        var scheduledTotal = 0.0
+
+        // For each day in the range, sum scheduled basal
+        var cursor = from
+        while (cursor < to) {
+            val dayEnd = minOf(cursor + 1.days, to)
+            val daySeconds = (dayEnd - cursor).inWholeSeconds.toDouble()
+            // Sum scheduled basal for this day (pro-rated if partial day)
+            scheduledTotal += computeScheduledBasalForDuration(scheduleMinutes, daySeconds / SECONDS_PER_DAY)
+            cursor = dayEnd
+        }
+
+        // Adjust for TEMP_BASAL events: replace scheduled basal with temp rate for the duration.
+        val tempBasalAdjustment = treatments
+            .filter { it.type == "TEMP_BASAL" }
+            .sumOf { t ->
+                val treatedAt = runCatching { Instant.parse(t.treatedAt) }.getOrNull() ?: return@sumOf 0.0
+                if (treatedAt < from || treatedAt >= to) return@sumOf 0.0
+                val durationMinutes = t.data["duration"]?.toString()?.toDoubleOrNull() ?: return@sumOf 0.0
+                val tempRate = t.data["rate"]?.toString()?.toDoubleOrNull() ?: return@sumOf 0.0
+                val durationHours = durationMinutes / TEMP_BASAL_DURATION_TO_HOURS
+                // Scheduled basal for the same duration (to subtract)
+                val scheduledForDuration =
+                    computeScheduledBasalForDuration(scheduleMinutes, durationHours / HOURS_IN_DAY_D)
+                // Temp replaces scheduled for the duration
+                (tempRate - scheduledForDuration / (durationHours / HOURS_IN_DAY_D)) * durationHours
+            }
+
+        return (scheduledTotal + tempBasalAdjustment).coerceAtLeast(0.0)
+    }
+
+    private fun computeScheduledBasalForDuration(
+        scheduleMinutes: List<Pair<Int, Double>>,
+        fractionOfDay: Double,
+    ): Double {
+        // Compute total insulin in one full day from the schedule, then scale by fractionOfDay.
+        var totalForDay = 0.0
+        for (i in scheduleMinutes.indices) {
+            val startMin = scheduleMinutes[i].first
+            val rate = scheduleMinutes[i].second
+            val endMin = if (i + 1 < scheduleMinutes.size) scheduleMinutes[i + 1].first else MINUTES_IN_DAY
+            val durationHours = (endMin - startMin).toDouble() / MINUTES_PER_HOUR
+            totalForDay += rate * durationHours
+        }
+        return totalForDay * fractionOfDay
+    }
 }
+
