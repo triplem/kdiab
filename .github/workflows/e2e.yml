@@ -25,6 +25,8 @@ permissions:
 
 jobs:
   e2e:
+    # Disabled: postgres container is unhealthy on GitHub Actions runners — see #1152
+    if: false
     name: Playwright E2E (Chromium)
     runs-on: ubuntu-latest
     timeout-minutes: 60
