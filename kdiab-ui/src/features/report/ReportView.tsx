@@ -5,6 +5,7 @@ import { HbA1cCard } from '../analytics/HbA1cCard'
 import { TimeInRangeBar } from '../analytics/TimeInRangeBar'
 import { AgpChart } from '../analytics/AgpChart'
 import { ProfilesView } from '../analytics/ProfilesView'
+import { DailyStatsPage } from './DailyStatsPage'
 
 interface Props {
   userId: string
@@ -124,7 +125,12 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
           errorMessage={t('report.error.dailyStats')}
         >
           {data.dailyStats.data && (
-            <DailyStatsTable rows={data.dailyStats.data.rows} summary={data.dailyStats.data.summary} glucoseUnit={glucoseUnit} />
+            <DailyStatsPage
+              rows={data.dailyStats.data.rows}
+              summary={data.dailyStats.data.summary}
+              glucoseUnit={glucoseUnit}
+              {...(data.dailyStats.data.warnings !== undefined && { warnings: data.dailyStats.data.warnings })}
+            />
           )}
           {!data.dailyStats.isLoading && !data.dailyStats.isError && !data.dailyStats.data && (
             <p style={{ color: 'var(--text-secondary)' }}>{t('analytics.noData')}</p>
@@ -187,104 +193,6 @@ export function ReportView({ userId, from, to, selectedPages, data, glucoseUnit,
 }
 
 // ---- Inline sub-components ----
-
-interface DailyStatRow {
-  date: string
-  cgmCount: number
-  veryLowPercent: number | null
-  lowPercent: number | null
-  inRangePercent: number | null
-  highPercent: number | null
-  veryHighPercent: number | null
-  median: number | null
-  sd: number | null
-  eHbA1c: number | null
-}
-
-interface DailyStatsTableProps {
-  rows: DailyStatRow[]
-  summary: DailyStatRow
-  glucoseUnit: string
-}
-
-function DailyStatsTable({ rows, summary, glucoseUnit }: DailyStatsTableProps) {
-  const { t } = useTranslation()
-  const unit = glucoseUnit === 'mmol/L' ? 'mmol/L' : 'mg/dL'
-
-  const fmt = (v: number | null): string => {
-    if (v === null) return '—'
-    return unit === 'mmol/L' ? (v / 18.0).toFixed(1) : Math.round(v).toString()
-  }
-
-  const fmtPct = (v: number | null): string => (v === null ? '—' : v.toFixed(1) + '%')
-
-  const displayRows = rows.slice(0, 14) // Show max 14 rows for readability
-
-  return (
-    <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-        <thead>
-          <tr style={{ background: 'var(--surface)', borderBottom: '2px solid var(--border)' }}>
-            <th style={{ padding: '0.4rem', textAlign: 'left' }}>{t('report.dailyStats.date')}</th>
-            <th style={{ padding: '0.4rem', textAlign: 'right' }}>{t('report.dailyStats.readings')}</th>
-            <th style={{ padding: '0.4rem', textAlign: 'right' }}>{t('report.dailyStats.veryLow')}</th>
-            <th style={{ padding: '0.4rem', textAlign: 'right' }}>{t('report.dailyStats.low')}</th>
-            <th style={{ padding: '0.4rem', textAlign: 'right' }}>{t('report.dailyStats.inRange')}</th>
-            <th style={{ padding: '0.4rem', textAlign: 'right' }}>{t('report.dailyStats.high')}</th>
-            <th style={{ padding: '0.4rem', textAlign: 'right' }}>{t('report.dailyStats.veryHigh')}</th>
-            <th style={{ padding: '0.4rem', textAlign: 'right' }}>
-              {t('report.dailyStats.median')} ({unit})
-            </th>
-            <th style={{ padding: '0.4rem', textAlign: 'right' }}>SD</th>
-            <th style={{ padding: '0.4rem', textAlign: 'right' }}>eHbA1c</th>
-          </tr>
-        </thead>
-        <tbody>
-          {displayRows.map((row) => (
-            <tr key={row.date} style={{ borderBottom: '1px solid var(--border)' }}>
-              <td style={{ padding: '0.35rem' }}>{row.date}</td>
-              <td style={{ padding: '0.35rem', textAlign: 'right' }}>{row.cgmCount}</td>
-              <td style={{ padding: '0.35rem', textAlign: 'right', color: row.veryLowPercent !== null && row.veryLowPercent > 0 ? 'var(--color-error, #c0392b)' : 'inherit' }}>
-                {fmtPct(row.veryLowPercent)}
-              </td>
-              <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmtPct(row.lowPercent)}</td>
-              <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmtPct(row.inRangePercent)}</td>
-              <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmtPct(row.highPercent)}</td>
-              <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmtPct(row.veryHighPercent)}</td>
-              <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmt(row.median)}</td>
-              <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmt(row.sd)}</td>
-              <td style={{ padding: '0.35rem', textAlign: 'right' }}>
-                {row.eHbA1c !== null ? row.eHbA1c.toFixed(1) + '%' : '—'}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        {/* Summary row */}
-        <tfoot>
-          <tr style={{ background: 'var(--surface)', fontWeight: 600, borderTop: '2px solid var(--border)' }}>
-            <td style={{ padding: '0.35rem' }}>{t('report.dailyStats.summary')}</td>
-            <td style={{ padding: '0.35rem', textAlign: 'right' }}>{summary.cgmCount}</td>
-            <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmtPct(summary.veryLowPercent)}</td>
-            <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmtPct(summary.lowPercent)}</td>
-            <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmtPct(summary.inRangePercent)}</td>
-            <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmtPct(summary.highPercent)}</td>
-            <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmtPct(summary.veryHighPercent)}</td>
-            <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmt(summary.median)}</td>
-            <td style={{ padding: '0.35rem', textAlign: 'right' }}>{fmt(summary.sd)}</td>
-            <td style={{ padding: '0.35rem', textAlign: 'right' }}>
-              {summary.eHbA1c !== null ? summary.eHbA1c.toFixed(1) + '%' : '—'}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
-      {rows.length > 14 && (
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
-          {t('report.dailyStats.showingFirst', { shown: 14, total: rows.length })}
-        </p>
-      )}
-    </div>
-  )
-}
 
 interface GlucoseDistributionSummaryProps {
   zonePercents: {
