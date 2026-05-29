@@ -60,6 +60,30 @@ data class ProfilesResult(
     val profiles: List<ProfileSummary>,
 )
 
+data class GlucoseBucket(
+    val lowerBound: Double,
+    val upperBound: Double,
+    val count: Int,
+    val percent: Double,
+    val zone: String,
+)
+
+data class ZonePercents(
+    val veryLow: Double,
+    val low: Double,
+    val inRange: Double,
+    val high: Double,
+    val veryHigh: Double,
+)
+
+data class GlucoseDistributionResult(
+    val buckets: List<GlucoseBucket>,
+    val zonePercents: ZonePercents,
+    val unit: String,
+    val totalCount: Int,
+    val warnings: List<String> = emptyList(),
+)
+
 data class DeviceUsageResult(
     val userId: String,
     val avgSensorDays: Double?,
