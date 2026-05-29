@@ -665,7 +665,12 @@
       "veryHigh": "Very High",
       "median": "Median",
       "summary": "Average",
-      "showingFirst": "Showing first {{shown}} of {{total}} days"
+      "showingFirst": "Showing first {{shown}} of {{total}} days",
+      "p25": "P25",
+      "p75": "P75",
+      "eHbA1c": "eHbA1c",
+      "warningsLabel": "Warnings",
+      "tableAriaLabel": "Daily statistics table"
     }
   }
 }
