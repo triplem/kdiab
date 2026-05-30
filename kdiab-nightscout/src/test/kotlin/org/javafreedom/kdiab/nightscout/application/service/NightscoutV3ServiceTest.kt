@@ -31,6 +31,7 @@ import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Food
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
+import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -599,6 +600,140 @@ class NightscoutV3ServiceTest {
 
         coVerify(exactly = 1) {
             treatmentsClient.deleteTreatment("user1", "Bearer token", "corr", "ds-1", false)
+        }
+    }
+
+    private fun bolusResponse(id: String = "t1", treatedAt: String = "2024-01-01T08:00:00Z") =
+        TreatmentResponse(
+            id = id,
+            userId = "user1",
+            treatedAt = treatedAt,
+            createdAt = treatedAt,
+            type = TreatmentType.BOLUS,
+            data = buildJsonObject { put("insulin", 3.5) },
+            status = TreatmentResponse.Status.ACTIVE,
+            notes = null,
+        )
+
+    @Test
+    fun `searchTreatments returns sorted and limited treatments`() = runTest {
+        coEvery {
+            treatmentsClient.getTreatments(any(), any(), any(), any(), any())
+        } returns listOf(
+            bolusResponse(id = "t1", treatedAt = "2024-01-01T08:00:00Z"),
+            bolusResponse(id = "t2", treatedAt = "2024-01-01T10:00:00Z"),
+            bolusResponse(id = "t3", treatedAt = "2024-01-01T12:00:00Z"),
+        )
+
+        val params = defaultParams.copy(limit = 2, sortDesc = true)
+        val result = service.searchTreatments("user1", "Bearer token", "corr", params)
+
+        assertEquals(2, result.size)
+        assertEquals("t3", result[0].identifier)
+        assertEquals("t2", result[1].identifier)
+    }
+
+    @Test
+    fun `searchTreatments sorts ascending when sortDesc is false`() = runTest {
+        coEvery {
+            treatmentsClient.getTreatments(any(), any(), any(), any(), any())
+        } returns listOf(
+            bolusResponse(id = "t2", treatedAt = "2024-01-01T10:00:00Z"),
+            bolusResponse(id = "t1", treatedAt = "2024-01-01T08:00:00Z"),
+        )
+
+        val params = defaultParams.copy(sortDesc = false)
+        val result = service.searchTreatments("user1", "Bearer token", "corr", params)
+
+        assertEquals("t1", result[0].identifier)
+        assertEquals("t2", result[1].identifier)
+    }
+
+    @Test
+    fun `getTreatment returns mapped treatment when found`() = runTest {
+        coEvery {
+            treatmentsClient.getTreatment("user1", "Bearer token", "corr", "t1")
+        } returns bolusResponse(id = "t1")
+
+        val result = service.getTreatment("user1", "Bearer token", "corr", "t1")
+
+        assertNotNull(result)
+        assertEquals("t1", result.identifier)
+        assertEquals("Bolus", result.eventType)
+    }
+
+    @Test
+    fun `getTreatment returns null when not found`() = runTest {
+        coEvery {
+            treatmentsClient.getTreatment("user1", "Bearer token", "corr", "missing")
+        } returns null
+
+        val result = service.getTreatment("user1", "Bearer token", "corr", "missing")
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `createTreatment calls postTreatment and returns mapped result`() = runTest {
+        val created = bolusResponse(id = "server-id")
+        coEvery { treatmentsClient.postTreatment(any(), any(), any(), any()) } returns created
+
+        val input = Ns3Treatment(
+            identifier = "temp",
+            date = 1704067200000L,
+            dateString = "2024-01-01T00:00:00Z",
+            eventType = "Bolus",
+            insulin = 3.5,
+        )
+
+        val result = service.createTreatment("user1", "Bearer token", "corr", input)
+
+        assertEquals("server-id", result.identifier)
+        coVerify(exactly = 1) { treatmentsClient.postTreatment("user1", "Bearer token", "corr", any()) }
+    }
+
+    @Test
+    fun `updateTreatment calls updateTreatment on client and returns mapped result`() = runTest {
+        val updated = bolusResponse(id = "t1")
+        coEvery {
+            treatmentsClient.updateTreatment("user1", "Bearer token", "corr", "t1", any())
+        } returns updated
+
+        val treatment = Ns3Treatment(
+            identifier = "t1",
+            date = 1704067200000L,
+            dateString = "2024-01-01T00:00:00Z",
+            eventType = "Bolus",
+            insulin = 4.0,
+        )
+
+        val result = service.updateTreatment("user1", "Bearer token", "corr", "t1", treatment)
+
+        assertEquals("t1", result.identifier)
+        coVerify(exactly = 1) {
+            treatmentsClient.updateTreatment("user1", "Bearer token", "corr", "t1", any())
+        }
+    }
+
+    @Test
+    fun `deleteTreatment calls treatmentsClient deleteTreatment with permanent false`() = runTest {
+        coJustRun { treatmentsClient.deleteTreatment(any(), any(), any(), any(), any()) }
+
+        service.deleteTreatment("user1", "Bearer token", "corr", "t1", permanent = false)
+
+        coVerify(exactly = 1) {
+            treatmentsClient.deleteTreatment("user1", "Bearer token", "corr", "t1", false)
+        }
+    }
+
+    @Test
+    fun `deleteTreatment calls treatmentsClient deleteTreatment with permanent true`() = runTest {
+        coJustRun { treatmentsClient.deleteTreatment(any(), any(), any(), any(), any()) }
+
+        service.deleteTreatment("user1", "Bearer token", "corr", "t1", permanent = true)
+
+        coVerify(exactly = 1) {
+            treatmentsClient.deleteTreatment("user1", "Bearer token", "corr", "t1", true)
         }
     }
 }
