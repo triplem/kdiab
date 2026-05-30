@@ -336,6 +336,18 @@ class AnalyzeRoutesTest {
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
+    @Test
+    fun `agp - 200 when preFetchCgmMeasures throws`() = routeTest { _, svc, _, _ ->
+        // preFetchCgmMeasures failure is swallowed by the service's runCatching —
+        // the route should still complete successfully using the threshold values.
+        coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
+        coEvery { svc.preFetchCgmMeasures(any(), any(), any(), any(), any()) } throws
+            RuntimeException("upstream measures service unavailable")
+        coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyAgp
+        val resp = client.get(agpUrl(SARAH_ID)) { bearerAuth(sarahToken) }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
     // ── Missing query params (400) ────────────────────────────────────────────
 
     @Test
