@@ -77,7 +77,7 @@ export function AgpChart({ hourlyData, glucoseUnit, warnings, totalReadingCount,
   const tirLow = convert(70, glucoseUnit)
   const tirHigh = convert(180, glucoseUnit)
 
-  const chartData = hourlyData
+  const chartData = (hourlyData ?? [])
     .filter(
       (d): d is typeof d & { p10: number; p25: number; median: number; p75: number; p90: number } =>
         d.median !== null &&

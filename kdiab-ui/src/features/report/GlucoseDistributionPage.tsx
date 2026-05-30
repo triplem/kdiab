@@ -94,7 +94,7 @@ export function GlucoseDistributionPage({ buckets, zonePercents, unit, totalCoun
   const { t } = useTranslation()
 
   // Prepare chart data — only include buckets that have readings to avoid clutter
-  const chartData = buckets
+  const chartData = (buckets ?? [])
     .filter(b => b.count > 0)
     .map(b => ({
       label: `${b.lowerBound}–${b.upperBound}`,
