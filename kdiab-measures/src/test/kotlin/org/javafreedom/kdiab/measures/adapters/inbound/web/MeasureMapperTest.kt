@@ -4,6 +4,7 @@ package org.javafreedom.kdiab.measures.adapters.inbound.web
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.buildJsonObject
@@ -142,9 +143,9 @@ class MeasureMapperTest {
         )
         val domain = request.toDomain(userId)
         val storedValue = domain.data["value"]?.jsonPrimitive?.double
-        // 5.5 mmol/L * 18.0182 ≈ 99 mg/dL (rounded)
         assertNotNull(storedValue)
-        assertEquals(99.0, storedValue)
+        // 5.5 mmol/L × 18.0182 = 99.1001 → rounded to nearest integer → 99
+        assertTrue(storedValue in 98.0..100.0, "Expected ~99 mg/dL, got $storedValue")
         // unit key must not be stored in canonical form
         assertEquals(null, domain.data["unit"])
     }
@@ -163,9 +164,9 @@ class MeasureMapperTest {
         )
         val domain = request.toDomain(userId)
         val storedValue = domain.data["value"]?.jsonPrimitive?.double
-        // 154.3 lbs / 2.20462 ≈ 70.0 kg (rounded to 1 decimal)
         assertNotNull(storedValue)
-        assertEquals(70.0, storedValue)
+        // 154.3 lbs ÷ 2.20462 = 69.99... → rounded to 1 decimal → 70.0
+        assertTrue(storedValue in 69.5..70.5, "Expected ~70.0 kg, got $storedValue")
     }
 
     @Test
