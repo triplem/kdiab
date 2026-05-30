@@ -117,7 +117,7 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
             .filter { (_, t) -> t <= refTime }
             .maxByOrNull { (_, t) -> t }
             ?.first
-            ?: segments.last()
+            ?: parsed.last().first
     }
 
     private fun lookupIsfSegment(segments: List<IsfRatio>, refTime: LocalTime): Double {
