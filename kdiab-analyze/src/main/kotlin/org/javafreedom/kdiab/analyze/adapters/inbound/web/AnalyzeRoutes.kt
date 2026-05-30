@@ -31,7 +31,7 @@ private const val MAX_DISPLAY_NAME_LENGTH = 200
 
 // LongMethod: routing DSL — each block is a single delegating call; logic lives in handlers below.
 @Suppress("LongMethod")
-fun Route.bffRoutes(
+fun Route.analyzeRoutes(
     timelineService: TimelineOperation,
     analyticsService: AnalyticsOperation,
     profilesService: ProfilesOperation,

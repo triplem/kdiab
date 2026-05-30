@@ -51,7 +51,7 @@ private fun Application.installMockDi(
     }
 }
 
-class BffRoutesTest {
+class AnalyzeRoutesTest {
 
     // ── JWT helpers ───────────────────────────────────────────────────────────
 

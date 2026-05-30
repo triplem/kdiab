@@ -12,7 +12,7 @@ import io.ktor.server.resources.Resources
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.json.Json
-import org.javafreedom.kdiab.analyze.adapters.inbound.web.bffRoutes
+import org.javafreedom.kdiab.analyze.adapters.inbound.web.analyzeRoutes
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
@@ -168,10 +168,10 @@ fun Application.module() {
     val treatmentsClient: TreatmentsClient by dependencies
 
     routing {
-        get("/") { call.respondText("kdiab BFF is running!") }
+        get("/") { call.respondText("kdiab Analyze is running!") }
 
         route("/api/v1") {
-            bffRoutes(
+            analyzeRoutes(
                 timelineService,
                 analyticsService,
                 profilesService,
