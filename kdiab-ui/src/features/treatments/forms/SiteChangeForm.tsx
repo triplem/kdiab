@@ -45,7 +45,7 @@ export function SiteChangeForm({ initialData, onDataChange }: SiteChangeFormProp
         autoFocus
       />
       <datalist id={SITE_CHANGE_LOCATION_DATALIST_ID}>
-        {PREDEFINED_LOCATIONS.map((key: PredefinedLocation) => (
+        {PREDEFINED_LOCATIONS.map((key) => (
           <option
             key={key}
             value={t(`treatmentModal.siteChangeLocations.${key}`)}
