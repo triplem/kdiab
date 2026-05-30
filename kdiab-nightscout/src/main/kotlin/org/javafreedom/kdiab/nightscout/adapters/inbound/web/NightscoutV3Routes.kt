@@ -8,6 +8,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3DeviceStatus
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
@@ -24,7 +25,7 @@ import org.javafreedom.kdiab.nightscout.domain.model.Ns3VersionResult
 
 private val SERVER_STARTED_MS = System.currentTimeMillis()
 
-fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
+fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int, userSettingsClient: UserSettingsClient) {
     // NS3 protocol requires version and status to be publicly accessible before auth
     get("/api/v3/version") {
         call.respond(
@@ -71,7 +72,7 @@ fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
             )
         }
 
-        nightscoutV3EntriesRoutes(service, maxLimit)
+        nightscoutV3EntriesRoutes(service, maxLimit, userSettingsClient)
 
         // TODO(#894-#898): stub HISTORY endpoints for collections implemented in parallel PRs
         for (collection in listOf("treatments", "foods", "profile", "devicestatus")) {
@@ -100,7 +101,7 @@ fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int) {
 
         nightscoutV3TreatmentsRoutes(service, maxLimit)
         nightscoutV3FoodRoutes(service, maxLimit)
-        settingsRoutes(service)
+        settingsRoutes(service, userSettingsClient)
         nightscoutV3ProfileRoutes(service, maxLimit)
         nightscoutV3DeviceStatusRoutes(service, maxLimit)
     }
@@ -185,45 +186,48 @@ private fun Route.nightscoutV3ProfileRoutes(service: NightscoutV3Service, maxLim
     }
 }
 
-private fun Route.settingsRoutes(service: NightscoutV3Service) {
+private fun Route.settingsRoutes(service: NightscoutV3Service, userSettingsClient: UserSettingsClient) {
     route("/api/v3/settings") {
         get {
             val principal = call.principal<UserPrincipal>()!!
+            val authorization = call.request.header("Authorization") ?: ""
             val settings = service.getSettings(
                 userId = principal.userId.toString(),
-                authorization = call.request.header("Authorization") ?: "",
-                correlationId = call.request.header("X-Correlation-ID") ?: "",
-                glucoseUnit = principal.glucoseUnit,
+                authorization = authorization,
             )
             call.respond(Ns3Response(status = 200, result = settings))
         }
         put {
             val principal = call.principal<UserPrincipal>()!!
+            val authorization = call.request.header("Authorization") ?: ""
             val body = call.receive<Ns3Settings>()
-            if (body.units.isNotEmpty() && body.units != principal.glucoseUnit) {
-                call.respond(HttpStatusCode.UnprocessableEntity, Ns3Response<Ns3Settings>(status = 422))
-                return@put
+            if (body.units.isNotEmpty()) {
+                val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
+                if (body.units != glucoseUnit) {
+                    call.respond(HttpStatusCode.UnprocessableEntity, Ns3Response<Ns3Settings>(status = 422))
+                    return@put
+                }
             }
             val settings = service.getSettings(
                 userId = principal.userId.toString(),
-                authorization = call.request.header("Authorization") ?: "",
-                correlationId = call.request.header("X-Correlation-ID") ?: "",
-                glucoseUnit = principal.glucoseUnit,
+                authorization = authorization,
             )
             call.respond(Ns3Response(status = 200, result = settings))
         }
         patch {
             val principal = call.principal<UserPrincipal>()!!
+            val authorization = call.request.header("Authorization") ?: ""
             val body = call.receive<Ns3Settings>()
-            if (body.units.isNotEmpty() && body.units != principal.glucoseUnit) {
-                call.respond(HttpStatusCode.UnprocessableEntity, Ns3Response<Ns3Settings>(status = 422))
-                return@patch
+            if (body.units.isNotEmpty()) {
+                val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
+                if (body.units != glucoseUnit) {
+                    call.respond(HttpStatusCode.UnprocessableEntity, Ns3Response<Ns3Settings>(status = 422))
+                    return@patch
+                }
             }
             val settings = service.getSettings(
                 userId = principal.userId.toString(),
-                authorization = call.request.header("Authorization") ?: "",
-                correlationId = call.request.header("X-Correlation-ID") ?: "",
-                glucoseUnit = principal.glucoseUnit,
+                authorization = authorization,
             )
             call.respond(Ns3Response(status = 200, result = settings))
         }
@@ -290,29 +294,37 @@ private fun Route.nightscoutV3DeviceStatusRoutes(service: NightscoutV3Service, m
 }
 
 @Suppress("LongMethod")
-private fun Route.nightscoutV3EntriesRoutes(service: NightscoutV3Service, maxLimit: Int) {
+private fun Route.nightscoutV3EntriesRoutes(
+    service: NightscoutV3Service,
+    maxLimit: Int,
+    userSettingsClient: UserSettingsClient,
+) {
     route("/api/v3/entries") {
         get {
             val principal = call.principal<UserPrincipal>()!!
+            val authorization = call.request.header("Authorization") ?: ""
             val params = call.parseNs3SearchParams(maxLimit)
+            val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
             val entries = service.searchEntries(
                 userId = principal.userId.toString(),
-                authorization = call.request.header("Authorization") ?: "",
+                authorization = authorization,
                 correlationId = call.request.header("X-Correlation-ID") ?: "",
                 params = params,
-                glucoseUnit = principal.glucoseUnit,
+                glucoseUnit = glucoseUnit,
             )
             call.respond(Ns3ListResponse(status = 200, result = entries))
         }
         post {
             val principal = call.principal<UserPrincipal>()!!
+            val authorization = call.request.header("Authorization") ?: ""
             val entry = call.receive<Ns3Entry>()
+            val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
             val created = service.createEntry(
                 userId = principal.userId.toString(),
-                authorization = call.request.header("Authorization") ?: "",
+                authorization = authorization,
                 correlationId = call.request.header("X-Correlation-ID") ?: "",
                 entry = entry,
-                glucoseUnit = principal.glucoseUnit,
+                glucoseUnit = glucoseUnit,
             )
             call.response.header("Location", "/api/v3/entries/${created.identifier}")
             val createResponse = Ns3Response<Ns3Entry>(status = 201, identifier = created.identifier)
@@ -320,13 +332,15 @@ private fun Route.nightscoutV3EntriesRoutes(service: NightscoutV3Service, maxLim
         }
         get("/{identifier}") {
             val principal = call.principal<UserPrincipal>()!!
+            val authorization = call.request.header("Authorization") ?: ""
             val id = call.parameters["identifier"]!!
+            val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
             val entry = service.getEntry(
                 userId = principal.userId.toString(),
-                authorization = call.request.header("Authorization") ?: "",
+                authorization = authorization,
                 correlationId = call.request.header("X-Correlation-ID") ?: "",
                 id = id,
-                glucoseUnit = principal.glucoseUnit,
+                glucoseUnit = glucoseUnit,
             )
             if (entry == null) {
                 call.respond(HttpStatusCode.NotFound, Ns3Response<Ns3Entry>(status = 404))
@@ -336,29 +350,33 @@ private fun Route.nightscoutV3EntriesRoutes(service: NightscoutV3Service, maxLim
         }
         put("/{identifier}") {
             val principal = call.principal<UserPrincipal>()!!
+            val authorization = call.request.header("Authorization") ?: ""
             val id = call.parameters["identifier"]!!
             val entry = call.receive<Ns3Entry>()
+            val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
             val updated = service.updateEntry(
                 userId = principal.userId.toString(),
-                authorization = call.request.header("Authorization") ?: "",
+                authorization = authorization,
                 correlationId = call.request.header("X-Correlation-ID") ?: "",
                 id = id,
                 entry = entry,
-                glucoseUnit = principal.glucoseUnit,
+                glucoseUnit = glucoseUnit,
             )
             call.respond(Ns3Response(status = 200, result = updated))
         }
         patch("/{identifier}") {
             val principal = call.principal<UserPrincipal>()!!
+            val authorization = call.request.header("Authorization") ?: ""
             val id = call.parameters["identifier"]!!
             val entry = call.receive<Ns3Entry>()
+            val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
             val updated = service.updateEntry(
                 userId = principal.userId.toString(),
-                authorization = call.request.header("Authorization") ?: "",
+                authorization = authorization,
                 correlationId = call.request.header("X-Correlation-ID") ?: "",
                 id = id,
                 entry = entry,
-                glucoseUnit = principal.glucoseUnit,
+                glucoseUnit = glucoseUnit,
             )
             call.respond(Ns3Response(status = 200, result = updated))
         }
@@ -377,24 +395,28 @@ private fun Route.nightscoutV3EntriesRoutes(service: NightscoutV3Service, maxLim
         }
         get("/history") {
             val principal = call.principal<UserPrincipal>()!!
+            val authorization = call.request.header("Authorization") ?: ""
+            val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
             val result = service.historyEntries(
                 userId = principal.userId.toString(),
-                authorization = call.request.header("Authorization") ?: "",
+                authorization = authorization,
                 correlationId = call.request.header("X-Correlation-ID") ?: "",
                 lastModified = null,
-                glucoseUnit = principal.glucoseUnit,
+                glucoseUnit = glucoseUnit,
             )
             call.respond(result)
         }
         get("/history/{lastModified}") {
             val principal = call.principal<UserPrincipal>()!!
+            val authorization = call.request.header("Authorization") ?: ""
             val lastModified = call.parameters["lastModified"]?.toLongOrNull()
+            val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
             val result = service.historyEntries(
                 userId = principal.userId.toString(),
-                authorization = call.request.header("Authorization") ?: "",
+                authorization = authorization,
                 correlationId = call.request.header("X-Correlation-ID") ?: "",
                 lastModified = lastModified,
-                glucoseUnit = principal.glucoseUnit,
+                glucoseUnit = glucoseUnit,
             )
             call.respond(result)
         }

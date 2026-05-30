@@ -5,6 +5,9 @@ import io.ktor.http.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.runBlocking
 import org.javafreedom.kdiab.common.plugins.CircuitBreaker
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.InsulinSettings
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.ProfileSchedule
 import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,6 +24,9 @@ class ProfilesClientTest {
         private const val CORR = "corr-id"
         private const val PROFILE_ID = "profile-abc"
 
+        private val settingsJson = """{"insulinType":"Novorapid","durationOfAction":240}"""
+        private val scheduleJson = """{"basal":[],"icr":[],"isf":[],"targets":[]}"""
+
         private val activeProfileJson = """
             {
               "id": "$PROFILE_ID",
@@ -28,7 +34,9 @@ class ProfilesClientTest {
               "name": "Default Profile",
               "insulinType": "Novorapid",
               "durationOfAction": 240,
-              "status": "ACTIVE"
+              "status": "ACTIVE",
+              "settings": $settingsJson,
+              "schedule": $scheduleJson
             }
         """.trimIndent()
 
@@ -41,7 +49,9 @@ class ProfilesClientTest {
                   "name": "Default Profile",
                   "insulinType": "Novorapid",
                   "durationOfAction": 240,
-                  "status": "ACTIVE"
+                  "status": "ACTIVE",
+                  "settings": $settingsJson,
+                  "schedule": $scheduleJson
                 },
                 {
                   "id": "profile-old",
@@ -49,7 +59,9 @@ class ProfilesClientTest {
                   "name": "Old Profile",
                   "insulinType": "Novorapid",
                   "durationOfAction": 240,
-                  "status": "ARCHIVED"
+                  "status": "ARCHIVED",
+                  "settings": $settingsJson,
+                  "schedule": $scheduleJson
                 }
               ],
               "page": 0,
@@ -220,13 +232,13 @@ class ProfilesClientTest {
             )
         }
         val client = ProfilesClient(engine, BASE_URL)
-        val profile = org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile(
+        val profile = Profile(
             id = PROFILE_ID,
             userId = USER_ID,
             name = "Default Profile",
-            insulinType = "Novorapid",
-            durationOfAction = 240,
-            status = org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile.Status.ACTIVE,
+            status = Profile.Status.ACTIVE,
+            settings = InsulinSettings(insulinType = "Novorapid", durationOfAction = 240),
+            schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList()),
         )
         val result = client.updateProfile(USER_ID, AUTH, CORR, PROFILE_ID, profile)
         assertEquals(PROFILE_ID, result.id)
@@ -243,13 +255,13 @@ class ProfilesClientTest {
         }
         val cb = CircuitBreaker(name = "profiles-update-test", failureThreshold = 1)
         val client = ProfilesClient(engine, BASE_URL, cb)
-        val profile = org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile(
+        val profile = Profile(
             id = PROFILE_ID,
             userId = USER_ID,
             name = "Default Profile",
-            insulinType = "Novorapid",
-            durationOfAction = 240,
-            status = org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile.Status.ACTIVE,
+            status = Profile.Status.ACTIVE,
+            settings = InsulinSettings(insulinType = "Novorapid", durationOfAction = 240),
+            schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList()),
         )
         assertFailsWith<UpstreamException> {
             client.updateProfile(USER_ID, AUTH, CORR, PROFILE_ID, profile)

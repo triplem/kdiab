@@ -19,6 +19,7 @@ adapters/outbound/http/
   TreatmentsClient.kt      # Ktor HTTP client → kdiab-treatments
   CarbsClient.kt           # Ktor HTTP client → kdiab-carbs
   ProfilesClient.kt        # Ktor HTTP client → kdiab-profiles
+  UserSettingsClient.kt    # Ktor HTTP client → kdiab-users (fetches glucoseUnit per request)
   CircuitBreaker.kt        # (from kdiab-common) — 4 independent breakers
 application/service/
   NightscoutService.kt
@@ -60,6 +61,7 @@ COMPOSE_PROFILES=optional docker compose up --build
 | `TREATMENTS_URL` | `http://localhost:8083` | kdiab-treatments base URL |
 | `CARBS_URL` | `http://localhost:8085` | kdiab-carbs base URL |
 | `PROFILES_URL` | `http://localhost:8082` | kdiab-profiles base URL |
+| `USERS_URL` | `http://localhost:8088` | kdiab-users base URL (glucose unit lookup) |
 | `PORT` | `8087` | HTTP listen port |
 | `HTTP_CONNECT_TIMEOUT_MS` | `5000` | TCP connect timeout |
 | `HTTP_REQUEST_TIMEOUT_MS` | `30000` | Total request timeout |

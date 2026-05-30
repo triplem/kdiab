@@ -1,7 +1,9 @@
 package org.javafreedom.kdiab.nightscout.adapters.outbound.http
 
 import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.BasalSegment
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.InsulinSettings
 import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.ProfileSchedule
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,10 +25,18 @@ class ProfileMapperTest {
         id = id,
         userId = userId,
         name = name,
+        status = status,
+        settings = InsulinSettings(insulinType = insulinType, durationOfAction = durationOfAction),
+        schedule = ProfileSchedule(
+            basal = basal ?: emptyList(),
+            icr = emptyList(),
+            isf = emptyList(),
+            targets = emptyList(),
+        ),
+        createdAt = createdAt,
+        // deprecated fields — kept so mapper can read them via the nullable deprecated API
         insulinType = insulinType,
         durationOfAction = durationOfAction,
-        status = status,
-        createdAt = createdAt,
         basal = basal,
     )
 

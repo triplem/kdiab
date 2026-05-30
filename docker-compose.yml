@@ -558,6 +558,7 @@ services:
       TREATMENTS_URL: http://treatments-backend:8080
       CARBS_URL: http://carbs-backend:8085
       PROFILES_URL: http://profiles-backend:8082
+      USERS_URL: http://users-backend:8088
       JWT_DOMAIN: http://localhost:8081/realms/kdiab
       JWKS_URL: http://keycloak:8080/realms/kdiab/protocol/openid-connect/certs
       JWT_AUDIENCE: nightscout
@@ -585,6 +586,8 @@ services:
       carbs-backend:
         condition: service_healthy
       profiles-backend:
+        condition: service_healthy
+      users-backend:
         condition: service_healthy
       keycloak:
         condition: service_started

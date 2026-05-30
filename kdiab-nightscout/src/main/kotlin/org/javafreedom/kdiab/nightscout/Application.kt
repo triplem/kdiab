@@ -31,6 +31,7 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
@@ -77,6 +78,8 @@ fun Application.module() {
         val treatmentsUrl = environment.config.property("upstream.treatmentsUrl").getString()
         val carbsUrl = environment.config.property("upstream.carbsUrl").getString()
         val profilesUrl = environment.config.property("upstream.profilesUrl").getString()
+        val usersUrl = environment.config.propertyOrNull("upstream.usersUrl")?.getString()
+            ?: "http://localhost:8088"
 
         healthClient = httpClient
         upstreamHealthUrls = listOf(
@@ -87,7 +90,7 @@ fun Application.module() {
         )
 
         install(DI) { }
-        registerDependencies(httpClient, measuresUrl, treatmentsUrl, carbsUrl, profilesUrl)
+        registerDependencies(httpClient, measuresUrl, treatmentsUrl, carbsUrl, profilesUrl, usersUrl)
     }
 
     configureTracing()
@@ -128,6 +131,7 @@ fun Application.module() {
 
     val nightscoutService: NightscoutService by dependencies
     val nightscoutV3Service: NightscoutV3Service by dependencies
+    val userSettingsClient: UserSettingsClient by dependencies
 
     routing {
 
@@ -147,7 +151,7 @@ fun Application.module() {
         nightscoutRoutes(nightscoutService)
         val maxLimit = environment.config.propertyOrNull("api3.maxLimit")
             ?.getString()?.toInt() ?: DEFAULT_API3_MAX_LIMIT
-        nightscoutV3Routes(nightscoutV3Service, maxLimit)
+        nightscoutV3Routes(nightscoutV3Service, maxLimit, userSettingsClient)
     }
 }
 
@@ -157,6 +161,7 @@ private fun Application.registerDependencies(
     treatmentsUrl: String,
     carbsUrl: String,
     profilesUrl: String,
+    usersUrl: String,
 ) {
     dependencies {
         provide<NightscoutService> {
@@ -165,12 +170,14 @@ private fun Application.registerDependencies(
                 treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
             )
         }
+        provide<UserSettingsClient> { UserSettingsClient(httpClient.engine, usersUrl) }
         provide<NightscoutV3Service> {
             NightscoutV3Service(
                 measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
                 treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
                 carbsClient = CarbsClient(httpClient.engine, carbsUrl),
                 profilesClient = ProfilesClient(httpClient.engine, profilesUrl),
+                userSettingsClient = UserSettingsClient(httpClient.engine, usersUrl),
             )
         }
         provide<CarbsClient> { CarbsClient(httpClient.engine, carbsUrl) }

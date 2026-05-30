@@ -6,6 +6,7 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateFoodRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateProfileRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toNs3Profile
@@ -37,6 +38,7 @@ class NightscoutV3Service(
     private val treatmentsClient: TreatmentsClient,
     private val carbsClient: CarbsClient,
     private val profilesClient: ProfilesClient,
+    private val userSettingsClient: UserSettingsClient,
 ) {
 
     @Suppress("LongParameterList")
@@ -262,18 +264,17 @@ class NightscoutV3Service(
         logger.info { "Deleted v3 food id=$id userId=$userId permanent=$permanent" }
     }
 
-    // authorization and correlationId kept for API consistency; getSettings derives from JWT claims only
-    @Suppress("LongParameterList", "UnusedParameter")
     suspend fun getSettings(
         userId: String,
         authorization: String,
-        correlationId: String,
-        glucoseUnit: String,
-    ): Ns3Settings = Ns3Settings(
-        identifier = userId,
-        units = glucoseUnit,
-        timeZone = "UTC",
-    )
+    ): Ns3Settings {
+        val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
+        return Ns3Settings(
+            identifier = userId,
+            units = glucoseUnit,
+            timeZone = "UTC",
+        )
+    }
 
     @Suppress("LongParameterList")
     suspend fun searchProfiles(

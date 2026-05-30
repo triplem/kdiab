@@ -3,6 +3,7 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>LongMethod:Application.kt$fun Application.module()</ID>
+    <ID>LongParameterList:Application.kt$( httpClient: HttpClient, measuresUrl: String, treatmentsUrl: String, carbsUrl: String, profilesUrl: String, usersUrl: String, )</ID>
     <ID>MaxLineLength:CircuitBreaker.kt$CircuitBreaker$logger.warn { "circuit_breaker service=$name failures=$count threshold=$failureThreshold reason=${cause.message}" }</ID>
     <ID>ReturnCount:NightscoutMapper.kt$fun MeasureResponse.toNightscoutEntry(): NightscoutEntry?</ID>
     <ID>ReturnCount:NightscoutMapper.kt$fun TreatmentResponse.toNightscoutTreatment(): NightscoutTreatment?</ID>

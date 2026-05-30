@@ -22,7 +22,7 @@ Root package: `org.javafreedom.kdiab.common`
 
 | Plugin | What it does |
 |---|---|
-| `Security.kt` | JWT/JWKS auth, extracts `UserPrincipal` (userId, roles, allowedPatients, glucoseUnit) |
+| `Security.kt` | JWT/JWKS auth, extracts `UserPrincipal` (userId, roles, allowedPatients, timezone) |
 | `StatusPages.kt` | Maps domain exceptions → HTTP status codes (401/403/404/422/409) |
 | `Logging.kt` | X-Correlation-ID extraction/generation → SLF4J MDC as `Correlation-ID` |
 | `Health.kt` | `/healthz` (liveness) and `/readyz` (readiness — configurable probe) |
@@ -42,7 +42,7 @@ Root package: `org.javafreedom.kdiab.common`
 
 ```kotlin
 val cb = CircuitBreaker(name = "upstream-service")  // threshold=5, resetTimeout=30_000ms
-cb.call { httpClient.get("http://upstream/api/resource") }
+cb.execute { httpClient.get("http://upstream/api/resource") }
 // throws CircuitBreakerOpenException when OPEN
 ```
 
