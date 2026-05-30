@@ -687,6 +687,10 @@ services:
         condition: service_healthy
       analyze-backend:
         condition: service_healthy
+      calc-backend:
+        condition: service_healthy
+      users-backend:
+        condition: service_healthy
     networks:
       - kdiab-ui-net
     restart: unless-stopped
@@ -707,7 +711,7 @@ services:
 
 networks:
   shared:    # postgres, keycloak, all backends, liquibase, seed
-  kdiab-ui-net:  # kdiab-ui ↔ all four backends
+  kdiab-ui-net:  # kdiab-ui ↔ all mandatory backends (measures, profiles, treatments, analyze, calc, users)
 
 volumes:
   postgres_data:
