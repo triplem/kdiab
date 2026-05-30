@@ -64,7 +64,9 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
         val correctionDose = if (isHypoglycemic) 0.0 else maxOf(0.0, rawCorrection - request.activeIob)
         val carbDose = if (!isHypoglycemic && request.carbsGrams > 0) request.carbsGrams / icr else 0.0
         val trendAdj = if (isHypoglycemic) 0.0 else trendAdjustment(request.trend, isf)
-        val total = if (isHypoglycemic) 0.0 else maxOf(0.0, correctionDose + carbDose + trendAdj)
+        // Check cap before building warnings so the cap warning can be included
+        val uncappedTotal = if (isHypoglycemic) 0.0 else maxOf(0.0, correctionDose + carbDose + trendAdj)
+        val cappedTotal = minOf(uncappedTotal, MAX_ABSOLUTE_DOSE)
 
         val warnings = buildList {
             if (isHypoglycemic) {
@@ -75,23 +77,22 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
             if (iobCoversFullCorrection(request.activeIob, rawCorrection, correctionDose, bgMgDl, target)) {
                 add("IOB covers the full correction — no additional correction dose recommended")
             }
-            if (total > HIGH_DOSE_THRESHOLD) {
+            if (uncappedTotal > HIGH_DOSE_THRESHOLD) {
                 add("Calculated dose is unusually high — please verify inputs")
             }
-        }
-
-        if (total > MAX_ABSOLUTE_DOSE) {
-            throw BusinessValidationException(
-                "Calculated dose of ${round2(total)} U exceeds the maximum allowed single dose of" +
-                    " $MAX_ABSOLUTE_DOSE U — check your profile configuration"
-            )
+            if (uncappedTotal > MAX_ABSOLUTE_DOSE) {
+                add(
+                    "Calculated dose ${round2(uncappedTotal)}U exceeds maximum." +
+                        " Capped at ${MAX_ABSOLUTE_DOSE.toInt()}U — verify with your care team"
+                )
+            }
         }
 
         return DoseResult(
             correctionDose = round2(correctionDose),
             carbDose = round2(carbDose),
             trendAdjustment = trendAdj,
-            totalRecommended = round2(total),
+            totalRecommended = round2(cappedTotal),
             breakdown = DoseBreakdown(
                 currentBgMgDl = round2(bgMgDl),
                 targetBgMgDl = round2(target),

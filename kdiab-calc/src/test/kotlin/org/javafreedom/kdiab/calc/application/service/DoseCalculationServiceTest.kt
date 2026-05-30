@@ -344,9 +344,10 @@ class DoseCalculationServiceTest {
     }
 
     @Test
-    fun `should throw BusinessValidationException when total exceeds maximum dose`() = runTest {
+    fun `calculateDose caps total at MAX_ABSOLUTE_DOSE and adds warning when uncapped dose exceeds 30U`() = runTest {
         // ISF = 0.5, BG = 500 mg/dL, target = 110 => rawCorrection = (500-110)/0.5 = 780.0
-        // No IOB, no carbs => total = 780.0 which exceeds MAX_ABSOLUTE_DOSE (30 U)
+        // No IOB, no carbs => uncappedTotal = 780.0 which exceeds MAX_ABSOLUTE_DOSE (30 U)
+        // Expected: no exception, totalRecommended == 30.0, warning mentions "Capped"
         val tinyIsfProfile = testProfile.copy(
             isf = listOf(IsfRatio(startTime = "00:00", value = 0.5)),
         )
@@ -360,9 +361,13 @@ class DoseCalculationServiceTest {
             activeIob = 0.0,
         )
 
-        assertFailsWith<BusinessValidationException> {
-            service.calculateDose("user-123", request, "Bearer token", "corr-id")
-        }
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertEquals(30.0, result.totalRecommended, "totalRecommended must be capped at MAX_ABSOLUTE_DOSE")
+        assertTrue(
+            result.warnings.any { it.contains("Capped") },
+            "warnings must contain a message mentioning 'Capped'"
+        )
     }
 
     @Test
