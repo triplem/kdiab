@@ -102,9 +102,9 @@ export const MeasureList: React.FC<MeasureListProps> = ({
       return res.data as PagedMeasureResponse
     },
     initialPageParam: 0,
-    getNextPageParam: (_lastPage: PagedMeasureResponse, _allPages: PagedMeasureResponse[], lastPageParam: number) => {
+    getNextPageParam: (lastPage: PagedMeasureResponse, _allPages: PagedMeasureResponse[], lastPageParam: number) => {
       const loaded = (lastPageParam + 1) * pageSize
-      return loaded < (_lastPage.totalCount ?? 0) ? lastPageParam + 1 : undefined
+      return loaded < (lastPage.totalCount ?? 0) ? lastPageParam + 1 : undefined
     },
     enabled: !!userId,
   })
