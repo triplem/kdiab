@@ -24,6 +24,7 @@ vi.mock('../api/usersApi', () => ({
   usersApi: {
     getMe: vi.fn(),
     patchMySettings: vi.fn(),
+    getUser: vi.fn().mockResolvedValue({ data: { settings: { units: { glucoseUnit: 'mg/dL' } } } }),
   },
 }))
 
@@ -156,11 +157,20 @@ import { useAuth } from 'react-oidc-context'
 import { usersApi } from '../api/usersApi'
 import { measuresApi } from '../api/measuresApi'
 import { treatmentsApi } from '../api/treatmentsApi'
+import {
+  parseRolesFromToken,
+  parseAllowedPatientsFromToken,
+  parseAllowedPatientNamesFromToken,
+} from '../api/tokenProvider'
 import { TimeFormatProvider, useTimeFormat } from '../context/TimeFormatContext'
 import App from '../App'
 
 const mockedUseAuth = vi.mocked(useAuth)
 const mockedGetMe = vi.mocked(usersApi.getMe)
+const mockedGetUser = vi.mocked(usersApi.getUser)
+const mockedParseRoles = vi.mocked(parseRolesFromToken)
+const mockedParseAllowedPatients = vi.mocked(parseAllowedPatientsFromToken)
+const mockedParseAllowedPatientNames = vi.mocked(parseAllowedPatientNamesFromToken)
 const mockedCreateMeasure = vi.mocked(measuresApi.createMeasure)
 const mockedCreateTreatment = vi.mocked(treatmentsApi.createTreatment)
 
@@ -590,5 +600,151 @@ describe('App — VITE_FOOD_DATABASE_ENABLED feature flag', () => {
     const nav = document.querySelector('nav.tab-nav')
     const tabLabels = nav ? Array.from(nav.querySelectorAll('button')).map((b) => b.textContent?.trim()) : []
     expect(tabLabels).toContain('Food DB')
+  })
+})
+
+describe('App — DOCTOR patient glucose-unit fetch', () => {
+  // Helpers to configure the mocks as a DOCTOR with one allowed patient
+  function setupDoctorWithPatient(patientId: string) {
+    mockedParseRoles.mockReturnValue(['DOCTOR'])
+    mockedParseAllowedPatients.mockReturnValue([patientId])
+    mockedParseAllowedPatientNames.mockReturnValue(['Patient One'])
+  }
+
+  afterEach(() => {
+    // Restore PATIENT defaults after each DOCTOR test
+    mockedParseRoles.mockReturnValue(['PATIENT'])
+    mockedParseAllowedPatients.mockReturnValue([])
+    mockedParseAllowedPatientNames.mockReturnValue([])
+  })
+
+  test('patientGlucoseUnit updates when doctor selects a patient', async () => {
+    const patientId = 'patient-abc'
+    setupDoctorWithPatient(patientId)
+    mockedGetUser.mockResolvedValue({
+      data: { settings: { units: { glucoseUnit: 'mmol/L' } } },
+    } as never)
+
+    renderApp()
+
+    // Patient selector should appear; select the patient
+    const select = await screen.findByRole('combobox')
+    await act(async () => {
+      fireEvent.change(select, { target: { value: patientId } })
+    })
+
+    // getUser should have been called with the patient's ID
+    await waitFor(() => expect(mockedGetUser).toHaveBeenCalledWith(
+      patientId,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    ))
+
+    // The unit toggle buttons for the patient's unit should appear
+    await waitFor(() => {
+      const unitBtns = Array.from(document.querySelectorAll('button')).filter(
+        (b) => b.textContent?.trim() === 'mmol/L',
+      )
+      expect(unitBtns.length).toBeGreaterThan(0)
+    })
+  })
+
+  test('patientGlucoseUnit defaults to mg/dL when no patient is selected', async () => {
+    setupDoctorWithPatient('patient-abc')
+    renderApp()
+
+    // No patient selected — unit toggle should not appear (isDoctorViewingPatient is false)
+    // Wait for render to settle
+    await act(async () => { await Promise.resolve() })
+
+    const header = document.querySelector('.app-container header')
+    const unitLabel = header
+      ? Array.from(header.querySelectorAll('span')).find(
+          (s) => s.textContent?.includes('Unit:'),
+        )
+      : undefined
+    expect(unitLabel).toBeUndefined()
+  })
+})
+
+describe('App — DOCTOR AbortController teardown on patient switch', () => {
+  afterEach(() => {
+    mockedParseRoles.mockReturnValue(['PATIENT'])
+    mockedParseAllowedPatients.mockReturnValue([])
+    mockedParseAllowedPatientNames.mockReturnValue([])
+  })
+
+  test('stale getUser response from patient A is discarded when doctor switches to patient B', async () => {
+    const patientA = 'patient-A'
+    const patientB = 'patient-B'
+    mockedParseRoles.mockReturnValue(['DOCTOR'])
+    mockedParseAllowedPatients.mockReturnValue([patientA, patientB])
+    mockedParseAllowedPatientNames.mockReturnValue(['Patient A', 'Patient B'])
+
+    // Simulate Axios abort behavior: when the signal fires, reject with CanceledError.
+    // This mirrors what Axios does internally when signal.aborted is true.
+    function abortableResponse(
+      glucoseUnit: string,
+      config: { signal?: AbortSignal } | undefined,
+    ): Promise<{ data: { settings: { units: { glucoseUnit: string } } } }> {
+      return new Promise((resolve, reject) => {
+        const signal = config?.signal
+        if (signal?.aborted) {
+          const err = new Error('canceled')
+          err.name = 'CanceledError'
+          reject(err)
+          return
+        }
+        const abort = () => {
+          const err = new Error('canceled')
+          err.name = 'CanceledError'
+          reject(err)
+        }
+        signal?.addEventListener('abort', abort)
+        // Resolve lazily so the abort can fire before the resolve
+        Promise.resolve().then(() => {
+          signal?.removeEventListener('abort', abort)
+          if (!signal?.aborted) {
+            resolve({ data: { settings: { units: { glucoseUnit } } } })
+          }
+        })
+      })
+    }
+
+    // patient A returns mg/dL but resolves after a microtask delay (abortable)
+    // patient B returns mmol/L and also uses abortable (won't be aborted)
+    mockedGetUser.mockImplementation(
+      (_userId: string, config?: Parameters<typeof usersApi.getUser>[1]) => {
+        const unit = _userId === patientA ? 'mg/dL' : 'mmol/L'
+        return abortableResponse(unit, config) as ReturnType<typeof usersApi.getUser>
+      },
+    )
+
+    renderApp()
+
+    const select = await screen.findByRole('combobox')
+
+    // Select patient A — triggers a request that will be aborted
+    await act(async () => {
+      fireEvent.change(select, { target: { value: patientA } })
+    })
+
+    // Immediately switch to patient B — this aborts the A request and starts B
+    await act(async () => {
+      fireEvent.change(select, { target: { value: patientB } })
+    })
+
+    // Wait for the B response to settle
+    await act(async () => { await Promise.resolve() })
+    await act(async () => { await Promise.resolve() })
+
+    // Patient B's unit (mmol/L) should be the active unit in the toggle
+    await waitFor(() => {
+      const mmolBtn = Array.from(document.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'mmol/L',
+      )
+      // mmol/L button exists and is marked active (patient B's glucose unit)
+      expect(mmolBtn).toBeDefined()
+      expect(mmolBtn?.classList.contains('active-tab')).toBe(true)
+    })
   })
 })
