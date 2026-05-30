@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from 'axios'
 import { axiosInstance } from './axiosInstance'
 
 const BASE = '/api/users/v1'
@@ -111,7 +112,7 @@ export const usersApi = {
     axiosInstance.patch<UserSettings>(`${BASE}/users/me/settings`, body),
   listUsers: (params?: { search?: string; page?: number; size?: number }) =>
     axiosInstance.get<UserResponse[]>(`${BASE}/users`, { params }),
-  getUser: (userId: string, config?: import('axios').AxiosRequestConfig) =>
+  getUser: (userId: string, config?: AxiosRequestConfig) =>
     axiosInstance.get<UserResponse>(`${BASE}/users/${userId}`, config),
   createUser: (body: CreateUserRequest) =>
     axiosInstance.post<UserResponse>(`${BASE}/users`, body),
