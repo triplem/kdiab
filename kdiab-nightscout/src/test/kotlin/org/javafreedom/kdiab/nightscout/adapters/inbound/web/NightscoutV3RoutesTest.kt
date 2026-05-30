@@ -279,7 +279,7 @@ class NightscoutV3RoutesTest {
     @Test
     fun `GET api v3 settings returns 200 with units from users API`() = v3RouteTest { svc, _ ->
         val expectedSettings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
-        coEvery { svc.getSettings(any(), any()) } returns expectedSettings
+        coEvery { svc.getSettings(any(), any(), null) } returns expectedSettings
 
         val response = client.get("/api/v3/settings") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
@@ -299,7 +299,7 @@ class NightscoutV3RoutesTest {
     fun `PUT api v3 settings returns 200 when units match users API`() = v3RouteTest { svc, settings ->
         val ns3Settings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
         coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
-        coEvery { svc.getSettings(any(), any()) } returns ns3Settings
+        coEvery { svc.getSettings(any(), any(), "mg/dL") } returns ns3Settings
 
         val response = client.put("/api/v3/settings") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
@@ -328,7 +328,7 @@ class NightscoutV3RoutesTest {
     fun `PATCH api v3 settings returns 200 when units match users API`() = v3RouteTest { svc, settings ->
         val ns3Settings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
         coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
-        coEvery { svc.getSettings(any(), any()) } returns ns3Settings
+        coEvery { svc.getSettings(any(), any(), "mg/dL") } returns ns3Settings
 
         val response = client.patch("/api/v3/settings") {
             header(HttpHeaders.Authorization, "Bearer $userToken")

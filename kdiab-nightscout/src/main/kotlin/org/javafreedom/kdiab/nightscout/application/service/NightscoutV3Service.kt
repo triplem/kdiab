@@ -267,11 +267,12 @@ class NightscoutV3Service(
     suspend fun getSettings(
         userId: String,
         authorization: String,
+        glucoseUnit: String? = null,
     ): Ns3Settings {
-        val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
+        val resolvedUnit = glucoseUnit ?: userSettingsClient.getGlucoseUnit(authorization)
         return Ns3Settings(
             identifier = userId,
-            units = glucoseUnit,
+            units = resolvedUnit,
             timeZone = "UTC",
         )
     }

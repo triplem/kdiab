@@ -182,6 +182,7 @@ fun Ns3Food.toUpdateFoodRequest(): UpdateFoodEntryRequest {
 
 private const val MINUTES_PER_HOUR = 60.0
 private const val UNKNOWN_INSULIN_TYPE = "Unknown"
+private const val DEFAULT_DIA_MINUTES = 240
 
 fun Profile.toNs3Profile(): Ns3Profile {
     val nowMs = System.currentTimeMillis()
@@ -199,7 +200,7 @@ fun Profile.toNs3Profile(): Ns3Profile {
         startDate = startDate,
         units = "mg/dl",
         timeZone = "UTC",
-        dia = (durationOfAction ?: 0) / MINUTES_PER_HOUR,
+        dia = (durationOfAction ?: DEFAULT_DIA_MINUTES) / MINUTES_PER_HOUR,
         basalSegments = basalSegments,
         carbratio = emptyList(),
         sens = emptyList(),

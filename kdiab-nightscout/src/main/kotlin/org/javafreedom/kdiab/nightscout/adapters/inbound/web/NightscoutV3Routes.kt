@@ -201,16 +201,18 @@ private fun Route.settingsRoutes(service: NightscoutV3Service, userSettingsClien
             val principal = call.principal<UserPrincipal>()!!
             val authorization = call.request.header("Authorization") ?: ""
             val body = call.receive<Ns3Settings>()
-            if (body.units.isNotEmpty()) {
-                val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
-                if (body.units != glucoseUnit) {
+            val glucoseUnit = if (body.units.isNotEmpty()) {
+                val fetched = userSettingsClient.getGlucoseUnit(authorization)
+                if (body.units != fetched) {
                     call.respond(HttpStatusCode.UnprocessableEntity, Ns3Response<Ns3Settings>(status = 422))
                     return@put
                 }
-            }
+                fetched
+            } else null
             val settings = service.getSettings(
                 userId = principal.userId.toString(),
                 authorization = authorization,
+                glucoseUnit = glucoseUnit,
             )
             call.respond(Ns3Response(status = 200, result = settings))
         }
@@ -218,16 +220,18 @@ private fun Route.settingsRoutes(service: NightscoutV3Service, userSettingsClien
             val principal = call.principal<UserPrincipal>()!!
             val authorization = call.request.header("Authorization") ?: ""
             val body = call.receive<Ns3Settings>()
-            if (body.units.isNotEmpty()) {
-                val glucoseUnit = userSettingsClient.getGlucoseUnit(authorization)
-                if (body.units != glucoseUnit) {
+            val glucoseUnit = if (body.units.isNotEmpty()) {
+                val fetched = userSettingsClient.getGlucoseUnit(authorization)
+                if (body.units != fetched) {
                     call.respond(HttpStatusCode.UnprocessableEntity, Ns3Response<Ns3Settings>(status = 422))
                     return@patch
                 }
-            }
+                fetched
+            } else null
             val settings = service.getSettings(
                 userId = principal.userId.toString(),
                 authorization = authorization,
+                glucoseUnit = glucoseUnit,
             )
             call.respond(Ns3Response(status = 200, result = settings))
         }
