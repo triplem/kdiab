@@ -12,6 +12,7 @@ import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.slot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
@@ -25,7 +26,10 @@ import org.javafreedom.kdiab.analyze.domain.model.AgpResult
 import org.javafreedom.kdiab.analyze.domain.model.DeviceUsageResult
 import org.javafreedom.kdiab.analyze.domain.model.Hba1cResult
 import org.javafreedom.kdiab.analyze.domain.model.ProfilesResult
+import org.javafreedom.kdiab.analyze.domain.model.ReportSummaryResult
 import org.javafreedom.kdiab.analyze.domain.model.TirBreakdown
+import org.javafreedom.kdiab.analyze.domain.model.TirResult
+import org.javafreedom.kdiab.analyze.domain.model.TirZone
 import org.javafreedom.kdiab.analyze.domain.model.Timeline
 import org.javafreedom.kdiab.analyze.module
 
@@ -367,5 +371,77 @@ class BffRoutesTest {
         coEvery { svc.compute(MIKE_ID, any(), any(), any()) } returns emptyDeviceUsage.copy(userId = MIKE_ID)
         val resp = client.get(deviceUsageUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    // ── report-summary displayName parameter ──────────────────────────────────
+
+    private val emptyTirZone = TirZone(count = 0, percent = 0.0)
+    private val emptyTirResult = TirResult(
+        veryLow = emptyTirZone,
+        low = emptyTirZone,
+        inRange = emptyTirZone,
+        high = emptyTirZone,
+        veryHigh = emptyTirZone,
+    )
+    private fun stubReportSummary(displayName: String) = ReportSummaryResult(
+        displayName = displayName,
+        daysAnalysed = 0, cgmReadingCount = 0, cgmIntervalMinutes = 5,
+        insulinTypes = emptyList(), insulinChanges = 0,
+        avgDaysPerCartridge = null, siteChanges = 0, avgDaysPerSite = null,
+        sensorInserts = 0, avgDaysPerSensor = null,
+        tirProfile = emptyTirResult, tirStandard = emptyTirResult,
+        minGlucose = null, maxGlucose = null, meanGlucose = null,
+        sd = null, gvi = null, pgs = null, gri = null, griZone = null, eHbA1c = null,
+        avgCarbsPerDayG = null, avgBolusPerDayIe = null, bolusPercent = null,
+        avgBasalPerDayIe = null, basalPercent = null, avgTotalInsulinPerDayIe = null,
+    )
+
+    private fun reportSummaryUrl(userId: String, displayName: String? = null): String {
+        val base = "/api/v1/users/$userId/analytics/report-summary?from=$FROM&to=$TO"
+        return if (displayName != null) "$base&displayName=$displayName" else base
+    }
+
+    @Test
+    fun `report-summary - displayName query param is forwarded to service`() = routeTest { _, svc, _, _ ->
+        val capturedDisplayName = slot<String>()
+        coEvery {
+            svc.getReportSummary(
+                userId = SARAH_ID,
+                displayName = capture(capturedDisplayName),
+                from = any(),
+                to = any(),
+                authorization = any(),
+                glucoseUnit = any(),
+                correlationId = any(),
+                timeZone = any(),
+            )
+        } answers { stubReportSummary(capturedDisplayName.captured) }
+
+        val resp = client.get(reportSummaryUrl(SARAH_ID, "Jane+Doe")) { bearerAuth(sarahToken) }
+
+        assertEquals(HttpStatusCode.OK, resp.status)
+        assertEquals("Jane Doe", capturedDisplayName.captured)
+    }
+
+    @Test
+    fun `report-summary - userId UUID used as displayName when param is absent`() = routeTest { _, svc, _, _ ->
+        val capturedDisplayName = slot<String>()
+        coEvery {
+            svc.getReportSummary(
+                userId = SARAH_ID,
+                displayName = capture(capturedDisplayName),
+                from = any(),
+                to = any(),
+                authorization = any(),
+                glucoseUnit = any(),
+                correlationId = any(),
+                timeZone = any(),
+            )
+        } answers { stubReportSummary(capturedDisplayName.captured) }
+
+        val resp = client.get(reportSummaryUrl(SARAH_ID)) { bearerAuth(sarahToken) }
+
+        assertEquals(HttpStatusCode.OK, resp.status)
+        assertEquals(SARAH_ID, capturedDisplayName.captured)
     }
 }
