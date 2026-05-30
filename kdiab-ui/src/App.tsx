@@ -36,7 +36,7 @@ import type { Profile } from './api/profilesApi'
 import { useProposedProfileCount } from './features/profiles/useProposedProfileCount'
 import { ProposedBadge } from './features/profiles/ProposedBadge'
 
-type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'analytics' | 'report' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors'
+type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'analytics' | 'report' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors' | 'preferences'
 
 export default function App() {
   const auth = useAuth()
@@ -106,6 +106,20 @@ export default function App() {
   const isPatient = roles.includes('PATIENT')
   const isDoctor = roles.includes('DOCTOR')
   const isAdmin = roles.includes('ADMIN')
+
+  // Tabs that are valid for admins — used to decide whether to redirect on login.
+  const ADMIN_TABS: Tab[] = ['admin-users', 'admin-doctors', 'preferences']
+
+  // Reset active tab to 'admin-users' when the user is an admin so they don't
+  // land on a tab that is hidden from them (e.g. 'dashboard'). Use a functional
+  // update so we only redirect if the current tab is not already an admin tab —
+  // this preserves navigation when the user manually switches to Preferences.
+  useEffect(() => {
+    if (isAdmin) {
+      setActiveTab((prev) => (ADMIN_TABS.includes(prev) ? prev : 'admin-users'))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin])
 
   const ownUserId = auth.user?.profile?.sub ?? ''
   const viewingUserId = activePatientId ?? ownUserId
@@ -268,19 +282,22 @@ export default function App() {
 
   const foodDatabaseEnabled = (import.meta.env as Record<string, string>)['VITE_FOOD_DATABASE_ENABLED'] === 'true'
 
-  const tabs: { key: Tab; label: string; adminOnly?: boolean }[] = [
-    { key: 'dashboard', label: t('nav.dashboard') },
-    { key: 'measures', label: t('nav.measures') },
-    { key: 'treatments', label: t('nav.treatments') },
-    { key: 'profiles', label: t('nav.profiles') },
-    { key: 'analytics', label: t('nav.analytics') },
-    { key: 'report', label: t('nav.report') },
-    ...(foodDatabaseEnabled ? [{ key: 'carbs' as Tab, label: t('nav.foodDatabase') }] : []),
-    { key: 'calc', label: t('nav.doseCalculator') },
-    { key: 'settings', label: t('nav.settings') },
-    { key: 'admin-users', label: t('nav.adminUsers'), adminOnly: true },
-    { key: 'admin-doctors', label: t('nav.adminDoctors'), adminOnly: true },
+  const tabs: { key: Tab; label: string; roles?: string[] }[] = [
+    { key: 'dashboard', label: t('nav.dashboard'), roles: ['PATIENT', 'DOCTOR'] },
+    { key: 'measures', label: t('nav.measures'), roles: ['PATIENT', 'DOCTOR'] },
+    { key: 'treatments', label: t('nav.treatments'), roles: ['PATIENT', 'DOCTOR'] },
+    { key: 'profiles', label: t('nav.profiles'), roles: ['PATIENT', 'DOCTOR'] },
+    { key: 'analytics', label: t('nav.analytics'), roles: ['PATIENT', 'DOCTOR'] },
+    { key: 'report', label: t('nav.report'), roles: ['PATIENT', 'DOCTOR'] },
+    ...(foodDatabaseEnabled ? [{ key: 'carbs' as Tab, label: t('nav.foodDatabase'), roles: ['PATIENT', 'DOCTOR'] }] : []),
+    { key: 'calc', label: t('nav.doseCalculator'), roles: ['PATIENT', 'DOCTOR'] },
+    { key: 'settings', label: t('nav.settings'), roles: ['PATIENT', 'DOCTOR'] },
+    { key: 'admin-users', label: t('nav.adminUsers'), roles: ['ADMIN'] },
+    { key: 'admin-doctors', label: t('nav.adminDoctors'), roles: ['ADMIN'] },
+    { key: 'preferences', label: t('nav.preferences') },
   ]
+
+  const visibleTabs = tabs.filter((tab) => !tab.roles?.length || tab.roles.some((r) => roles.includes(r)))
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -447,6 +464,9 @@ export default function App() {
 
       case 'admin-doctors':
         return isAdmin ? <AdminDoctorPatients /> : null
+
+      case 'preferences':
+        return <UserSettings localeOnly={isAdmin} />
     }
   }
 
@@ -520,7 +540,7 @@ export default function App() {
         </header>
 
         <nav className="tab-nav" aria-label="Main navigation">
-          {tabs.filter((tab) => !tab.adminOnly || isAdmin).map(({ key, label }) => (
+          {visibleTabs.map(({ key, label }) => (
             <button
               key={key}
               className={activeTab === key ? 'active-tab' : ''}

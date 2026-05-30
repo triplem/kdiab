@@ -123,7 +123,9 @@ vi.mock('../features/treatments/TreatmentList', () => ({
   TreatmentList: () => <div data-testid="treatment-list" />,
 }))
 vi.mock('../features/users/UserSettings', () => ({
-  UserSettings: () => <div data-testid="user-settings" />,
+  UserSettings: ({ localeOnly }: { localeOnly?: boolean }) => (
+    <div data-testid="user-settings" data-locale-only={localeOnly ? 'true' : 'false'} />
+  ),
 }))
 vi.mock('../features/users/AdminUserList', () => ({
   AdminUserList: () => <div data-testid="admin-user-list" />,
@@ -745,6 +747,115 @@ describe('App — DOCTOR AbortController teardown on patient switch', () => {
       // mmol/L button exists and is marked active (patient B's glucose unit)
       expect(mmolBtn).toBeDefined()
       expect(mmolBtn?.classList.contains('active-tab')).toBe(true)
+    })
+  })
+})
+
+describe('App — ADMIN tab visibility', () => {
+  afterEach(() => {
+    mockedParseRoles.mockReturnValue(['PATIENT'])
+    mockedParseAllowedPatients.mockReturnValue([])
+    mockedParseAllowedPatientNames.mockReturnValue([])
+  })
+
+  test('admin sees Users, Doctors, and Preferences tabs but not patient-only tabs', async () => {
+    mockedParseRoles.mockReturnValue(['ADMIN'])
+
+    renderApp()
+    await act(async () => { await Promise.resolve() })
+
+    const nav = document.querySelector('nav.tab-nav')
+    const tabLabels = nav
+      ? Array.from(nav.querySelectorAll('button')).map((b) => b.textContent?.trim())
+      : []
+
+    // Admin should see these tabs
+    expect(tabLabels).toContain('Users')
+    expect(tabLabels).toContain('Doctors')
+    expect(tabLabels).toContain('Preferences')
+
+    // Admin should NOT see patient/doctor only tabs
+    expect(tabLabels).not.toContain('Dashboard')
+    expect(tabLabels).not.toContain('Measures')
+    expect(tabLabels).not.toContain('Treatments')
+    expect(tabLabels).not.toContain('Settings')
+  })
+
+  test('admin default active tab is admin-users', async () => {
+    mockedParseRoles.mockReturnValue(['ADMIN'])
+
+    renderApp()
+    await act(async () => { await Promise.resolve() })
+
+    const nav = document.querySelector('nav.tab-nav')
+    const activeBtn = nav?.querySelector('button.active-tab')
+    expect(activeBtn?.textContent?.trim()).toBe('Users')
+  })
+
+  test('patient sees Settings tab but not Preferences or admin-only tabs', async () => {
+    mockedParseRoles.mockReturnValue(['PATIENT'])
+
+    renderApp()
+    await act(async () => { await Promise.resolve() })
+
+    const nav = document.querySelector('nav.tab-nav')
+    const tabLabels = nav
+      ? Array.from(nav.querySelectorAll('button')).map((b) => b.textContent?.trim())
+      : []
+
+    expect(tabLabels).toContain('Settings')
+    expect(tabLabels).toContain('Preferences')
+    expect(tabLabels).not.toContain('Users')
+    expect(tabLabels).not.toContain('Doctors')
+  })
+
+  test('Preferences tab renders UserSettings with localeOnly=true for admins', async () => {
+    mockedParseRoles.mockReturnValue(['ADMIN'])
+
+    renderApp()
+    await act(async () => { await Promise.resolve() })
+
+    // Navigate to Preferences tab
+    const nav = document.querySelector('nav.tab-nav')
+    const preferencesBtn = Array.from(nav?.querySelectorAll('button') ?? []).find(
+      (b) => b.textContent?.trim() === 'Preferences',
+    )
+    expect(preferencesBtn).toBeDefined()
+
+    await act(async () => {
+      fireEvent.click(preferencesBtn!)
+    })
+
+    // UserSettings should be rendered with localeOnly=true
+    await waitFor(() => {
+      const settings = document.querySelector('[data-testid="user-settings"]')
+      expect(settings).not.toBeNull()
+      expect(settings?.getAttribute('data-locale-only')).toBe('true')
+    })
+  })
+
+  test('Preferences tab renders UserSettings with localeOnly=false for patients', async () => {
+    mockedParseRoles.mockReturnValue(['PATIENT'])
+
+    renderApp()
+    await act(async () => { await Promise.resolve() })
+
+    // Navigate to Preferences tab
+    const nav = document.querySelector('nav.tab-nav')
+    const preferencesBtn = Array.from(nav?.querySelectorAll('button') ?? []).find(
+      (b) => b.textContent?.trim() === 'Preferences',
+    )
+    expect(preferencesBtn).toBeDefined()
+
+    await act(async () => {
+      fireEvent.click(preferencesBtn!)
+    })
+
+    // UserSettings should be rendered with localeOnly=false
+    await waitFor(() => {
+      const settings = document.querySelector('[data-testid="user-settings"]')
+      expect(settings).not.toBeNull()
+      expect(settings?.getAttribute('data-locale-only')).toBe('false')
     })
   })
 })

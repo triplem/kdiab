@@ -44,7 +44,8 @@
     "doseCalculator": "Dosis Rechner",
     "settings": "Einstellungen",
     "adminUsers": "Benutzer",
-    "adminDoctors": "Ärzte"
+    "adminDoctors": "Ärzte",
+    "preferences": "Grundeinstellungen"
   },
   "patientBanner": {
     "viewingMessage": "Sie sehen Patientendaten",
