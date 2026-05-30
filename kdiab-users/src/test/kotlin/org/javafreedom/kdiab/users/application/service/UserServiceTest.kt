@@ -17,6 +17,7 @@ import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.users.domain.model.AlarmThresholds
 import org.javafreedom.kdiab.users.domain.model.UserSettings
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
@@ -492,7 +493,7 @@ class UserServiceTest {
     fun `updateMySettings merges only urgentHigh with existing alarm thresholds`() = runTest {
         val principal = patientPrincipal()
         val existingWithAlarms = settings().copy(
-            alarms = org.javafreedom.kdiab.users.domain.model.AlarmThresholds(
+            alarms = AlarmThresholds(
                 urgentHigh = 260, high = 180, low = 70, urgentLow = 55,
             )
         )
@@ -511,7 +512,7 @@ class UserServiceTest {
     fun `updateMySettings with no alarm fields preserves existing alarms`() = runTest {
         val principal = patientPrincipal()
         val existingWithAlarms = settings().copy(
-            alarms = org.javafreedom.kdiab.users.domain.model.AlarmThresholds(
+            alarms = AlarmThresholds(
                 urgentHigh = 260, high = 180, low = 70, urgentLow = 55,
             )
         )
