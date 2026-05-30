@@ -638,7 +638,7 @@
     "pagesDeselected": "{{count}} page deselected",
     "pagesDeselected_other": "{{count}} pages deselected",
     "page": {
-      "AUSWERTUNG": "Auswertung",
+      "AUSWERTUNG": "Summary Report",
       "SUMMARY": "Summary",
       "AGP": "AGP Percentile Chart",
       "DAILY_STATS": "Daily Statistics",
@@ -648,7 +648,6 @@
       "GLUCOSE_DISTRIBUTION": "Glucose Distribution",
       "PROFILE": "Basal Profile",
       "CGP": "Comprehensive Glucose Pentagon (CGP)",
-      "AUSWERTUNG": "Summary Report",
       "BASAL_RATE": "Basal Rate Chart"
     },
     "error": {
