@@ -347,8 +347,8 @@ function CgpPentagonChart({ cgp }: CgpPentagonChartProps) {
         <div
           role="alert"
           style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
+            background: 'var(--surface-color)',
+            border: '1px solid var(--border-color)',
             borderRadius: 4,
             padding: '0.5rem 0.75rem',
             marginBottom: '1rem',
@@ -430,29 +430,29 @@ function CgpPentagonChart({ cgp }: CgpPentagonChartProps) {
         }}
       >
         <thead>
-          <tr style={{ borderBottom: '2px solid var(--border)', background: 'var(--surface)' }}>
+          <tr style={{ borderBottom: '2px solid var(--border-color)', background: 'var(--surface-color)' }}>
             <th style={{ padding: '0.3rem 0.4rem', textAlign: 'left' }}>{t('report.cgp.axisLabel')}</th>
             <th style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{t('report.cgp.patientValue')}</th>
             <th style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{t('report.cgp.referenceValue')}</th>
           </tr>
         </thead>
         <tbody>
-          <tr style={{ borderBottom: '1px solid var(--border)' }}>
+          <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
             <td style={{ padding: '0.3rem 0.4rem' }}>{t('report.cgp.axisTor')}</td>
             <td style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{cgp.tor.toFixed(0)} min/d</td>
             <td style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{cgp.refTor.toFixed(0)} min/d</td>
           </tr>
-          <tr style={{ borderBottom: '1px solid var(--border)' }}>
+          <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
             <td style={{ padding: '0.3rem 0.4rem' }}>{t('report.cgp.axisVarK')}</td>
             <td style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{cgp.varK.toFixed(1)} %</td>
             <td style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{cgp.refVarK.toFixed(1)} %</td>
           </tr>
-          <tr style={{ borderBottom: '1px solid var(--border)' }}>
+          <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
             <td style={{ padding: '0.3rem 0.4rem' }}>{t('report.cgp.axisHypo')}</td>
             <td style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{cgp.hypoIntensity.toFixed(0)}</td>
             <td style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{cgp.refHypo.toFixed(0)}</td>
           </tr>
-          <tr style={{ borderBottom: '1px solid var(--border)' }}>
+          <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
             <td style={{ padding: '0.3rem 0.4rem' }}>{t('report.cgp.axisHyper')}</td>
             <td style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{cgp.hyperIntensity.toFixed(0)}</td>
             <td style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{cgp.refHyper.toFixed(0)}</td>

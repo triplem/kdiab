@@ -11,10 +11,10 @@
   flex-direction: column;
   gap: 1.25rem;
   margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: var(--surface, #f9f9f9);
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  padding: 1.5rem;
+  background: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
 }
 
 .report-view {
@@ -24,7 +24,7 @@
 .report-section {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .report-section:last-child {
@@ -39,10 +39,10 @@
 
 .report-section-error {
   padding: 0.6rem 1rem;
-  background: var(--color-error-bg, #fdecea);
-  border: 1px solid var(--color-error, #c0392b);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid var(--accent-danger);
   border-radius: 4px;
-  color: var(--color-error, #c0392b);
+  color: var(--accent-danger);
   font-size: 0.9rem;
 }
 
@@ -58,7 +58,7 @@
 
 .summary-section {
   padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .summary-section:last-child {
@@ -141,10 +141,11 @@
 
 .summary-warnings {
   padding: 0.5rem 0.75rem;
-  background: var(--color-warn-bg, #fff3cd);
-  border: 1px solid var(--color-warn-border, #ffc107);
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid var(--accent-warning);
   border-radius: 4px;
   font-size: 0.85rem;
+  color: var(--accent-warning);
 }
 
 /* ============================================================
