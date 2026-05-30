@@ -24,7 +24,6 @@ export function BolusForm({ initialData, validationError, userId, onDataChange }
   const onDataChangeRef = useRef(onDataChange)
   onDataChangeRef.current = onDataChange
 
-  // Fetch the active profile to pre-fill insulin type
   const { data: activeProfile } = useQuery({
     queryKey: ['profiles-active-single', userId],
     queryFn: async () => {
@@ -42,9 +41,7 @@ export function BolusForm({ initialData, validationError, userId, onDataChange }
     return type ? { insulin: v, insulinType: type } : { insulin: v }
   }, [])
 
-  // Pre-fill insulinType from active profile when loaded (only if user hasn't typed anything yet).
-  // onDataChangeRef keeps the latest callback without adding it as a reactive dep,
-  // avoiding an infinite loop when the parent re-creates the callback on each render.
+  // pre-fill from profile; use ref to avoid callback dep loop
   useEffect(() => {
     if (initialData?.insulinType != null) return
     if (insulinType !== '') return

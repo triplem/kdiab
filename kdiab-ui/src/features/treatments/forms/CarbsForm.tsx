@@ -30,7 +30,6 @@ export function CarbsForm({ initialData, validationError, userId, onDataChange }
   // Track whether the user has manually overridden the auto-computed absorptionTime
   const absorptionManuallySet = useRef(false)
 
-  // Fetch the active profile to auto-compute absorptionTime from carbAbsorptionRateGPerHour.
   // Uses the same cache key as BolusForm and BasalForm — no extra network request.
   const { data: activeProfile } = useQuery({
     queryKey: ['profiles-active-single', userId],
