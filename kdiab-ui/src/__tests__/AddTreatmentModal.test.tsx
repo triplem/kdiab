@@ -211,7 +211,9 @@ describe('AddTreatmentModal', () => {
     fireEvent.change(select, { target: { value: 'SITE_CHANGE' } })
 
     // Type a location to trigger onDataChange so pendingData is set
-    const locationInput = screen.getByPlaceholderText(/left abdomen/i)
+    const locationInput = screen.getByPlaceholderText(/e\.g\. abdomen/i)
+    const datalist = document.getElementById('site-change-location-options')
+    expect(datalist?.querySelectorAll('option')).toHaveLength(5)
     fireEvent.change(locationInput, { target: { value: 'Right side' } })
 
     const form = screen.getByRole('dialog').querySelector('form')!

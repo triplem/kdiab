@@ -179,6 +179,15 @@
     "exerciseIntensity": "Intensity:",
     "noteText": "Note:",
     "location": "Location (optional):",
+    "siteChangeLocation": "Placement Site (optional):",
+    "siteChangeLocationPlaceholder": "e.g. abdomen",
+    "siteChangeLocations": {
+      "abdomen": "Abdomen",
+      "upperArm": "Upper Arm",
+      "thigh": "Thigh",
+      "buttock": "Buttock",
+      "lowerBack": "Lower Back"
+    },
     "sensorModel": "Sensor model (optional):",
     "newInsulinType": "New insulin type (optional):",
     "comboSplitNow": "Immediate split (%, rest is extended):",

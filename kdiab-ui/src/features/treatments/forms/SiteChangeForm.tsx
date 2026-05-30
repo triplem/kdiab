@@ -11,6 +11,18 @@ interface SiteChangeFormProps {
   onDataChange: (data: SiteChangeFormData) => void
 }
 
+const SITE_CHANGE_LOCATION_DATALIST_ID = 'site-change-location-options'
+
+const PREDEFINED_LOCATIONS = [
+  'abdomen',
+  'upperArm',
+  'thigh',
+  'buttock',
+  'lowerBack',
+] as const
+
+type PredefinedLocation = (typeof PREDEFINED_LOCATIONS)[number]
+
 export function SiteChangeForm({ initialData, onDataChange }: SiteChangeFormProps) {
   const { t } = useTranslation()
   const [siteLocation, setSiteLocation] = useState(initialData?.location ?? '')
@@ -22,15 +34,24 @@ export function SiteChangeForm({ initialData, onDataChange }: SiteChangeFormProp
 
   return (
     <label style={labelStyle}>
-      <span>{t('treatmentModal.location')}</span>
+      <span>{t('treatmentModal.siteChangeLocation')}</span>
       <input
         type="text"
-        placeholder="e.g. left abdomen"
+        list={SITE_CHANGE_LOCATION_DATALIST_ID}
+        placeholder={t('treatmentModal.siteChangeLocationPlaceholder')}
         value={siteLocation}
         onChange={(e) => handleChange(e.target.value)}
         style={inputStyle}
         autoFocus
       />
+      <datalist id={SITE_CHANGE_LOCATION_DATALIST_ID}>
+        {PREDEFINED_LOCATIONS.map((key) => (
+          <option
+            key={key}
+            value={t(`treatmentModal.siteChangeLocations.${key}`)}
+          />
+        ))}
+      </datalist>
     </label>
   )
 }

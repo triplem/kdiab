@@ -179,6 +179,15 @@
     "exerciseIntensity": "Intensität:",
     "noteText": "Notiz:",
     "location": "Ort (optional):",
+    "siteChangeLocation": "Einführungsstelle (optional):",
+    "siteChangeLocationPlaceholder": "z.B. Bauch",
+    "siteChangeLocations": {
+      "abdomen": "Bauch",
+      "upperArm": "Oberarm",
+      "thigh": "Oberschenkel",
+      "buttock": "Gesäß",
+      "lowerBack": "Unterer Rücken"
+    },
     "sensorModel": "Sensormodell (optional):",
     "newInsulinType": "Neuer Insulintyp (optional):",
     "comboSplitNow": "Sofortanteil (%, Rest ist verlängert):",
