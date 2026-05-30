@@ -11,6 +11,7 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.FoodEntryResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.FoodEntryStatus
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.PagedFoodResponse
@@ -20,7 +21,9 @@ import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureStat
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureType
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.UpdateMeasureRequest
 import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.CreateProfileRequest
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.InsulinSettings
 import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.Profile
+import org.javafreedom.kdiab.nightscout.api.upstream.profiles.models.ProfileSchedule
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.treatments.models.TreatmentType
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3DeviceStatus
@@ -40,7 +43,8 @@ class NightscoutV3ServiceTest {
     private val treatmentsClient = mockk<TreatmentsClient>()
     private val carbsClient = mockk<CarbsClient>()
     private val profilesClient = mockk<ProfilesClient>()
-    private val service = NightscoutV3Service(measuresClient, treatmentsClient, carbsClient, profilesClient)
+    private val userSettingsClient = mockk<UserSettingsClient>()
+    private val service = NightscoutV3Service(measuresClient, treatmentsClient, carbsClient, profilesClient, userSettingsClient)
 
     private val defaultParams = Ns3SearchParams(
         limit = 100,
@@ -312,10 +316,13 @@ class NightscoutV3ServiceTest {
         id = id,
         userId = "user1",
         name = name,
+        status = status,
+        settings = InsulinSettings(insulinType = "Novorapid", durationOfAction = durationOfAction),
+        schedule = ProfileSchedule(basal = emptyList(), icr = emptyList(), isf = emptyList(), targets = emptyList()),
+        createdAt = "2024-01-01T00:00:00Z",
+        // deprecated fields — kept for mapper compatibility
         insulinType = "Novorapid",
         durationOfAction = durationOfAction,
-        status = status,
-        createdAt = "2024-01-01T00:00:00Z",
     )
 
     @Test

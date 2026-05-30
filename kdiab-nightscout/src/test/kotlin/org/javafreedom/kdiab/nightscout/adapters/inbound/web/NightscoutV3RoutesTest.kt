@@ -15,6 +15,7 @@ import io.mockk.coJustRun
 import io.mockk.mockk
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
@@ -30,11 +31,13 @@ import kotlin.test.assertEquals
 private fun Application.installMockDi(
     nightscoutService: NightscoutService,
     v3Service: NightscoutV3Service,
+    userSettingsClient: UserSettingsClient,
 ) {
     install(DI) { }
     dependencies {
         provide<NightscoutService> { nightscoutService }
         provide<NightscoutV3Service> { v3Service }
+        provide<UserSettingsClient> { userSettingsClient }
     }
 }
 
@@ -46,12 +49,11 @@ class NightscoutV3RoutesTest {
         const val ISSUER = "http://localhost:8081/realms/kdiab"
         const val USER_ID = "11111111-1111-1111-1111-111111111111"
 
-        fun token(userId: String = USER_ID, glucoseUnit: String = "mg/dL"): String = JWT.create()
+        fun token(userId: String = USER_ID): String = JWT.create()
             .withSubject(userId)
             .withAudience(AUDIENCE)
             .withIssuer(ISSUER)
             .withClaim("roles", listOf("PATIENT"))
-            .withClaim("glucose_unit", glucoseUnit)
             .sign(Algorithm.HMAC256(JWT_SECRET))
 
         val userToken get() = token()
@@ -66,9 +68,10 @@ class NightscoutV3RoutesTest {
     }
 
     private fun v3RouteTest(
-        block: suspend ApplicationTestBuilder.(NightscoutV3Service) -> Unit,
+        block: suspend ApplicationTestBuilder.(NightscoutV3Service, UserSettingsClient) -> Unit,
     ) {
         val mockV3Service = mockk<NightscoutV3Service>()
+        val mockUserSettingsClient = mockk<UserSettingsClient>()
         testApplication {
             environment {
                 config = MapApplicationConfig(
@@ -83,15 +86,16 @@ class NightscoutV3RoutesTest {
                 )
             }
             application {
-                installMockDi(mockk(relaxed = true), mockV3Service)
+                installMockDi(mockk(relaxed = true), mockV3Service, mockUserSettingsClient)
                 module()
             }
-            block(mockV3Service)
+            block(mockV3Service, mockUserSettingsClient)
         }
     }
 
     @Test
-    fun `GET api v3 entries returns 200 with list`() = v3RouteTest { svc ->
+    fun `GET api v3 entries returns 200 with list`() = v3RouteTest { svc, settings ->
+        coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
         coEvery { svc.searchEntries(any(), any(), any(), any(), any()) } returns listOf(sampleEntry)
 
         val response = client.get("/api/v3/entries") {
@@ -103,13 +107,14 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 entries returns 401 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 entries returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/entries")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 
     @Test
-    fun `GET api v3 entries slash id returns 200 when found`() = v3RouteTest { svc ->
+    fun `GET api v3 entries slash id returns 200 when found`() = v3RouteTest { svc, settings ->
+        coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
         coEvery { svc.getEntry(any(), any(), any(), "entry-1", any()) } returns sampleEntry
 
         val response = client.get("/api/v3/entries/entry-1") {
@@ -121,7 +126,8 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 entries slash id returns 404 when not found`() = v3RouteTest { svc ->
+    fun `GET api v3 entries slash id returns 404 when not found`() = v3RouteTest { svc, settings ->
+        coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
         coEvery { svc.getEntry(any(), any(), any(), "missing", any()) } returns null
 
         val response = client.get("/api/v3/entries/missing") {
@@ -132,13 +138,14 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 entries slash id returns 401 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 entries slash id returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/entries/entry-1")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 
     @Test
-    fun `POST api v3 entries returns 201 with location header`() = v3RouteTest { svc ->
+    fun `POST api v3 entries returns 201 with location header`() = v3RouteTest { svc, settings ->
+        coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
         coEvery { svc.createEntry(any(), any(), any(), any(), any()) } returns sampleEntry
 
         val response = client.post("/api/v3/entries") {
@@ -152,7 +159,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `POST api v3 entries returns 401 without token`() = v3RouteTest { _ ->
+    fun `POST api v3 entries returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.post("/api/v3/entries") {
             contentType(ContentType.Application.Json)
             setBody(Json.encodeToString(sampleEntry))
@@ -161,7 +168,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `DELETE api v3 entries slash id returns 200`() = v3RouteTest { svc ->
+    fun `DELETE api v3 entries slash id returns 200`() = v3RouteTest { svc, _ ->
         coJustRun { svc.deleteEntry(any(), any(), any(), "entry-1", any()) }
 
         val response = client.delete("/api/v3/entries/entry-1") {
@@ -172,7 +179,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `DELETE api v3 entries slash id returns 401 without token`() = v3RouteTest { _ ->
+    fun `DELETE api v3 entries slash id returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.delete("/api/v3/entries/entry-1")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
@@ -187,7 +194,7 @@ class NightscoutV3RoutesTest {
     )
 
     @Test
-    fun `GET api v3 food returns 200 with list`() = v3RouteTest { svc ->
+    fun `GET api v3 food returns 200 with list`() = v3RouteTest { svc, _ ->
         coEvery { svc.searchFood(any(), any(), any(), any()) } returns listOf(sampleFood)
 
         val response = client.get("/api/v3/food") {
@@ -199,13 +206,13 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 food returns 401 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 food returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/food")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 
     @Test
-    fun `GET api v3 food slash id returns 200 when found`() = v3RouteTest { svc ->
+    fun `GET api v3 food slash id returns 200 when found`() = v3RouteTest { svc, _ ->
         coEvery { svc.getFood(any(), any(), any(), "food-1") } returns sampleFood
 
         val response = client.get("/api/v3/food/food-1") {
@@ -217,7 +224,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 food slash id returns 404 when not found`() = v3RouteTest { svc ->
+    fun `GET api v3 food slash id returns 404 when not found`() = v3RouteTest { svc, _ ->
         coEvery { svc.getFood(any(), any(), any(), "missing") } returns null
 
         val response = client.get("/api/v3/food/missing") {
@@ -228,7 +235,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `POST api v3 food returns 201 with location header`() = v3RouteTest { svc ->
+    fun `POST api v3 food returns 201 with location header`() = v3RouteTest { svc, _ ->
         coEvery { svc.createFood(any(), any(), any(), any()) } returns sampleFood
 
         val response = client.post("/api/v3/food") {
@@ -242,7 +249,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `POST api v3 food returns 401 without token`() = v3RouteTest { _ ->
+    fun `POST api v3 food returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.post("/api/v3/food") {
             contentType(ContentType.Application.Json)
             setBody(Json.encodeToString(sampleFood))
@@ -251,7 +258,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `DELETE api v3 food slash id returns 200`() = v3RouteTest { svc ->
+    fun `DELETE api v3 food slash id returns 200`() = v3RouteTest { svc, _ ->
         coJustRun { svc.deleteFood(any(), any(), any(), "food-1", any()) }
 
         val response = client.delete("/api/v3/food/food-1") {
@@ -262,7 +269,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `DELETE api v3 food slash id returns 401 without token`() = v3RouteTest { _ ->
+    fun `DELETE api v3 food slash id returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.delete("/api/v3/food/food-1")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
@@ -270,9 +277,9 @@ class NightscoutV3RoutesTest {
     // --- /api/v3/settings ---
 
     @Test
-    fun `GET api v3 settings returns 200 with units from JWT`() = v3RouteTest { svc ->
+    fun `GET api v3 settings returns 200 with units from users API`() = v3RouteTest { svc, _ ->
         val expectedSettings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
-        coEvery { svc.getSettings(any(), any(), any(), any()) } returns expectedSettings
+        coEvery { svc.getSettings(any(), any(), null) } returns expectedSettings
 
         val response = client.get("/api/v3/settings") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
@@ -283,27 +290,29 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 settings returns 401 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 settings returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/settings")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 
     @Test
-    fun `PUT api v3 settings returns 200 when units match JWT`() = v3RouteTest { svc ->
-        val settings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
-        coEvery { svc.getSettings(any(), any(), any(), any()) } returns settings
+    fun `PUT api v3 settings returns 200 when units match users API`() = v3RouteTest { svc, settings ->
+        val ns3Settings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
+        coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
+        coEvery { svc.getSettings(any(), any(), "mg/dL") } returns ns3Settings
 
         val response = client.put("/api/v3/settings") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
             contentType(ContentType.Application.Json)
-            setBody(Json.encodeToString(settings))
+            setBody(Json.encodeToString(ns3Settings))
         }
 
         assertEquals(HttpStatusCode.OK, response.status)
     }
 
     @Test
-    fun `PUT api v3 settings returns 422 when units differ from JWT`() = v3RouteTest { _ ->
+    fun `PUT api v3 settings returns 422 when units differ from users API`() = v3RouteTest { _, settings ->
+        coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
         val body = Ns3Settings(identifier = USER_ID, units = "mmol/L", timeZone = "UTC")
 
         val response = client.put("/api/v3/settings") {
@@ -316,21 +325,23 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `PATCH api v3 settings returns 200 when units match JWT`() = v3RouteTest { svc ->
-        val settings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
-        coEvery { svc.getSettings(any(), any(), any(), any()) } returns settings
+    fun `PATCH api v3 settings returns 200 when units match users API`() = v3RouteTest { svc, settings ->
+        val ns3Settings = Ns3Settings(identifier = USER_ID, units = "mg/dL", timeZone = "UTC")
+        coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
+        coEvery { svc.getSettings(any(), any(), "mg/dL") } returns ns3Settings
 
         val response = client.patch("/api/v3/settings") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
             contentType(ContentType.Application.Json)
-            setBody(Json.encodeToString(settings))
+            setBody(Json.encodeToString(ns3Settings))
         }
 
         assertEquals(HttpStatusCode.OK, response.status)
     }
 
     @Test
-    fun `PATCH api v3 settings returns 422 when units differ from JWT`() = v3RouteTest { _ ->
+    fun `PATCH api v3 settings returns 422 when units differ from users API`() = v3RouteTest { _, settings ->
+        coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
         val body = Ns3Settings(identifier = USER_ID, units = "mmol/L", timeZone = "UTC")
 
         val response = client.patch("/api/v3/settings") {
@@ -356,7 +367,7 @@ class NightscoutV3RoutesTest {
     )
 
     @Test
-    fun `GET api v3 profile returns 200 with list`() = v3RouteTest { svc ->
+    fun `GET api v3 profile returns 200 with list`() = v3RouteTest { svc, _ ->
         coEvery { svc.searchProfiles(any(), any(), any(), any()) } returns listOf(sampleProfile)
 
         val response = client.get("/api/v3/profile") {
@@ -368,13 +379,13 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 profile returns 401 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 profile returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/profile")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 
     @Test
-    fun `GET api v3 profile slash id returns 200 when found`() = v3RouteTest { svc ->
+    fun `GET api v3 profile slash id returns 200 when found`() = v3RouteTest { svc, _ ->
         coEvery { svc.getProfile(any(), any(), any(), "profile-1") } returns sampleProfile
 
         val response = client.get("/api/v3/profile/profile-1") {
@@ -386,7 +397,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 profile slash id returns 404 when not found`() = v3RouteTest { svc ->
+    fun `GET api v3 profile slash id returns 404 when not found`() = v3RouteTest { svc, _ ->
         coEvery { svc.getProfile(any(), any(), any(), "missing") } returns null
 
         val response = client.get("/api/v3/profile/missing") {
@@ -397,7 +408,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `POST api v3 profile returns 201 with location header`() = v3RouteTest { svc ->
+    fun `POST api v3 profile returns 201 with location header`() = v3RouteTest { svc, _ ->
         coEvery { svc.createProfile(any(), any(), any(), any()) } returns sampleProfile
 
         val response = client.post("/api/v3/profile") {
@@ -411,7 +422,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `POST api v3 profile returns 401 without token`() = v3RouteTest { _ ->
+    fun `POST api v3 profile returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.post("/api/v3/profile") {
             contentType(ContentType.Application.Json)
             setBody(Json.encodeToString(sampleProfile))
@@ -420,7 +431,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `DELETE api v3 profile slash id returns 200 when permanent is false`() = v3RouteTest { svc ->
+    fun `DELETE api v3 profile slash id returns 200 when permanent is false`() = v3RouteTest { svc, _ ->
         coJustRun { svc.deleteProfile(any(), any(), any(), "profile-1", any()) }
 
         val response = client.delete("/api/v3/profile/profile-1") {
@@ -431,7 +442,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `DELETE api v3 profile slash id returns 400 when permanent is true`() = v3RouteTest { _ ->
+    fun `DELETE api v3 profile slash id returns 400 when permanent is true`() = v3RouteTest { _, _ ->
         val response = client.delete("/api/v3/profile/profile-1?permanent=true") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
         }
@@ -440,7 +451,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `DELETE api v3 profile slash id returns 401 without token`() = v3RouteTest { _ ->
+    fun `DELETE api v3 profile slash id returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.delete("/api/v3/profile/profile-1")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
@@ -448,7 +459,7 @@ class NightscoutV3RoutesTest {
     // ─── Meta endpoints ────────────────────────────────────────────────────────
 
     @Test
-    fun `GET api v3 version returns 200 with version info`() = v3RouteTest { _ ->
+    fun `GET api v3 version returns 200 with version info`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/version") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
         }
@@ -458,13 +469,13 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 version returns 200 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 version returns 200 without token`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/version")
         assertEquals(HttpStatusCode.OK, response.status)
     }
 
     @Test
-    fun `GET api v3 status returns 200 with authenticated true`() = v3RouteTest { _ ->
+    fun `GET api v3 status returns 200 with authenticated true`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/status") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
         }
@@ -474,13 +485,13 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 status returns 200 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 status returns 200 without token`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/status")
         assertEquals(HttpStatusCode.OK, response.status)
     }
 
     @Test
-    fun `GET api v3 lastModified returns 200 with all collections`() = v3RouteTest { _ ->
+    fun `GET api v3 lastModified returns 200 with all collections`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/lastModified") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
         }
@@ -495,13 +506,14 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 lastModified returns 401 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 lastModified returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/lastModified")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 
     @Test
-    fun `GET api v3 entries history returns 200 with entries`() = v3RouteTest { svc ->
+    fun `GET api v3 entries history returns 200 with entries`() = v3RouteTest { svc, settings ->
+        coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
         coEvery { svc.historyEntries(any(), any(), any(), null, any()) } returns
             Ns3HistoryResult(
                 status = 200,
@@ -517,14 +529,15 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 entries history returns 401 without token`() = v3RouteTest { _ ->
+    fun `GET api v3 entries history returns 401 without token`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/entries/history")
         assertEquals(HttpStatusCode.Unauthorized, response.status)
     }
 
     @Test
-    fun `GET api v3 entries history with lastModified returns 200`() = v3RouteTest { svc ->
+    fun `GET api v3 entries history with lastModified returns 200`() = v3RouteTest { svc, settings ->
         val lastModified = 1704067200000L
+        coEvery { settings.getGlucoseUnit(any()) } returns "mg/dL"
         coEvery { svc.historyEntries(any(), any(), any(), lastModified, any()) } returns
             Ns3HistoryResult(
                 status = 200,
@@ -540,7 +553,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 treatments history stub returns 200 with empty list`() = v3RouteTest { _ ->
+    fun `GET api v3 treatments history stub returns 200 with empty list`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/treatments/history") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
         }
@@ -549,7 +562,7 @@ class NightscoutV3RoutesTest {
     }
 
     @Test
-    fun `GET api v3 foods history stub returns 200 with empty list`() = v3RouteTest { _ ->
+    fun `GET api v3 foods history stub returns 200 with empty list`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/foods/history") {
             header(HttpHeaders.Authorization, "Bearer $userToken")
         }
@@ -560,21 +573,21 @@ class NightscoutV3RoutesTest {
     // --- /api/v3/version and /api/v3/status lastModified ---
 
     @Test
-    fun `GET api v3 version returns lastModified field`() = v3RouteTest { _ ->
+    fun `GET api v3 version returns lastModified field`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/version")
         assertEquals(HttpStatusCode.OK, response.status)
         assertContains(response.bodyAsText(), "lastModified")
     }
 
     @Test
-    fun `GET api v3 status returns lastModified field`() = v3RouteTest { _ ->
+    fun `GET api v3 status returns lastModified field`() = v3RouteTest { _, _ ->
         val response = client.get("/api/v3/status")
         assertEquals(HttpStatusCode.OK, response.status)
         assertContains(response.bodyAsText(), "lastModified")
     }
 
     @Test
-    fun `GET api v3 version lastModified is stable across requests`() = v3RouteTest { _ ->
+    fun `GET api v3 version lastModified is stable across requests`() = v3RouteTest { _, _ ->
         val body1 = client.get("/api/v3/version").bodyAsText()
         val body2 = client.get("/api/v3/version").bodyAsText()
         val regex = """"lastModified"\s*:\s*(\d+)""".toRegex()

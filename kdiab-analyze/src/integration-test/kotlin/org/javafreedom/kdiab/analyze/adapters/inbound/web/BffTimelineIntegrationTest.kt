@@ -68,7 +68,6 @@ class BffTimelineIntegrationTest {
             .withAudience(AUDIENCE, "measure", "profile", "treatment")
             .withIssuer(ISSUER)
             .withClaim("roles", roles)
-            .withClaim("glucose_unit", "mg/dL")
             .sign(Algorithm.HMAC256(JWT_SECRET))
 
         val sarahToken get() = token(SARAH_ID, listOf("PATIENT"))

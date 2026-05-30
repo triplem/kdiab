@@ -176,7 +176,7 @@ private suspend fun handleReportSummary(call: ApplicationCall, analyticsService:
         ?: throw BusinessValidationException("Missing required parameter: to")
     validateDateRange(from, to)
 
-    val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: ctx.principal.glucoseUnit
+    val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
     val timezone = runCatching { TimeZone.of(ctx.principal.timezone) }
         .onFailure {
             logger.warn {
@@ -318,7 +318,7 @@ private suspend fun handleCgp(
         ?: throw BusinessValidationException("Missing required query parameter 'to'")
     validateDateRange(from, to)
     auditDoctorAccess(ctx, "analyze.cgp")
-    val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: ctx.principal.glucoseUnit
+    val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
 
     val result = analyticsService.getCgp(
         userId = ctx.targetUserId.toString(),
