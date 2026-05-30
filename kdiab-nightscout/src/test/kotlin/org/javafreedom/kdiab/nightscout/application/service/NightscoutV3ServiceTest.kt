@@ -603,8 +603,6 @@ class NightscoutV3ServiceTest {
         }
     }
 
-    // ─── Treatment service methods ─────────────────────────────────────────────
-
     private fun bolusResponse(id: String = "t1", treatedAt: String = "2024-01-01T08:00:00Z") =
         TreatmentResponse(
             id = id,
