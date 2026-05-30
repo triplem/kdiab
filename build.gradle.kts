@@ -106,7 +106,7 @@ tasks.register<Exec>("dockerBuild") {
     workingDir(layout.projectDirectory)
     commandLine(
         "bash", "-c",
-        "podman compose build liquibase-measures liquibase-profiles " +
+        "podman compose --profile optional build liquibase-measures liquibase-profiles " +
         "liquibase-treatments liquibase-carbs measures-backend profiles-backend treatments-backend " +
         "carbs-backend calc-backend analyze-backend nightscout-backend users-backend kdiab-ui"
     )
