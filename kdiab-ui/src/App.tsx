@@ -111,10 +111,25 @@ export default function App() {
   const viewingUserId = activePatientId ?? ownUserId
   const isDoctorViewingPatient = isDoctor && activePatientId !== null
 
-  // Reset patient glucose unit when switching patients
+  // Fetch patient glucose unit when doctor switches patients
   useEffect(() => {
-    setPatientGlucoseUnit('mg/dL')
-  }, [activePatientId])
+    if (!activePatientId || !isDoctor) {
+      setPatientGlucoseUnit('mg/dL')
+      return
+    }
+    const controller = new AbortController()
+    void usersApi.getUser(activePatientId, { signal: controller.signal })
+      .then(res => {
+        setPatientGlucoseUnit(res.data.settings?.units?.glucoseUnit ?? 'mg/dL')
+      })
+      .catch((err: unknown) => {
+        // Ignore cancellation — a newer request is already in flight
+        if ((err as { name?: string }).name !== 'CanceledError') {
+          setPatientGlucoseUnit('mg/dL')
+        }
+      })
+    return () => controller.abort()
+  }, [activePatientId, isDoctor])
 
   const activeGlucoseUnit = isDoctorViewingPatient ? patientGlucoseUnit : glucoseUnit
   const proposedProfileCount = useProposedProfileCount(viewingUserId)

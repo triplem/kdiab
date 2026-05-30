@@ -111,7 +111,8 @@ export const usersApi = {
     axiosInstance.patch<UserSettings>(`${BASE}/users/me/settings`, body),
   listUsers: (params?: { search?: string; page?: number; size?: number }) =>
     axiosInstance.get<UserResponse[]>(`${BASE}/users`, { params }),
-  getUser: (userId: string) => axiosInstance.get<UserResponse>(`${BASE}/users/${userId}`),
+  getUser: (userId: string, config?: import('axios').AxiosRequestConfig) =>
+    axiosInstance.get<UserResponse>(`${BASE}/users/${userId}`, config),
   createUser: (body: CreateUserRequest) =>
     axiosInstance.post<UserResponse>(`${BASE}/users`, body),
   updateUser: (userId: string, body: UpdateUserRequest) =>
