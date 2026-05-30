@@ -646,7 +646,8 @@
       "GLUCOSE_DISTRIBUTION": "Glukoseverteilung",
       "PROFILE": "Basalprofil",
       "CGP": "Umfassendes Glukosepentagon (CGP)",
-      "AUSWERTUNG": "Auswertung"
+      "AUSWERTUNG": "Auswertung",
+      "BASAL_RATE": "Basalraten-Diagramm"
     },
     "error": {
       "summary": "Zusammenfassung konnte nicht geladen werden.",
@@ -656,7 +657,8 @@
       "wochengraphik": "Wochengrafik konnte nicht geladen werden.",
       "glucoseDistribution": "Glukoseverteilung konnte nicht geladen werden.",
       "profile": "Profildaten konnten nicht geladen werden.",
-      "cgp": "CGP-Daten konnten nicht geladen werden."
+      "cgp": "CGP-Daten konnten nicht geladen werden.",
+      "basalRate": "Basalraten-Daten konnten nicht geladen werden."
     },
     "cgp": {
       "axisTor": "ToR (min/Tag)",
@@ -739,6 +741,50 @@
         "high": "Hoch",
         "veryHigh": "Sehr hoch"
       }
+    },
+    "dailyTrend": {
+      "hourHeader": "Stunde",
+      "tableAriaLabel": "Tagesverlauf Glukosetabelle",
+      "legendAriaLabel": "Farbzone-Legende",
+      "carbsIndicator": "KH",
+      "showingFirst": "Zeige erste {{shown}} von {{total}} Tagen",
+      "zone": {
+        "veryHypo": "Sehr niedrig",
+        "hypo": "Niedrig",
+        "inRange": "Im Zielbereich",
+        "hyper": "Hoch",
+        "veryHyper": "Sehr hoch"
+      }
+    },
+    "glucoseDist": {
+      "chartAriaLabel": "Histogramm der Glukoseverteilung in {{unit}}",
+      "chartCaption": "Häufigkeit der CGM-Messungen je Glukosebereich im gewählten Zeitraum.",
+      "zoneSummaryAriaLabel": "Zonenprozentzusammenfassung",
+      "readings": "Messungen",
+      "zoneVeryLow": "Sehr niedrig",
+      "zoneLow": "Niedrig",
+      "zoneInRange": "Im Zielbereich",
+      "zoneHigh": "Hoch",
+      "zoneVeryHigh": "Sehr hoch"
+    },
+    "profile": {
+      "noActiveProfile": "Kein aktives Insulinprofil für den gewählten Zeitraum gefunden.",
+      "insulinType": "Insulintyp",
+      "durationOfAction": "Wirkdauer",
+      "durationOfActionValue": "{{minutes}} min",
+      "basalRate": "Basalratenprofil",
+      "basalRateUnit": "IE/h",
+      "basalTableAriaLabel": "Basalratenprofil",
+      "basalChartAriaLabel": "Basalraten-Balkendiagramm",
+      "icr": "Kohlenhydrat-Faktor (KHF)",
+      "icrUnit": "IE pro 10 g KH",
+      "isf": "Korrekturfaktor (ISF)",
+      "isfUnitMgdl": "mg/dL pro IE",
+      "isfUnitMmol": "mmol/L pro IE",
+      "targets": "Glukose-Zielbereich",
+      "targetLow": "Unterer Zielwert",
+      "targetHigh": "Oberer Zielwert",
+      "startTime": "Startzeit"
     }
   }
 }
