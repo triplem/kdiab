@@ -34,7 +34,7 @@ export function AgpChartPage({ agp, glucoseUnit, tir }: Props) {
 
       {/* AGP percentile chart */}
       <AgpChart
-        hourlyData={agp.hourlyData}
+        bucketData={agp.bucketData}
         glucoseUnit={glucoseUnit}
         {...(agp.warnings !== undefined && { warnings: agp.warnings })}
         {...(agp.totalReadingCount !== undefined && { totalReadingCount: agp.totalReadingCount })}

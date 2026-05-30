@@ -23,23 +23,47 @@ import type { RequestArgs } from './base';
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS, BaseAPI, RequiredError, operationServerMap } from './base';
 
-export interface AgpHourlyData {
-    'hour': number;
+export interface AgpBucketData {
+    /**
+     * Start of the 5-minute bucket expressed as minutes since midnight (bucketIndex * 5). Values are 0, 5, 10, …, 1435.
+     */
+    'minuteOfDay': number;
+    /**
+     * 10th percentile glucose value (mg/dL) for this bucket. Null when the bucket has no readings.
+     */
     'p10'?: number | null;
+    /**
+     * 25th percentile glucose value (mg/dL) for this bucket. Null when the bucket has no readings.
+     */
     'p25'?: number | null;
+    /**
+     * Median (50th percentile) glucose value (mg/dL) for this bucket. Null when the bucket has no readings.
+     */
     'median'?: number | null;
+    /**
+     * 75th percentile glucose value (mg/dL) for this bucket. Null when the bucket has no readings.
+     */
     'p75'?: number | null;
+    /**
+     * 90th percentile glucose value (mg/dL) for this bucket. Null when the bucket has no readings.
+     */
     'p90'?: number | null;
+    /**
+     * Number of CGM readings in this bucket.
+     */
     'count'?: number;
 }
 export interface AgpResponse {
-    'hourlyData': Array<AgpHourlyData>;
     /**
-     * Total number of CGM readings used across all hourly buckets.
+     * 288 five-minute buckets covering a full day (minuteOfDay 0, 5, 10, …, 1435).
+     */
+    'bucketData': Array<AgpBucketData>;
+    /**
+     * Total number of CGM readings used across all 5-minute buckets.
      */
     'totalReadingCount'?: number;
     /**
-     * Number of distinct calendar days (UTC) with at least one CGM reading.
+     * Number of distinct calendar days (in the patient\'s local timezone) with at least one CGM reading.
      */
     'sensorWearDays'?: number;
     /**
@@ -58,6 +82,190 @@ export interface BasalSegment {
     'value': number;
 }
 /**
+ * Comprehensive Glucose Pentagon result with five axes, normalised scores, reference values, and PGR score.
+ */
+export interface CgpResponse {
+    /**
+     * Time out of range (minutes per day; glucose < 70 or > 180 mg/dL).
+     */
+    'tor': number;
+    /**
+     * Coefficient of variation (%).
+     */
+    'varK': number;
+    /**
+     * Mean hypo intensity (sum of (70-g)^2 × 5/1440 per reading / days).
+     */
+    'hypoIntensity': number;
+    /**
+     * Mean hyper intensity (sum of (g-180)^2 × 5/1440 per reading / days).
+     */
+    'hyperIntensity': number;
+    /**
+     * Mean CGM glucose in mg/dL.
+     */
+    'meanGlucose': number;
+    /**
+     * Normalised ToR axis value (0.0 = worst, 1.0 = healthy reference).
+     */
+    'normTor': number;
+    /**
+     * Normalised VarK axis value.
+     */
+    'normVarK': number;
+    /**
+     * Normalised HypoIntensity axis value.
+     */
+    'normHypo': number;
+    /**
+     * Normalised HyperIntensity axis value.
+     */
+    'normHyper': number;
+    /**
+     * Normalised MeanGlucose axis value.
+     */
+    'normMeanGlucose': number;
+    /**
+     * Reference ToR for healthy subjects without diabetes (min/day).
+     */
+    'refTor': number;
+    /**
+     * Reference CV for healthy subjects (%).
+     */
+    'refVarK': number;
+    /**
+     * Reference HypoIntensity for healthy subjects.
+     */
+    'refHypo': number;
+    /**
+     * Reference HyperIntensity for healthy subjects.
+     */
+    'refHyper': number;
+    /**
+     * Reference mean glucose for healthy subjects (mg/dL).
+     */
+    'refMeanGlucose': number;
+    /**
+     * PGR score (geometric mean of 5 normalised axes × 5, range 0–5).
+     */
+    'pgr': number;
+    /**
+     * PGR risk category.
+     */
+    'pgrRisk': CgpResponsePgrRiskEnum;
+    /**
+     * Data quality warnings.
+     */
+    'warnings': Array<string>;
+}
+
+export const CgpResponsePgrRiskEnum = {
+    VeryLow: 'very_low',
+    Low: 'low',
+    Moderate: 'moderate',
+    High: 'high',
+    VeryHigh: 'very_high',
+} as const;
+
+export type CgpResponsePgrRiskEnum = typeof CgpResponsePgrRiskEnum[keyof typeof CgpResponsePgrRiskEnum];
+
+/**
+ * Per-day CGM statistics row. Numeric fields are null when no CGM readings exist for that day.
+ */
+export interface DailyStatRow {
+    /**
+     * Calendar date in patient\'s local timezone (YYYY-MM-DD), or \"summary\" for the aggregate row.
+     */
+    'date': string;
+    /**
+     * Number of CGM readings on this day.
+     */
+    'cgmCount': number;
+    /**
+     * Percentage of readings below 54 mg/dL (Level 2 hypoglycaemia). Null if no readings.
+     */
+    'veryLowPercent'?: number | null;
+    /**
+     * Percentage of readings in 54–70 mg/dL (Level 1 hypoglycaemia). Null if no readings.
+     */
+    'lowPercent'?: number | null;
+    /**
+     * Percentage of readings in 70–180 mg/dL (target range). Null if no readings.
+     */
+    'inRangePercent'?: number | null;
+    /**
+     * Percentage of readings in 180–250 mg/dL (hyperglycaemia). Null if no readings.
+     */
+    'highPercent'?: number | null;
+    /**
+     * Percentage of readings above 250 mg/dL (severe hyperglycaemia). Null if no readings.
+     */
+    'veryHighPercent'?: number | null;
+    /**
+     * 25th percentile glucose in mg/dL. Null if no readings.
+     */
+    'p25'?: number | null;
+    /**
+     * Median (50th percentile) glucose in mg/dL. Null if no readings.
+     */
+    'median'?: number | null;
+    /**
+     * 75th percentile glucose in mg/dL. Null if no readings.
+     */
+    'p75'?: number | null;
+    /**
+     * Population standard deviation of glucose in mg/dL. Null if no readings.
+     */
+    'sd'?: number | null;
+    /**
+     * Estimated HbA1c (%) via DCCT formula — (mean_mg_dL + 46.7) / 28.7. Null if no readings.
+     */
+    'eHbA1c'?: number | null;
+}
+/**
+ * Per-day CGM statistics for the requested date range.
+ */
+export interface DailyStatsResponse {
+    /**
+     * One row per calendar day, ordered newest first. Includes days with zero readings.
+     */
+    'rows': Array<DailyStatRow>;
+    /**
+     * Average of all metrics across days with at least one CGM reading. date=\"summary\".
+     */
+    'summary': DailyStatRow;
+    /**
+     * Clinical or data-quality warnings (e.g. fewer than 14 days with readings).
+     */
+    'warnings'?: Array<string>;
+}
+/**
+ * All 24 hourly trend rows for a single calendar day.
+ */
+export interface DailyTrendDay {
+    /**
+     * Calendar date in YYYY-MM-DD format (patient\'s local timezone).
+     */
+    'date': string;
+    /**
+     * Exactly 24 entries, one per clock hour 0–23 in the patient\'s local timezone.
+     */
+    'hours': Array<HourlyTrendRow>;
+}
+/**
+ * Per-day × per-hour glucose trend result.
+ */
+export interface DailyTrendResponse {
+    /**
+     * One entry per calendar day with CGM data, ordered chronologically. Up to 365 days.
+     */
+    'days': Array<DailyTrendDay>;
+    /**
+     * Data quality warnings (e.g. range truncated to 365 days, carbohydrate data unavailable).
+     */
+    'warnings'?: Array<string>;
+}
+/**
  * Most recent timestamp for each device-related treatment type. Null if that treatment type has never been recorded for the user.
  */
 export interface DeviceAgeResponse {
@@ -73,6 +281,10 @@ export interface DeviceAgeResponse {
      * When the CGM sensor was last inserted (SENSOR_INSERT).
      */
     'sensorInsertedAt'?: string;
+    /**
+     * When the pump battery was last replaced (PUMP_BATTERY_CHANGE).
+     */
+    'batteryChangedAt'?: string;
 }
 /**
  * Most recent pump and uploader device status snapshot for a user.
@@ -162,6 +374,41 @@ export interface ErrorResponse {
      */
     'message': string;
 }
+/**
+ * A single histogram bucket covering a glucose value range.
+ */
+export interface GlucoseBucket {
+    /**
+     * Inclusive lower bound of this bucket (in the requested glucose unit).
+     */
+    'lowerBound': number;
+    /**
+     * Exclusive upper bound of this bucket (in the requested glucose unit).
+     */
+    'upperBound': number;
+    /**
+     * Number of CGM readings that fall in this bucket.
+     */
+    'count': number;
+}
+/**
+ * CGM glucose histogram with zone percentage breakdowns.
+ */
+export interface GlucoseDistributionResponse {
+    /**
+     * Histogram buckets ordered by lowerBound ascending.
+     */
+    'buckets': Array<GlucoseBucket>;
+    'zonePercents': ZonePercents;
+    /**
+     * Glucose unit used for bucket bounds (mg/dL or mmol/L).
+     */
+    'unit': string;
+    /**
+     * Total number of CGM readings included in the histogram.
+     */
+    'totalCount': number;
+}
 export interface Hba1cResponse {
     /**
      * Estimated HbA1c in % (DCCT formula). Null if no CGM readings.
@@ -181,6 +428,60 @@ export interface Hba1cResponse {
      */
     'warnings'?: Array<string>;
 }
+/**
+ * Hourly row in a daily trend result. All computed fields are null when no CGM readings exist for that hour.
+ */
+export interface HourlyTrendRow {
+    /**
+     * Clock hour in the patient\'s local timezone (0–23).
+     */
+    'hour': number;
+    /**
+     * Mean CGM glucose for this hour in mg/dL. Null if no readings.
+     */
+    'meanGlucose'?: number | null;
+    /**
+     * Percentage change relative to the previous hour\'s mean glucose. Null for hour 0 or when either hour has no data.
+     */
+    'trendPercent'?: number | null;
+    /**
+     * Trend classification: risingFast (≥+20%), rising (+10–20%), stable (±10%), falling (-10–20%), fallingFast (≤-20%). Null when trendPercent is null. 
+     */
+    'trendZone'?: HourlyTrendRowTrendZoneEnum | null;
+    /**
+     * Glucose zone based on meanGlucose. veryHypo (<54), hypo (54–70), inRange (70–180), hyper (180–250), veryHyper (>250), noData (no readings).
+     */
+    'zone'?: HourlyTrendRowZoneEnum | null;
+    /**
+     * Active basal rate from the patient\'s insulin pump profile for this hour (IU/h). Null if no profile is available.
+     */
+    'basalRateIePerH'?: number | null;
+    /**
+     * Total carbohydrates consumed in this hour (grams). 0 if no carb entries or treatments service unavailable.
+     */
+    'carbsG': number;
+}
+
+export const HourlyTrendRowTrendZoneEnum = {
+    RisingFast: 'risingFast',
+    Rising: 'rising',
+    Stable: 'stable',
+    Falling: 'falling',
+    FallingFast: 'fallingFast',
+} as const;
+
+export type HourlyTrendRowTrendZoneEnum = typeof HourlyTrendRowTrendZoneEnum[keyof typeof HourlyTrendRowTrendZoneEnum];
+export const HourlyTrendRowZoneEnum = {
+    VeryHypo: 'veryHypo',
+    Hypo: 'hypo',
+    InRange: 'inRange',
+    Hyper: 'hyper',
+    VeryHyper: 'veryHyper',
+    NoData: 'noData',
+} as const;
+
+export type HourlyTrendRowZoneEnum = typeof HourlyTrendRowZoneEnum[keyof typeof HourlyTrendRowZoneEnum];
+
 export interface ProfileSummary {
     'id': string;
     'status': string;
@@ -227,6 +528,19 @@ export interface ProfileSummary {
 export interface ProfilesResponse {
     'profiles': Array<ProfileSummary>;
 }
+/**
+ * Error envelope returned when the rate limit is exceeded
+ */
+export interface RateLimitErrorResponse {
+    /**
+     * Error code identifier
+     */
+    'code': string;
+    /**
+     * Human-readable error description
+     */
+    'message': string;
+}
 export interface RatioSegment {
     /**
      * Segment start time in HH:MM format.
@@ -236,6 +550,127 @@ export interface RatioSegment {
      * Ratio value (ICR in g/U; ISF in mg/dL/U or mmol/L/U depending on profile units).
      */
     'value': number;
+}
+/**
+ * Comprehensive report summary for PDF generation.
+ */
+export interface ReportSummaryResponse {
+    /**
+     * User display name (userId string when no display name is available).
+     */
+    'displayName': string;
+    /**
+     * Number of days covered by the report range.
+     */
+    'daysAnalysed': number;
+    /**
+     * Total CGM readings used for the analysis.
+     */
+    'cgmReadingCount': number;
+    /**
+     * Estimated CGM sampling interval in minutes.
+     */
+    'cgmIntervalMinutes': number;
+    /**
+     * Distinct insulin type names from all active/archived profiles in the period.
+     */
+    'insulinTypes': Array<string>;
+    /**
+     * Number of INSULIN_CHANGE treatment events in the period.
+     */
+    'insulinChanges': number;
+    /**
+     * Average days per cartridge (daysAnalysed / insulinChanges). Null if zero events.
+     */
+    'avgDaysPerCartridge'?: number | null;
+    /**
+     * Number of SITE_CHANGE treatment events in the period.
+     */
+    'siteChanges': number;
+    /**
+     * Average days per infusion site (daysAnalysed / siteChanges). Null if zero events.
+     */
+    'avgDaysPerSite'?: number | null;
+    /**
+     * Number of SENSOR_INSERT treatment events in the period.
+     */
+    'sensorInserts': number;
+    /**
+     * Average days per CGM sensor (daysAnalysed / sensorInserts). Null if zero events.
+     */
+    'avgDaysPerSensor'?: number | null;
+    /**
+     * Five-zone TIR using analysisLow/High thresholds from the active profile (falls back to 70/180).
+     */
+    'tirProfile': TirResult;
+    /**
+     * Five-zone TIR using fixed standard thresholds (54/70/180/250 mg/dL).
+     */
+    'tirStandard': TirResult;
+    /**
+     * Minimum CGM glucose value in mg/dL. Null if no readings.
+     */
+    'minGlucose'?: number | null;
+    /**
+     * Maximum CGM glucose value in mg/dL. Null if no readings.
+     */
+    'maxGlucose'?: number | null;
+    /**
+     * Mean CGM glucose in mg/dL. Null if no readings.
+     */
+    'meanGlucose'?: number | null;
+    /**
+     * Population standard deviation of CGM glucose in mg/dL. Null if fewer than 2 readings.
+     */
+    'sd'?: number | null;
+    /**
+     * Glycaemic Variability Index (SD / mean glucose, Peyser 2011). Null if no readings.
+     */
+    'gvi'?: number | null;
+    /**
+     * Patient Glycaemic Status (Rodbard 2011): mean_BG × (%time≥180 fraction) + (110 − mean_BG) × (%time≤70 fraction); floored at 0. 
+     */
+    'pgs'?: number | null;
+    /**
+     * Glycaemia Risk Index (Klonoff 2023): 3.0×(%<54) + 2.4×(%54–70) + 1.6×(%180–250) + 0.8×(%>250). Range 0–100. 
+     */
+    'gri'?: number | null;
+    /**
+     * GRI zone letter (A ≤20, B ≤40, C ≤60, D ≤80, E >80). Null if no readings.
+     */
+    'griZone'?: string | null;
+    /**
+     * Estimated HbA1c in % (DCCT/ADAG formula). Null if no readings.
+     */
+    'eHbA1c'?: number | null;
+    /**
+     * Average carbohydrate intake per day in grams. Null if no CARBS events.
+     */
+    'avgCarbsPerDayG'?: number | null;
+    /**
+     * Average bolus insulin per day in units (BOLUS + CORRECTION_BOLUS + COMBO_BOLUS).
+     */
+    'avgBolusPerDayIe'?: number | null;
+    /**
+     * Bolus insulin as a percentage of total daily insulin. Null if total is zero.
+     */
+    'bolusPercent'?: number | null;
+    /**
+     * Average basal insulin per day in units (scheduled basal adjusted by TEMP_BASAL events).
+     */
+    'avgBasalPerDayIe'?: number | null;
+    /**
+     * Basal insulin as a percentage of total daily insulin. Null if total is zero.
+     */
+    'basalPercent'?: number | null;
+    /**
+     * Average total daily insulin (bolus + basal). Null if no insulin data.
+     */
+    'avgTotalInsulinPerDayIe'?: number | null;
+    /**
+     * Data quality warnings. Includes \"lessThan14Days\" when the range is below 14 days.
+     */
+    'warnings': Array<string>;
 }
 export interface TargetSegment {
     /**
@@ -298,12 +733,266 @@ export interface TirBreakdown {
     'highCount': number;
     'totalCount': number;
 }
+/**
+ * Five-zone TIR breakdown with optional custom thresholds from the active basal profile.
+ */
+export interface TirResult {
+    /**
+     * Readings < 54 mg/dL (Level 2 hypoglycaemia).
+     */
+    'veryLow': TirZone;
+    /**
+     * Readings in the low zone (54 mg/dL to analysisLow or 70 mg/dL).
+     */
+    'low': TirZone;
+    /**
+     * Readings in the target range (analysisLow to analysisHigh, or 70–180 mg/dL).
+     */
+    'inRange': TirZone;
+    /**
+     * Readings in the high zone (analysisHigh to 250 mg/dL, or 180–250 mg/dL).
+     */
+    'high': TirZone;
+    /**
+     * Readings > 250 mg/dL (severe hyperglycaemia).
+     */
+    'veryHigh': TirZone;
+    /**
+     * True when the profile had no analysisLow/High and standard 70/180 thresholds were used.
+     */
+    'customTirFallback': boolean;
+}
+/**
+ * A single TIR zone with count and percentage.
+ */
+export interface TirZone {
+    /**
+     * Number of CGM readings in this zone.
+     */
+    'count': number;
+    /**
+     * Percentage of total readings represented by this bucket (0–100).
+     */
+    'percent': number;
+    /**
+     * Glucose zone this bucket belongs to (veryLow, low, inRange, high, veryHigh).
+     */
+    'zone'?: string;
+}
+/**
+ * Percentage of CGM readings in each glucose zone.
+ */
+export interface ZonePercents {
+    /**
+     * Percentage of readings below 54 mg/dL (Level 2 hypoglycaemia).
+     */
+    'veryLow': number;
+    /**
+     * Percentage of readings 54–70 mg/dL (Level 1 hypoglycaemia).
+     */
+    'low': number;
+    /**
+     * Percentage of readings 70–180 mg/dL (target range).
+     */
+    'inRange': number;
+    /**
+     * Percentage of readings 180–250 mg/dL (elevated).
+     */
+    'high': number;
+    /**
+     * Percentage of readings above 250 mg/dL (significantly elevated).
+     */
+    'veryHigh': number;
+}
 
 /**
  * AnalyticsApi - axios parameter creator
  */
 export const AnalyticsApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
+        /**
+         * Computes the five CGP axes from CGM data in the given timeframe (Vigersky et al. 2018): ToR (time out of range, min/day), VarK (CV %), HypoIntensity, HyperIntensity, MeanGlucose. All axes are normalised to 0.0 (worst) … 1.0 (healthy reference). The PGR score is the geometric mean of the five normalised values multiplied by 5. 
+         * @summary Comprehensive Glucose Pentagon (CGP) with PGR score
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetCgpGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getCgp: async (userId: string, from: string, to: string, glucoseUnit?: GetCgpGlucoseUnitEnum, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('getCgp', 'userId', userId)
+            // verify required parameter 'from' is not null or undefined
+            assertParamExists('getCgp', 'from', from)
+            // verify required parameter 'to' is not null or undefined
+            assertParamExists('getCgp', 'to', to)
+            const localVarPath = `/users/{userId}/analytics/cgp`
+                .replace('{userId}', encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (from !== undefined) {
+                localVarQueryParameter['from'] = (from as any instanceof Date) ?
+                    (from as any).toISOString() :
+                    from;
+            }
+
+            if (to !== undefined) {
+                localVarQueryParameter['to'] = (to as any instanceof Date) ?
+                    (to as any).toISOString() :
+                    to;
+            }
+
+            if (glucoseUnit !== undefined) {
+                localVarQueryParameter['glucoseUnit'] = glucoseUnit;
+            }
+
+            localVarHeaderParameter['Accept'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Returns a pre-computed per-day array with TIR zones, glucose percentiles (p25/p50/p75), standard deviation, reading count, and eHbA1c — all computed server-side in the patient\'s local timezone. Includes a summary row averaging each metric across days with at least one reading. Rows are ordered newest first. Up to 365 days. A warning is emitted if fewer than 14 days with readings are found. 
+         * @summary Per-day TIR, percentiles, SD, and eHbA1c statistics
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetDailyStatsGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDailyStats: async (userId: string, from: string, to: string, glucoseUnit?: GetDailyStatsGlucoseUnitEnum, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('getDailyStats', 'userId', userId)
+            // verify required parameter 'from' is not null or undefined
+            assertParamExists('getDailyStats', 'from', from)
+            // verify required parameter 'to' is not null or undefined
+            assertParamExists('getDailyStats', 'to', to)
+            const localVarPath = `/users/{userId}/analytics/daily-stats`
+                .replace('{userId}', encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (from !== undefined) {
+                localVarQueryParameter['from'] = (from as any instanceof Date) ?
+                    (from as any).toISOString() :
+                    from;
+            }
+
+            if (to !== undefined) {
+                localVarQueryParameter['to'] = (to as any instanceof Date) ?
+                    (to as any).toISOString() :
+                    to;
+            }
+
+            if (glucoseUnit !== undefined) {
+                localVarQueryParameter['glucoseUnit'] = glucoseUnit;
+            }
+
+            localVarHeaderParameter['Accept'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Returns a per-day array of 24 hourly rows. Each row contains the mean CGM glucose for that clock hour (in the patient\'s local timezone), the trend percentage relative to the previous hour, the trend zone classification, the glucose zone, the active basal rate from the patient\'s insulin pump profile, and the total carbohydrates consumed in that hour.  Trend zones: risingFast (≥+20%), rising (+10–20%), stable (±10%), falling (-10–20%), fallingFast (≤-20%). Glucose zones: veryHypo (<54), hypo (54–70), inRange (70–180), hyper (180–250), veryHyper (>250), noData (no readings). Hour 0 always has null trendPercent. Up to 365 days. Carbohydrate data is soft-optional: if the treatments service is unavailable carbsG defaults to 0 and a warning is emitted. 
+         * @summary Per-day × per-hour glucose trend table
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetDailyTrendGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDailyTrend: async (userId: string, from: string, to: string, glucoseUnit?: GetDailyTrendGlucoseUnitEnum, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('getDailyTrend', 'userId', userId)
+            // verify required parameter 'from' is not null or undefined
+            assertParamExists('getDailyTrend', 'from', from)
+            // verify required parameter 'to' is not null or undefined
+            assertParamExists('getDailyTrend', 'to', to)
+            const localVarPath = `/users/{userId}/analytics/daily-trend`
+                .replace('{userId}', encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (from !== undefined) {
+                localVarQueryParameter['from'] = (from as any instanceof Date) ?
+                    (from as any).toISOString() :
+                    from;
+            }
+
+            if (to !== undefined) {
+                localVarQueryParameter['to'] = (to as any instanceof Date) ?
+                    (to as any).toISOString() :
+                    to;
+            }
+
+            if (glucoseUnit !== undefined) {
+                localVarQueryParameter['glucoseUnit'] = glucoseUnit;
+            }
+
+            localVarHeaderParameter['Accept'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
         /**
          * Computes average and standard deviation of device component wear durations from treatment history. Requires at least 2 events of each type to compute a duration.
          * @summary Average device wear durations
@@ -347,6 +1036,128 @@ export const AnalyticsApiAxiosParamCreator = function (configuration?: Configura
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * Returns a histogram of CGM readings bucketed by glucose value (5 mg/dL bins for mg/dL, 0.3 mmol/L bins for mmol/L), together with zone percentage breakdowns (veryLow / low / inRange / high / veryHigh). Up to 365 days of data. 
+         * @summary CGM glucose histogram with zone percentages
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetGlucoseDistributionGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getGlucoseDistribution: async (userId: string, from: string, to: string, glucoseUnit?: GetGlucoseDistributionGlucoseUnitEnum, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('getGlucoseDistribution', 'userId', userId)
+            // verify required parameter 'from' is not null or undefined
+            assertParamExists('getGlucoseDistribution', 'from', from)
+            // verify required parameter 'to' is not null or undefined
+            assertParamExists('getGlucoseDistribution', 'to', to)
+            const localVarPath = `/users/{userId}/analytics/glucose-distribution`
+                .replace('{userId}', encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (from !== undefined) {
+                localVarQueryParameter['from'] = (from as any instanceof Date) ?
+                    (from as any).toISOString() :
+                    from;
+            }
+
+            if (to !== undefined) {
+                localVarQueryParameter['to'] = (to as any instanceof Date) ?
+                    (to as any).toISOString() :
+                    to;
+            }
+
+            if (glucoseUnit !== undefined) {
+                localVarQueryParameter['glucoseUnit'] = glucoseUnit;
+            }
+
+            localVarHeaderParameter['Accept'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Returns a single pre-computed summary with eHbA1c, GVI, PGS, GRI, five-zone TIR (profile and standard), treatment averages, and pump event counts for the given timeframe.
+         * @summary Comprehensive report summary for PDF generation
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetReportSummaryGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getReportSummary: async (userId: string, from: string, to: string, glucoseUnit?: GetReportSummaryGlucoseUnitEnum, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'userId' is not null or undefined
+            assertParamExists('getReportSummary', 'userId', userId)
+            // verify required parameter 'from' is not null or undefined
+            assertParamExists('getReportSummary', 'from', from)
+            // verify required parameter 'to' is not null or undefined
+            assertParamExists('getReportSummary', 'to', to)
+            const localVarPath = `/users/{userId}/analytics/report-summary`
+                .replace('{userId}', encodeURIComponent(String(userId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (from !== undefined) {
+                localVarQueryParameter['from'] = (from as any instanceof Date) ?
+                    (from as any).toISOString() :
+                    from;
+            }
+
+            if (to !== undefined) {
+                localVarQueryParameter['to'] = (to as any instanceof Date) ?
+                    (to as any).toISOString() :
+                    to;
+            }
+
+            if (glucoseUnit !== undefined) {
+                localVarQueryParameter['glucoseUnit'] = glucoseUnit;
+            }
+
+            localVarHeaderParameter['Accept'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -356,6 +1167,54 @@ export const AnalyticsApiAxiosParamCreator = function (configuration?: Configura
 export const AnalyticsApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = AnalyticsApiAxiosParamCreator(configuration)
     return {
+        /**
+         * Computes the five CGP axes from CGM data in the given timeframe (Vigersky et al. 2018): ToR (time out of range, min/day), VarK (CV %), HypoIntensity, HyperIntensity, MeanGlucose. All axes are normalised to 0.0 (worst) … 1.0 (healthy reference). The PGR score is the geometric mean of the five normalised values multiplied by 5. 
+         * @summary Comprehensive Glucose Pentagon (CGP) with PGR score
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetCgpGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getCgp(userId: string, from: string, to: string, glucoseUnit?: GetCgpGlucoseUnitEnum, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<CgpResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getCgp(userId, from, to, glucoseUnit, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AnalyticsApi.getCgp']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Returns a pre-computed per-day array with TIR zones, glucose percentiles (p25/p50/p75), standard deviation, reading count, and eHbA1c — all computed server-side in the patient\'s local timezone. Includes a summary row averaging each metric across days with at least one reading. Rows are ordered newest first. Up to 365 days. A warning is emitted if fewer than 14 days with readings are found. 
+         * @summary Per-day TIR, percentiles, SD, and eHbA1c statistics
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetDailyStatsGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDailyStats(userId: string, from: string, to: string, glucoseUnit?: GetDailyStatsGlucoseUnitEnum, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<DailyStatsResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDailyStats(userId, from, to, glucoseUnit, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AnalyticsApi.getDailyStats']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Returns a per-day array of 24 hourly rows. Each row contains the mean CGM glucose for that clock hour (in the patient\'s local timezone), the trend percentage relative to the previous hour, the trend zone classification, the glucose zone, the active basal rate from the patient\'s insulin pump profile, and the total carbohydrates consumed in that hour.  Trend zones: risingFast (≥+20%), rising (+10–20%), stable (±10%), falling (-10–20%), fallingFast (≤-20%). Glucose zones: veryHypo (<54), hypo (54–70), inRange (70–180), hyper (180–250), veryHyper (>250), noData (no readings). Hour 0 always has null trendPercent. Up to 365 days. Carbohydrate data is soft-optional: if the treatments service is unavailable carbsG defaults to 0 and a warning is emitted. 
+         * @summary Per-day × per-hour glucose trend table
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetDailyTrendGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getDailyTrend(userId: string, from: string, to: string, glucoseUnit?: GetDailyTrendGlucoseUnitEnum, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<DailyTrendResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getDailyTrend(userId, from, to, glucoseUnit, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AnalyticsApi.getDailyTrend']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
         /**
          * Computes average and standard deviation of device component wear durations from treatment history. Requires at least 2 events of each type to compute a duration.
          * @summary Average device wear durations
@@ -370,6 +1229,38 @@ export const AnalyticsApiFp = function(configuration?: Configuration) {
             const localVarOperationServerBasePath = operationServerMap['AnalyticsApi.getDeviceUsageAnalytics']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
+        /**
+         * Returns a histogram of CGM readings bucketed by glucose value (5 mg/dL bins for mg/dL, 0.3 mmol/L bins for mmol/L), together with zone percentage breakdowns (veryLow / low / inRange / high / veryHigh). Up to 365 days of data. 
+         * @summary CGM glucose histogram with zone percentages
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetGlucoseDistributionGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getGlucoseDistribution(userId: string, from: string, to: string, glucoseUnit?: GetGlucoseDistributionGlucoseUnitEnum, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GlucoseDistributionResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getGlucoseDistribution(userId, from, to, glucoseUnit, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AnalyticsApi.getGlucoseDistribution']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Returns a single pre-computed summary with eHbA1c, GVI, PGS, GRI, five-zone TIR (profile and standard), treatment averages, and pump event counts for the given timeframe.
+         * @summary Comprehensive report summary for PDF generation
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetReportSummaryGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getReportSummary(userId: string, from: string, to: string, glucoseUnit?: GetReportSummaryGlucoseUnitEnum, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<ReportSummaryResponse>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getReportSummary(userId, from, to, glucoseUnit, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AnalyticsApi.getReportSummary']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
     }
 };
 
@@ -379,6 +1270,45 @@ export const AnalyticsApiFp = function(configuration?: Configuration) {
 export const AnalyticsApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
     const localVarFp = AnalyticsApiFp(configuration)
     return {
+        /**
+         * Computes the five CGP axes from CGM data in the given timeframe (Vigersky et al. 2018): ToR (time out of range, min/day), VarK (CV %), HypoIntensity, HyperIntensity, MeanGlucose. All axes are normalised to 0.0 (worst) … 1.0 (healthy reference). The PGR score is the geometric mean of the five normalised values multiplied by 5. 
+         * @summary Comprehensive Glucose Pentagon (CGP) with PGR score
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetCgpGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getCgp(userId: string, from: string, to: string, glucoseUnit?: GetCgpGlucoseUnitEnum, options?: RawAxiosRequestConfig): AxiosPromise<CgpResponse> {
+            return localVarFp.getCgp(userId, from, to, glucoseUnit, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns a pre-computed per-day array with TIR zones, glucose percentiles (p25/p50/p75), standard deviation, reading count, and eHbA1c — all computed server-side in the patient\'s local timezone. Includes a summary row averaging each metric across days with at least one reading. Rows are ordered newest first. Up to 365 days. A warning is emitted if fewer than 14 days with readings are found. 
+         * @summary Per-day TIR, percentiles, SD, and eHbA1c statistics
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetDailyStatsGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDailyStats(userId: string, from: string, to: string, glucoseUnit?: GetDailyStatsGlucoseUnitEnum, options?: RawAxiosRequestConfig): AxiosPromise<DailyStatsResponse> {
+            return localVarFp.getDailyStats(userId, from, to, glucoseUnit, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns a per-day array of 24 hourly rows. Each row contains the mean CGM glucose for that clock hour (in the patient\'s local timezone), the trend percentage relative to the previous hour, the trend zone classification, the glucose zone, the active basal rate from the patient\'s insulin pump profile, and the total carbohydrates consumed in that hour.  Trend zones: risingFast (≥+20%), rising (+10–20%), stable (±10%), falling (-10–20%), fallingFast (≤-20%). Glucose zones: veryHypo (<54), hypo (54–70), inRange (70–180), hyper (180–250), veryHyper (>250), noData (no readings). Hour 0 always has null trendPercent. Up to 365 days. Carbohydrate data is soft-optional: if the treatments service is unavailable carbsG defaults to 0 and a warning is emitted. 
+         * @summary Per-day × per-hour glucose trend table
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetDailyTrendGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getDailyTrend(userId: string, from: string, to: string, glucoseUnit?: GetDailyTrendGlucoseUnitEnum, options?: RawAxiosRequestConfig): AxiosPromise<DailyTrendResponse> {
+            return localVarFp.getDailyTrend(userId, from, to, glucoseUnit, options).then((request) => request(axios, basePath));
+        },
         /**
          * Computes average and standard deviation of device component wear durations from treatment history. Requires at least 2 events of each type to compute a duration.
          * @summary Average device wear durations
@@ -390,6 +1320,32 @@ export const AnalyticsApiFactory = function (configuration?: Configuration, base
         getDeviceUsageAnalytics(userId: string, days?: number, options?: RawAxiosRequestConfig): AxiosPromise<DeviceUsageResult> {
             return localVarFp.getDeviceUsageAnalytics(userId, days, options).then((request) => request(axios, basePath));
         },
+        /**
+         * Returns a histogram of CGM readings bucketed by glucose value (5 mg/dL bins for mg/dL, 0.3 mmol/L bins for mmol/L), together with zone percentage breakdowns (veryLow / low / inRange / high / veryHigh). Up to 365 days of data. 
+         * @summary CGM glucose histogram with zone percentages
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetGlucoseDistributionGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getGlucoseDistribution(userId: string, from: string, to: string, glucoseUnit?: GetGlucoseDistributionGlucoseUnitEnum, options?: RawAxiosRequestConfig): AxiosPromise<GlucoseDistributionResponse> {
+            return localVarFp.getGlucoseDistribution(userId, from, to, glucoseUnit, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns a single pre-computed summary with eHbA1c, GVI, PGS, GRI, five-zone TIR (profile and standard), treatment averages, and pump event counts for the given timeframe.
+         * @summary Comprehensive report summary for PDF generation
+         * @param {string} userId 
+         * @param {string} from Start of timeframe (ISO-8601 datetime)
+         * @param {string} to End of timeframe (ISO-8601 datetime)
+         * @param {GetReportSummaryGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getReportSummary(userId: string, from: string, to: string, glucoseUnit?: GetReportSummaryGlucoseUnitEnum, options?: RawAxiosRequestConfig): AxiosPromise<ReportSummaryResponse> {
+            return localVarFp.getReportSummary(userId, from, to, glucoseUnit, options).then((request) => request(axios, basePath));
+        },
     };
 };
 
@@ -397,6 +1353,48 @@ export const AnalyticsApiFactory = function (configuration?: Configuration, base
  * AnalyticsApi - object-oriented interface
  */
 export class AnalyticsApi extends BaseAPI {
+    /**
+     * Computes the five CGP axes from CGM data in the given timeframe (Vigersky et al. 2018): ToR (time out of range, min/day), VarK (CV %), HypoIntensity, HyperIntensity, MeanGlucose. All axes are normalised to 0.0 (worst) … 1.0 (healthy reference). The PGR score is the geometric mean of the five normalised values multiplied by 5. 
+     * @summary Comprehensive Glucose Pentagon (CGP) with PGR score
+     * @param {string} userId 
+     * @param {string} from Start of timeframe (ISO-8601 datetime)
+     * @param {string} to End of timeframe (ISO-8601 datetime)
+     * @param {GetCgpGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getCgp(userId: string, from: string, to: string, glucoseUnit?: GetCgpGlucoseUnitEnum, options?: RawAxiosRequestConfig) {
+        return AnalyticsApiFp(this.configuration).getCgp(userId, from, to, glucoseUnit, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns a pre-computed per-day array with TIR zones, glucose percentiles (p25/p50/p75), standard deviation, reading count, and eHbA1c — all computed server-side in the patient\'s local timezone. Includes a summary row averaging each metric across days with at least one reading. Rows are ordered newest first. Up to 365 days. A warning is emitted if fewer than 14 days with readings are found. 
+     * @summary Per-day TIR, percentiles, SD, and eHbA1c statistics
+     * @param {string} userId 
+     * @param {string} from Start of timeframe (ISO-8601 datetime)
+     * @param {string} to End of timeframe (ISO-8601 datetime)
+     * @param {GetDailyStatsGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getDailyStats(userId: string, from: string, to: string, glucoseUnit?: GetDailyStatsGlucoseUnitEnum, options?: RawAxiosRequestConfig) {
+        return AnalyticsApiFp(this.configuration).getDailyStats(userId, from, to, glucoseUnit, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns a per-day array of 24 hourly rows. Each row contains the mean CGM glucose for that clock hour (in the patient\'s local timezone), the trend percentage relative to the previous hour, the trend zone classification, the glucose zone, the active basal rate from the patient\'s insulin pump profile, and the total carbohydrates consumed in that hour.  Trend zones: risingFast (≥+20%), rising (+10–20%), stable (±10%), falling (-10–20%), fallingFast (≤-20%). Glucose zones: veryHypo (<54), hypo (54–70), inRange (70–180), hyper (180–250), veryHyper (>250), noData (no readings). Hour 0 always has null trendPercent. Up to 365 days. Carbohydrate data is soft-optional: if the treatments service is unavailable carbsG defaults to 0 and a warning is emitted. 
+     * @summary Per-day × per-hour glucose trend table
+     * @param {string} userId 
+     * @param {string} from Start of timeframe (ISO-8601 datetime)
+     * @param {string} to End of timeframe (ISO-8601 datetime)
+     * @param {GetDailyTrendGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getDailyTrend(userId: string, from: string, to: string, glucoseUnit?: GetDailyTrendGlucoseUnitEnum, options?: RawAxiosRequestConfig) {
+        return AnalyticsApiFp(this.configuration).getDailyTrend(userId, from, to, glucoseUnit, options).then((request) => request(this.axios, this.basePath));
+    }
+
     /**
      * Computes average and standard deviation of device component wear durations from treatment history. Requires at least 2 events of each type to compute a duration.
      * @summary Average device wear durations
@@ -408,8 +1406,61 @@ export class AnalyticsApi extends BaseAPI {
     public getDeviceUsageAnalytics(userId: string, days?: number, options?: RawAxiosRequestConfig) {
         return AnalyticsApiFp(this.configuration).getDeviceUsageAnalytics(userId, days, options).then((request) => request(this.axios, this.basePath));
     }
+
+    /**
+     * Returns a histogram of CGM readings bucketed by glucose value (5 mg/dL bins for mg/dL, 0.3 mmol/L bins for mmol/L), together with zone percentage breakdowns (veryLow / low / inRange / high / veryHigh). Up to 365 days of data. 
+     * @summary CGM glucose histogram with zone percentages
+     * @param {string} userId 
+     * @param {string} from Start of timeframe (ISO-8601 datetime)
+     * @param {string} to End of timeframe (ISO-8601 datetime)
+     * @param {GetGlucoseDistributionGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getGlucoseDistribution(userId: string, from: string, to: string, glucoseUnit?: GetGlucoseDistributionGlucoseUnitEnum, options?: RawAxiosRequestConfig) {
+        return AnalyticsApiFp(this.configuration).getGlucoseDistribution(userId, from, to, glucoseUnit, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns a single pre-computed summary with eHbA1c, GVI, PGS, GRI, five-zone TIR (profile and standard), treatment averages, and pump event counts for the given timeframe.
+     * @summary Comprehensive report summary for PDF generation
+     * @param {string} userId 
+     * @param {string} from Start of timeframe (ISO-8601 datetime)
+     * @param {string} to End of timeframe (ISO-8601 datetime)
+     * @param {GetReportSummaryGlucoseUnitEnum} [glucoseUnit] Glucose unit for display and HbA1c calculation (mg/dL or mmol/L). Defaults to mg/dL.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getReportSummary(userId: string, from: string, to: string, glucoseUnit?: GetReportSummaryGlucoseUnitEnum, options?: RawAxiosRequestConfig) {
+        return AnalyticsApiFp(this.configuration).getReportSummary(userId, from, to, glucoseUnit, options).then((request) => request(this.axios, this.basePath));
+    }
 }
 
+export const GetCgpGlucoseUnitEnum = {
+    MgDL: 'mg/dL',
+    MmolL: 'mmol/L',
+} as const;
+export type GetCgpGlucoseUnitEnum = typeof GetCgpGlucoseUnitEnum[keyof typeof GetCgpGlucoseUnitEnum];
+export const GetDailyStatsGlucoseUnitEnum = {
+    MgDL: 'mg/dL',
+    MmolL: 'mmol/L',
+} as const;
+export type GetDailyStatsGlucoseUnitEnum = typeof GetDailyStatsGlucoseUnitEnum[keyof typeof GetDailyStatsGlucoseUnitEnum];
+export const GetDailyTrendGlucoseUnitEnum = {
+    MgDL: 'mg/dL',
+    MmolL: 'mmol/L',
+} as const;
+export type GetDailyTrendGlucoseUnitEnum = typeof GetDailyTrendGlucoseUnitEnum[keyof typeof GetDailyTrendGlucoseUnitEnum];
+export const GetGlucoseDistributionGlucoseUnitEnum = {
+    MgDL: 'mg/dL',
+    MmolL: 'mmol/L',
+} as const;
+export type GetGlucoseDistributionGlucoseUnitEnum = typeof GetGlucoseDistributionGlucoseUnitEnum[keyof typeof GetGlucoseDistributionGlucoseUnitEnum];
+export const GetReportSummaryGlucoseUnitEnum = {
+    MgDL: 'mg/dL',
+    MmolL: 'mmol/L',
+} as const;
+export type GetReportSummaryGlucoseUnitEnum = typeof GetReportSummaryGlucoseUnitEnum[keyof typeof GetReportSummaryGlucoseUnitEnum];
 
 
 /**
@@ -474,8 +1525,8 @@ export const DefaultApiAxiosParamCreator = function (configuration?: Configurati
             };
         },
         /**
-         * Groups CGM readings by UTC hour (0–23) and returns p10/p25/p50/p75/p90 percentiles for each bucket. Buckets with no readings have null percentile values.
-         * @summary Ambulatory Glucose Profile — hourly percentiles
+         * Groups CGM readings by 5-minute bucket of the patient\'s local day and returns p10/p25/p50/p75/p90 percentiles for each bucket. Produces 288 buckets (0–1435 in steps of 5). Buckets with no readings have null percentile values.
+         * @summary Ambulatory Glucose Profile — 5-minute percentiles
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
          * @param {string} to End of timeframe (ISO-8601 datetime)
@@ -752,8 +1803,8 @@ export const DefaultApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Groups CGM readings by UTC hour (0–23) and returns p10/p25/p50/p75/p90 percentiles for each bucket. Buckets with no readings have null percentile values.
-         * @summary Ambulatory Glucose Profile — hourly percentiles
+         * Groups CGM readings by 5-minute bucket of the patient\'s local day and returns p10/p25/p50/p75/p90 percentiles for each bucket. Produces 288 buckets (0–1435 in steps of 5). Buckets with no readings have null percentile values.
+         * @summary Ambulatory Glucose Profile — 5-minute percentiles
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
          * @param {string} to End of timeframe (ISO-8601 datetime)
@@ -846,8 +1897,8 @@ export const DefaultApiFactory = function (configuration?: Configuration, basePa
             return localVarFp.getActiveProfiles(userId, from, to, options).then((request) => request(axios, basePath));
         },
         /**
-         * Groups CGM readings by UTC hour (0–23) and returns p10/p25/p50/p75/p90 percentiles for each bucket. Buckets with no readings have null percentile values.
-         * @summary Ambulatory Glucose Profile — hourly percentiles
+         * Groups CGM readings by 5-minute bucket of the patient\'s local day and returns p10/p25/p50/p75/p90 percentiles for each bucket. Produces 288 buckets (0–1435 in steps of 5). Buckets with no readings have null percentile values.
+         * @summary Ambulatory Glucose Profile — 5-minute percentiles
          * @param {string} userId 
          * @param {string} from Start of timeframe (ISO-8601 datetime)
          * @param {string} to End of timeframe (ISO-8601 datetime)
@@ -924,8 +1975,8 @@ export class DefaultApi extends BaseAPI {
     }
 
     /**
-     * Groups CGM readings by UTC hour (0–23) and returns p10/p25/p50/p75/p90 percentiles for each bucket. Buckets with no readings have null percentile values.
-     * @summary Ambulatory Glucose Profile — hourly percentiles
+     * Groups CGM readings by 5-minute bucket of the patient\'s local day and returns p10/p25/p50/p75/p90 percentiles for each bucket. Produces 288 buckets (0–1435 in steps of 5). Buckets with no readings have null percentile values.
+     * @summary Ambulatory Glucose Profile — 5-minute percentiles
      * @param {string} userId 
      * @param {string} from Start of timeframe (ISO-8601 datetime)
      * @param {string} to End of timeframe (ISO-8601 datetime)

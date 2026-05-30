@@ -10,7 +10,7 @@ import {
   Legend,
 } from 'recharts'
 import { useTranslation } from 'react-i18next'
-import type { AgpHourlyData } from '../../api/analyzeApi'
+import type { AgpBucketData } from '../../api/analyzeApi'
 
 // Inline SVG pattern defs are rendered outside the Recharts tree so they are
 // accessible from the `fill="url(#...)"` refs inside the AreaChart SVG.
@@ -57,7 +57,7 @@ function AgpPatternDefs() {
 }
 
 interface Props {
-  hourlyData: AgpHourlyData[]
+  bucketData: AgpBucketData[]
   glucoseUnit: string
   warnings?: string[]
   totalReadingCount?: number
@@ -71,30 +71,35 @@ function convert(val: number, unit: string): number {
   return Math.round(val)
 }
 
-export function AgpChart({ hourlyData, glucoseUnit, warnings, totalReadingCount, sensorWearDays }: Props) {
+export function AgpChart({ bucketData, glucoseUnit, warnings, totalReadingCount, sensorWearDays }: Props) {
   const { t } = useTranslation()
   const yLabel = glucoseUnit === 'mmol/L' ? 'mmol/L' : 'mg/dL'
   const tirLow = convert(70, glucoseUnit)
   const tirHigh = convert(180, glucoseUnit)
 
-  const chartData = (hourlyData ?? [])
+  const chartData = (bucketData ?? [])
     .filter(
       (d): d is typeof d & { p10: number; p25: number; median: number; p75: number; p90: number } =>
-        d.median !== null &&
-        d.p10 !== null &&
-        d.p25 !== null &&
-        d.p75 !== null &&
-        d.p90 !== null,
+        d.median != null &&
+        d.p10 != null &&
+        d.p25 != null &&
+        d.p75 != null &&
+        d.p90 != null,
     )
     .map(d => ({
-      hour: d.hour,
+      minuteOfDay: d.minuteOfDay,
       p10_p90: [convert(d.p10, glucoseUnit), convert(d.p90, glucoseUnit)] as [number, number],
       p25_p75: [convert(d.p25, glucoseUnit), convert(d.p75, glucoseUnit)] as [number, number],
       median: convert(d.median, glucoseUnit),
       count: d.count,
     }))
 
-  const formatHour = (h: number) => `${String(h).padStart(2, '0')}:00`
+  // Format minuteOfDay (0..1435) as HH:00 label
+  const formatMinuteOfDay = (m: number) =>
+    `${String((m / 60) | 0).padStart(2, '0')}:00`
+
+  // Ticks at every 3 hours: 0, 180, 360, ..., 1440
+  const xTicks = Array.from({ length: 9 }, (_, i) => i * 180)
 
   return (
     <div className="card">
@@ -138,15 +143,16 @@ export function AgpChart({ hourlyData, glucoseUnit, warnings, totalReadingCount,
           <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 10, bottom: 10 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
-              dataKey="hour"
-              tickFormatter={formatHour}
+              dataKey="minuteOfDay"
+              ticks={xTicks}
+              tickFormatter={formatMinuteOfDay}
               label={{ value: t('analytics.agpHour'), position: 'insideBottom', offset: -5, fill: 'var(--text-secondary)' }}
             />
             <YAxis
               label={{ value: yLabel, angle: -90, position: 'insideLeft', offset: 10, fill: 'var(--text-secondary)' }}
             />
             <Tooltip
-              labelFormatter={(h: unknown) => formatHour(typeof h === 'number' ? h : 0)}
+              labelFormatter={(m: unknown) => formatMinuteOfDay(typeof m === 'number' ? m : 0)}
               formatter={(val: unknown, name: unknown) => {
                 if (Array.isArray(val)) return [`${String(val[0])}–${String(val[1])} ${yLabel}`, String(name ?? '')]
                 return [`${String(val)} ${yLabel}`, String(name ?? '')]
