@@ -318,6 +318,20 @@ class BffRoutesTest {
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 
+    // ── Graceful degradation: pre-fetch throws ────────────────────────────────
+
+    @Test
+    fun `hba1c - 200 when preFetchCgmMeasures throws`() = routeTest { _, svc, _, _ ->
+        // preFetchCgmMeasures failure is swallowed by the service's runCatching —
+        // the route should still complete successfully using the threshold values.
+        coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
+        coEvery { svc.preFetchCgmMeasures(any(), any(), any(), any(), any()) } throws
+            RuntimeException("upstream measures service unavailable")
+        coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
+        val resp = client.get(hba1cUrl(SARAH_ID)) { bearerAuth(sarahToken) }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
     // ── Missing query params (400) ────────────────────────────────────────────
 
     @Test

@@ -11,7 +11,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.supervisorScope
 import kotlinx.datetime.TimeZone
 import org.javafreedom.kdiab.analyze.api.Paths
 import org.javafreedom.kdiab.analyze.adapters.outbound.http.TreatmentsClient
@@ -59,29 +59,14 @@ fun Route.bffRoutes(
             auditDoctorAccess(ctx, "analyze.hba1c")
             val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
 
-            // getAnalysisThresholds (→ kdiab-users) and the CGM fetch (→ kdiab-measures) are
-            // independent. Run them concurrently; the pre-fetch warms the in-process cache so
-            // the subsequent getHba1c call is served from memory without a second network round-trip.
-            val (tirLow, tirHigh) = coroutineScope {
-                val thresholdsDeferred = async {
-                    analyticsService.getAnalysisThresholds(
-                        userId = ctx.targetUserId.toString(),
-                        authorization = ctx.authorization,
-                        correlationId = ctx.correlationId,
-                    )
-                }
-                val preFetchDeferred = async {
-                    analyticsService.preFetchCgmMeasures(
-                        userId = ctx.targetUserId.toString(),
-                        from = from,
-                        to = to,
-                        authorization = ctx.authorization,
-                        correlationId = ctx.correlationId,
-                    )
-                }
-                preFetchDeferred.await()
-                thresholdsDeferred.await()
-            }
+            val (tirLow, tirHigh) = preFetchThresholds(
+                analyticsService = analyticsService,
+                userId = ctx.targetUserId.toString(),
+                from = from,
+                to = to,
+                authorization = ctx.authorization,
+                correlationId = ctx.correlationId,
+            )
 
             val result = analyticsService.getHba1c(
                 userId = ctx.targetUserId.toString(),
@@ -102,29 +87,14 @@ fun Route.bffRoutes(
             auditDoctorAccess(ctx, "analyze.agp")
             val glucoseUnit = call.request.queryParameters["glucoseUnit"] ?: "mg/dL"
 
-            // getAnalysisThresholds (→ kdiab-users) and the CGM fetch (→ kdiab-measures) are
-            // independent. Run them concurrently; the pre-fetch warms the in-process cache so
-            // the subsequent getAgp call is served from memory without a second network round-trip.
-            val (tirLow, tirHigh) = coroutineScope {
-                val thresholdsDeferred = async {
-                    analyticsService.getAnalysisThresholds(
-                        userId = ctx.targetUserId.toString(),
-                        authorization = ctx.authorization,
-                        correlationId = ctx.correlationId,
-                    )
-                }
-                val preFetchDeferred = async {
-                    analyticsService.preFetchCgmMeasures(
-                        userId = ctx.targetUserId.toString(),
-                        from = from,
-                        to = to,
-                        authorization = ctx.authorization,
-                        correlationId = ctx.correlationId,
-                    )
-                }
-                preFetchDeferred.await()
-                thresholdsDeferred.await()
-            }
+            val (tirLow, tirHigh) = preFetchThresholds(
+                analyticsService = analyticsService,
+                userId = ctx.targetUserId.toString(),
+                from = from,
+                to = to,
+                authorization = ctx.authorization,
+                correlationId = ctx.correlationId,
+            )
 
             val timezone = runCatching { TimeZone.of(ctx.principal.timezone) }
                 .onFailure {
@@ -384,6 +354,47 @@ private suspend fun handleDeviceStatus(call: ApplicationCall, treatmentsClient: 
     } else {
         call.respond(deviceStatus.toResponse())
     }
+}
+
+/**
+ * Fires [AnalyticsOperation.getAnalysisThresholds] and [AnalyticsOperation.preFetchCgmMeasures]
+ * concurrently. The pre-fetch warms the in-process CGM cache so the subsequent getHba1c / getAgp
+ * call is served from memory without a second network round-trip. Its result (Unit) is
+ * intentionally discarded — upstream failures are isolated by supervisorScope so a failing
+ * pre-fetch never cancels the thresholds fetch.
+ *
+ * Extracted from getHba1c and getAgp route handlers to eliminate duplication.
+ */
+@Suppress("LongParameterList") // all six parameters are required; no natural grouping exists
+private suspend fun preFetchThresholds(
+    analyticsService: AnalyticsOperation,
+    userId: String,
+    from: String,
+    to: String,
+    authorization: String,
+    correlationId: String,
+): Pair<Double, Double> = supervisorScope {
+    // getAnalysisThresholds (→ kdiab-users) and the CGM fetch (→ kdiab-measures) are
+    // independent. supervisorScope ensures a pre-fetch failure does not cancel thresholdsDeferred.
+    val thresholdsDeferred = async {
+        analyticsService.getAnalysisThresholds(
+            userId = userId,
+            authorization = authorization,
+            correlationId = correlationId,
+        )
+    }
+    val preFetchDeferred = async {
+        analyticsService.preFetchCgmMeasures(
+            userId = userId,
+            from = from,
+            to = to,
+            authorization = authorization,
+            correlationId = correlationId,
+        )
+    }
+    // Warm cache; result discarded — upstream failures must not abort the request.
+    runCatching { preFetchDeferred.await() }
+    thresholdsDeferred.await()
 }
 
 private fun auditDoctorAccess(ctx: RequestContext, action: String) {
