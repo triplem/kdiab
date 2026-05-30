@@ -209,7 +209,11 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
             </div>
           )}
           {cgmAgeMin !== null && cgmAgeMin > CGM_STALE_MIN && (
-            <div style={{ ...cgmBannerStyle, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--accent-warning)' }}>
+            <div
+              role="alert"
+              aria-live="assertive"
+              style={{ ...cgmBannerStyle, background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)', color: 'var(--accent-warning)' }}
+            >
               {t('doseCalc.cgmStale', { age: cgmAgeMin })}
             </div>
           )}
