@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { profilesApi } from '../../../api/profilesApi'
@@ -24,14 +24,17 @@ export function BasalForm({ initialData, validationError, userId, onDataChange }
   const [basalInsulin, setBasalInsulin] = useState(initialData?.insulin != null ? String(initialData.insulin) : '')
   const [basalInsulinType, setBasalInsulinType] = useState(initialData?.insulinType ?? '')
   const [basalDurationHours, setBasalDurationHours] = useState(initialDurationHours)
+  // Stable ref to avoid stale closure in useEffect without suppressing exhaustive-deps
+  const onDataChangeRef = useRef(onDataChange)
+  onDataChangeRef.current = onDataChange
 
   // Fetch the active profile to pre-fill insulin type
   const { data: activeProfile } = useQuery({
     queryKey: ['profiles-active-single', userId],
     queryFn: async () => {
       if (!userId) return null
-      const response = await profilesApi.listProfiles(userId)
-      return response.data.items.find((p) => p.status === 'ACTIVE') ?? null
+      const response = await profilesApi.listProfiles(userId, ['ACTIVE'])
+      return response.data.items[0] ?? null
     },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
@@ -39,7 +42,7 @@ export function BasalForm({ initialData, validationError, userId, onDataChange }
 
   // Fetch insulin catalogue for datalist autocomplete
   const { data: insulins = [] } = useQuery({
-    queryKey: ['insulins-catalogue'],
+    queryKey: ['insulins'],
     queryFn: async () => {
       const response = await profilesApi.getInsulins()
       return response.data
@@ -47,19 +50,7 @@ export function BasalForm({ initialData, validationError, userId, onDataChange }
     staleTime: 10 * 60 * 1000,
   })
 
-  // Pre-fill insulinType from active profile when loaded (only if user hasn't typed anything yet)
-  useEffect(() => {
-    if (initialData?.insulinType != null) return
-    if (basalInsulinType !== '') return
-    const profileInsulinType = activeProfile?.insulinType
-    if (profileInsulinType) {
-      setBasalInsulinType(profileInsulinType)
-      onDataChange(buildData(basalInsulin, profileInsulinType, basalDurationHours))
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeProfile])
-
-  const buildData = (insulin: string, insulinType: string, durationHours: string): BasalFormData | null => {
+  const buildData = useCallback((insulin: string, insulinType: string, durationHours: string): BasalFormData | null => {
     const v = parseFloat(insulin)
     if (isNaN(v) || v <= 0) return null
     const durHours = parseFloat(durationHours)
@@ -68,7 +59,20 @@ export function BasalForm({ initialData, validationError, userId, onDataChange }
       ...(insulinType && { insulinType }),
       ...(durationHours && !isNaN(durHours) && { duration: Math.round(durHours * 60) }),
     }
-  }
+  }, [])
+
+  // Pre-fill insulinType from active profile when loaded (only if user hasn't typed anything yet).
+  // onDataChangeRef keeps the latest callback without adding it as a reactive dep,
+  // avoiding an infinite loop when the parent re-creates the callback on each render.
+  useEffect(() => {
+    if (initialData?.insulinType != null) return
+    if (basalInsulinType !== '') return
+    const profileInsulinType = activeProfile?.insulinType
+    if (profileInsulinType) {
+      setBasalInsulinType(profileInsulinType)
+      onDataChangeRef.current(buildData(basalInsulin, profileInsulinType, basalDurationHours))
+    }
+  }, [activeProfile, initialData?.insulinType, basalInsulinType, basalInsulin, basalDurationHours, buildData])
 
   const handleInsulinChange = (value: string) => {
     setBasalInsulin(value)
