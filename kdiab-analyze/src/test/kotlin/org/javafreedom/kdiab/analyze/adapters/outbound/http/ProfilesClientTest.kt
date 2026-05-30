@@ -16,7 +16,7 @@ class ProfilesClientTest {
     private val baseUrl = "http://profiles"
 
     private fun profileJson(id: String, status: String = "ACTIVE") =
-        """{"id":"$id","userId":"$userId","status":"$status","name":"My Profile","insulinType":"rapid","durationOfAction":180,"createdAt":"2024-01-01T00:00:00Z"}"""
+        """{"id":"$id","userId":"$userId","status":"$status","name":"My Profile","settings":{"insulinType":"rapid","durationOfAction":180},"schedule":{"basal":[{"startTime":"00:00","value":1.0}],"icr":[],"isf":[],"targets":[]},"createdAt":"2024-01-01T00:00:00Z"}"""
 
     private fun pagedResponse(vararg profiles: String, page: Int = 0, size: Int = 50, totalCount: Int = profiles.size) =
         """{"items":[${profiles.joinToString(",")}],"page":$page,"size":$size,"totalCount":$totalCount}"""

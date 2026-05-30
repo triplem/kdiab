@@ -81,7 +81,7 @@ vi.mock('../api/calcApi', () => ({
 vi.mock('../api/profilesApi', () => ({
   profilesApi: {
     getActiveProfile: vi.fn().mockResolvedValue({ data: null }),
-    listProfiles: vi.fn().mockResolvedValue({ data: [] }),
+    listProfiles: vi.fn().mockResolvedValue({ data: { items: [], page: 0, size: 20, totalCount: 0 } }),
     createProfile: vi.fn(),
     updateProfile: vi.fn(),
     activateProfile: vi.fn(),

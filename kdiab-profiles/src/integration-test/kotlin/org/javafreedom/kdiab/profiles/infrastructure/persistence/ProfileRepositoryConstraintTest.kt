@@ -147,12 +147,13 @@ class ProfileRepositoryConstraintTest {
         Profile(
             userId = userId,
             name = "Test Profile",
-            insulinType = "Fiasp",
-            durationOfAction = 180,
             status = status,
-            basal = listOf(BasalSegment(LocalTime(0, 0), 0.5)),
-            icr = emptyList(),
-            isf = emptyList(),
-            targets = emptyList()
+            settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+            schedule = ProfileSchedule(
+                basal = listOf(BasalSegment(LocalTime(0, 0), 0.5)),
+                icr = emptyList(),
+                isf = emptyList(),
+                targets = emptyList()
+            )
         )
 }

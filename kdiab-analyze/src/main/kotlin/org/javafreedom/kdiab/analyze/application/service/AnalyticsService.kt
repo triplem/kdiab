@@ -93,7 +93,7 @@ private const val MAX_REPORT_DAYS = 365
 // Minimum recommended date range for report summary (14 days)
 private const val MIN_REPORT_DAYS = 14
 private const val SECONDS_PER_DAY = 86_400.0
-private const val SECONDS_IN_DAY_L = 86_400L
+private const val SECONDS_PER_DAY_LONG = 86_400L
 // GRI = 3.0×(%<54) + 2.4×(%54–70) + 1.6×(%180–250) + 0.8×(%>250) (Klonoff 2023)
 private const val GRI_VERY_LOW_WEIGHT = 3.0
 private const val GRI_LOW_WEIGHT = 2.4
@@ -1089,7 +1089,7 @@ class AnalyticsService(
         val rangeWarnings = buildList {
             if (fromInstant != null && toInstant != null) {
                 val rangeSeconds = (toInstant - fromInstant).inWholeSeconds
-                if (rangeSeconds > MAX_DISTRIBUTION_DAYS * SECONDS_IN_DAY_L) {
+                if (rangeSeconds > MAX_DISTRIBUTION_DAYS * SECONDS_PER_DAY_LONG) {
                     add("Date range exceeds 365 days — results may be slow to compute.")
                 }
             }

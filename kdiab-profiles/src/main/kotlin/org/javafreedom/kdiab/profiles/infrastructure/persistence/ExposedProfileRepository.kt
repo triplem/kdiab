@@ -9,8 +9,6 @@ import kotlin.uuid.Uuid
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.IllegalTimeZoneException
-import kotlinx.datetime.TimeZone
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.javafreedom.kdiab.common.domain.SQL_UNIQUE_VIOLATION
@@ -319,22 +317,22 @@ class ExposedProfileRepository(
             it[userId] = profile.userId
             it[previousProfileId] = profile.previousProfileId
             it[name] = profile.name
-            it[insulinType] = profile.insulinType
-            it[units] = profile.units
-            it[durationOfAction] = profile.durationOfAction
-            it[timeZone] = profile.timeZone.id
+            it[insulinType] = profile.settings.insulinType
+            it[units] = "mg/dL"  // legacy column — kept for backward compat
+            it[durationOfAction] = profile.settings.durationOfAction
+            it[timeZone] = "UTC"  // legacy column — kept for backward compat
             it[createdAt] = profile.createdAt
-            it[proposalReason] = profile.proposalReason
+            it[proposalReason] = profile.collaboration?.proposalReason
             it[createdBy] = profile.createdBy
-            it[rejectionReason] = profile.rejectionReason
-            it[analysisLow] = profile.analysisLow
-            it[analysisHigh] = profile.analysisHigh
-            it[carbAbsorptionRateGPerHour] = profile.carbAbsorptionRateGPerHour
+            it[rejectionReason] = profile.collaboration?.rejectionReason
+            it[analysisLow] = profile.analysisRange?.low
+            it[analysisHigh] = profile.analysisRange?.high
+            it[carbAbsorptionRateGPerHour] = null  // moved to UserSettings
             it[segments] = ProfileSegments(
-                basal = profile.basal,
-                icr = profile.icr,
-                isf = profile.isf,
-                targets = profile.targets
+                basal = profile.schedule.basal,
+                icr = profile.schedule.icr,
+                isf = profile.schedule.isf,
+                targets = profile.schedule.targets
             )
         }
     }
@@ -354,19 +352,16 @@ class ExposedProfileRepository(
         Profiles.update({ Profiles.id eq profile.id }) {
             it[previousProfileId] = profile.previousProfileId
             it[name] = profile.name
-            it[insulinType] = profile.insulinType
-            it[units] = profile.units
-            it[durationOfAction] = profile.durationOfAction
-            it[timeZone] = profile.timeZone.id
-            it[rejectionReason] = profile.rejectionReason
-            it[analysisLow] = profile.analysisLow
-            it[analysisHigh] = profile.analysisHigh
-            it[carbAbsorptionRateGPerHour] = profile.carbAbsorptionRateGPerHour
+            it[insulinType] = profile.settings.insulinType
+            it[durationOfAction] = profile.settings.durationOfAction
+            it[rejectionReason] = profile.collaboration?.rejectionReason
+            it[analysisLow] = profile.analysisRange?.low
+            it[analysisHigh] = profile.analysisRange?.high
             it[segments] = ProfileSegments(
-                basal = profile.basal,
-                icr = profile.icr,
-                isf = profile.isf,
-                targets = profile.targets
+                basal = profile.schedule.basal,
+                icr = profile.schedule.icr,
+                isf = profile.schedule.isf,
+                targets = profile.schedule.targets
             )
         }
         updateStatusInTx(profile.id, profile.status, profile.activatedAt, profile.archivedAt)
@@ -388,39 +383,42 @@ class ExposedProfileRepository(
     }
 
     private fun mapToProfile(row: ResultRow): Profile {
-        val pSectors: ProfileSegments = row[Profiles.segments]
-        val tz = try {
-            TimeZone.of(row[Profiles.timeZone])
-        } catch (e: IllegalTimeZoneException) {
-            logger.warn(e) {
-                "Unknown timezone '${row[Profiles.timeZone]}' for profile ${row[Profiles.id]}, falling back to UTC"
-            }
-            TimeZone.UTC
-        }
+        val pSegments: ProfileSegments = row[Profiles.segments]
+        val analysisLow = row[Profiles.analysisLow]
+        val analysisHigh = row[Profiles.analysisHigh]
+        val proposalReason = row[Profiles.proposalReason]
+        val rejectionReason = row[Profiles.rejectionReason]
         return Profile(
             id = row[Profiles.id],
             userId = row[Profiles.userId],
             previousProfileId = row[Profiles.previousProfileId],
             name = row[Profiles.name],
-            insulinType = row[Profiles.insulinType],
-            units = row[Profiles.units],
-            durationOfAction = row[Profiles.durationOfAction],
-            timeZone = tz,
             status = row[ProfileStatuses.status],
             createdAt = row[Profiles.createdAt],
             validFrom = row[ProfileStatuses.validFrom],
             activatedAt = row[ProfileStatuses.activatedAt],
             archivedAt = row[ProfileStatuses.archivedAt],
-            proposalReason = row[Profiles.proposalReason],
             createdBy = row[Profiles.createdBy],
-            rejectionReason = row[Profiles.rejectionReason],
-            analysisLow = row[Profiles.analysisLow],
-            analysisHigh = row[Profiles.analysisHigh],
-            carbAbsorptionRateGPerHour = row[Profiles.carbAbsorptionRateGPerHour],
-            basal = pSectors.basal,
-            icr = pSectors.icr,
-            isf = pSectors.isf,
-            targets = pSectors.targets
+            settings = InsulinSettings(
+                insulinType = row[Profiles.insulinType],
+                durationOfAction = row[Profiles.durationOfAction],
+            ),
+            analysisRange = if (analysisLow != null && analysisHigh != null) {
+                AnalysisRange(low = analysisLow, high = analysisHigh)
+            } else {
+                null
+            },
+            schedule = ProfileSchedule(
+                basal = pSegments.basal,
+                icr = pSegments.icr,
+                isf = pSegments.isf,
+                targets = pSegments.targets,
+            ),
+            collaboration = if (proposalReason != null || rejectionReason != null) {
+                ProfileCollaboration(proposalReason = proposalReason, rejectionReason = rejectionReason)
+            } else {
+                null
+            },
         )
     }
 }

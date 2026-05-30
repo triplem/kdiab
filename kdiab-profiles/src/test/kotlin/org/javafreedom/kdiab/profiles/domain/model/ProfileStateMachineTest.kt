@@ -10,7 +10,6 @@ import org.javafreedom.kdiab.profiles.domain.repository.ProfileRepository
 import org.javafreedom.kdiab.profiles.application.service.ProfileService
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.uuid.Uuid
 
 class ProfileStateMachineTest {
@@ -24,7 +23,7 @@ class ProfileStateMachineTest {
         // Given
         val oldActiveProfile = createProfile(status = ProfileStatus.ACTIVE)
         val newDraftProfile = createProfile(status = ProfileStatus.DRAFT)
-        
+
         coEvery { repository.findActiveByUserId(userId) } returns oldActiveProfile
         coEvery { repository.findById(newDraftProfile.id) } returns newDraftProfile
         coEvery { repository.activateProfile(any(), any()) } returns newDraftProfile.copy(status = ProfileStatus.ACTIVE)
@@ -35,13 +34,13 @@ class ProfileStateMachineTest {
         // Then
         val oldProfileSlot = io.mockk.slot<Profile>()
         val newProfileSlot = io.mockk.slot<Profile>()
-        coVerify { 
+        coVerify {
             repository.activateProfile(
                 capture(oldProfileSlot),
                 capture(newProfileSlot)
             )
         }
-        
+
         assertEquals(oldActiveProfile.id, oldProfileSlot.captured.id)
         assertEquals(newDraftProfile.id, newProfileSlot.captured.id)
         assertEquals(ProfileStatus.ACTIVE, newProfileSlot.captured.status)
@@ -52,9 +51,9 @@ class ProfileStateMachineTest {
         // Given
         val existingActive = createProfile(status = ProfileStatus.ACTIVE, name = "Old Name")
         val updateData = existingActive.copy(name = "New Name")
-        
+
         coEvery { repository.findById(existingActive.id) } returns existingActive
-        coEvery { repository.updateActiveProfile(any(), any()) } returns updateData // return mock doesn't matter much for verification
+        coEvery { repository.updateActiveProfile(any(), any()) } returns updateData
 
         // When
         service.updateProfile(updateData)
@@ -69,9 +68,9 @@ class ProfileStateMachineTest {
                 capture(newProfileSlot)
             )
         }
-        
+
         assertEquals(existingActive.id, oldProfileSlot.captured.id)
-        
+
         val capturedNew = newProfileSlot.captured
         assertEquals("New Name", capturedNew.name)
         assertEquals(ProfileStatus.ACTIVE, capturedNew.status)
@@ -79,19 +78,20 @@ class ProfileStateMachineTest {
     }
 
     private fun createProfile(
-        status: ProfileStatus = ProfileStatus.DRAFT, 
+        status: ProfileStatus = ProfileStatus.DRAFT,
         name: String = "Test"
     ): Profile {
         return Profile(
             userId = userId,
             name = name,
-            insulinType = "Fiasp",
-            durationOfAction = 180,
             status = status,
-            basal = listOf(BasalSegment(LocalTime(0, 0), 1.0)),
-            icr = listOf(IcrSegment(LocalTime(0, 0), 10.0)),
-            isf = listOf(IsfSegment(LocalTime(0, 0), 30.0)),
-            targets = listOf(TargetSegment(LocalTime(0, 0), 100.0, 120.0))
+            settings = InsulinSettings(insulinType = "Fiasp", durationOfAction = 180),
+            schedule = ProfileSchedule(
+                basal = listOf(BasalSegment(LocalTime(0, 0), 1.0)),
+                icr = listOf(IcrSegment(LocalTime(0, 0), 10.0)),
+                isf = listOf(IsfSegment(LocalTime(0, 0), 30.0)),
+                targets = listOf(TargetSegment(LocalTime(0, 0), 100.0, 120.0))
+            )
         )
     }
 }
