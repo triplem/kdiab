@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { measuresApi } from '../../api/measuresApi'
 import { AddMeasureModal } from './AddMeasureModal'
 import type { MeasureEditMode } from './AddMeasureModal'
@@ -80,36 +80,41 @@ export const MeasureList: React.FC<MeasureListProps> = ({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [mutationError, setMutationError] = useState<string | null>(null)
-  const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState<(typeof PAGE_SIZES)[number]>(50)
-  const [measures, setMeasures] = useState<MeasureResponse[]>([])
-  const [totalCount, setTotalCount] = useState(0)
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
   const [editTarget, setEditTarget] = useState<MeasureEditMode | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
   const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
 
-  const { isLoading, isError } = useQuery({
-    queryKey: ['measures', userId, page, pageSize, showArchived],
-    queryFn: async () => {
+  const {
+    data,
+    isLoading,
+    isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['measures', userId, pageSize, showArchived],
+    queryFn: async ({ pageParam }: { pageParam: number }) => {
       const status = showArchived ? 'ARCHIVED' : 'ACTIVE'
-      const res = await measuresApi.listMeasures(userId, page, pageSize, status)
-      const paged = res.data as PagedMeasureResponse
-      if (page === 0) {
-        setMeasures(paged.items ?? [])
-      } else {
-        setMeasures((prev) => [...prev, ...(paged.items ?? [])])
-      }
-      setTotalCount(paged.totalCount ?? 0)
-      return paged
+      const res = await measuresApi.listMeasures(userId, pageParam, pageSize, status)
+      return res.data as PagedMeasureResponse
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage: PagedMeasureResponse, _allPages: PagedMeasureResponse[], lastPageParam: number) => {
+      const loaded = (lastPageParam + 1) * pageSize
+      return loaded < (lastPage.totalCount ?? 0) ? lastPageParam + 1 : undefined
     },
     enabled: !!userId,
   })
 
+  const measures = data?.pages.flatMap((p) => p.items ?? []) ?? []
+  const totalCount = data?.pages[0]?.totalCount ?? 0
+
   useEffect(() => {
-    setPage(0)
-    setMeasures([])
+    setSelectedIds(new Set())
+    setExpandedIds(new Set())
   }, [userId])
 
   const onMutationError = (err: unknown) => {
@@ -120,23 +125,19 @@ export const MeasureList: React.FC<MeasureListProps> = ({
   const resetAndRefetch = () => {
     setMutationError(null)
     setSelectedIds(new Set())
-    setMeasures([])
-    setPage(0)
     void queryClient.invalidateQueries({ queryKey: ['measures', userId] })
   }
 
   const toggleShowArchived = () => {
     setShowArchived((prev) => !prev)
-    setMeasures([])
-    setPage(0)
     setSelectedIds(new Set())
+    // showArchived is in the query key so React Query starts fresh automatically
   }
 
   const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const next = Number(e.target.value) as (typeof PAGE_SIZES)[number]
     setPageSize(next)
-    setMeasures([])
-    setPage(0)
+    // pageSize is in the query key so React Query starts fresh automatically
   }
 
   const archiveMutation = useMutation({
@@ -218,7 +219,7 @@ export const MeasureList: React.FC<MeasureListProps> = ({
     })
   }
 
-  if (isLoading && measures.length === 0) {
+  if (isLoading) {
     return <div style={{ padding: '2rem' }}>{t('list.loading')}</div>
   }
   if (isError) {
@@ -505,15 +506,15 @@ export const MeasureList: React.FC<MeasureListProps> = ({
         </tbody>
       </table>
 
-      {measures.length < totalCount && (
+      {hasNextPage && (
         <div style={{ textAlign: 'center', marginTop: '1rem' }}>
           <button
             className="btn outline"
-            disabled={isLoading}
-            onClick={() => setPage((p) => p + 1)}
+            disabled={isFetchingNextPage}
+            onClick={() => void fetchNextPage()}
             style={{ padding: '0.5rem 1.5rem' }}
           >
-            {isLoading
+            {isFetchingNextPage
               ? t('list.loading')
               : t('list.loadMore', { loaded: measures.length, total: totalCount })}
           </button>
