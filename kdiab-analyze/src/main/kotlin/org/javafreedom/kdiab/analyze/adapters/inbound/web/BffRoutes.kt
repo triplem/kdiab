@@ -25,6 +25,7 @@ private val logger = KotlinLogging.logger {}
 
 
 private const val DEFAULT_DEVICE_USAGE_DAYS = 90
+private const val MAX_DISPLAY_NAME_LENGTH = 200
 
 // LongMethod: routing DSL — each block is a single delegating call; logic lives in handlers below.
 @Suppress("LongMethod")
@@ -188,6 +189,7 @@ private suspend fun handleReportSummary(call: ApplicationCall, analyticsService:
 
     val displayName = call.request.queryParameters["displayName"]
         ?.takeIf { it.isNotBlank() }
+        ?.take(MAX_DISPLAY_NAME_LENGTH)
         ?: ctx.targetUserId.toString()
 
     val result = analyticsService.getReportSummary(
