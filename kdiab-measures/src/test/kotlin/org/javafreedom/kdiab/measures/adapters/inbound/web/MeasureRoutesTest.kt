@@ -257,6 +257,60 @@ class MeasureRoutesTest {
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }
 
+    @Test
+    fun `list measures - 400 with invalid status query param`() = routeTest { _ ->
+        val resp = client.get("/api/v1/users/$SARAH_ID/measures?status=INVALID") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    // ── PUT /api/v1/users/{userId}/measures/{measureId} ───────────────────────
+
+    private val updateBody = """{"measuredAt":"2024-06-01T08:00:00Z","data":{"mbg":95}}"""
+
+    @Test
+    fun `update measure - 200 patient updates own measure`() = routeTest { repo ->
+        coEvery { repo.update(Uuid.parse(MEASURE_ID), Uuid.parse(SARAH_ID), any(), any()) } returns testMeasure()
+        val resp = client.put("/api/v1/users/$SARAH_ID/measures/$MEASURE_ID") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(updateBody)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `update measure - 403 patient updates measure for another user`() = routeTest { _ ->
+        val resp = client.put("/api/v1/users/$MIKE_ID/measures/$MEASURE_ID") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(updateBody)
+        }
+        assertEquals(HttpStatusCode.Forbidden, resp.status)
+    }
+
+    @Test
+    fun `update measure - 400 with invalid measuredAt timestamp`() = routeTest { _ ->
+        val resp = client.put("/api/v1/users/$SARAH_ID/measures/$MEASURE_ID") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody("""{"measuredAt":"not-a-timestamp","data":{"mbg":95}}""")
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `update measure - 200 admin updates any user measure`() = routeTest { repo ->
+        coEvery { repo.update(Uuid.parse(MEASURE_ID), Uuid.parse(SARAH_ID), any(), any()) } returns testMeasure()
+        val resp = client.put("/api/v1/users/$SARAH_ID/measures/$MEASURE_ID") {
+            bearerAuth(adminToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(updateBody)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
     // ── POST /api/v1/users/{userId}/measures/archive ──────────────────────────
 
     @Test
@@ -331,6 +385,61 @@ class MeasureRoutesTest {
             setBody("""{"measureIds":[$ids]}""")
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    // ── POST /api/v1/users/{userId}/measures/unarchive ────────────────────────
+
+    @Test
+    fun `unarchive measures - 200 patient unarchives own measures`() = routeTest { repo ->
+        coEvery { repo.unarchive(any(), Uuid.parse(SARAH_ID)) } just runs
+        val resp = client.post("/api/v1/users/$SARAH_ID/measures/unarchive") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(bulkBody)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `unarchive measures - 403 patient unarchives another user measures`() = routeTest { _ ->
+        val resp = client.post("/api/v1/users/$MIKE_ID/measures/unarchive") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(bulkBody)
+        }
+        assertEquals(HttpStatusCode.Forbidden, resp.status)
+    }
+
+    @Test
+    fun `unarchive measures - 400 when empty measure ids`() = routeTest { _ ->
+        val resp = client.post("/api/v1/users/$SARAH_ID/measures/unarchive") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody("""{"measureIds":[]}""")
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `unarchive measures - 400 when bulk size exceeds limit`() = routeTest { _ ->
+        val ids = (1..201).map { "\"00000000-0000-0000-0000-${it.toString().padStart(12, '0')}\"" }.joinToString(",")
+        val resp = client.post("/api/v1/users/$SARAH_ID/measures/unarchive") {
+            bearerAuth(sarahToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody("""{"measureIds":[$ids]}""")
+        }
+        assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `unarchive measures - 200 admin unarchives any user measures`() = routeTest { repo ->
+        coEvery { repo.unarchive(any(), Uuid.parse(SARAH_ID)) } just runs
+        val resp = client.post("/api/v1/users/$SARAH_ID/measures/unarchive") {
+            bearerAuth(adminToken)
+            header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+            setBody(bulkBody)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
     }
 
     // ── DELETE /api/v1/users/{userId}/measures ───────────────────────────────
