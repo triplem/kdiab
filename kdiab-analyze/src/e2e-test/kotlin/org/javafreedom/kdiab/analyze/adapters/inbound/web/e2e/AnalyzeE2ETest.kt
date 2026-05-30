@@ -61,7 +61,7 @@ private fun Application.installMockDi(
     }
 }
 
-class BffE2ETest : BehaviorSpec({
+class AnalyzeE2ETest : BehaviorSpec({
 
     val jwtSecret = "test-secret-for-analyze-tests"
     val audience = "analyze"
@@ -373,7 +373,7 @@ class BffE2ETest : BehaviorSpec({
 }) {
     @Suppress("unused")
     companion object {
-        // E2E tests check full user journeys through the BFF with MockEngine-backed HTTP clients.
+        // E2E tests check full user journeys through the Analyze service with MockEngine-backed HTTP clients.
         // Each `given` block builds fresh services with a MockEngine that returns realistic data.
     }
 }

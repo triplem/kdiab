@@ -9,8 +9,8 @@ Root package: `org.javafreedom.kdiab.analyze`
 
 ```
 adapters/inbound/web/
-  BffRoutes.kt           # 4 endpoints, manual routing (no generated Paths — see below)
-  BffMapper.kt           # Domain models → API response DTOs
+  AnalyzeRoutes.kt       # 4 endpoints, manual routing (no generated Paths — see below)
+  AnalyzeMapper.kt       # Domain models → API response DTOs
 adapters/outbound/http/
   MeasuresClient.kt      # Ktor CIO HttpClient → kdiab-measures
   ProfilesClient.kt      # Ktor CIO HttpClient → kdiab-profiles

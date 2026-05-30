@@ -56,7 +56,7 @@ private fun Application.installMockDi(
     }
 }
 
-class BffAnalyticsIntegrationTest {
+class AnalyzeAnalyticsIntegrationTest {
 
     private companion object {
         const val JWT_SECRET = "test-secret-for-analyze-tests"

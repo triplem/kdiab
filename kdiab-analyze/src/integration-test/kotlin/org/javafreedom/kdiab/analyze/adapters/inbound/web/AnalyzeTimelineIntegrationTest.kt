@@ -53,7 +53,7 @@ private fun Application.installMockDi(
     }
 }
 
-class BffTimelineIntegrationTest {
+class AnalyzeTimelineIntegrationTest {
 
     private companion object {
         const val JWT_SECRET = "test-secret-for-analyze-tests"
