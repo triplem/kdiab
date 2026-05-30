@@ -21,7 +21,6 @@ const PREDEFINED_LOCATIONS = [
   'lowerBack',
 ] as const
 
-type PredefinedLocation = (typeof PREDEFINED_LOCATIONS)[number]
 
 export function SiteChangeForm({ initialData, onDataChange }: SiteChangeFormProps) {
   const { t } = useTranslation()
