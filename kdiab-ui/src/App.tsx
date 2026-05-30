@@ -111,10 +111,20 @@ export default function App() {
   const viewingUserId = activePatientId ?? ownUserId
   const isDoctorViewingPatient = isDoctor && activePatientId !== null
 
-  // Reset patient glucose unit when switching patients
+  // Fetch patient glucose unit when doctor switches patients
   useEffect(() => {
-    setPatientGlucoseUnit('mg/dL')
-  }, [activePatientId])
+    if (!activePatientId || !isDoctor) {
+      setPatientGlucoseUnit('mg/dL')
+      return
+    }
+    void usersApi.getUser(activePatientId)
+      .then(res => {
+        setPatientGlucoseUnit(res.data.settings?.units?.glucoseUnit ?? 'mg/dL')
+      })
+      .catch(() => {
+        setPatientGlucoseUnit('mg/dL')
+      })
+  }, [activePatientId, isDoctor])
 
   const activeGlucoseUnit = isDoctorViewingPatient ? patientGlucoseUnit : glucoseUnit
   const proposedProfileCount = useProposedProfileCount(viewingUserId)
