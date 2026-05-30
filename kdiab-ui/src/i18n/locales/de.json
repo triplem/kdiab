@@ -171,6 +171,7 @@
     "sessionExpired": "Sitzung abgelaufen – bitte melden Sie sich erneut an.",
     "insulinUnits": "Insulineinheiten:",
     "insulinType": "Insulintyp (optional):",
+    "insulinTypePlaceholder": "z.B. Lantus",
     "durationHours": "Dauer in Stunden (optional):",
     "carbs": "Kohlenhydrate (g):",
     "absorptionTime": "Absorptionszeit in Stunden (optional):",
