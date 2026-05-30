@@ -103,7 +103,7 @@ jobs:
 
       - name: Download kdiab-measures artifacts
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: measures-backend-image
           path: artifacts/measures
@@ -112,7 +112,7 @@ jobs:
 
       - name: Download kdiab-measures SBOM
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: measures-backend-bom
           path: artifacts/measures
@@ -121,7 +121,7 @@ jobs:
 
       - name: Download kdiab-profiles artifacts
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: profiles-backend-image
           path: artifacts/profiles
@@ -130,7 +130,7 @@ jobs:
 
       - name: Download kdiab-profiles SBOM
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: profiles-backend-bom
           path: artifacts/profiles
@@ -139,7 +139,7 @@ jobs:
 
       - name: Download kdiab-treatments artifacts
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: treatments-backend-image
           path: artifacts/treatments
@@ -148,7 +148,7 @@ jobs:
 
       - name: Download kdiab-treatments SBOM
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: treatments-backend-bom
           path: artifacts/treatments
@@ -157,7 +157,7 @@ jobs:
 
       - name: Download kdiab-calc artifacts
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: calc-backend-image
           path: artifacts/calc
@@ -166,7 +166,7 @@ jobs:
 
       - name: Download kdiab-calc SBOM
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: calc-backend-bom
           path: artifacts/calc
@@ -175,7 +175,7 @@ jobs:
 
       - name: Download kdiab-carbs artifacts
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: carbs-backend-image
           path: artifacts/carbs
@@ -184,7 +184,7 @@ jobs:
 
       - name: Download kdiab-carbs SBOM
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: carbs-backend-bom
           path: artifacts/carbs
@@ -193,7 +193,7 @@ jobs:
 
       - name: Download kdiab-analyze artifacts
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: analyze-backend-image
           path: artifacts/analyze
@@ -202,7 +202,7 @@ jobs:
 
       - name: Download kdiab-analyze SBOM
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: analyze-backend-bom
           path: artifacts/analyze
@@ -211,7 +211,7 @@ jobs:
 
       - name: Download kdiab-users artifacts
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: users-backend-image
           path: artifacts/users
@@ -220,7 +220,7 @@ jobs:
 
       - name: Download kdiab-users SBOM
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: users-backend-bom
           path: artifacts/users
@@ -229,7 +229,7 @@ jobs:
 
       - name: Download kdiab-nightscout artifacts
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: nightscout-backend-image
           path: artifacts/nightscout
@@ -238,7 +238,7 @@ jobs:
 
       - name: Download kdiab-nightscout SBOM
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: nightscout-backend-bom
           path: artifacts/nightscout
@@ -247,7 +247,7 @@ jobs:
 
       - name: Download kdiab-ui artifacts
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: kdiab-ui-image
           path: artifacts/ui
@@ -256,7 +256,7 @@ jobs:
 
       - name: Download kdiab-ui SBOM
         if: steps.check-ci.outputs.all_passed == 'true'
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           name: kdiab-ui-bom
           path: artifacts/ui
