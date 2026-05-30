@@ -47,8 +47,10 @@ export interface PagedProfiles {
 }
 
 export const profilesApi = {
-  listProfiles: (userId: string) =>
-    axiosInstance.get<PagedProfiles>(`${BASE}/users/${userId}/profiles`),
+  listProfiles: (userId: string, status?: string[]) =>
+    axiosInstance.get<PagedProfiles>(`${BASE}/users/${userId}/profiles`, {
+      params: status ? { status } : undefined,
+    }),
   createProfile: (userId: string, body: Record<string, unknown>) =>
     axiosInstance.post<Profile>(`${BASE}/users/${userId}/profiles`, body),
   updateProfile: (userId: string, profileId: string, body: Record<string, unknown>) =>
