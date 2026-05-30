@@ -2,18 +2,38 @@ import { axiosInstance } from './axiosInstance'
 
 const BASE = '/api/users/v1'
 
-export interface UserSettings {
+export interface LocalePreferences {
   timezone: string
   language: string
   timeFormat: 12 | 24
+}
+
+export interface UnitPreferences {
   glucoseUnit: 'mg/dL' | 'mmol/L'
   weightUnit: 'kg' | 'lbs'
-  alarmUrgentHigh: number | null
-  alarmHigh: number | null
-  alarmLow: number | null
-  alarmUrgentLow: number | null
+}
+
+export interface AlarmThresholds {
+  urgentHigh: number
+  high: number
+  low: number
+  urgentLow: number
+}
+
+export interface DiabetesProfile {
   sensorDurationHours: number
+  diabetesSince?: number | null
+  carbAbsorptionRateGPerHour?: number | null
+}
+
+export interface UserSettings {
+  birthday?: string | null
+  locale: LocalePreferences
+  units: UnitPreferences
+  alarms?: AlarmThresholds | null
+  diabetes: DiabetesProfile
   updatedAt: string
+  jwtBackedNote?: string | null
 }
 
 export interface UserResponse {
@@ -36,17 +56,36 @@ export interface UpdateUserRequest {
   role?: 'PATIENT' | 'DOCTOR' | 'ADMIN'
 }
 
-export interface PatchSettingsRequest {
+export interface LocalePreferencesPatch {
   timezone?: string
   language?: string
   timeFormat?: 12 | 24
+}
+
+export interface UnitPreferencesPatch {
   glucoseUnit?: 'mg/dL' | 'mmol/L'
   weightUnit?: 'kg' | 'lbs'
-  alarmUrgentHigh?: number | null
-  alarmHigh?: number | null
-  alarmLow?: number | null
-  alarmUrgentLow?: number | null
+}
+
+export interface AlarmThresholdsPatch {
+  urgentHigh?: number | null
+  high?: number | null
+  low?: number | null
+  urgentLow?: number | null
+}
+
+export interface DiabetesProfilePatch {
   sensorDurationHours?: number
+  diabetesSince?: number | null
+  carbAbsorptionRateGPerHour?: number | null
+}
+
+export interface PatchSettingsRequest {
+  birthday?: string | null
+  locale?: LocalePreferencesPatch
+  units?: UnitPreferencesPatch
+  alarms?: AlarmThresholdsPatch
+  diabetes?: DiabetesProfilePatch
 }
 
 export interface RegisterRequest {

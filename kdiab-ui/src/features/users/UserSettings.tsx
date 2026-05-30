@@ -4,8 +4,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { usersApi } from '../../api/usersApi'
-import type { PatchSettingsRequest } from '../../api/usersApi'
+import { usersApi, type PatchSettingsRequest } from '../../api/usersApi'
 
 const TIMEZONES = [
   'UTC', 'Europe/London', 'Europe/Berlin', 'Europe/Paris', 'Europe/Madrid',
@@ -57,16 +56,16 @@ export function UserSettings() {
     resolver: zodResolver(schema) as any,
     ...(data?.settings !== undefined && {
       values: {
-        timezone: data.settings.timezone,
-        language: data.settings.language,
-        timeFormat: data.settings.timeFormat,
-        glucoseUnit: data.settings.glucoseUnit,
-        weightUnit: data.settings.weightUnit,
-        alarmUrgentHigh: data.settings.alarmUrgentHigh,
-        alarmHigh: data.settings.alarmHigh,
-        alarmLow: data.settings.alarmLow,
-        alarmUrgentLow: data.settings.alarmUrgentLow,
-        sensorDurationHours: data.settings.sensorDurationHours ?? 240,
+        timezone: data.settings.locale.timezone,
+        language: data.settings.locale.language,
+        timeFormat: data.settings.locale.timeFormat,
+        glucoseUnit: data.settings.units.glucoseUnit,
+        weightUnit: data.settings.units.weightUnit,
+        alarmUrgentHigh: data.settings.alarms?.urgentHigh ?? null,
+        alarmHigh: data.settings.alarms?.high ?? null,
+        alarmLow: data.settings.alarms?.low ?? null,
+        alarmUrgentLow: data.settings.alarms?.urgentLow ?? null,
+        sensorDurationHours: data.settings.diabetes.sensorDurationHours ?? 240,
       },
     }),
   })
@@ -87,7 +86,17 @@ export function UserSettings() {
   })
 
   const onSubmit = (values: FormData) => {
-    mutation.mutate(values as PatchSettingsRequest)
+    mutation.mutate({
+      locale: { timezone: values.timezone, language: values.language, timeFormat: values.timeFormat },
+      units: { glucoseUnit: values.glucoseUnit, weightUnit: values.weightUnit },
+      alarms: {
+        urgentHigh: values.alarmUrgentHigh,
+        high: values.alarmHigh,
+        low: values.alarmLow,
+        urgentLow: values.alarmUrgentLow,
+      },
+      diabetes: { sensorDurationHours: values.sensorDurationHours },
+    })
   }
 
   if (isLoading) return <p>{t('common.loading')}</p>

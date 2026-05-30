@@ -9,6 +9,9 @@ import kotlin.test.assertNull
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.runBlocking
+import org.javafreedom.kdiab.users.domain.model.DiabetesProfile
+import org.javafreedom.kdiab.users.domain.model.LocalePreferences
+import org.javafreedom.kdiab.users.domain.model.UnitPreferences
 import org.javafreedom.kdiab.users.domain.model.UserSettings
 import org.jetbrains.exposed.v1.jdbc.Database
 
@@ -25,11 +28,8 @@ class ExposedUserSettingsRepositoryTest {
 
     private fun settings(userId: Uuid = Uuid.random()) = UserSettings(
         userId = userId,
-        timezone = "Europe/Berlin",
-        language = "de",
-        timeFormat = 24,
-        glucoseUnit = "mmol/L",
-        weightUnit = "kg",
+        locale = LocalePreferences(timezone = "Europe/Berlin", language = "de", timeFormat = 24),
+        units = UnitPreferences(glucoseUnit = "mmol/L", weightUnit = "kg"),
         createdAt = Instant.parse("2024-06-01T00:00:00Z"),
         updatedAt = Instant.parse("2024-06-01T00:00:00Z"),
     )
@@ -40,20 +40,20 @@ class ExposedUserSettingsRepositoryTest {
         repository.save(s)
         val found = repository.findByUserId(s.userId)
         assertNotNull(found)
-        assertEquals(s.timezone, found.timezone)
-        assertEquals(s.glucoseUnit, found.glucoseUnit)
-        assertEquals(s.weightUnit, found.weightUnit)
-        assertEquals(s.language, found.language)
-        assertEquals(s.sensorDurationHours, found.sensorDurationHours)
+        assertEquals(s.locale.timezone, found.locale.timezone)
+        assertEquals(s.units.glucoseUnit, found.units.glucoseUnit)
+        assertEquals(s.units.weightUnit, found.units.weightUnit)
+        assertEquals(s.locale.language, found.locale.language)
+        assertEquals(s.diabetes.sensorDurationHours, found.diabetes.sensorDurationHours)
     }
 
     @Test
     fun `save persists custom sensorDurationHours and retrieves it`() = runBlocking {
-        val s = settings().copy(sensorDurationHours = 336)
+        val s = settings().copy(diabetes = DiabetesProfile(sensorDurationHours = 336))
         repository.save(s)
         val found = repository.findByUserId(s.userId)
         assertNotNull(found)
-        assertEquals(336, found.sensorDurationHours)
+        assertEquals(336, found.diabetes.sensorDurationHours)
     }
 
     @Test
@@ -65,9 +65,9 @@ class ExposedUserSettingsRepositoryTest {
     fun `save is idempotent - upserts on same userId`() = runBlocking {
         val userId = Uuid.random()
         repository.save(settings(userId))
-        repository.save(settings(userId).copy(timezone = "UTC"))
+        repository.save(settings(userId).copy(locale = LocalePreferences(timezone = "UTC")))
         val found = repository.findByUserId(userId)
-        assertEquals("UTC", found?.timezone)
+        assertEquals("UTC", found?.locale?.timezone)
     }
 
     @Test

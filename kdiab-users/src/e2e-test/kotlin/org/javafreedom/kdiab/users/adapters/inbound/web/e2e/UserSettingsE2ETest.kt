@@ -214,7 +214,7 @@ class UserSettingsE2ETest :
                         val response = client.patch("/api/v1/users/me/settings") {
                             header(HttpHeaders.Authorization, "Bearer $token")
                             contentType(ContentType.Application.Json)
-                            setBody("""{"timezone":"Europe/Berlin"}""")
+                            setBody("""{"locale":{"timezone":"Europe/Berlin"}}""")
                         }
                         response.status shouldBe HttpStatusCode.OK
                         val body = response.bodyAsText()
@@ -247,7 +247,7 @@ class UserSettingsE2ETest :
                         val response = client.patch("/api/v1/users/me/settings") {
                             header(HttpHeaders.Authorization, "Bearer $token")
                             contentType(ContentType.Application.Json)
-                            setBody("""{"glucoseUnit":"invalid_unit"}""")
+                            setBody("""{"units":{"glucoseUnit":"invalid_unit"}}""")
                         }
                         response.status shouldBe HttpStatusCode.BadRequest
                     }

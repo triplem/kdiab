@@ -89,8 +89,8 @@ export default function App() {
 
       // Fetch glucose/weight units from users service (DB is the source of truth)
       void usersApi.getMe().then(res => {
-        setGlucoseUnit(res.data.settings?.glucoseUnit ?? 'mg/dL')
-        setWeightUnit(res.data.settings?.weightUnit ?? 'kg')
+        setGlucoseUnit(res.data.settings?.units?.glucoseUnit ?? 'mg/dL')
+        setWeightUnit(res.data.settings?.units?.weightUnit ?? 'kg')
       }).catch(() => {
         // Keep defaults on failure — they are already set to mg/dL / kg
       })

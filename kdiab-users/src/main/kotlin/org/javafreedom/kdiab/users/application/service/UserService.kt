@@ -15,6 +15,7 @@ import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.users.domain.model.AlarmThresholds
 import org.javafreedom.kdiab.users.domain.model.User
 import org.javafreedom.kdiab.users.domain.model.UserSettings
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
@@ -76,22 +77,27 @@ class UserService(
             ?: defaultSettings(principal.userId)
         val now = Clock.System.now()
         val updated = existing.copy(
-            timezone = patch.timezone ?: existing.timezone,
-            language = patch.language ?: existing.language,
-            timeFormat = patch.timeFormat ?: existing.timeFormat,
-            glucoseUnit = patch.glucoseUnit ?: existing.glucoseUnit,
-            weightUnit = patch.weightUnit ?: existing.weightUnit,
-            alarmUrgentHigh = patch.alarmUrgentHigh ?: existing.alarmUrgentHigh,
-            alarmHigh = patch.alarmHigh ?: existing.alarmHigh,
-            alarmLow = patch.alarmLow ?: existing.alarmLow,
-            alarmUrgentLow = patch.alarmUrgentLow ?: existing.alarmUrgentLow,
-            sensorDurationHours = patch.sensorDurationHours ?: existing.sensorDurationHours,
             birthday = patch.birthday ?: existing.birthday,
-            diabetesSince = patch.diabetesSince ?: existing.diabetesSince,
+            locale = existing.locale.copy(
+                timezone = patch.timezone ?: existing.locale.timezone,
+                language = patch.language ?: existing.locale.language,
+                timeFormat = patch.timeFormat ?: existing.locale.timeFormat,
+            ),
+            units = existing.units.copy(
+                glucoseUnit = patch.glucoseUnit ?: existing.units.glucoseUnit,
+                weightUnit = patch.weightUnit ?: existing.units.weightUnit,
+            ),
+            alarms = mergeAlarmThresholds(existing.alarms, patch),
+            diabetes = existing.diabetes.copy(
+                sensorDurationHours = patch.sensorDurationHours ?: existing.diabetes.sensorDurationHours,
+                diabetesSince = patch.diabetesSince ?: existing.diabetes.diabetesSince,
+                carbAbsorptionRateGPerHour = patch.carbAbsorptionRateGPerHour
+                    ?: existing.diabetes.carbAbsorptionRateGPerHour,
+            ),
             updatedAt = now,
         )
 
-        validateAlarmThresholds(updated)
+        validateAlarmThresholds(updated.alarms)
         settingsRepo.save(updated)
         return updated
     }
@@ -208,13 +214,21 @@ class UserService(
         updatedAt = now,
     )
 
-    private fun validateAlarmThresholds(settings: UserSettings) {
-        val thresholds = listOfNotNull(
-            settings.alarmUrgentHigh,
-            settings.alarmHigh,
-            settings.alarmLow,
-            settings.alarmUrgentLow,
-        )
+    private fun mergeAlarmThresholds(existing: AlarmThresholds?, patch: SettingsPatch): AlarmThresholds? {
+        val patchHasAnyAlarm = patch.alarmUrgentHigh != null || patch.alarmHigh != null ||
+            patch.alarmLow != null || patch.alarmUrgentLow != null
+        if (!patchHasAnyAlarm) return existing
+        return AlarmThresholds.fromNullable(
+            urgentHigh = patch.alarmUrgentHigh ?: existing?.urgentHigh,
+            high = patch.alarmHigh ?: existing?.high,
+            low = patch.alarmLow ?: existing?.low,
+            urgentLow = patch.alarmUrgentLow ?: existing?.urgentLow,
+        ) ?: existing
+    }
+
+    private fun validateAlarmThresholds(alarms: AlarmThresholds?) {
+        if (alarms == null) return
+        val thresholds = listOf(alarms.urgentHigh, alarms.high, alarms.low, alarms.urgentLow)
         if (thresholds.size < ALARM_THRESHOLD_COUNT) return
         val urgentHigh = thresholds[IDX_URGENT_HIGH]
         val high = thresholds[IDX_HIGH]
@@ -246,6 +260,7 @@ class UserService(
 }
 
 data class SettingsPatch(
+    val birthday: LocalDate? = null,
     val timezone: String? = null,
     val language: String? = null,
     val timeFormat: Int? = null,
@@ -256,8 +271,8 @@ data class SettingsPatch(
     val alarmLow: Int? = null,
     val alarmUrgentLow: Int? = null,
     val sensorDurationHours: Int? = null,
-    val birthday: LocalDate? = null,
     val diabetesSince: Int? = null,
+    val carbAbsorptionRateGPerHour: Double? = null,
 )
 
 private fun IdentityUserProfile.toDomain(settings: UserSettings?, roles: Set<Role>): User {

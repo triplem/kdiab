@@ -528,59 +528,100 @@ components:
         settings:
           $ref: "#/components/schemas/UserSettingsResponse"
 
-    UserSettingsResponse:
+    LocalePreferences:
       type: object
-      required: [timezone, language, timeFormat, glucoseUnit, weightUnit, sensorDurationHours, updatedAt]
+      required: [timezone, language, timeFormat]
       properties:
         timezone:
           type: string
+          description: "IANA timezone identifier"
           example: "Europe/Berlin"
         language:
           type: string
+          description: "BCP-47 language tag"
           example: "de"
         timeFormat:
           type: integer
           enum: [12, 24]
+          description: "Clock format: 12-hour or 24-hour"
           example: 24
+
+    UnitPreferences:
+      type: object
+      required: [glucoseUnit, weightUnit]
+      properties:
         glucoseUnit:
           type: string
           enum: ["mg/dL", "mmol/L"]
+          description: "Glucose measurement unit"
           example: "mg/dL"
         weightUnit:
           type: string
           enum: ["kg", "lbs"]
+          description: "Body weight unit"
           example: "kg"
-        alarmUrgentHigh:
+
+    AlarmThresholds:
+      type: object
+      required: [urgentHigh, high, low, urgentLow]
+      description: "CGM alarm thresholds in mg/dL. Must satisfy urgentHigh > high > low > urgentLow."
+      properties:
+        urgentHigh:
           type: integer
-          nullable: true
+          description: "Urgent high glucose threshold (mg/dL, max 400)"
           example: 260
-        alarmHigh:
+        high:
           type: integer
-          nullable: true
+          description: "High glucose threshold (mg/dL)"
           example: 200
-        alarmLow:
+        low:
           type: integer
-          nullable: true
+          description: "Low glucose threshold (mg/dL)"
           example: 75
-        alarmUrgentLow:
+        urgentLow:
           type: integer
-          nullable: true
+          description: "Urgent low glucose threshold (mg/dL, min 40)"
           example: 55
+
+    DiabetesProfile:
+      type: object
+      required: [sensorDurationHours]
+      properties:
         sensorDurationHours:
           type: integer
           description: "How long a CGM sensor lasts (hours). Default: 240 (10 days). Libre 3/Dexcom G7/Libre 2 = 336, Dexcom G6/Guardian 4 = 168."
           example: 240
-        birthday:
-          type: string
-          format: date
-          nullable: true
-          description: "Birthday in YYYY-MM-DD format"
-          example: "1990-05-15"
         diabetesSince:
           type: integer
           nullable: true
           description: "Year of T1D diagnosis, e.g. 2010"
           example: 2010
+        carbAbsorptionRateGPerHour:
+          type: number
+          format: double
+          nullable: true
+          description: "Carbohydrate absorption rate in grams per hour"
+          example: 20.0
+
+    UserSettingsResponse:
+      type: object
+      required: [locale, units, diabetes, updatedAt]
+      properties:
+        birthday:
+          type: string
+          format: date
+          nullable: true
+          description: "Birthday in YYYY-MM-DD format (PII — handle with care)"
+          example: "1990-05-15"
+        locale:
+          $ref: "#/components/schemas/LocalePreferences"
+        units:
+          $ref: "#/components/schemas/UnitPreferences"
+        alarms:
+          $ref: "#/components/schemas/AlarmThresholds"
+          nullable: true
+        diabetes:
+          $ref: "#/components/schemas/DiabetesProfile"
         updatedAt:
           type: string
           format: date-time
@@ -591,7 +632,7 @@ components:
           description: Present when glucoseUnit or weightUnit was changed; instructs user to re-login
           example: "Glucose unit and weight unit changes take effect on your next login."
 
-    PatchSettingsRequest:
+    LocalePreferencesPatch:
       type: object
       properties:
         timezone:
@@ -603,35 +644,65 @@ components:
         timeFormat:
           type: integer
           enum: [12, 24]
+
+    UnitPreferencesPatch:
+      type: object
+      properties:
         glucoseUnit:
           type: string
           enum: ["mg/dL", "mmol/L"]
         weightUnit:
           type: string
           enum: ["kg", "lbs"]
-        alarmUrgentHigh:
+
+    AlarmThresholdsPatch:
+      type: object
+      properties:
+        urgentHigh:
           type: integer
-        alarmHigh:
+        high:
           type: integer
-        alarmLow:
+        low:
           type: integer
-        alarmUrgentLow:
+        urgentLow:
           type: integer
+
+    DiabetesProfilePatch:
+      type: object
+      properties:
         sensorDurationHours:
           type: integer
           description: "How long a CGM sensor lasts (hours). Default: 240."
           example: 240
-        birthday:
-          type: string
-          format: date
-          nullable: true
-          description: "Birthday in YYYY-MM-DD format"
-          example: "1990-05-15"
         diabetesSince:
           type: integer
           nullable: true
           description: "Year of T1D diagnosis, e.g. 2010"
           example: 2010
+        carbAbsorptionRateGPerHour:
+          type: number
+          format: double
+          nullable: true
+          description: "Carbohydrate absorption rate in grams per hour"
+          example: 20.0
+
+    PatchSettingsRequest:
+      type: object
+      properties:
+        birthday:
+          type: string
+          format: date
+          nullable: true
+          description: "Birthday in YYYY-MM-DD format (PII — handle with care)"
+          example: "1990-05-15"
+        locale:
+          $ref: "#/components/schemas/LocalePreferencesPatch"
+        units:
+          $ref: "#/components/schemas/UnitPreferencesPatch"
+        alarms:
+          $ref: "#/components/schemas/AlarmThresholdsPatch"
+        diabetes:
+          $ref: "#/components/schemas/DiabetesProfilePatch"
 
     CreateUserRequest:
       type: object
