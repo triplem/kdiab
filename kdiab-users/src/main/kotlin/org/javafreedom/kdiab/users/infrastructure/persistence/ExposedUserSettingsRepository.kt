@@ -9,6 +9,10 @@ import org.jetbrains.exposed.v1.core.*
 import org.jetbrains.exposed.v1.datetime.date
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
+import org.javafreedom.kdiab.users.domain.model.AlarmThresholds
+import org.javafreedom.kdiab.users.domain.model.DiabetesProfile
+import org.javafreedom.kdiab.users.domain.model.LocalePreferences
+import org.javafreedom.kdiab.users.domain.model.UnitPreferences
 import org.javafreedom.kdiab.users.domain.model.UserSettings
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 
@@ -47,20 +51,29 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
                 .where { UserSettingsTable.userId eq userId }
                 .singleOrNull()
                 ?.let { row ->
+                    val alarms = AlarmThresholds.fromNullable(
+                        urgentHigh = row[UserSettingsTable.alarmUrgentHigh],
+                        high = row[UserSettingsTable.alarmHigh],
+                        low = row[UserSettingsTable.alarmLow],
+                        urgentLow = row[UserSettingsTable.alarmUrgentLow],
+                    )
                     UserSettings(
                         userId = userId,
-                        timezone = row[UserSettingsTable.timezone],
-                        language = row[UserSettingsTable.language],
-                        timeFormat = row[UserSettingsTable.timeFormat],
-                        glucoseUnit = row[UserSettingsTable.glucoseUnit],
-                        weightUnit = row[UserSettingsTable.weightUnit],
-                        alarmUrgentHigh = row[UserSettingsTable.alarmUrgentHigh],
-                        alarmHigh = row[UserSettingsTable.alarmHigh],
-                        alarmLow = row[UserSettingsTable.alarmLow],
-                        alarmUrgentLow = row[UserSettingsTable.alarmUrgentLow],
-                        sensorDurationHours = row[UserSettingsTable.sensorDurationHours],
                         birthday = row[UserSettingsTable.birthday],
-                        diabetesSince = row[UserSettingsTable.diabetesSince],
+                        locale = LocalePreferences(
+                            timezone = row[UserSettingsTable.timezone],
+                            language = row[UserSettingsTable.language],
+                            timeFormat = row[UserSettingsTable.timeFormat],
+                        ),
+                        units = UnitPreferences(
+                            glucoseUnit = row[UserSettingsTable.glucoseUnit],
+                            weightUnit = row[UserSettingsTable.weightUnit],
+                        ),
+                        alarms = alarms,
+                        diabetes = DiabetesProfile(
+                            sensorDurationHours = row[UserSettingsTable.sensorDurationHours],
+                            diabetesSince = row[UserSettingsTable.diabetesSince],
+                        ),
                         createdAt = row[UserSettingsTable.createdAt].parseInstant(),
                         updatedAt = row[UserSettingsTable.updatedAt].parseInstant(),
                     )
@@ -72,18 +85,18 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
         suspendTransaction {
             UserSettingsTable.upsert {
                 it[userId] = settings.userId
-                it[timezone] = settings.timezone
-                it[language] = settings.language
-                it[timeFormat] = settings.timeFormat
-                it[glucoseUnit] = settings.glucoseUnit
-                it[weightUnit] = settings.weightUnit
-                it[alarmUrgentHigh] = settings.alarmUrgentHigh
-                it[alarmHigh] = settings.alarmHigh
-                it[alarmLow] = settings.alarmLow
-                it[alarmUrgentLow] = settings.alarmUrgentLow
-                it[sensorDurationHours] = settings.sensorDurationHours
                 it[birthday] = settings.birthday
-                it[diabetesSince] = settings.diabetesSince
+                it[timezone] = settings.locale.timezone
+                it[language] = settings.locale.language
+                it[timeFormat] = settings.locale.timeFormat
+                it[glucoseUnit] = settings.units.glucoseUnit
+                it[weightUnit] = settings.units.weightUnit
+                it[alarmUrgentHigh] = settings.alarms?.urgentHigh
+                it[alarmHigh] = settings.alarms?.high
+                it[alarmLow] = settings.alarms?.low
+                it[alarmUrgentLow] = settings.alarms?.urgentLow
+                it[sensorDurationHours] = settings.diabetes.sensorDurationHours
+                it[diabetesSince] = settings.diabetes.diabetesSince
                 it[createdAt] = settings.createdAt.toString()
                 it[updatedAt] = settings.updatedAt.toString()
             }

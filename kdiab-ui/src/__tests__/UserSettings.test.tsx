@@ -11,29 +11,24 @@ vi.mock('../api/usersApi', () => ({
 }))
 
 import { usersApi } from '../api/usersApi'
+import type { UserSettings as UserSettingsType } from '../api/usersApi'
 import { UserSettings } from '../features/users/UserSettings'
 
 const mockedGetMe = vi.mocked(usersApi.getMe)
 const mockedPatch = vi.mocked(usersApi.patchMySettings)
 
-function makeSettings(overrides = {}) {
+function makeSettings(overrides: Partial<UserSettingsType> = {}): UserSettingsType {
   return {
-    timezone: 'Europe/Berlin',
-    language: 'en',
-    timeFormat: 24 as const,
-    glucoseUnit: 'mg/dL' as const,
-    weightUnit: 'kg' as const,
-    alarmUrgentHigh: 260,
-    alarmHigh: 180,
-    alarmLow: 70,
-    alarmUrgentLow: 54,
-    sensorDurationHours: 240,
+    locale: { timezone: 'Europe/Berlin', language: 'en', timeFormat: 24 },
+    units: { glucoseUnit: 'mg/dL', weightUnit: 'kg' },
+    alarms: { urgentHigh: 260, high: 180, low: 70, urgentLow: 54 },
+    diabetes: { sensorDurationHours: 240 },
     updatedAt: '2024-01-01T00:00:00Z',
     ...overrides,
   }
 }
 
-function makeUser(settingsOverrides = {}) {
+function makeUser(settingsOverrides: Partial<UserSettingsType> = {}) {
   return {
     userId: 'user-1',
     email: 'test@example.com',
@@ -71,15 +66,17 @@ describe('UserSettings', () => {
   })
 
   test('pre-fills sensorDurationHours from stored settings', async () => {
-    mockedGetMe.mockResolvedValue({ data: makeUser({ sensorDurationHours: 336 }) } as never)
+    mockedGetMe.mockResolvedValue({
+      data: makeUser({ diabetes: { sensorDurationHours: 336 } }),
+    } as never)
     render(<UserSettings />, { wrapper })
     await waitFor(() => expect(screen.getByLabelText(/sensor lifespan/i)).toBeInTheDocument())
     expect(screen.getByLabelText(/sensor lifespan/i)).toHaveValue(336)
   })
 
   test('includes sensorDurationHours in PATCH payload on save', async () => {
-    mockedGetMe.mockResolvedValue({ data: makeUser({ sensorDurationHours: 240 }) } as never)
-    mockedPatch.mockResolvedValue({ data: makeSettings({ sensorDurationHours: 168 }) } as never)
+    mockedGetMe.mockResolvedValue({ data: makeUser() } as never)
+    mockedPatch.mockResolvedValue({ data: makeSettings() } as never)
     render(<UserSettings />, { wrapper })
     await waitFor(() => screen.getByLabelText(/sensor lifespan/i))
 
@@ -87,7 +84,9 @@ describe('UserSettings', () => {
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
 
     await waitFor(() => expect(mockedPatch).toHaveBeenCalledWith(
-      expect.objectContaining({ sensorDurationHours: 168 })
+      expect.objectContaining({
+        diabetes: expect.objectContaining({ sensorDurationHours: 168 }),
+      })
     ))
   })
 
@@ -104,8 +103,8 @@ describe('UserSettings', () => {
   })
 
   test('includes glucoseUnit in PATCH payload when changed', async () => {
-    mockedGetMe.mockResolvedValue({ data: makeUser({ glucoseUnit: 'mg/dL' }) } as never)
-    mockedPatch.mockResolvedValue({ data: makeSettings({ glucoseUnit: 'mmol/L' }) } as never)
+    mockedGetMe.mockResolvedValue({ data: makeUser() } as never)
+    mockedPatch.mockResolvedValue({ data: makeSettings() } as never)
     render(<UserSettings />, { wrapper })
     await waitFor(() => screen.getByText(/glucose unit/i))
 
@@ -114,7 +113,9 @@ describe('UserSettings', () => {
     fireEvent.click(screen.getByRole('button', { name: /save/i }))
 
     await waitFor(() => expect(mockedPatch).toHaveBeenCalledWith(
-      expect.objectContaining({ glucoseUnit: 'mmol/L' })
+      expect.objectContaining({
+        units: expect.objectContaining({ glucoseUnit: 'mmol/L' }),
+      })
     ))
   })
 

@@ -22,6 +22,9 @@ import org.javafreedom.kdiab.users.application.service.ApiKeyService
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
 import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
+import org.javafreedom.kdiab.users.domain.model.AlarmThresholds
+import org.javafreedom.kdiab.users.domain.model.LocalePreferences
+import org.javafreedom.kdiab.users.domain.model.UnitPreferences
 import org.javafreedom.kdiab.users.domain.model.UserSettings
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
@@ -87,15 +90,9 @@ class UserSettingsApiTest {
             val now = Clock.System.now()
             return UserSettings(
                 userId = userId,
-                timezone = "UTC",
-                language = "en",
-                timeFormat = 24,
-                glucoseUnit = "mg/dL",
-                weightUnit = "kg",
-                alarmUrgentHigh = 260,
-                alarmHigh = 200,
-                alarmLow = 75,
-                alarmUrgentLow = 55,
+                locale = LocalePreferences(timezone = "UTC", language = "en", timeFormat = 24),
+                units = UnitPreferences(glucoseUnit = "mg/dL", weightUnit = "kg"),
+                alarms = AlarmThresholds(urgentHigh = 260, high = 200, low = 75, urgentLow = 55),
                 createdAt = now,
                 updatedAt = now,
             )
@@ -159,7 +156,7 @@ class UserSettingsApiTest {
     fun `PATCH settings - 401 without auth token`() = settingsApiTest { _ ->
         val resp = client.patch("/api/v1/users/me/settings") {
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            setBody("""{"timezone":"Europe/Berlin"}""")
+            setBody("""{"locale":{"timezone":"Europe/Berlin"}}""")
         }
         assertEquals(HttpStatusCode.Unauthorized, resp.status)
     }
@@ -171,7 +168,7 @@ class UserSettingsApiTest {
         val resp = client.patch("/api/v1/users/me/settings") {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            setBody("""{"timezone":"America/New_York"}""")
+            setBody("""{"locale":{"timezone":"America/New_York"}}""")
         }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
@@ -184,7 +181,7 @@ class UserSettingsApiTest {
                 bearerAuth(sarahToken)
                 header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                 setBody(
-                    """{"alarmUrgentHigh":280,"alarmHigh":220,"alarmLow":80,"alarmUrgentLow":60}"""
+                    """{"alarms":{"urgentHigh":280,"high":220,"low":80,"urgentLow":60}}"""
                 )
             }
             assertEquals(HttpStatusCode.OK, resp.status)
@@ -195,7 +192,7 @@ class UserSettingsApiTest {
         val resp = client.patch("/api/v1/users/me/settings") {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            setBody("""{"glucoseUnit":"mmol/L"}""")
+            setBody("""{"units":{"glucoseUnit":"mmol/L"}}""")
         }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
@@ -208,7 +205,7 @@ class UserSettingsApiTest {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(
-                """{"alarmUrgentHigh":200,"alarmHigh":200,"alarmLow":80,"alarmUrgentLow":60}"""
+                """{"alarms":{"urgentHigh":200,"high":200,"low":80,"urgentLow":60}}"""
             )
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
@@ -220,7 +217,7 @@ class UserSettingsApiTest {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(
-                """{"alarmUrgentHigh":180,"alarmHigh":200,"alarmLow":80,"alarmUrgentLow":60}"""
+                """{"alarms":{"urgentHigh":180,"high":200,"low":80,"urgentLow":60}}"""
             )
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
@@ -232,7 +229,7 @@ class UserSettingsApiTest {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(
-                """{"alarmUrgentHigh":260,"alarmHigh":80,"alarmLow":80,"alarmUrgentLow":60}"""
+                """{"alarms":{"urgentHigh":260,"high":80,"low":80,"urgentLow":60}}"""
             )
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
@@ -244,7 +241,7 @@ class UserSettingsApiTest {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(
-                """{"alarmUrgentHigh":260,"alarmHigh":70,"alarmLow":80,"alarmUrgentLow":60}"""
+                """{"alarms":{"urgentHigh":260,"high":70,"low":80,"urgentLow":60}}"""
             )
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
@@ -256,7 +253,7 @@ class UserSettingsApiTest {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(
-                """{"alarmUrgentHigh":260,"alarmHigh":200,"alarmLow":60,"alarmUrgentLow":60}"""
+                """{"alarms":{"urgentHigh":260,"high":200,"low":60,"urgentLow":60}}"""
             )
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
@@ -268,7 +265,7 @@ class UserSettingsApiTest {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(
-                """{"alarmUrgentHigh":260,"alarmHigh":200,"alarmLow":55,"alarmUrgentLow":60}"""
+                """{"alarms":{"urgentHigh":260,"high":200,"low":55,"urgentLow":60}}"""
             )
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
@@ -282,7 +279,7 @@ class UserSettingsApiTest {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(
-                """{"alarmUrgentHigh":260,"alarmHigh":200,"alarmLow":80,"alarmUrgentLow":35}"""
+                """{"alarms":{"urgentHigh":260,"high":200,"low":80,"urgentLow":35}}"""
             )
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
@@ -294,7 +291,7 @@ class UserSettingsApiTest {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
             setBody(
-                """{"alarmUrgentHigh":401,"alarmHigh":200,"alarmLow":80,"alarmUrgentLow":60}"""
+                """{"alarms":{"urgentHigh":401,"high":200,"low":80,"urgentLow":60}}"""
             )
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
@@ -307,7 +304,7 @@ class UserSettingsApiTest {
         val resp = client.patch("/api/v1/users/me/settings") {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            setBody("""{"glucoseUnit":"dL/mg"}""")
+            setBody("""{"units":{"glucoseUnit":"dL/mg"}}""")
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
     }
@@ -317,7 +314,7 @@ class UserSettingsApiTest {
         val resp = client.patch("/api/v1/users/me/settings") {
             bearerAuth(sarahToken)
             header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            setBody("""{"weightUnit":"stones"}""")
+            setBody("""{"units":{"weightUnit":"stones"}}""")
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
     }
@@ -334,7 +331,7 @@ class UserSettingsApiTest {
             val resp = client.patch("/api/v1/users/me/settings") {
                 bearerAuth(sarahToken)
                 header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                setBody("""{"alarmUrgentHigh":190}""")
+                setBody("""{"alarms":{"urgentHigh":190}}""")
             }
             // 190 < existing high (200) → violation
             assertEquals(HttpStatusCode.BadRequest, resp.status)
@@ -350,7 +347,7 @@ class UserSettingsApiTest {
             val resp = client.patch("/api/v1/users/me/settings") {
                 bearerAuth(sarahToken)
                 header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                setBody("""{"alarmUrgentHigh":300}""")
+                setBody("""{"alarms":{"urgentHigh":300}}""")
             }
             assertEquals(HttpStatusCode.OK, resp.status)
         }

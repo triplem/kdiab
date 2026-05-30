@@ -4,7 +4,11 @@ package org.javafreedom.kdiab.users.adapters.inbound.web
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import org.javafreedom.kdiab.users.application.service.SettingsPatch
+import org.javafreedom.kdiab.users.domain.model.AlarmThresholds
+import org.javafreedom.kdiab.users.domain.model.DiabetesProfile
 import org.javafreedom.kdiab.users.domain.model.DoctorPatientRelation
+import org.javafreedom.kdiab.users.domain.model.LocalePreferences
+import org.javafreedom.kdiab.users.domain.model.UnitPreferences
 import org.javafreedom.kdiab.users.domain.model.User
 import org.javafreedom.kdiab.users.domain.model.UserSettings
 
@@ -18,19 +22,40 @@ data class UserResponse(
 )
 
 @Serializable
-data class UserSettingsResponse(
+data class LocalePreferencesResponse(
     val timezone: String,
     val language: String,
     val timeFormat: Int,
+)
+
+@Serializable
+data class UnitPreferencesResponse(
     val glucoseUnit: String,
     val weightUnit: String,
-    val alarmUrgentHigh: Int?,
-    val alarmHigh: Int?,
-    val alarmLow: Int?,
-    val alarmUrgentLow: Int?,
+)
+
+@Serializable
+data class AlarmThresholdsResponse(
+    val urgentHigh: Int,
+    val high: Int,
+    val low: Int,
+    val urgentLow: Int,
+)
+
+@Serializable
+data class DiabetesProfileResponse(
     val sensorDurationHours: Int,
-    val birthday: String?,
     val diabetesSince: Int?,
+    val carbAbsorptionRateGPerHour: Double?,
+)
+
+@Serializable
+data class UserSettingsResponse(
+    val birthday: String?,
+    val locale: LocalePreferencesResponse,
+    val units: UnitPreferencesResponse,
+    val alarms: AlarmThresholdsResponse?,
+    val diabetes: DiabetesProfileResponse,
     val updatedAt: String,
     val jwtBackedNote: String? = null,
 )
@@ -50,19 +75,40 @@ data class UpdateUserRequest(
 )
 
 @Serializable
-data class PatchSettingsRequest(
+data class LocalePreferencesPatch(
     val timezone: String? = null,
     val language: String? = null,
     val timeFormat: Int? = null,
+)
+
+@Serializable
+data class UnitPreferencesPatch(
     val glucoseUnit: String? = null,
     val weightUnit: String? = null,
-    val alarmUrgentHigh: Int? = null,
-    val alarmHigh: Int? = null,
-    val alarmLow: Int? = null,
-    val alarmUrgentLow: Int? = null,
+)
+
+@Serializable
+data class AlarmThresholdsPatch(
+    val urgentHigh: Int? = null,
+    val high: Int? = null,
+    val low: Int? = null,
+    val urgentLow: Int? = null,
+)
+
+@Serializable
+data class DiabetesProfilePatch(
     val sensorDurationHours: Int? = null,
-    val birthday: String? = null,
     val diabetesSince: Int? = null,
+    val carbAbsorptionRateGPerHour: Double? = null,
+)
+
+@Serializable
+data class PatchSettingsRequest(
+    val birthday: String? = null,
+    val locale: LocalePreferencesPatch? = null,
+    val units: UnitPreferencesPatch? = null,
+    val alarms: AlarmThresholdsPatch? = null,
+    val diabetes: DiabetesProfilePatch? = null,
 )
 
 @Serializable
@@ -99,35 +145,47 @@ fun User.toResponse(): UserResponse = UserResponse(
 )
 
 fun UserSettings.toResponse(jwtBackedNote: String? = null): UserSettingsResponse = UserSettingsResponse(
-    timezone = timezone,
-    language = language,
-    timeFormat = timeFormat,
-    glucoseUnit = glucoseUnit,
-    weightUnit = weightUnit,
-    alarmUrgentHigh = alarmUrgentHigh,
-    alarmHigh = alarmHigh,
-    alarmLow = alarmLow,
-    alarmUrgentLow = alarmUrgentLow,
-    sensorDurationHours = sensorDurationHours,
     birthday = birthday?.toString(),
-    diabetesSince = diabetesSince,
+    locale = LocalePreferencesResponse(
+        timezone = locale.timezone,
+        language = locale.language,
+        timeFormat = locale.timeFormat,
+    ),
+    units = UnitPreferencesResponse(
+        glucoseUnit = units.glucoseUnit,
+        weightUnit = units.weightUnit,
+    ),
+    alarms = alarms?.let { a ->
+        AlarmThresholdsResponse(
+            urgentHigh = a.urgentHigh,
+            high = a.high,
+            low = a.low,
+            urgentLow = a.urgentLow,
+        )
+    },
+    diabetes = DiabetesProfileResponse(
+        sensorDurationHours = diabetes.sensorDurationHours,
+        diabetesSince = diabetes.diabetesSince,
+        carbAbsorptionRateGPerHour = diabetes.carbAbsorptionRateGPerHour,
+    ),
     updatedAt = updatedAt.toString(),
     jwtBackedNote = jwtBackedNote,
 )
 
 fun PatchSettingsRequest.toPatch() = SettingsPatch(
-    timezone = timezone,
-    language = language,
-    timeFormat = timeFormat,
-    glucoseUnit = glucoseUnit,
-    weightUnit = weightUnit,
-    alarmUrgentHigh = alarmUrgentHigh,
-    alarmHigh = alarmHigh,
-    alarmLow = alarmLow,
-    alarmUrgentLow = alarmUrgentLow,
-    sensorDurationHours = sensorDurationHours,
     birthday = birthday?.let { LocalDate.parse(it) },
-    diabetesSince = diabetesSince,
+    timezone = locale?.timezone,
+    language = locale?.language,
+    timeFormat = locale?.timeFormat,
+    glucoseUnit = units?.glucoseUnit,
+    weightUnit = units?.weightUnit,
+    alarmUrgentHigh = alarms?.urgentHigh,
+    alarmHigh = alarms?.high,
+    alarmLow = alarms?.low,
+    alarmUrgentLow = alarms?.urgentLow,
+    sensorDurationHours = diabetes?.sensorDurationHours,
+    diabetesSince = diabetes?.diabetesSince,
+    carbAbsorptionRateGPerHour = diabetes?.carbAbsorptionRateGPerHour,
 )
 
 fun DoctorPatientRelation.toResponse() = DoctorPatientResponse(

@@ -130,7 +130,7 @@ export function DashboardView({ userId, glucoseUnit }: Props) {
   const catheterDate = deviceAge?.catheterChangedAt ?? undefined
   const reservoirDate = deviceAge?.reservoirChangedAt ?? undefined
   const sensorDate = deviceAge?.sensorInsertedAt ?? undefined
-  const sensorDurationHours = userMe?.settings?.sensorDurationHours ?? 240
+  const sensorDurationHours = userMe?.settings?.diabetes?.sensorDurationHours ?? 240
   const batteryLevel = deviceStatus?.batteryLevel ?? null
 
   // -- Chart data --------------------------------------------------------------

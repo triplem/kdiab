@@ -70,7 +70,7 @@ class UserServiceTest {
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
         val patch = SettingsPatch(timezone = "Europe/Berlin")
         val result = service.updateMySettings(principal, patch)
-        assertEquals("Europe/Berlin", result.timezone)
+        assertEquals("Europe/Berlin", result.locale.timezone)
     }
 
     @Test
@@ -80,7 +80,7 @@ class UserServiceTest {
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
         val patch = SettingsPatch(glucoseUnit = "mmol/L")
         val result = service.updateMySettings(principal, patch)
-        assertEquals("mmol/L", result.glucoseUnit)
+        assertEquals("mmol/L", result.units.glucoseUnit)
         coVerify(exactly = 0) { identityProvider.updateUserAttributes(any(), any()) }
     }
 
@@ -91,7 +91,7 @@ class UserServiceTest {
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
         val patch = SettingsPatch(weightUnit = "lbs")
         val result = service.updateMySettings(principal, patch)
-        assertEquals("lbs", result.weightUnit)
+        assertEquals("lbs", result.units.weightUnit)
         coVerify(exactly = 0) { identityProvider.updateUserAttributes(any(), any()) }
     }
 
@@ -175,10 +175,10 @@ class UserServiceTest {
             alarmUrgentHigh = 260, alarmHigh = 200, alarmLow = 75, alarmUrgentLow = 55,
         )
         val result = service.updateMySettings(principal, patch)
-        assertEquals(260, result.alarmUrgentHigh)
-        assertEquals(200, result.alarmHigh)
-        assertEquals(75, result.alarmLow)
-        assertEquals(55, result.alarmUrgentLow)
+        assertEquals(260, result.alarms?.urgentHigh)
+        assertEquals(200, result.alarms?.high)
+        assertEquals(75, result.alarms?.low)
+        assertEquals(55, result.alarms?.urgentLow)
     }
 
     @Test
@@ -246,7 +246,7 @@ class UserServiceTest {
         )
         val result = service.updateMySettings(principal, patch)
         assertEquals(LocalDate(1990, 5, 15), result.birthday)
-        assertEquals(2010, result.diabetesSince)
+        assertEquals(2010, result.diabetes.diabetesSince)
     }
 
     @Test
@@ -256,7 +256,7 @@ class UserServiceTest {
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
         val patch = SettingsPatch(diabetesSince = 1900)
         val result = service.updateMySettings(principal, patch)
-        assertEquals(1900, result.diabetesSince)
+        assertEquals(1900, result.diabetes.diabetesSince)
     }
 
     @Test

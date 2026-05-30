@@ -9,6 +9,10 @@ import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlinx.datetime.LocalDate
 import org.javafreedom.kdiab.common.domain.model.Role
+import org.javafreedom.kdiab.users.domain.model.AlarmThresholds
+import org.javafreedom.kdiab.users.domain.model.DiabetesProfile
+import org.javafreedom.kdiab.users.domain.model.LocalePreferences
+import org.javafreedom.kdiab.users.domain.model.UnitPreferences
 import org.javafreedom.kdiab.users.domain.model.User
 import org.javafreedom.kdiab.users.domain.model.UserSettings
 
@@ -19,17 +23,11 @@ class UserMapperTest {
 
     private fun settings() = UserSettings(
         userId = userId,
-        timezone = "Europe/Berlin",
-        language = "de",
-        timeFormat = 24,
-        glucoseUnit = "mg/dL",
-        weightUnit = "kg",
-        alarmUrgentHigh = 260,
-        alarmHigh = 200,
-        alarmLow = 75,
-        alarmUrgentLow = 55,
         createdAt = now,
         updatedAt = now,
+        locale = LocalePreferences(timezone = "Europe/Berlin", language = "de", timeFormat = 24),
+        units = UnitPreferences(glucoseUnit = "mg/dL", weightUnit = "kg"),
+        alarms = AlarmThresholds(urgentHigh = 260, high = 200, low = 75, urgentLow = 55),
     )
 
     private fun user(s: UserSettings? = settings()) = User(
@@ -57,19 +55,20 @@ class UserMapperTest {
     }
 
     @Test
-    fun `UserSettings toResponse maps all fields`() {
+    fun `UserSettings toResponse maps all fields including nested sub-objects`() {
         val response = settings().toResponse()
-        assertEquals("Europe/Berlin", response.timezone)
-        assertEquals("de", response.language)
-        assertEquals(24, response.timeFormat)
-        assertEquals("mg/dL", response.glucoseUnit)
-        assertEquals("kg", response.weightUnit)
-        assertEquals(260, response.alarmUrgentHigh)
-        assertEquals(200, response.alarmHigh)
-        assertEquals(75, response.alarmLow)
-        assertEquals(55, response.alarmUrgentLow)
+        assertEquals("Europe/Berlin", response.locale.timezone)
+        assertEquals("de", response.locale.language)
+        assertEquals(24, response.locale.timeFormat)
+        assertEquals("mg/dL", response.units.glucoseUnit)
+        assertEquals("kg", response.units.weightUnit)
+        assertNotNull(response.alarms)
+        assertEquals(260, response.alarms!!.urgentHigh)
+        assertEquals(200, response.alarms!!.high)
+        assertEquals(75, response.alarms!!.low)
+        assertEquals(55, response.alarms!!.urgentLow)
         assertNull(response.birthday)
-        assertNull(response.diabetesSince)
+        assertNull(response.diabetes.diabetesSince)
         assertNull(response.jwtBackedNote)
     }
 
@@ -77,11 +76,18 @@ class UserMapperTest {
     fun `UserSettings toResponse maps birthday and diabetesSince when set`() {
         val settingsWithDates = settings().copy(
             birthday = LocalDate(1990, 5, 15),
-            diabetesSince = 2010,
+            diabetes = DiabetesProfile(sensorDurationHours = 240, diabetesSince = 2010),
         )
         val response = settingsWithDates.toResponse()
         assertEquals("1990-05-15", response.birthday)
-        assertEquals(2010, response.diabetesSince)
+        assertEquals(2010, response.diabetes.diabetesSince)
+    }
+
+    @Test
+    fun `UserSettings toResponse maps null alarms when no alarms set`() {
+        val settingsNoAlarms = settings().copy(alarms = null)
+        val response = settingsNoAlarms.toResponse()
+        assertNull(response.alarms)
     }
 
     @Test
@@ -91,11 +97,11 @@ class UserMapperTest {
     }
 
     @Test
-    fun `PatchSettingsRequest toPatch maps all fields`() {
+    fun `PatchSettingsRequest toPatch maps all nested fields`() {
         val req = PatchSettingsRequest(
-            timezone = "UTC", language = "en", timeFormat = 12,
-            glucoseUnit = "mmol/L", weightUnit = "lbs",
-            alarmUrgentHigh = 300, alarmHigh = 250, alarmLow = 70, alarmUrgentLow = 50,
+            locale = LocalePreferencesPatch(timezone = "UTC", language = "en", timeFormat = 12),
+            units = UnitPreferencesPatch(glucoseUnit = "mmol/L", weightUnit = "lbs"),
+            alarms = AlarmThresholdsPatch(urgentHigh = 300, high = 250, low = 70, urgentLow = 50),
         )
         val patch = req.toPatch()
         assertEquals("UTC", patch.timezone)
@@ -104,13 +110,16 @@ class UserMapperTest {
         assertEquals("mmol/L", patch.glucoseUnit)
         assertEquals("lbs", patch.weightUnit)
         assertEquals(300, patch.alarmUrgentHigh)
+        assertEquals(250, patch.alarmHigh)
+        assertEquals(70, patch.alarmLow)
+        assertEquals(50, patch.alarmUrgentLow)
     }
 
     @Test
     fun `PatchSettingsRequest toPatch maps birthday and diabetesSince`() {
         val req = PatchSettingsRequest(
             birthday = "1990-05-15",
-            diabetesSince = 2010,
+            diabetes = DiabetesProfilePatch(diabetesSince = 2010),
         )
         val patch = req.toPatch()
         assertEquals(LocalDate(1990, 5, 15), patch.birthday)
