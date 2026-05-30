@@ -9,6 +9,7 @@ vi.mock('../api/analyzeApi', () => ({
     getAgp: vi.fn(),
     getDailyStats: vi.fn(),
     getDailyTrend: vi.fn(),
+    getTimeline: vi.fn(),
     getGlucoseDistribution: vi.fn(),
     getActiveProfiles: vi.fn(),
   },
@@ -23,6 +24,7 @@ const mockedGetAgp = vi.mocked(analyzeApi.getAgp)
 const mockedGetDailyStats = vi.mocked(analyzeApi.getDailyStats)
 const mockedGetDailyTrend = vi.mocked(analyzeApi.getDailyTrend)
 const mockedGetGlucoseDistribution = vi.mocked(analyzeApi.getGlucoseDistribution)
+const mockedGetTimeline = vi.mocked(analyzeApi.getTimeline)
 const mockedGetActiveProfiles = vi.mocked(analyzeApi.getActiveProfiles)
 
 const FAKE_HBA1C = {
@@ -56,6 +58,7 @@ beforeEach(() => {
   mockedGetAgp.mockResolvedValue({ data: FAKE_AGP } as never)
   mockedGetDailyStats.mockResolvedValue({ data: { rows: [], summary: { date: 'summary', cgmCount: 0, veryLowPercent: null, lowPercent: null, inRangePercent: null, highPercent: null, veryHighPercent: null, p25: null, median: null, p75: null, sd: null, eHbA1c: null } } } as never)
   mockedGetDailyTrend.mockResolvedValue({ data: { days: [] } } as never)
+  mockedGetTimeline.mockResolvedValue({ data: { measures: [], treatments: [] } } as never)
   mockedGetGlucoseDistribution.mockResolvedValue({ data: { buckets: [], zonePercents: { veryLow: 0, low: 0, inRange: 100, high: 0, veryHigh: 0 }, unit: 'mg/dL', totalCount: 2016 } } as never)
   mockedGetActiveProfiles.mockResolvedValue({ data: { profiles: [] } } as never)
 })

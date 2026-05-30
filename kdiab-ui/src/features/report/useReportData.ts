@@ -8,6 +8,7 @@ import type {
   GlucoseDistributionResponse,
   ProfilesResponse,
   CgpResponse,
+  TimelineResponse,
 } from '../../api/analyzeApi'
 import type { ReportPageId } from './reportPages'
 
@@ -23,6 +24,7 @@ export interface ReportDataState {
   agp: ReportSection<AgpResponse>
   dailyStats: ReportSection<DailyStatsResponse>
   dailyTrend: ReportSection<DailyTrendResponse>
+  dailyCharts: ReportSection<TimelineResponse>
   glucoseDistribution: ReportSection<GlucoseDistributionResponse>
   profile: ReportSection<ProfilesResponse>
   cgp: ReportSection<CgpResponse>
@@ -76,6 +78,13 @@ export function useReportData(
         enabled: enabled && isSelected('DAILY_TREND'),
         staleTime: 5 * 60 * 1000,
       },
+      // Daily Charts (timeline) — only if selected
+      {
+        queryKey: ['report-daily-charts', userId, from, to] as const,
+        queryFn: () => analyzeApi.getTimeline(userId, from, to).then(r => r.data),
+        enabled: enabled && isSelected('DAILY_CHARTS'),
+        staleTime: 5 * 60 * 1000,
+      },
       // Glucose Distribution — only if selected
       {
         queryKey: ['report-glucose-distribution', userId, from, to, glucoseUnit] as const,
@@ -101,7 +110,7 @@ export function useReportData(
     ],
   })
 
-  const [summaryQ, agpQ, dailyStatsQ, dailyTrendQ, glucoseDistQ, profileQ, cgpQ] = results
+  const [summaryQ, agpQ, dailyStatsQ, dailyTrendQ, dailyChartsQ, glucoseDistQ, profileQ, cgpQ] = results
 
   return {
     summary: {
@@ -123,6 +132,11 @@ export function useReportData(
       data: dailyTrendQ.data ?? null,
       isLoading: dailyTrendQ.isLoading,
       isError: dailyTrendQ.isError,
+    },
+    dailyCharts: {
+      data: dailyChartsQ.data ?? null,
+      isLoading: dailyChartsQ.isLoading,
+      isError: dailyChartsQ.isError,
     },
     glucoseDistribution: {
       data: glucoseDistQ.data ?? null,
