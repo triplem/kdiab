@@ -56,6 +56,7 @@ export function ReportPage({ userId, glucoseUnit, patientName }: Props) {
     dateRange.to,
     selectedPages,
     glucoseUnit,
+    patientName,
   )
 
   const handleDateChange = useCallback((range: DateRange) => {

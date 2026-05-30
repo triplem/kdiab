@@ -324,8 +324,14 @@ export const analyzeApi = {
     axiosInstance.get<CgpResponse>(`${BASE}/users/${userId}/analytics/cgp`, {
       params: { from, to, glucoseUnit },
     }),
-  getReportSummary: (userId: string, from: string, to: string, glucoseUnit?: string) =>
+  getReportSummary: (
+    userId: string,
+    from: string,
+    to: string,
+    glucoseUnit?: string,
+    displayName?: string,
+  ) =>
     axiosInstance.get<ReportSummaryResponse>(`${BASE}/users/${userId}/analytics/report-summary`, {
-      params: { from, to, glucoseUnit },
+      params: { from, to, glucoseUnit, ...(displayName !== undefined && { displayName }) },
     }),
 }

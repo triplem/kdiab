@@ -47,6 +47,7 @@ export function useReportData(
   to: string,
   selectedPages: readonly ReportPageId[],
   glucoseUnit: string,
+  displayName?: string,
 ): ReportDataState {
   const enabled = !!userId && !!from && !!to
   const isSelected = (page: ReportPageId) => selectedPages.includes(page)
@@ -55,8 +56,9 @@ export function useReportData(
     queries: [
       // AUSWERTUNG (report-summary) — always fetched
       {
-        queryKey: ['report-summary-page', userId, from, to, glucoseUnit] as const,
-        queryFn: () => analyzeApi.getReportSummary(userId, from, to, glucoseUnit).then(r => r.data),
+        queryKey: ['report-summary-page', userId, from, to, glucoseUnit, displayName] as const,
+        queryFn: () =>
+          analyzeApi.getReportSummary(userId, from, to, glucoseUnit, displayName).then(r => r.data),
         enabled,
         staleTime: 5 * 60 * 1000,
       },

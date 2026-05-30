@@ -186,8 +186,9 @@ private suspend fun handleReportSummary(call: ApplicationCall, analyticsService:
         }
         .getOrDefault(TimeZone.UTC)
 
-    // displayName: use userId as display name since UserPrincipal has no displayName field
-    val displayName = ctx.targetUserId.toString()
+    val displayName = call.request.queryParameters["displayName"]
+        ?.takeIf { it.isNotBlank() }
+        ?: ctx.targetUserId.toString()
 
     val result = analyticsService.getReportSummary(
         userId = ctx.targetUserId.toString(),
