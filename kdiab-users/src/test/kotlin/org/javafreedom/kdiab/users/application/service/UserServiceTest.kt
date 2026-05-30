@@ -7,6 +7,8 @@ import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.test.runTest
@@ -278,5 +280,288 @@ class UserServiceTest {
         assertFailsWith<BusinessValidationException> {
             service.updateMySettings(principal, patch)
         }
+    }
+
+    // --- updateUser tests ---
+
+    @Test
+    fun `updateUser throws AuthorizationException for non-admin`() = runTest {
+        assertFailsWith<AuthorizationException> {
+            service.updateUser(patientPrincipal(), userId, null, null)
+        }
+    }
+
+    @Test
+    fun `updateUser with no changes returns current user`() = runTest {
+        val principal = adminPrincipal()
+        coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
+        coEvery { identityProvider.getUserRoles(userId) } returns setOf(Role.PATIENT)
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        val user = service.updateUser(principal, userId, displayName = null, role = null)
+        assertEquals(userId, user.userId)
+        coVerify(exactly = 2) { identityProvider.getUserProfile(userId) }
+    }
+
+    @Test
+    fun `updateUser with displayName updates identity provider`() = runTest {
+        val principal = adminPrincipal()
+        coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
+        coEvery { identityProvider.updateUser(userId, any()) } returns Unit
+        coEvery { identityProvider.getUserRoles(userId) } returns setOf(Role.PATIENT)
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        val user = service.updateUser(principal, userId, displayName = "New Name", role = null)
+        assertEquals(userId, user.userId)
+        coVerify(exactly = 1) { identityProvider.updateUser(userId, any()) }
+    }
+
+    @Test
+    fun `updateUser with role removes old roles and assigns new one`() = runTest {
+        val principal = adminPrincipal()
+        coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
+        coEvery { identityProvider.getUserRoles(userId) } returns setOf(Role.PATIENT)
+        coEvery { identityProvider.removeRoles(userId, any()) } returns Unit
+        coEvery { identityProvider.assignRoles(userId, any()) } returns Unit
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        service.updateUser(principal, userId, displayName = null, role = Role.DOCTOR)
+        coVerify(exactly = 1) { identityProvider.removeRoles(userId, setOf(Role.PATIENT)) }
+        coVerify(exactly = 1) { identityProvider.assignRoles(userId, setOf(Role.DOCTOR)) }
+    }
+
+    @Test
+    fun `updateUser with role when user has no existing roles skips removeRoles`() = runTest {
+        val principal = adminPrincipal()
+        coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
+        coEvery { identityProvider.getUserRoles(userId) } returns emptySet()
+        coEvery { identityProvider.assignRoles(userId, any()) } returns Unit
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        service.updateUser(principal, userId, displayName = null, role = Role.PATIENT)
+        coVerify(exactly = 0) { identityProvider.removeRoles(any(), any()) }
+        coVerify(exactly = 1) { identityProvider.assignRoles(userId, setOf(Role.PATIENT)) }
+    }
+
+    @Test
+    fun `updateUser with displayName and role performs both updates`() = runTest {
+        val principal = adminPrincipal()
+        coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
+        coEvery { identityProvider.updateUser(userId, any()) } returns Unit
+        coEvery { identityProvider.getUserRoles(userId) } returns setOf(Role.PATIENT)
+        coEvery { identityProvider.removeRoles(userId, any()) } returns Unit
+        coEvery { identityProvider.assignRoles(userId, any()) } returns Unit
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        service.updateUser(principal, userId, displayName = "Dr. House", role = Role.DOCTOR)
+        coVerify(exactly = 1) { identityProvider.updateUser(userId, any()) }
+        coVerify(exactly = 1) { identityProvider.assignRoles(userId, setOf(Role.DOCTOR)) }
+    }
+
+    // --- createUser rollback test ---
+
+    @Test
+    fun `createUser rolls back identity provider user when settings save fails`() = runTest {
+        val newId = Uuid.parse("22222222-2222-2222-2222-222222222222")
+        coEvery { identityProvider.createUser(any()) } returns newId
+        coEvery { identityProvider.assignRoles(any(), any()) } returns Unit
+        coEvery { settingsRepo.save(any()) } throws RuntimeException("DB unavailable")
+        coEvery { identityProvider.deleteUser(newId) } returns Unit
+        assertFailsWith<RuntimeException> {
+            service.createUser(adminPrincipal(), "new@example.com", "New User", "pass", Role.PATIENT)
+        }
+        coVerify(exactly = 1) { identityProvider.deleteUser(newId) }
+    }
+
+    @Test
+    fun `createUser propagates exception when rollback also fails`() = runTest {
+        val newId = Uuid.parse("22222222-2222-2222-2222-222222222222")
+        coEvery { identityProvider.createUser(any()) } returns newId
+        coEvery { identityProvider.assignRoles(any(), any()) } returns Unit
+        coEvery { settingsRepo.save(any()) } throws RuntimeException("DB unavailable")
+        coEvery { identityProvider.deleteUser(newId) } throws RuntimeException("Keycloak down")
+        // The original DB exception must still propagate
+        assertFailsWith<RuntimeException> {
+            service.createUser(adminPrincipal(), "new@example.com", "New User", "pass", Role.PATIENT)
+        }
+    }
+
+    // --- listUsers edge cases ---
+
+    @Test
+    fun `listUsers skips profiles with null id`() = runTest {
+        val profileWithNullId = IdentityUserProfile(id = null, email = "no-id@example.com")
+        coEvery { identityProvider.listUserProfiles(any(), any(), any()) } returns listOf(profileWithNullId)
+        val results = service.listUsers(adminPrincipal(), null, 0, 20)
+        assertEquals(0, results.size)
+    }
+
+    @Test
+    fun `listUsers skips profiles with unparseable UUID id`() = runTest {
+        val profileWithBadId = IdentityUserProfile(id = "not-a-uuid", email = "bad@example.com")
+        coEvery { identityProvider.listUserProfiles(any(), any(), any()) } returns listOf(profileWithBadId)
+        val results = service.listUsers(adminPrincipal(), null, 0, 20)
+        assertEquals(0, results.size)
+    }
+
+    @Test
+    fun `listUsers passes search parameter to identity provider`() = runTest {
+        coEvery { identityProvider.listUserProfiles("alice", 0, 10) } returns listOf(identityProfile())
+        coEvery { identityProvider.getUserRoles(userId) } returns emptySet()
+        coEvery { settingsRepo.findByUserId(any()) } returns null
+        val results = service.listUsers(adminPrincipal(), "alice", 0, 10)
+        assertEquals(1, results.size)
+        coVerify(exactly = 1) { identityProvider.listUserProfiles("alice", 0, 10) }
+    }
+
+    // --- toDomain displayName derivation edge cases ---
+
+    @Test
+    fun `getMe uses username as displayName when firstName and lastName are blank`() = runTest {
+        val profileBlankNames = IdentityUserProfile(
+            id = userId.toString(),
+            email = "test@example.com",
+            firstName = "",
+            lastName = "",
+            username = "myusername",
+            enabled = true,
+        )
+        coEvery { identityProvider.getUserProfile(userId) } returns profileBlankNames
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        val user = service.getMe(patientPrincipal())
+        assertEquals("myusername", user.displayName)
+    }
+
+    @Test
+    fun `getMe uses email as displayName when firstName lastName and username are all blank`() = runTest {
+        val profileAllBlank = IdentityUserProfile(
+            id = userId.toString(),
+            email = "fallback@example.com",
+            firstName = null,
+            lastName = null,
+            username = null,
+            enabled = true,
+        )
+        coEvery { identityProvider.getUserProfile(userId) } returns profileAllBlank
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        val user = service.getMe(patientPrincipal())
+        assertEquals("fallback@example.com", user.displayName)
+    }
+
+    @Test
+    fun `getMe uses only firstName as displayName when lastName is null`() = runTest {
+        val profileFirstOnly = IdentityUserProfile(
+            id = userId.toString(),
+            email = "test@example.com",
+            firstName = "OnlyFirst",
+            lastName = null,
+            enabled = true,
+        )
+        coEvery { identityProvider.getUserProfile(userId) } returns profileFirstOnly
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        val user = service.getMe(patientPrincipal())
+        assertEquals("OnlyFirst", user.displayName)
+    }
+
+    // --- updateMySettings additional branches ---
+
+    @Test
+    fun `updateMySettings seeds default settings when none exist`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns null
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(timezone = "America/New_York")
+        val result = service.updateMySettings(principal, patch)
+        assertEquals("America/New_York", result.locale.timezone)
+    }
+
+    @Test
+    fun `updateMySettings throws for invalid glucose unit`() = runTest {
+        val principal = patientPrincipal()
+        val patch = SettingsPatch(glucoseUnit = "invalid-unit")
+        assertFailsWith<BusinessValidationException> {
+            service.updateMySettings(principal, patch)
+        }
+    }
+
+    @Test
+    fun `updateMySettings throws for invalid weight unit`() = runTest {
+        val principal = patientPrincipal()
+        val patch = SettingsPatch(weightUnit = "stone")
+        assertFailsWith<BusinessValidationException> {
+            service.updateMySettings(principal, patch)
+        }
+    }
+
+    @Test
+    fun `updateMySettings merges only urgentHigh with existing alarm thresholds`() = runTest {
+        val principal = patientPrincipal()
+        val existingWithAlarms = settings().copy(
+            alarms = org.javafreedom.kdiab.users.domain.model.AlarmThresholds(
+                urgentHigh = 260, high = 180, low = 70, urgentLow = 55,
+            )
+        )
+        coEvery { settingsRepo.findByUserId(userId) } returns existingWithAlarms
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        // Only updating urgentHigh — other three come from existing
+        val patch = SettingsPatch(alarmUrgentHigh = 300)
+        val result = service.updateMySettings(principal, patch)
+        assertEquals(300, result.alarms?.urgentHigh)
+        assertEquals(180, result.alarms?.high)
+        assertEquals(70, result.alarms?.low)
+        assertEquals(55, result.alarms?.urgentLow)
+    }
+
+    @Test
+    fun `updateMySettings with no alarm fields preserves existing alarms`() = runTest {
+        val principal = patientPrincipal()
+        val existingWithAlarms = settings().copy(
+            alarms = org.javafreedom.kdiab.users.domain.model.AlarmThresholds(
+                urgentHigh = 260, high = 180, low = 70, urgentLow = 55,
+            )
+        )
+        coEvery { settingsRepo.findByUserId(userId) } returns existingWithAlarms
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(timezone = "UTC")
+        val result = service.updateMySettings(principal, patch)
+        assertEquals(260, result.alarms?.urgentHigh)
+    }
+
+    @Test
+    fun `updateMySettings with partial alarms on null existing returns null alarms when missing thresholds`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings() // alarms = null
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        // Provide only one alarm field — fromNullable returns null when fewer than 4 provided
+        val patch = SettingsPatch(alarmUrgentHigh = 300)
+        val result = service.updateMySettings(principal, patch)
+        assertNull(result.alarms)
+    }
+
+    @Test
+    fun `updateMySettings persists carbAbsorptionRateGPerHour`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(carbAbsorptionRateGPerHour = 30.0)
+        val result = service.updateMySettings(principal, patch)
+        assertEquals(30.0, result.diabetes.carbAbsorptionRateGPerHour)
+    }
+
+    @Test
+    fun `updateMySettings persists sensorDurationHours`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        val patch = SettingsPatch(sensorDurationHours = 168)
+        val result = service.updateMySettings(principal, patch)
+        assertEquals(168, result.diabetes.sensorDurationHours)
+    }
+
+    // --- getUser additional test ---
+
+    @Test
+    fun `getUser returns user for admin accessing any user`() = runTest {
+        val principal = adminPrincipal()
+        coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
+        coEvery { identityProvider.getUserRoles(userId) } returns setOf(Role.PATIENT)
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        val user = service.getUser(principal, userId)
+        assertEquals(userId, user.userId)
     }
 }

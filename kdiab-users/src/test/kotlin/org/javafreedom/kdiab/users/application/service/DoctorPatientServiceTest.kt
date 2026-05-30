@@ -137,4 +137,27 @@ class DoctorPatientServiceTest {
             service.removePatient(adminPrincipal(), doctorId, patientId)
         }
     }
+
+    @Test
+    fun `assignPatient propagates exception when rollback also fails`() = runTest {
+        coEvery { identityProvider.getUserRoles(doctorId) } returns setOf(Role.DOCTOR)
+        coEvery { identityProvider.getUserRoles(patientId) } returns setOf(Role.PATIENT)
+        coEvery { repo.save(any()) } answers { firstArg() }
+        coEvery { repo.findAllPatientIdsByDoctorId(doctorId) } returns listOf(patientId)
+        coEvery { identityProvider.updateUserAttributes(any(), any()) } throws RuntimeException("KC unavailable")
+        coEvery { repo.delete(doctorId, patientId) } throws RuntimeException("DB also down")
+
+        // Original exception from KC sync must still propagate even when rollback delete also throws
+        assertFailsWith<RuntimeException> {
+            service.assignPatient(adminPrincipal(), doctorId, patientId)
+        }
+    }
+
+    @Test
+    fun `listPatients with explicit page and size parameters`() = runTest {
+        coEvery { repo.findByDoctorId(doctorId, limit = 5, offset = 10L) } returns emptyList()
+        val result = service.listPatients(adminPrincipal(), doctorId, page = 2, size = 5)
+        assertEquals(0, result.size)
+        coVerify(exactly = 1) { repo.findByDoctorId(doctorId, limit = 5, offset = 10L) }
+    }
 }
