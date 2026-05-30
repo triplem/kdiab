@@ -4,7 +4,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useTranslation } from 'react-i18next'
-import { usersApi } from '../../api/usersApi'
+import { usersApi, type PatchSettingsRequest } from '../../api/usersApi'
 
 const TIMEZONES = [
   'UTC', 'Europe/London', 'Europe/Berlin', 'Europe/Paris', 'Europe/Madrid',
@@ -90,10 +90,10 @@ export function UserSettings() {
       locale: { timezone: values.timezone, language: values.language, timeFormat: values.timeFormat },
       units: { glucoseUnit: values.glucoseUnit, weightUnit: values.weightUnit },
       alarms: {
-        urgentHigh: values.alarmUrgentHigh ?? undefined,
-        high: values.alarmHigh ?? undefined,
-        low: values.alarmLow ?? undefined,
-        urgentLow: values.alarmUrgentLow ?? undefined,
+        urgentHigh: values.alarmUrgentHigh,
+        high: values.alarmHigh,
+        low: values.alarmLow,
+        urgentLow: values.alarmUrgentLow,
       },
       diabetes: { sensorDurationHours: values.sensorDurationHours },
     })
