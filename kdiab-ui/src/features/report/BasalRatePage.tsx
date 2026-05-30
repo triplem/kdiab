@@ -152,8 +152,8 @@ export function BasalRatePage({ segments }: Props) {
               <thead>
                 <tr
                   style={{
-                    background: 'var(--surface)',
-                    borderBottom: '2px solid var(--border)',
+                    background: 'var(--surface-color)',
+                    borderBottom: '2px solid var(--border-color)',
                   }}
                 >
                   <th style={{ padding: '0.4rem 0.6rem', textAlign: 'left' }}>
@@ -174,7 +174,7 @@ export function BasalRatePage({ segments }: Props) {
                 {rows.map((row) => (
                   <tr
                     key={row.startTime}
-                    style={{ borderBottom: '1px solid var(--border)' }}
+                    style={{ borderBottom: '1px solid var(--border-color)' }}
                   >
                     <td style={{ padding: '0.35rem 0.6rem' }}>{row.startTime}</td>
                     <td style={{ padding: '0.35rem 0.6rem', textAlign: 'right' }}>
@@ -192,9 +192,9 @@ export function BasalRatePage({ segments }: Props) {
               <tfoot>
                 <tr
                   style={{
-                    background: 'var(--surface)',
+                    background: 'var(--surface-color)',
                     fontWeight: 600,
-                    borderTop: '2px solid var(--border)',
+                    borderTop: '2px solid var(--border-color)',
                   }}
                 >
                   <td style={{ padding: '0.35rem 0.6rem' }} colSpan={3}>

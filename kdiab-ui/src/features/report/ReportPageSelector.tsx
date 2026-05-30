@@ -14,7 +14,7 @@ export function ReportPageSelector({ selectedPages, onToggle, onSelectAll, onDes
 
   return (
     <div className="report-page-selector">
-      <fieldset style={{ border: '1px solid var(--border)', borderRadius: 4, padding: '0.75rem' }}>
+      <fieldset style={{ border: '1px solid var(--border-color)', borderRadius: 4, padding: '0.75rem' }}>
         <legend style={{ padding: '0 0.3rem', fontSize: '0.9rem', fontWeight: 600 }}>
           {t('report.pageSelectionTitle')}
         </legend>

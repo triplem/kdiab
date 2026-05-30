@@ -105,7 +105,7 @@ export function ReportPage({ userId, glucoseUnit, patientName }: Props) {
           {showReport && (
             <button
               type="button"
-              className="btn outline"
+              className="outline" /* defined in src/index.css: button.outline */
               onClick={handleDownloadPdf}
               style={{ padding: '0.5rem 1.25rem' }}
             >
