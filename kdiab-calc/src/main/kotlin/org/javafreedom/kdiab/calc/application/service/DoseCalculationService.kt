@@ -80,6 +80,8 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
             if (uncappedTotal > HIGH_DOSE_THRESHOLD) {
                 add("Calculated dose is unusually high — please verify inputs")
             }
+            // Both HIGH_DOSE and cap warnings may fire together: the first flags an unusually
+            // large dose for review; the second confirms it was capped. Both are clinically relevant.
             if (uncappedTotal > MAX_ABSOLUTE_DOSE) {
                 add(
                     "Calculated dose ${round2(uncappedTotal)}U exceeds maximum." +
