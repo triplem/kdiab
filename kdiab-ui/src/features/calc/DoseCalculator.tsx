@@ -134,7 +134,7 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
     mutationFn: async (dose: number) => {
       const at = nowIso()
       const carbs = parseFloat(carbsGrams) || 0
-      await treatmentsApi.createTreatment(userId, {
+      const bolusResponse = await treatmentsApi.createTreatment(userId, {
         type: 'BOLUS',
         treatedAt: at,
         data: {
@@ -151,12 +151,23 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
           carbsGrams: carbs,
         },
       })
+      const bolusId = bolusResponse.data.id
       if (carbs > 0) {
-        await treatmentsApi.createTreatment(userId, {
-          type: 'CARBS',
-          treatedAt: at,
-          data: { carbs },
-        })
+        try {
+          await treatmentsApi.createTreatment(userId, {
+            type: 'CARBS',
+            treatedAt: at,
+            data: { carbs },
+          })
+        } catch (carbsErr: unknown) {
+          // Compensate: archive the orphaned BOLUS (archiveTreatments is available to all roles; deleteTreatments is DOCTOR/ADMIN-only)
+          try {
+            await treatmentsApi.archiveTreatments(userId, { treatmentIds: [bolusId] })
+          } catch {
+            // best-effort — original CARBS error is still re-thrown below
+          }
+          throw carbsErr
+        }
       }
     },
     onSuccess: (_data, dose) => {
