@@ -58,9 +58,9 @@ class DeviceStatusMapperTest {
             put("batteryLevel", 90)
         }
         val result = treatmentResponse(data = data).toNs3DeviceStatus()
-        assertNotNull(result.pump)
-        assertEquals(JsonPrimitive("Dana-i"), result.pump!!["name"])
-        assertEquals(JsonPrimitive(120.5), result.pump!!["reservoir"])
+        val pump = assertNotNull(result.pump)
+        assertEquals(JsonPrimitive("Dana-i"), pump["name"])
+        assertEquals(JsonPrimitive(120.5), pump["reservoir"])
     }
 
     @Test

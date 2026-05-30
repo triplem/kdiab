@@ -11,6 +11,8 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.concurrent.atomic.AtomicBoolean
@@ -232,11 +234,11 @@ class KeycloakAdminClient(
     suspend fun createServiceClient(
         userId: String,
         name: String,
-        expiresAt: kotlinx.datetime.Instant?,
+        expiresAt: Instant?,
     ): KeycloakClientInfo {
         val randomSuffix = (1..RANDOM_SUFFIX_LENGTH).map { ('a'..'z').random() }.joinToString("")
         val clientId = "device-$userId-$randomSuffix"
-        val createdAt = kotlinx.datetime.Clock.System.now()
+        val createdAt = Clock.System.now()
         val auth = authHeader()
 
         val clientUuid = circuitBreaker.execute {
@@ -335,12 +337,12 @@ class KeycloakAdminClient(
                 val name = client.attributes?.get("kdiab.key.name") ?: client.name ?: return@mapNotNull null
                 val expiresAtStr = client.attributes?.get("kdiab.key.expires_at")?.takeIf { it.isNotBlank() }
                 val expiresAt = expiresAtStr?.let {
-                    runCatching { kotlinx.datetime.Instant.parse(it) }.getOrNull()
+                    runCatching { Instant.parse(it) }.getOrNull()
                 }
                 val createdAtStr = client.attributes?.get("kdiab.key.created_at")?.takeIf { it.isNotBlank() }
                 val createdAt = createdAtStr?.let {
-                    runCatching { kotlinx.datetime.Instant.parse(it) }.getOrNull()
-                } ?: kotlinx.datetime.Instant.DISTANT_PAST
+                    runCatching { Instant.parse(it) }.getOrNull()
+                } ?: Instant.DISTANT_PAST
                 KeycloakClientInfo(
                     id = id,
                     clientId = clientId,

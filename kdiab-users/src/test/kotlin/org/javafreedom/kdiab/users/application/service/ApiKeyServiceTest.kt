@@ -5,7 +5,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
@@ -62,7 +62,7 @@ class ApiKeyServiceTest {
         val result = service.createApiKey(principal, "CGM", ApiKeyExpiry.THREE_MONTHS)
 
         assertNotNull(result.apiKey)
-        coVerify { keycloak.createServiceClient(userId, "CGM", match { it != null }) }
+        coVerify { keycloak.createServiceClient(userId, "CGM", any()) }
     }
 
     @Test

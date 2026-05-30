@@ -2,6 +2,8 @@
 package org.javafreedom.kdiab.users.application.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.datetime.DateTimePeriod
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
@@ -26,8 +28,8 @@ class ApiKeyService(
             throw BusinessValidationException("Maximum of $MAX_API_KEYS API keys allowed per user")
         }
 
-        val expiresAt = expiry.months?.let { months ->
-            kotlinx.datetime.Clock.System.now()
+        val expiresAt: Instant? = expiry.months?.let { months ->
+            Clock.System.now()
                 .plus(DateTimePeriod(months = months), TimeZone.UTC)
         }
 
