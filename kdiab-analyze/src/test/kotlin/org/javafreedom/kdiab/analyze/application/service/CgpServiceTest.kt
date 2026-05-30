@@ -79,6 +79,21 @@ class CgpServiceTest {
     }
 
     @Test
+    fun `tor is in minutes per day not total minutes`() = runTest {
+        // from = 2024-01-01T00:00:00Z, to = 2024-01-15T00:00:00Z = 14 days
+        // 288 out-of-range readings × 5 min / 14 days ≈ 102.86 min/day
+        // The old formula (missing /daysInRange) gave 288 × 5 = 1440 total minutes (≥ 1440 → wrong)
+        val outOfRange = (0 until 288).map { cgmDto(50.0) }  // 288 × 5 min = 1 full day of hypo readings
+        coEvery { measuresPort.getMeasures(any(), any(), any(), any(), any()) } returns outOfRange
+        val result = service.getCgp(userId, from, to, auth, "mg/dL", correlationId)
+        // tor must be ≤ 1440 (minutes in a day)
+        assertTrue(result.tor <= 1440.0, "tor=${result.tor} exceeds 1440 min/day — likely missing /daysInRange")
+        // Expected: 288 × 5 / 14 ≈ 102.857 min/day
+        val expected = 288.0 * 5.0 / 14.0
+        assertEquals(expected, result.tor, 0.001)
+    }
+
+    @Test
     fun `normTor is between 0 and 1`() = runTest {
         coEvery { measuresPort.getMeasures(any(), any(), any(), any(), any()) } returns perfectReadings()
         val result = service.getCgp(userId, from, to, auth, "mg/dL", correlationId)
