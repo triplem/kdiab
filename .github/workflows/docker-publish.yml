@@ -100,21 +100,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: kdiab-ui/package-lock.json
-
-      - name: Install dependencies
-        working-directory: kdiab-ui
-        run: npm ci
-
-      - name: Generate API clients
-        working-directory: kdiab-ui
-        run: npm run api:generate
-
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -145,3 +130,28 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  publish-common-jar:
+    name: Publish kdiab-common JAR to GitHub Packages
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Publish kdiab-common JAR
+        run: cd kdiab-common && ./gradlew publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
