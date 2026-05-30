@@ -117,13 +117,18 @@ export default function App() {
       setPatientGlucoseUnit('mg/dL')
       return
     }
-    void usersApi.getUser(activePatientId)
+    const controller = new AbortController()
+    void usersApi.getUser(activePatientId, { signal: controller.signal })
       .then(res => {
         setPatientGlucoseUnit(res.data.settings?.units?.glucoseUnit ?? 'mg/dL')
       })
-      .catch(() => {
-        setPatientGlucoseUnit('mg/dL')
+      .catch((err: unknown) => {
+        // Ignore cancellation — a newer request is already in flight
+        if ((err as { name?: string }).name !== 'CanceledError') {
+          setPatientGlucoseUnit('mg/dL')
+        }
       })
+    return () => controller.abort()
   }, [activePatientId, isDoctor])
 
   const activeGlucoseUnit = isDoctorViewingPatient ? patientGlucoseUnit : glucoseUnit
