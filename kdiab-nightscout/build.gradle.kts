@@ -245,7 +245,9 @@ kover {
                 classes(
                     // Ns3* v3 domain models — pure data-class DTOs, no business logic (#891)
                     "org.javafreedom.kdiab.nightscout.domain.model.Ns3*",
-                    "org.javafreedom.kdiab.nightscout.domain.model.NightscoutV3ModelsKt"
+                    "org.javafreedom.kdiab.nightscout.domain.model.NightscoutV3ModelsKt",
+                    // NightscoutStatus — v1 pure data class, only used in excluded route handler
+                    "org.javafreedom.kdiab.nightscout.domain.model.NightscoutStatus*"
                 )
             }
         }
