@@ -5,6 +5,7 @@ import React from 'react'
 
 vi.mock('../api/analyzeApi', () => ({
   analyzeApi: {
+    getReportSummary: vi.fn(),
     getHba1c: vi.fn(),
     getAgp: vi.fn(),
     getDailyStats: vi.fn(),
@@ -12,6 +13,7 @@ vi.mock('../api/analyzeApi', () => ({
     getTimeline: vi.fn(),
     getGlucoseDistribution: vi.fn(),
     getActiveProfiles: vi.fn(),
+    getCgp: vi.fn(),
   },
 }))
 
@@ -19,6 +21,7 @@ import { analyzeApi } from '../api/analyzeApi'
 import { useReportData } from '../features/report/useReportData'
 import type { ReportPageId } from '../features/report/reportPages'
 
+const mockedGetReportSummary = vi.mocked(analyzeApi.getReportSummary)
 const mockedGetHba1c = vi.mocked(analyzeApi.getHba1c)
 const mockedGetAgp = vi.mocked(analyzeApi.getAgp)
 const mockedGetDailyStats = vi.mocked(analyzeApi.getDailyStats)
@@ -26,6 +29,44 @@ const mockedGetDailyTrend = vi.mocked(analyzeApi.getDailyTrend)
 const mockedGetGlucoseDistribution = vi.mocked(analyzeApi.getGlucoseDistribution)
 const mockedGetTimeline = vi.mocked(analyzeApi.getTimeline)
 const mockedGetActiveProfiles = vi.mocked(analyzeApi.getActiveProfiles)
+const mockedGetCgp = vi.mocked(analyzeApi.getCgp)
+
+const FAKE_TIR_ZONE = { count: 100, percent: 100, zone: 'inRange' }
+const FAKE_TIR_RESULT = {
+  veryLow: { count: 0, percent: 0 },
+  low: { count: 0, percent: 0 },
+  inRange: FAKE_TIR_ZONE,
+  high: { count: 0, percent: 0 },
+  veryHigh: { count: 0, percent: 0 },
+  customTirFallback: false,
+}
+
+const FAKE_REPORT_SUMMARY = {
+  displayName: 'Test Patient',
+  daysAnalysed: 14,
+  cgmReadingCount: 4032,
+  cgmIntervalMinutes: 5,
+  insulinTypes: ['Humalog'],
+  insulinChanges: 2,
+  avgDaysPerCartridge: 7,
+  siteChanges: 4,
+  avgDaysPerSite: 3.5,
+  sensorInserts: 2,
+  avgDaysPerSensor: 7,
+  tirProfile: FAKE_TIR_RESULT,
+  tirStandard: FAKE_TIR_RESULT,
+  minGlucose: 65,
+  maxGlucose: 240,
+  meanGlucose: 130,
+  sd: 35,
+  gvi: 1.2,
+  pgs: 45,
+  gri: 20,
+  griZone: 'A',
+  eHbA1c: 6.8,
+  avgCarbsPerDayG: 180,
+  avgBolusPerDayIe: 24,
+}
 
 const FAKE_HBA1C = {
   hba1c: 7.0,
@@ -54,6 +95,7 @@ const SUMMARY_ONLY: ReportPageId[] = ['SUMMARY']
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockedGetReportSummary.mockResolvedValue({ data: FAKE_REPORT_SUMMARY } as never)
   mockedGetHba1c.mockResolvedValue({ data: FAKE_HBA1C } as never)
   mockedGetAgp.mockResolvedValue({ data: FAKE_AGP } as never)
   mockedGetDailyStats.mockResolvedValue({ data: { rows: [], summary: { date: 'summary', cgmCount: 0, veryLowPercent: null, lowPercent: null, inRangePercent: null, highPercent: null, veryHighPercent: null, p25: null, median: null, p75: null, sd: null, eHbA1c: null } } } as never)
@@ -61,6 +103,7 @@ beforeEach(() => {
   mockedGetTimeline.mockResolvedValue({ data: { measures: [], treatments: [] } } as never)
   mockedGetGlucoseDistribution.mockResolvedValue({ data: { buckets: [], zonePercents: { veryLow: 0, low: 0, inRange: 100, high: 0, veryHigh: 0 }, unit: 'mg/dL', totalCount: 2016 } } as never)
   mockedGetActiveProfiles.mockResolvedValue({ data: { profiles: [] } } as never)
+  mockedGetCgp.mockResolvedValue({ data: { hourlyData: [], totalReadingCount: 0, sensorWearDays: 14 } } as never)
 })
 
 describe('useReportData', () => {
@@ -173,5 +216,32 @@ describe('useReportData', () => {
       '2024-01-14T23:59:59Z',
       'mmol/L',
     )
+  })
+
+  test('should not call any API when enabled is false', async () => {
+    renderHook(
+      () =>
+        useReportData(
+          'user-1',
+          '2024-01-01T00:00:00Z',
+          '2024-01-14T23:59:59Z',
+          ALL_PAGES,
+          'mg/dL',
+          undefined,
+          false,
+        ),
+      { wrapper },
+    )
+    // Let microtasks and any pending promises flush before asserting
+    await new Promise(r => setTimeout(r, 50))
+    expect(mockedGetReportSummary).not.toHaveBeenCalled()
+    expect(mockedGetHba1c).not.toHaveBeenCalled()
+    expect(mockedGetAgp).not.toHaveBeenCalled()
+    expect(mockedGetDailyStats).not.toHaveBeenCalled()
+    expect(mockedGetDailyTrend).not.toHaveBeenCalled()
+    expect(mockedGetTimeline).not.toHaveBeenCalled()
+    expect(mockedGetGlucoseDistribution).not.toHaveBeenCalled()
+    expect(mockedGetActiveProfiles).not.toHaveBeenCalled()
+    expect(mockedGetCgp).not.toHaveBeenCalled()
   })
 })
