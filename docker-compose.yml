@@ -679,6 +679,9 @@ services:
     ports:
       - "3005:8080"
     depends_on:
+      # carbs-backend is not listed: it is optional (--profile optional).
+      # A 502 on /api/carbs/ is possible during carbs-backend warm-up
+      # when starting with the optional profile.
       measures-backend:
         condition: service_healthy
       profiles-backend:
@@ -711,7 +714,7 @@ services:
 
 networks:
   shared:    # postgres, keycloak, all backends, liquibase, seed
-  kdiab-ui-net:  # kdiab-ui ↔ all mandatory backends (measures, profiles, treatments, analyze, calc, users)
+  kdiab-ui-net:  # kdiab-ui ↔ backends (measures, profiles, treatments, analyze, calc, users, nightscout; carbs is optional)
 
 volumes:
   postgres_data:

@@ -58,6 +58,9 @@ jobs:
             ["kdiab-profiles"]="http://localhost:8082/swagger"
             ["kdiab-treatments"]="http://localhost:8083/swagger"
             ["kdiab-analyze"]="http://localhost:8084/swagger"
+            ["kdiab-carbs"]="http://localhost:8085/swagger"
+            ["kdiab-calc"]="http://localhost:8086/swagger"
+            ["kdiab-users"]="http://localhost:8088/swagger"
           )
           for name in "${!services[@]}"; do
             url="${services[$name]}"
