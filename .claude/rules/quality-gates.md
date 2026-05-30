@@ -22,9 +22,10 @@ No test may be skipped, ignored, or commented out to make the gate pass.
 ### 2. Unit Test Coverage ≥ 80%
 
 ```bash
-# Kotlin — JaCoCo
-./gradlew test jacocoTestCoverageVerification
-# Configuration in build.gradle.kts: minimum = "0.80".toBigDecimal()
+# Kotlin — Kover (this project uses Kover, NOT JaCoCo)
+# ./gradlew check already runs koverVerify — do NOT use jacocoTestCoverageVerification
+./gradlew check
+# Configuration in build.gradle.kts: minValue = 80 inside koverReport {}
 
 # TypeScript — Jest / Vitest
 npm run test:coverage
@@ -36,6 +37,8 @@ dotnet test --collect:"XPlat Code Coverage"
 ```
 
 Coverage is measured on **new and modified code only** in brownfield projects (use diff coverage tools: `diff-cover`, `jacoco-diff`).
+
+> **kdiab-specific**: All Kotlin services use **Kover** enforced via `./gradlew check`. The `koverVerify` task fails the build when line coverage drops below 80%. Never call `jacocoTestCoverageVerification` — it does not exist in this project.
 
 ### 3. Linting Passes
 
@@ -91,15 +94,32 @@ Every TODO must be linked to a tracker issue: `// TODO(#42): extract to service`
 
 ```bash
 ./gradlew build -x test    # Kotlin
-npm run build              # TypeScript/React/Angular
+npm run build              # TypeScript/React/Angular — REQUIRED even for minor UI changes
 dotnet build -c Release    # .NET
 ```
+
+> **TypeScript strict mode**: `npm run build` must pass with zero errors. `tsconfig.json` enforces `noUnusedLocals: true` — unused type aliases, imports, or variables cause `TS6196`/`TS6133` errors that fail the Docker image build even when `tsc --noEmit` is skipped.
 
 ### 8. Docker Build Succeeds (if applicable)
 
 ```bash
 docker build -t ${IMAGE_NAME}:ci .
 ```
+
+### 9. Publish Task Works (if shared library changed)
+
+When `kdiab-common/build.gradle.kts` or any shared library `build.gradle.kts` is modified, verify the publish task succeeds before merging to `main`:
+
+```bash
+cd kdiab-common && ./gradlew publishToMavenLocal
+```
+
+Checklist:
+- `maven-publish` plugin applied in `plugins {}` block
+- `publishing {}` block configured with GitHub Packages repository
+- `publications {}` block creates a `MavenPublication` from `components["java"]`
+
+> **Why**: `docker-publish.yml` runs `cd kdiab-common && ./gradlew publish` on every push to `main`. A missing `maven-publish` plugin passes local CI but breaks the release job with `Task 'publish' not found in root project`.
 
 ## Automated Enforcement
 

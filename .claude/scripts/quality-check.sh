@@ -21,11 +21,14 @@ check() {
 # --- Kotlin / Gradle ---
 if [ -f "gradlew" ]; then
   echo "Detected: Kotlin/JVM (Gradle)"
-  check "Tests"        ./gradlew test
-  check "Coverage"     ./gradlew jacocoTestCoverageVerification
-  check "Detekt"       ./gradlew detekt
-  check "Ktlint"       ./gradlew ktlintCheck
-  check "Build"        ./gradlew build -x test
+  # ./gradlew check runs: test + koverVerify (≥80% coverage) + detekt
+  check "Check (tests + Kover coverage + detekt)"  ./gradlew check
+  check "Build"  ./gradlew build -x test
+
+  # Publish gate: verify maven-publish is wired when kdiab-common is touched
+  if [ -f "build.gradle.kts" ] && grep -q "maven-publish" build.gradle.kts 2>/dev/null; then
+    check "Publish (local)"  ./gradlew publishToMavenLocal
+  fi
 fi
 
 # --- Node.js / TypeScript ---
@@ -35,6 +38,8 @@ if [ -f "package.json" ]; then
   check "Coverage"     npm run test:coverage
   check "Lint"         npm run lint
   check "Type check"   npx tsc --noEmit
+  # npm run build is REQUIRED: noUnusedLocals in tsconfig causes TS6196/TS6133 errors
+  # that only surface at build time — not caught by tsc --noEmit alone in all cases
   check "Build"        npm run build
   check "Audit"        npm audit --audit-level=high
 fi

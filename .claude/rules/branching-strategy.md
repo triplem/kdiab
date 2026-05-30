@@ -83,9 +83,31 @@ v<major>.<minor>.<patch>
 
 Tags are created on `main` by ReleaseAgent after squash merge. Semver bump is determined automatically from conventional commits.
 
+## Post-Merge Branch Cleanup
+
+After every PR is merged, **always** delete both the remote and local branch immediately:
+
+```bash
+# Delete remote branch
+git push origin --delete <branch-name>
+
+# Switch away from the branch first if on it
+git checkout main
+
+# Delete local branch
+git branch -D <branch-name>
+```
+
+Do this as the last step of every `gh pr merge` flow — stale branches clutter `git branch` output and confuse future work. Do not rely on GitHub's "Delete branch on merge" auto-delete alone; always delete the local branch too.
+
 ## Stale Branches
 
-Feature branches are deleted automatically after PR merge (GitHub: "Delete branch on merge"). Worktrees are cleaned up by the agent that created them.
+Any branch that has been merged and not yet deleted is stale. Clean up proactively:
+
+```bash
+git fetch --prune                    # removes stale remote-tracking refs
+git branch -vv | grep ': gone]'      # shows local branches whose remote is deleted
+```
 
 ## Worktree Cleanup: Double-Force Required for Locked Worktrees
 
