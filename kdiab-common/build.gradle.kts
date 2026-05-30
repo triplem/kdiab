@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.kotlin.serialization)
+    `maven-publish`
 }
 
 group = "org.javafreedom.kdiab"
@@ -57,6 +58,29 @@ kotlin {
     jvmToolchain(21)
     compilerOptions {
         optIn.add("kotlin.uuid.ExperimentalUuidApi")
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/triplem/kdiab")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: ""
+                password = System.getenv("GITHUB_TOKEN") ?: ""
+            }
+        }
+    }
+    publications {
+        create<MavenPublication>("mavenKotlin") {
+            from(components["java"])
+            pom {
+                name.set("kdiab-common")
+                description.set("Shared Ktor plugins, domain types, and utilities for kdiab services")
+                url.set("https://github.com/triplem/kdiab")
+            }
+        }
     }
 }
 
