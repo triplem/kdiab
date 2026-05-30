@@ -1286,8 +1286,7 @@ class AnalyticsService(
 
         // ToR: minutes/day where glucose < 70 or > 180
         val outOfRangeCount = readings.count { it < CGP_HYPO_THRESHOLD || it > CGP_HYPER_THRESHOLD }
-        val tor = outOfRangeCount.toDouble() *
-            CGP_INTENSITY_READING_WEIGHT * MINUTES_PER_HOUR * HOURS_IN_DAY_D / daysInRange
+        val tor = outOfRangeCount.toDouble() * CGP_INTENSITY_READING_WEIGHT * MINUTES_PER_HOUR * HOURS_IN_DAY_D
 
         // VarK: coefficient of variation (%)
         val varK = if (mean > 0.0) sd / mean * PERCENT_FACTOR else 0.0
