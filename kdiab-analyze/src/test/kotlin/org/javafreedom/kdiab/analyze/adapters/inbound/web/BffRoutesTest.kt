@@ -180,6 +180,7 @@ class BffRoutesTest {
     @Test
     fun `hba1c - 200 patient reads own data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
+        coEvery { svc.preFetchCgmMeasures(any(), any(), any(), any(), any()) } returns Unit
         coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -188,6 +189,7 @@ class BffRoutesTest {
     @Test
     fun `agp - 200 patient reads own data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
+        coEvery { svc.preFetchCgmMeasures(any(), any(), any(), any(), any()) } returns Unit
         coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -238,6 +240,7 @@ class BffRoutesTest {
     @Test
     fun `hba1c - 200 doctor reads allowed patient data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
+        coEvery { svc.preFetchCgmMeasures(any(), any(), any(), any(), any()) } returns Unit
         coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -246,6 +249,7 @@ class BffRoutesTest {
     @Test
     fun `agp - 200 doctor reads allowed patient data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
+        coEvery { svc.preFetchCgmMeasures(any(), any(), any(), any(), any()) } returns Unit
         coEvery { svc.getAgp(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(SARAH_ID)) { bearerAuth(doctorToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -296,6 +300,7 @@ class BffRoutesTest {
     @Test
     fun `hba1c - 200 admin reads any user data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
+        coEvery { svc.preFetchCgmMeasures(any(), any(), any(), any(), any()) } returns Unit
         coEvery { svc.getHba1c(MIKE_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
         val resp = client.get(hba1cUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -304,6 +309,7 @@ class BffRoutesTest {
     @Test
     fun `agp - 200 admin reads any user data`() = routeTest { _, svc, _, _ ->
         coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
+        coEvery { svc.preFetchCgmMeasures(any(), any(), any(), any(), any()) } returns Unit
         coEvery { svc.getAgp(MIKE_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyAgp
         val resp = client.get(agpUrl(MIKE_ID)) { bearerAuth(adminToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
@@ -313,6 +319,20 @@ class BffRoutesTest {
     fun `profiles active - 200 admin reads any user data`() = routeTest { _, _, svc, _ ->
         coEvery { svc.getProfiles(MIKE_ID, any(), any()) } returns emptyProfiles
         val resp = client.get(profilesUrl(MIKE_ID)) { bearerAuth(adminToken) }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    // ── Graceful degradation: pre-fetch throws ────────────────────────────────
+
+    @Test
+    fun `hba1c - 200 when preFetchCgmMeasures throws`() = routeTest { _, svc, _, _ ->
+        // preFetchCgmMeasures failure is swallowed by the service's runCatching —
+        // the route should still complete successfully using the threshold values.
+        coEvery { svc.getAnalysisThresholds(any(), any(), any()) } returns Pair(70.0, 180.0)
+        coEvery { svc.preFetchCgmMeasures(any(), any(), any(), any(), any()) } throws
+            RuntimeException("upstream measures service unavailable")
+        coEvery { svc.getHba1c(SARAH_ID, FROM, TO, any(), any(), any(), any(), any()) } returns emptyHba1c
+        val resp = client.get(hba1cUrl(SARAH_ID)) { bearerAuth(sarahToken) }
         assertEquals(HttpStatusCode.OK, resp.status)
     }
 

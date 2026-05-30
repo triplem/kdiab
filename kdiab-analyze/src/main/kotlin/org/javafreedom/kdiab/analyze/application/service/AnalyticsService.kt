@@ -185,6 +185,17 @@ class AnalyticsService(
     private val measuresCache = ConcurrentHashMap<MeasuresCacheKey, MeasuresCacheEntry>()
 
 
+    override suspend fun preFetchCgmMeasures(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        correlationId: String,
+    ) {
+        // Warm the cache; ignore upstream failures — getHba1c / getAgp handle them gracefully.
+        runCatching { getMeasuresCached(userId, from, to, authorization, correlationId) }
+    }
+
     override suspend fun getAnalysisThresholds(
         userId: String,
         authorization: String,

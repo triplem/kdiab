@@ -20,6 +20,21 @@ interface AnalyticsOperation {
         correlationId: String,
     ): Pair<Double, Double>
 
+    /**
+     * Pre-warms the in-process CGM cache for the given user and time window.
+     * Calling this before [getHba1c] or [getAgp] allows the route layer to
+     * run the kdiab-measures fetch in parallel with [getAnalysisThresholds]
+     * (→ kdiab-users). Both upstream calls are independent; the cache ensures
+     * the subsequent service call is served from memory.
+     */
+    suspend fun preFetchCgmMeasures(
+        userId: String,
+        from: String,
+        to: String,
+        authorization: String,
+        correlationId: String,
+    )
+
     @Suppress("LongParameterList")
     suspend fun getHba1c(
         userId: String,
