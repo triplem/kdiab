@@ -37,7 +37,10 @@ export interface ReportDataState {
 /**
  * Fans out parallel data fetches to all kdiab-analyze report endpoints.
  *
- * Only fetches data for selected pages — SUMMARY (HbA1c) is always fetched.
+ * Queries are issued in two waves to avoid saturating the nginx rate-limit burst budget:
+ *   Wave 1 — REPORT_SUMMARY and SUMMARY (HbA1c) fire immediately on enable.
+ *   Wave 2 — all selected-page queries fire only after wave 1 has settled (success or error).
+ *
  * If an individual endpoint fails the others continue loading independently,
  * so the report renders partial results with per-section error banners.
  *
@@ -57,7 +60,8 @@ export function useReportData(
   const queryEnabled = baseEnabled && (enabled ?? true)
   const isSelected = (page: ReportPageId) => selectedPages.includes(page)
 
-  const results = useQueries({
+  // ── Wave 1: always-on queries (fire immediately) ──────────────────────────
+  const wave1 = useQueries({
     queries: [
       // AUSWERTUNG (report-summary) — always fetched
       {
@@ -74,32 +78,43 @@ export function useReportData(
         enabled: queryEnabled,
         staleTime: 5 * 60 * 1000,
       },
+    ],
+  })
+
+  // Wave 2 fires only after wave 1 has settled (either success or error on both queries).
+  // This keeps the total concurrent burst within the nginx burst=20 budget.
+  const wave1Done = (wave1[0].isSuccess || wave1[0].isError) && (wave1[1].isSuccess || wave1[1].isError)
+  const wave2Enabled = queryEnabled && wave1Done
+
+  // ── Wave 2: selected-page queries (fire after wave 1 settles) ─────────────
+  const wave2 = useQueries({
+    queries: [
       // AGP — only if selected
       {
         queryKey: ['report-agp', userId, from, to, glucoseUnit] as const,
         queryFn: () => analyzeApi.getAgp(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled: queryEnabled && isSelected('AGP'),
+        enabled: wave2Enabled && isSelected('AGP'),
         staleTime: 5 * 60 * 1000,
       },
       // Daily Stats — only if selected
       {
         queryKey: ['report-daily-stats', userId, from, to, glucoseUnit] as const,
         queryFn: () => analyzeApi.getDailyStats(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled: queryEnabled && isSelected('DAILY_STATS'),
+        enabled: wave2Enabled && isSelected('DAILY_STATS'),
         staleTime: 5 * 60 * 1000,
       },
       // Daily Trend — only if selected
       {
         queryKey: ['report-daily-trend', userId, from, to, glucoseUnit] as const,
         queryFn: () => analyzeApi.getDailyTrend(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled: queryEnabled && isSelected('DAILY_TREND'),
+        enabled: wave2Enabled && isSelected('DAILY_TREND'),
         staleTime: 5 * 60 * 1000,
       },
       // Daily Charts (timeline) — only if selected
       {
         queryKey: ['report-daily-charts', userId, from, to] as const,
         queryFn: () => analyzeApi.getTimeline(userId, from, to).then(r => r.data),
-        enabled: queryEnabled && isSelected('DAILY_CHARTS'),
+        enabled: wave2Enabled && isSelected('DAILY_CHARTS'),
         staleTime: 5 * 60 * 1000,
       },
       // Glucose Distribution — only if selected
@@ -107,27 +122,28 @@ export function useReportData(
         queryKey: ['report-glucose-distribution', userId, from, to, glucoseUnit] as const,
         queryFn: () =>
           analyzeApi.getGlucoseDistribution(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled: queryEnabled && isSelected('GLUCOSE_DISTRIBUTION'),
+        enabled: wave2Enabled && isSelected('GLUCOSE_DISTRIBUTION'),
         staleTime: 5 * 60 * 1000,
       },
       // Profile — only if selected
       {
         queryKey: ['report-profile', userId, from, to] as const,
         queryFn: () => analyzeApi.getActiveProfiles(userId, from, to).then(r => r.data),
-        enabled: queryEnabled && isSelected('PROFILE'),
+        enabled: wave2Enabled && isSelected('PROFILE'),
         staleTime: 5 * 60 * 1000,
       },
       // CGP — only if selected
       {
         queryKey: ['report-cgp', userId, from, to, glucoseUnit] as const,
         queryFn: () => analyzeApi.getCgp(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled: queryEnabled && isSelected('CGP'),
+        enabled: wave2Enabled && isSelected('CGP'),
         staleTime: 5 * 60 * 1000,
       },
     ],
   })
 
-  const [reportSummaryQ, summaryQ, agpQ, dailyStatsQ, dailyTrendQ, dailyChartsQ, glucoseDistQ, profileQ, cgpQ] = results
+  const [reportSummaryQ, summaryQ] = wave1
+  const [agpQ, dailyStatsQ, dailyTrendQ, dailyChartsQ, glucoseDistQ, profileQ, cgpQ] = wave2
 
   return {
     reportSummary: {
@@ -175,6 +191,6 @@ export function useReportData(
       isLoading: cgpQ.isLoading,
       isError: cgpQ.isError,
     },
-    isAnyLoading: results.some(r => r.isLoading),
+    isAnyLoading: [...wave1, ...wave2].some(r => r.isLoading),
   }
 }

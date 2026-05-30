@@ -203,7 +203,11 @@ describe('useReportData', () => {
       () => useReportData('user-1', '2024-01-01T00:00:00Z', '2024-01-14T23:59:59Z', ALL_PAGES, 'mmol/L'),
       { wrapper },
     )
-    await waitFor(() => expect(mockedGetHba1c).toHaveBeenCalled())
+    // Wave 2 (AGP etc.) fires only after wave 1 (HbA1c) has settled — wait for both.
+    await waitFor(() => {
+      expect(mockedGetHba1c).toHaveBeenCalled()
+      expect(mockedGetAgp).toHaveBeenCalled()
+    })
     expect(mockedGetHba1c).toHaveBeenCalledWith(
       'user-1',
       '2024-01-01T00:00:00Z',
