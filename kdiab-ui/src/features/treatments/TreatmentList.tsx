@@ -15,22 +15,22 @@ interface TreatmentListProps {
 }
 
 const TREATMENT_ICONS: Record<string, string> = {
-  INSULIN_CHANGE: '\u{1F489}',
-  SITE_CHANGE: '\u{1F4CD}',
-  SENSOR_INSERT: '\u{1F4F6}',
-  BOLUS: '\u{1F489}',
-  CORRECTION_BOLUS: '\u{1F489}',
-  COMBO_BOLUS: '\u{1F489}',
-  BASAL: '\u{1F489}',
-  TEMP_BASAL: '\u{1F489}',
-  PUMP_SUSPEND: '⏸️',
-  PUMP_BATTERY_CHANGE: '\u{1F50B}',
-  CARBS: '\u{1F35E}',
-  MEAL: '\u{1F37D}️',
-  HYPO_TREATMENT: '\u{1F36C}',
-  EXERCISE: '\u{1F3C3}',
-  ACTIVITY: '\u{1F3C3}',
-  NOTE: '\u{1F4DD}',
+  INSULIN_CHANGE:      '\u{1F489}',   // 💉 syringe
+  SITE_CHANGE:         '\u{1F4CD}',   // 📍 location pin
+  SENSOR_INSERT:       '\u{1FA79}',   // 🩹 bandage (sensor insertion)
+  BOLUS:               '\u{1F489}',   // 💉 syringe
+  CORRECTION_BOLUS:    '\u{1F489}',   // 💉 syringe
+  COMBO_BOLUS:         '\u{1F489}',   // 💉 syringe
+  BASAL:               '\u{1F489}',   // 💉 syringe
+  TEMP_BASAL:          '\u{1F489}',   // 💉 syringe
+  PUMP_SUSPEND:        '⏸️',          // ⏸️ pause button
+  PUMP_BATTERY_CHANGE: '\u{1F50B}',   // 🔋 battery
+  CARBS:               '\u{1F35E}',   // 🍞 bread
+  MEAL:                '\u{1F37D}️', // 🍽️ plate with cutlery (variation selector inside string)
+  HYPO_TREATMENT:      '\u{1F36C}',   // 🍬 candy
+  EXERCISE:            '\u{1F3C3}',   // 🏃 runner
+  ACTIVITY:            '\u{1F3C3}',   // 🏃 runner
+  NOTE:                '\u{1F4DD}',   // 📝 memo
 }
 
 function getTreatmentIcon(type: string): string {
@@ -379,6 +379,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
         <tbody>
           {treatments.map((tr) => {
             const isExpanded = expandedIds.has(tr.id)
+            const typeIcon = getTreatmentIcon(tr.type)
             return (
               <React.Fragment key={tr.id}>
                 <tr
@@ -430,9 +431,9 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                         color: 'var(--text-primary)',
                       }}
                     >
-                      {getTreatmentIcon(tr.type) && (
+                      {typeIcon && (
                         <span aria-hidden="true" style={{ marginRight: '4px' }}>
-                          {getTreatmentIcon(tr.type)}
+                          {typeIcon}
                         </span>
                       )}
                       {t(`treatmentModal.types.${tr.type}`, { defaultValue: tr.type })}
