@@ -173,8 +173,6 @@ data class Profile(
         const val MAX_DAILY_BASAL_U = 150.0
         const val MIN_ICR = 1.0
         const val MAX_ICR = 50.0
-        const val MMOL_UPPER_BOUND = 30.0
-        const val MGDL_LOWER_BOUND = 20.0
         const val MIN_ISF_MGDL = 10.0
         const val MAX_ISF_MGDL = 200.0
         const val DEFAULT_DURATION_OF_ACTION = 240 // 4 hours in minutes (fallback for legacy API)
