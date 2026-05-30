@@ -131,4 +131,32 @@ describe('UserSettings', () => {
     await waitFor(() => expect(screen.getByText(/urgent low < low/i)).toBeInTheDocument())
     expect(mockedPatch).not.toHaveBeenCalled()
   })
+
+  test('adminOnly=true hides glucose unit, weight unit, alarms, and sensor duration', async () => {
+    mockedGetMe.mockResolvedValue({ data: makeUser() } as never)
+    render(<UserSettings adminOnly />, { wrapper })
+    await waitFor(() => expect(screen.getByLabelText(/timezone/i)).toBeInTheDocument())
+
+    // These locale fields should still be visible
+    expect(screen.getByLabelText(/timezone/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/language/i)).toBeInTheDocument()
+
+    // These non-locale fields should be hidden
+    expect(screen.queryByText(/glucose unit/i)).toBeNull()
+    expect(screen.queryByText(/weight unit/i)).toBeNull()
+    expect(screen.queryByText(/time format/i)).toBeNull()
+    expect(screen.queryByLabelText(/sensor lifespan/i)).toBeNull()
+    expect(screen.queryByLabelText(/urgent high/i)).toBeNull()
+  })
+
+  test('adminOnly=false (default) shows all fields', async () => {
+    mockedGetMe.mockResolvedValue({ data: makeUser() } as never)
+    render(<UserSettings adminOnly={false} />, { wrapper })
+    await waitFor(() => expect(screen.getByLabelText(/timezone/i)).toBeInTheDocument())
+
+    expect(screen.getByText(/glucose unit/i)).toBeInTheDocument()
+    expect(screen.getByText(/weight unit/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/sensor lifespan/i)).toBeInTheDocument()
+    expect(screen.getByLabelText(/urgent high/i)).toBeInTheDocument()
+  })
 })

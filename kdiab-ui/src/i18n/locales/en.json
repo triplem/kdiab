@@ -44,7 +44,8 @@
     "doseCalculator": "Dose Calc",
     "settings": "Settings",
     "adminUsers": "Users",
-    "adminDoctors": "Doctors"
+    "adminDoctors": "Doctors",
+    "preferences": "Preferences"
   },
   "patientBanner": {
     "viewingMessage": "You are viewing patient data",

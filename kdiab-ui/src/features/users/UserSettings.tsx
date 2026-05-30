@@ -41,7 +41,12 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>
 
-export function UserSettings() {
+interface UserSettingsProps {
+  /** When true, only locale settings (language + timezone) are shown. */
+  adminOnly?: boolean
+}
+
+export function UserSettings({ adminOnly = false }: UserSettingsProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
@@ -134,105 +139,115 @@ export function UserSettings() {
           </select>
         </div>
 
-        <div className="form-group">
-          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-            <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.timeFormat')}</legend>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <Controller
-                name="timeFormat"
-                control={control}
-                render={({ field }) => (
-                  <>
-                    {([12, 24] as const).map((v) => (
-                      <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-                        <input
-                          type="radio"
-                          value={v}
-                          checked={field.value === v}
-                          onChange={() => field.onChange(v)}
-                          onBlur={field.onBlur}
-                          name={field.name}
-                        />
-                        {v}h
-                      </label>
-                    ))}
-                  </>
-                )}
-              />
-            </div>
+        {!adminOnly && (
+          <div className="form-group">
+            <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+              <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.timeFormat')}</legend>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <Controller
+                  name="timeFormat"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      {([12, 24] as const).map((v) => (
+                        <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                          <input
+                            type="radio"
+                            value={v}
+                            checked={field.value === v}
+                            onChange={() => field.onChange(v)}
+                            onBlur={field.onBlur}
+                            name={field.name}
+                          />
+                          {v}h
+                        </label>
+                      ))}
+                    </>
+                  )}
+                />
+              </div>
+            </fieldset>
+          </div>
+        )}
+
+        {!adminOnly && (
+          <div className="form-group">
+            <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+              <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.glucoseUnit')}</legend>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                {(['mg/dL', 'mmol/L'] as const).map((v) => (
+                  <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                    <input type="radio" value={v} {...register('glucoseUnit')} />
+                    {v}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+        )}
+
+        {!adminOnly && (
+          <div className="form-group">
+            <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+              <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.weightUnit')}</legend>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                {(['kg', 'lbs'] as const).map((v) => (
+                  <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
+                    <input type="radio" value={v} {...register('weightUnit')} />
+                    {v}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </div>
+        )}
+
+        {!adminOnly && (
+          <div className="form-group">
+            <label htmlFor="sensorDurationHours">{t('settings.sensorDurationHours')}</label>
+            <input
+              id="sensorDurationHours"
+              type="number"
+              min={1}
+              max={8760}
+              style={{ width: 100 }}
+              {...register('sensorDurationHours', { valueAsNumber: true })}
+            />
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '0.4rem' }}>
+              {t('settings.sensorDurationHint')}
+            </span>
+            {errors.sensorDurationHours && (
+              <p style={{ color: 'var(--danger)', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
+                {t('settings.sensorDurationError')}
+              </p>
+            )}
+          </div>
+        )}
+
+        {!adminOnly && (
+          <fieldset style={{ border: '1px solid var(--border)', borderRadius: 4, padding: '0.75rem', marginBottom: '1rem' }}>
+            <legend style={{ padding: '0 0.3rem', fontSize: '0.9rem' }}>{t('settings.alarmThresholds')}</legend>
+
+            {errors.alarmUrgentLow?.message && (
+              <p style={{ color: 'var(--danger)', fontSize: '0.85rem', margin: '0 0 0.5rem' }}>
+                {t('settings.alarmOrderError')}
+              </p>
+            )}
+
+            {(['alarmUrgentHigh', 'alarmHigh', 'alarmLow', 'alarmUrgentLow'] as const).map((field) => (
+              <div className="form-group" key={field} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <label htmlFor={field} style={{ minWidth: 140 }}>{t(`settings.${field}`)}</label>
+                <input
+                  id={field}
+                  type="number"
+                  style={{ width: 80 }}
+                  {...register(field, { setValueAs: (v: string) => (v === '' ? null : Number(v)) })}
+                />
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>mg/dL</span>
+              </div>
+            ))}
           </fieldset>
-        </div>
-
-        <div className="form-group">
-          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-            <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.glucoseUnit')}</legend>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              {(['mg/dL', 'mmol/L'] as const).map((v) => (
-                <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-                  <input type="radio" value={v} {...register('glucoseUnit')} />
-                  {v}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </div>
-
-        <div className="form-group">
-          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
-            <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.weightUnit')}</legend>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              {(['kg', 'lbs'] as const).map((v) => (
-                <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer' }}>
-                  <input type="radio" value={v} {...register('weightUnit')} />
-                  {v}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="sensorDurationHours">{t('settings.sensorDurationHours')}</label>
-          <input
-            id="sensorDurationHours"
-            type="number"
-            min={1}
-            max={8760}
-            style={{ width: 100 }}
-            {...register('sensorDurationHours', { valueAsNumber: true })}
-          />
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '0.4rem' }}>
-            {t('settings.sensorDurationHint')}
-          </span>
-          {errors.sensorDurationHours && (
-            <p style={{ color: 'var(--danger)', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
-              {t('settings.sensorDurationError')}
-            </p>
-          )}
-        </div>
-
-        <fieldset style={{ border: '1px solid var(--border)', borderRadius: 4, padding: '0.75rem', marginBottom: '1rem' }}>
-          <legend style={{ padding: '0 0.3rem', fontSize: '0.9rem' }}>{t('settings.alarmThresholds')}</legend>
-
-          {errors.alarmUrgentLow?.message && (
-            <p style={{ color: 'var(--danger)', fontSize: '0.85rem', margin: '0 0 0.5rem' }}>
-              {t('settings.alarmOrderError')}
-            </p>
-          )}
-
-          {(['alarmUrgentHigh', 'alarmHigh', 'alarmLow', 'alarmUrgentLow'] as const).map((field) => (
-            <div className="form-group" key={field} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <label htmlFor={field} style={{ minWidth: 140 }}>{t(`settings.${field}`)}</label>
-              <input
-                id={field}
-                type="number"
-                style={{ width: 80 }}
-                {...register(field, { setValueAs: (v: string) => (v === '' ? null : Number(v)) })}
-              />
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>mg/dL</span>
-            </div>
-          ))}
-        </fieldset>
+        )}
 
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button type="submit" className="primary" disabled={!isDirty || mutation.isPending}>
