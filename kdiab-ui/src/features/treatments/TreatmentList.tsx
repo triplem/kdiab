@@ -17,7 +17,7 @@ interface TreatmentListProps {
 const TREATMENT_ICONS: Record<string, string> = {
   INSULIN_CHANGE: '\u{1F489}',
   SITE_CHANGE: '\u{1F4CD}',
-  SENSOR_INSERT: '\u{1F4F6}',
+  SENSOR_INSERT: '\u{1FA79}',
   BOLUS: '\u{1F489}',
   CORRECTION_BOLUS: '\u{1F489}',
   COMBO_BOLUS: '\u{1F489}',
@@ -379,6 +379,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
         <tbody>
           {treatments.map((tr) => {
             const isExpanded = expandedIds.has(tr.id)
+            const typeIcon = getTreatmentIcon(tr.type)
             return (
               <React.Fragment key={tr.id}>
                 <tr
@@ -430,9 +431,9 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                         color: 'var(--text-primary)',
                       }}
                     >
-                      {getTreatmentIcon(tr.type) && (
+                      {typeIcon && (
                         <span aria-hidden="true" style={{ marginRight: '4px' }}>
-                          {getTreatmentIcon(tr.type)}
+                          {typeIcon}
                         </span>
                       )}
                       {t(`treatmentModal.types.${tr.type}`, { defaultValue: tr.type })}
