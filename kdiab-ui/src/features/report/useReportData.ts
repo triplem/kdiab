@@ -191,6 +191,9 @@ export function useReportData(
       isLoading: cgpQ.isLoading,
       isError: cgpQ.isError,
     },
-    isAnyLoading: [...wave1, ...wave2].some(r => r.isLoading),
+    // Use isFetching (covers both initial loads and background refetches) rather than isLoading,
+    // which is isPending && isFetching and misses the wave1-done/wave2-not-started transition
+    // where wave2 queries are enabled but haven't begun fetching yet.
+    isAnyLoading: [...wave1, ...wave2].some(r => r.isFetching),
   }
 }
