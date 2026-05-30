@@ -130,4 +130,40 @@ class MeasureServiceTest {
         }
         coVerify(exactly = 0) { repo.deleteAll(any(), any()) }
     }
+
+    @Test
+    fun `updateMeasure delegates to repository and returns updated measure`() = runTest {
+        val measuredAt = Instant.parse("2024-06-01T08:00:00Z")
+        val data = buildJsonObject { put("mbg", 95) }
+        val updated = testMeasure().copy(measuredAt = measuredAt, data = data)
+        coEvery { repo.update(measureId, userId, measuredAt, data) } returns updated
+        val result = service.updateMeasure(measureId, userId, measuredAt, data)
+        assertEquals(updated, result)
+        coVerify(exactly = 1) { repo.update(measureId, userId, measuredAt, data) }
+    }
+
+    @Test
+    fun `unarchiveMeasures delegates to repository`() = runTest {
+        coEvery { repo.unarchive(listOf(measureId), userId) } just runs
+        service.unarchiveMeasures(listOf(measureId), userId)
+        coVerify(exactly = 1) { repo.unarchive(listOf(measureId), userId) }
+    }
+
+    @Test
+    fun `unarchiveMeasures throws ResourceNotFoundException when ids are empty`() = runTest {
+        assertFailsWith<ResourceNotFoundException> {
+            service.unarchiveMeasures(emptyList(), userId)
+        }
+        coVerify(exactly = 0) { repo.unarchive(any(), any()) }
+    }
+
+    @Test
+    fun `getMeasures passes status filter to repository`() = runTest {
+        val measures = listOf(testMeasure().copy(status = MeasureStatus.ARCHIVED))
+        coEvery { repo.findByUserId(userId, 0, 50, null, null, MeasureStatus.ARCHIVED) } returns measures
+        coEvery { repo.countByUserId(userId, null, null, MeasureStatus.ARCHIVED) } returns 1L
+        val result = service.getMeasures(userId, 0, 50, status = MeasureStatus.ARCHIVED)
+        assertEquals(measures, result.items)
+        assertEquals(1L, result.totalCount)
+    }
 }

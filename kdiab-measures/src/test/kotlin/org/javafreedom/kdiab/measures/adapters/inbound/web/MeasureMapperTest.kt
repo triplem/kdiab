@@ -7,7 +7,10 @@ import kotlin.test.assertNotNull
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.double
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.measures.api.models.CreateMeasureRequest
 import org.javafreedom.kdiab.measures.api.models.MeasureSource as ApiSource
 import org.javafreedom.kdiab.measures.api.models.MeasureStatus as ApiStatus
@@ -120,6 +123,139 @@ class MeasureMapperTest {
         MeasureSource.entries.forEach { domainSource ->
             val api = testDomainMeasure(source = domainSource).toApi()
             assertEquals(ApiSource.valueOf(domainSource.name), api.source)
+        }
+    }
+
+    // ── normalizeToCanonical: mmol/L → mg/dL conversion ──────────────────────
+
+    @Test
+    fun `toDomain normalizes glucose from mmol-L to mg-dL`() {
+        val mmolData = buildJsonObject {
+            put("value", 5.5)
+            put("unit", "mmol/L")
+        }
+        val request = CreateMeasureRequest(
+            measuredAt = "2024-01-01T10:00:00Z",
+            type = ApiType.BGM,
+            source = ApiSource.MANUAL,
+            data = mmolData
+        )
+        val domain = request.toDomain(userId)
+        val storedValue = domain.data["value"]?.jsonPrimitive?.double
+        // 5.5 mmol/L * 18.0182 ≈ 99 mg/dL (rounded)
+        assertNotNull(storedValue)
+        assertEquals(99.0, storedValue)
+        // unit key must not be stored in canonical form
+        assertEquals(null, domain.data["unit"])
+    }
+
+    @Test
+    fun `toDomain normalizes weight from lbs to kg`() {
+        val lbsData = buildJsonObject {
+            put("value", 154.3)
+            put("unit", "lbs")
+        }
+        val request = CreateMeasureRequest(
+            measuredAt = "2024-01-01T10:00:00Z",
+            type = ApiType.WEIGHT,
+            source = ApiSource.MANUAL,
+            data = lbsData
+        )
+        val domain = request.toDomain(userId)
+        val storedValue = domain.data["value"]?.jsonPrimitive?.double
+        // 154.3 lbs / 2.20462 ≈ 70.0 kg (rounded to 1 decimal)
+        assertNotNull(storedValue)
+        assertEquals(70.0, storedValue)
+    }
+
+    @Test
+    fun `toDomain preserves glucose value already in mg-dL`() {
+        val mgdlData = buildJsonObject {
+            put("value", 120.0)
+            put("unit", "mg/dL")
+        }
+        val request = CreateMeasureRequest(
+            measuredAt = "2024-01-01T10:00:00Z",
+            type = ApiType.BGM,
+            source = ApiSource.MANUAL,
+            data = mgdlData
+        )
+        val domain = request.toDomain(userId)
+        assertEquals(120.0, domain.data["value"]?.jsonPrimitive?.double)
+    }
+
+    @Test
+    fun `toDomain preserves weight value already in kg`() {
+        val kgData = buildJsonObject {
+            put("value", 70.0)
+            put("unit", "kg")
+        }
+        val request = CreateMeasureRequest(
+            measuredAt = "2024-01-01T10:00:00Z",
+            type = ApiType.WEIGHT,
+            source = ApiSource.MANUAL,
+            data = kgData
+        )
+        val domain = request.toDomain(userId)
+        assertEquals(70.0, domain.data["value"]?.jsonPrimitive?.double)
+    }
+
+    // ── convertFromCanonical: mg/dL → mmol/L and kg → lbs ────────────────────
+
+    @Test
+    fun `toApi converts glucose from mg-dL to mmol-L when glucoseUnit is mmol-L`() {
+        val mgdlData = buildJsonObject { put("value", 99.0) }
+        val measure = testDomainMeasure(type = MeasureType.BGM).copy(data = mgdlData)
+        val api = measure.toApi(glucoseUnit = "mmol/L")
+        val convertedValue = api.data["value"]?.jsonPrimitive?.double
+        // 99 / 18.0182 * 10 rounded / 10 ≈ 5.5
+        assertNotNull(convertedValue)
+        assertEquals(5.5, convertedValue)
+        assertEquals("mmol/L", api.data["unit"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `toApi rounds glucose value in mg-dL when glucoseUnit is mg-dL`() {
+        val mgdlData = buildJsonObject { put("value", 99.4) }
+        val measure = testDomainMeasure(type = MeasureType.BGM).copy(data = mgdlData)
+        val api = measure.toApi(glucoseUnit = "mg/dL")
+        val roundedValue = api.data["value"]?.jsonPrimitive?.double
+        assertEquals(99.0, roundedValue)
+        assertEquals("mg/dL", api.data["unit"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `toApi converts weight from kg to lbs when weightUnit is lbs`() {
+        val kgData = buildJsonObject { put("value", 70.0) }
+        val measure = testDomainMeasure(type = MeasureType.WEIGHT).copy(data = kgData)
+        val api = measure.toApi(weightUnit = "lbs")
+        val convertedValue = api.data["value"]?.jsonPrimitive?.double
+        // 70 * 2.20462 * 10 rounded / 10 ≈ 154.3
+        assertNotNull(convertedValue)
+        assertEquals(154.3, convertedValue)
+        assertEquals("lbs", api.data["unit"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `toApi rounds weight value in kg when weightUnit is kg`() {
+        val kgData = buildJsonObject { put("value", 70.12) }
+        val measure = testDomainMeasure(type = MeasureType.WEIGHT).copy(data = kgData)
+        val api = measure.toApi(weightUnit = "kg")
+        val roundedValue = api.data["value"]?.jsonPrimitive?.double
+        assertEquals(70.1, roundedValue)
+        assertEquals("kg", api.data["unit"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `toDomain throws BusinessValidationException for invalid measuredAt`() {
+        val request = CreateMeasureRequest(
+            measuredAt = "not-a-valid-timestamp",
+            type = ApiType.BGM,
+            source = ApiSource.MANUAL,
+            data = data
+        )
+        kotlin.test.assertFailsWith<BusinessValidationException> {
+            request.toDomain(userId)
         }
     }
 }
