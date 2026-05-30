@@ -32,6 +32,7 @@ export interface Profile {
   proposalReason?: string | null
   createdBy?: string | null
   rejectionReason?: string | null
+  carbAbsorptionRateGPerHour?: number | null
 }
 
 export interface Insulin {

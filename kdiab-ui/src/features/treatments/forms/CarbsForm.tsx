@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { carbsApi } from '../../../api/carbsApi'
 import type { FoodEntryResponse } from '../../../api/carbsApi'
+import { profilesApi } from '../../../api/profilesApi'
 import { inputStyle, labelStyle } from './formStyles'
 
 export interface CarbsFormData {
@@ -25,6 +27,21 @@ export function CarbsForm({ initialData, validationError, userId, onDataChange }
   const [foodSearchQuery, setFoodSearchQuery] = useState('')
   const [foodSearchResults, setFoodSearchResults] = useState<FoodEntryResponse[]>([])
   const foodSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Track whether the user has manually overridden the auto-computed absorptionTime
+  const absorptionManuallySet = useRef(false)
+
+  // Fetch the active profile to auto-compute absorptionTime from carbAbsorptionRateGPerHour.
+  // Uses the same cache key as BolusForm and BasalForm — no extra network request.
+  const { data: activeProfile } = useQuery({
+    queryKey: ['profiles-active-single', userId],
+    queryFn: async () => {
+      if (!userId) return null
+      const response = await profilesApi.listProfiles(userId, ['ACTIVE'])
+      return response.data.items[0] ?? null
+    },
+    enabled: !!userId,
+    staleTime: 10 * 60 * 1000,
+  })
 
   useEffect(() => {
     if (!userId) {
@@ -49,12 +66,26 @@ export function CarbsForm({ initialData, validationError, userId, onDataChange }
     return absorption && !isNaN(abs) ? { carbs: v, absorptionTime: abs } : { carbs: v }
   }
 
+  const computeAbsorption = (carbsVal: number): number => {
+    const rate = activeProfile?.carbAbsorptionRateGPerHour ?? 20
+    return Math.round((carbsVal / rate) * 10) / 10
+  }
+
   const handleCarbsChange = (value: string) => {
     setCarbs(value)
-    onDataChange(buildData(value, absorptionTime))
+    const carbsVal = parseFloat(value)
+    if (!isNaN(carbsVal) && carbsVal > 0 && !absorptionManuallySet.current) {
+      const computed = computeAbsorption(carbsVal)
+      const computedStr = String(computed)
+      setAbsorptionTime(computedStr)
+      onDataChange({ carbs: carbsVal, absorptionTime: computed })
+    } else {
+      onDataChange(buildData(value, absorptionTime))
+    }
   }
 
   const handleAbsorptionChange = (value: string) => {
+    absorptionManuallySet.current = true
     setAbsorptionTime(value)
     onDataChange(buildData(carbs, value))
   }
@@ -64,7 +95,15 @@ export function CarbsForm({ initialData, validationError, userId, onDataChange }
     setCarbs(carbValue)
     setFoodSearchQuery('')
     setFoodSearchResults([])
-    onDataChange(buildData(carbValue, absorptionTime))
+    if (!absorptionManuallySet.current) {
+      const carbsVal = Math.round(food.carbsForPortion)
+      const computed = computeAbsorption(carbsVal)
+      const computedStr = String(computed)
+      setAbsorptionTime(computedStr)
+      onDataChange({ carbs: carbsVal, absorptionTime: computed })
+    } else {
+      onDataChange(buildData(carbValue, absorptionTime))
+    }
   }
 
   return (
