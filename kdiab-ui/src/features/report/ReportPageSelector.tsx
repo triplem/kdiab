@@ -42,7 +42,7 @@ export function ReportPageSelector({ selectedPages, onToggle, onSelectAll, onDes
         {/* Page checkboxes */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
           {REPORT_PAGE_IDS.map((id) => {
-            const isFixed = id === 'SUMMARY'
+            const isFixed = id === 'SUMMARY' || id === 'AUSWERTUNG'
             const checked = selectedPages.includes(id)
             return (
               <label

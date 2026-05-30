@@ -47,6 +47,107 @@
 }
 
 /* ============================================================
+   SummaryPage (Auswertung) styles
+   ============================================================ */
+
+.summary-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.summary-section {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-section:last-child {
+  border-bottom: none;
+}
+
+.summary-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0 0 0.6rem;
+  color: var(--text-primary);
+}
+
+.summary-header {
+  padding-bottom: 1rem;
+}
+
+.summary-patient-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+  color: var(--text-primary);
+}
+
+.summary-header-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.4rem 1.5rem;
+}
+
+.summary-header-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.summary-header-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summary-header-value {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.tir-zone-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.summary-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.5rem 1.5rem;
+}
+
+.summary-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.summary-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.summary-stat-value {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.summary-warnings {
+  padding: 0.5rem 0.75rem;
+  background: var(--color-warn-bg, #fff3cd);
+  border: 1px solid var(--color-warn-border, #ffc107);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* ============================================================
    Print styles — A4 landscape is recommended for reports
    ============================================================ */
 

@@ -638,6 +638,7 @@
     "pagesDeselected": "{{count}} page deselected",
     "pagesDeselected_other": "{{count}} pages deselected",
     "page": {
+      "AUSWERTUNG": "Summary Report",
       "SUMMARY": "Summary",
       "AGP": "AGP Percentile Chart",
       "DAILY_STATS": "Daily Statistics",
@@ -647,10 +648,10 @@
       "GLUCOSE_DISTRIBUTION": "Glucose Distribution",
       "PROFILE": "Basal Profile",
       "CGP": "Comprehensive Glucose Pentagon (CGP)",
-      "AUSWERTUNG": "Summary Report",
       "BASAL_RATE": "Basal Rate Chart"
     },
     "error": {
+      "reportSummary": "Could not load summary report.",
       "summary": "Could not load summary data.",
       "agp": "Could not load AGP data.",
       "dailyStats": "Could not load daily statistics.",
@@ -689,6 +690,35 @@
       "chartCaption": "Glucose curves for all days overlaid on a 24-hour timeline",
       "xAxisLabel": "Time of day",
       "legendAriaLabel": "Day colour legend"
+    },
+    "summary": {
+      "patientInfo": "Patient Information",
+      "daysAnalysed": "Days Analysed",
+      "cgmReadings": "CGM Readings",
+      "insulinType": "Insulin Type",
+      "insulinChanges": "Cartridge Changes",
+      "siteChanges": "Site Changes",
+      "sensorInserts": "Sensor Insertions",
+      "tirProfile": "Time in Range (Profile Thresholds)",
+      "tirStandard": "Time in Range (Standard 54/70/180/250)",
+      "tirFallback": "standard thresholds used",
+      "glucoseStats": "Glucose Statistics",
+      "minGlucose": "Minimum",
+      "maxGlucose": "Maximum",
+      "meanGlucose": "Mean",
+      "sd": "Standard Deviation",
+      "dailyAverages": "Daily Averages",
+      "avgCarbs": "Avg Carbs",
+      "avgBolus": "Avg Bolus",
+      "avgBasal": "Avg Basal",
+      "avgTotalInsulin": "Avg Total Insulin",
+      "tir": {
+        "veryLow": "Very Low (< 54)",
+        "low": "Low (54–70)",
+        "inRange": "In Range",
+        "high": "High (180–250)",
+        "veryHigh": "Very High (> 250)"
+      }
     },
     "dailyTrendDays": "{{count}} day with data",
     "dailyTrendDays_other": "{{count}} days with data",

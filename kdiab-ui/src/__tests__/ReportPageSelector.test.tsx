@@ -33,7 +33,7 @@ describe('ReportPageSelector', () => {
         onDeselectAll={vi.fn()}
       />,
     )
-    const summaryCheckbox = screen.getByRole('checkbox', { name: /Summary/i })
+    const summaryCheckbox = screen.getByRole('checkbox', { name: 'Summary' })
     expect(summaryCheckbox).toBeDisabled()
     expect(summaryCheckbox).toBeChecked()
   })
@@ -64,7 +64,7 @@ describe('ReportPageSelector', () => {
         onDeselectAll={vi.fn()}
       />,
     )
-    const summaryCheckbox = screen.getByRole('checkbox', { name: /Summary/i })
+    const summaryCheckbox = screen.getByRole('checkbox', { name: 'Summary' })
     fireEvent.click(summaryCheckbox)
     expect(onToggle).not.toHaveBeenCalled()
   })
