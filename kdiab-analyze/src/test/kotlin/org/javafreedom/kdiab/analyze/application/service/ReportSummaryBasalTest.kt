@@ -17,13 +17,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/**
- * Tests for computeBasalTotalIe, computeScheduledBasalForDuration, and griZone,
- * which are exercised indirectly through getReportSummary.
- *
- * These paths were not covered by the existing AnalyticsServiceTest because those
- * tests returned empty treatment/profile lists that bypassed the schedule branches.
- */
 class ReportSummaryBasalTest {
 
     private val measuresPort = mockk<MeasuresPort>()
@@ -208,9 +201,7 @@ class ReportSummaryBasalTest {
 
     @Test
     fun `getReportSummary computes griZone B for moderate hypoglycemia`() = runTest {
-        // Mix that pushes GRI into 20–40 range (Zone B)
-        // GRI = 3.0*%<54 + 2.4*%54-70 + ...
-        // 15% time in low zone (54-70) → GRI = 2.4*15 = 36 → Zone B (20-40)
+        // 15% readings in 54-70 mg/dL range — exercises the GRI zone B/C path
         val inRange = List(85) { cgmDto(120.0) }
         val low = List(15) { cgmDto(65.0) }    // 54-70 mg/dL
         coEvery { measuresPort.getMeasures(any(), any(), any(), any(), any()) } returns inRange + low
