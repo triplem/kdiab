@@ -394,13 +394,12 @@ INSERT INTO insulins(id, name) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Sarah -- archived profile from 60 days ago, active profile from 30 days ago
-INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
+INSERT INTO profiles(id, user_id, name, insulin_type, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
 VALUES (
   'aaaa0001-0000-0000-0000-000000000001',
   '11111111-1111-1111-1111-111111111111',
   'Sarah Profile v1',
   'Humalog',
-  'mg/dl',
   240,
   'Europe/Berlin',
   NOW() - INTERVAL '65 days',
@@ -418,14 +417,13 @@ VALUES (
 )
 ON CONFLICT (profile_id) DO NOTHING;
 
-INSERT INTO profiles(id, user_id, previous_profile_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
+INSERT INTO profiles(id, user_id, previous_profile_id, name, insulin_type, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
 VALUES (
   'aaaa0002-0000-0000-0000-000000000002',
   '11111111-1111-1111-1111-111111111111',
   'aaaa0001-0000-0000-0000-000000000001',
   'Sarah Profile v2',
   'Humalog',
-  'mg/dl',
   240,
   'Europe/Berlin',
   NOW() - INTERVAL '31 days',
@@ -444,13 +442,12 @@ VALUES (
 ON CONFLICT (profile_id) DO NOTHING;
 
 -- Mike -- archived profile v1 (45 days ago) + active profile v2 (20 days ago)
-INSERT INTO profiles(id, user_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
+INSERT INTO profiles(id, user_id, name, insulin_type, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
 VALUES (
   'bbbb0001-0000-0000-0000-000000000001',
   '22222222-2222-2222-2222-222222222222',
   'Mike Profile v1',
   'Novolog',
-  'mg/dl',
   210,
   'America/New_York',
   NOW() - INTERVAL '45 days',
@@ -469,14 +466,13 @@ VALUES (
 ON CONFLICT (profile_id) DO UPDATE SET status = 'ARCHIVED';
 
 -- Mike v2: slightly increased overnight basal after doctor review at day -20
-INSERT INTO profiles(id, user_id, previous_profile_id, name, insulin_type, units, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
+INSERT INTO profiles(id, user_id, previous_profile_id, name, insulin_type, duration_of_action, time_zone, created_at, segments, carb_absorption_rate_g_per_hour)
 VALUES (
   'bbbb0002-0000-0000-0000-000000000002',
   '22222222-2222-2222-2222-222222222222',
   'bbbb0001-0000-0000-0000-000000000001',
   'Mike Profile v2',
   'Novolog',
-  'mg/dl',
   210,
   'America/New_York',
   NOW() - INTERVAL '20 days',
