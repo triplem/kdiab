@@ -122,8 +122,8 @@ export function DailyStatsPage({ rows, summary, warnings, glucoseUnit }: Props) 
           <thead>
             <tr
               style={{
-                background: 'var(--surface)',
-                borderBottom: '2px solid var(--border)',
+                background: 'var(--surface-color)',
+                borderBottom: '2px solid var(--border-color)',
               }}
             >
               <th style={{ padding: '0.35rem 0.4rem', textAlign: 'left', whiteSpace: 'nowrap' }}>
@@ -168,7 +168,7 @@ export function DailyStatsPage({ rows, summary, warnings, glucoseUnit }: Props) 
             {displayRows.map((row) => (
               <tr
                 key={row.date}
-                style={{ borderBottom: '1px solid var(--border)' }}
+                style={{ borderBottom: '1px solid var(--border-color)' }}
               >
                 <td style={{ padding: '0.3rem 0.4rem', whiteSpace: 'nowrap' }}>{row.date}</td>
                 <td style={{ padding: '0.3rem 0.4rem', textAlign: 'right' }}>{row.cgmCount}</td>
@@ -199,9 +199,9 @@ export function DailyStatsPage({ rows, summary, warnings, glucoseUnit }: Props) 
           <tfoot>
             <tr
               style={{
-                background: 'var(--surface)',
+                background: 'var(--surface-color)',
                 fontWeight: 700,
-                borderTop: '2px solid var(--border)',
+                borderTop: '2px solid var(--border-color)',
               }}
             >
               <td style={{ padding: '0.3rem 0.4rem', whiteSpace: 'nowrap' }}>

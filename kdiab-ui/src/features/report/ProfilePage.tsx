@@ -103,9 +103,9 @@ function ProfileHeader({ profile }: ProfileHeaderProps) {
       style={{
         marginBottom: '1.25rem',
         padding: '0.75rem 1rem',
-        background: 'var(--surface)',
+        background: 'var(--surface-color)',
         borderRadius: '0.375rem',
-        border: '1px solid var(--border)',
+        border: '1px solid var(--border-color)',
       }}
     >
       <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.05rem' }}>{profile.name}</h3>
@@ -194,7 +194,7 @@ function BasalTable({ segments }: BasalTableProps) {
         aria-label={t('report.profile.basalTableAriaLabel')}
       >
         <thead>
-          <tr style={{ background: 'var(--surface)', borderBottom: '2px solid var(--border)' }}>
+          <tr style={{ background: 'var(--surface-color)', borderBottom: '2px solid var(--border-color)' }}>
             <th style={{ padding: '0.35rem 0.5rem', textAlign: 'left' }}>
               {t('report.profile.startTime')}
             </th>
@@ -205,7 +205,7 @@ function BasalTable({ segments }: BasalTableProps) {
         </thead>
         <tbody>
           {segments.map((seg) => (
-            <tr key={seg.startTime} style={{ borderBottom: '1px solid var(--border)' }}>
+            <tr key={seg.startTime} style={{ borderBottom: '1px solid var(--border-color)' }}>
               <td style={{ padding: '0.3rem 0.5rem', fontFamily: 'monospace' }}>
                 {formatTime(seg.startTime)}
               </td>
@@ -292,7 +292,7 @@ function SegmentTable({ segments, valueLabel, formatValue }: SegmentTableProps) 
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
         <thead>
-          <tr style={{ background: 'var(--surface)', borderBottom: '2px solid var(--border)' }}>
+          <tr style={{ background: 'var(--surface-color)', borderBottom: '2px solid var(--border-color)' }}>
             <th style={{ padding: '0.35rem 0.5rem', textAlign: 'left' }}>
               {t('report.profile.startTime')}
             </th>
@@ -301,7 +301,7 @@ function SegmentTable({ segments, valueLabel, formatValue }: SegmentTableProps) 
         </thead>
         <tbody>
           {segments.map((seg) => (
-            <tr key={seg.startTime} style={{ borderBottom: '1px solid var(--border)' }}>
+            <tr key={seg.startTime} style={{ borderBottom: '1px solid var(--border-color)' }}>
               <td style={{ padding: '0.3rem 0.5rem', fontFamily: 'monospace' }}>
                 {formatTime(seg.startTime)}
               </td>
@@ -336,7 +336,7 @@ function TargetTable({ segments, glucoseUnit }: TargetTableProps) {
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
         <thead>
-          <tr style={{ background: 'var(--surface)', borderBottom: '2px solid var(--border)' }}>
+          <tr style={{ background: 'var(--surface-color)', borderBottom: '2px solid var(--border-color)' }}>
             <th style={{ padding: '0.35rem 0.5rem', textAlign: 'left' }}>
               {t('report.profile.startTime')}
             </th>
@@ -350,7 +350,7 @@ function TargetTable({ segments, glucoseUnit }: TargetTableProps) {
         </thead>
         <tbody>
           {segments.map((seg) => (
-            <tr key={seg.startTime} style={{ borderBottom: '1px solid var(--border)' }}>
+            <tr key={seg.startTime} style={{ borderBottom: '1px solid var(--border-color)' }}>
               <td style={{ padding: '0.3rem 0.5rem', fontFamily: 'monospace' }}>
                 {formatTime(seg.startTime)}
               </td>

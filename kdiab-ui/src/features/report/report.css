@@ -39,7 +39,7 @@
 
 .report-section-error {
   padding: 0.6rem 1rem;
-  background: rgba(239, 68, 68, 0.12);
+  background: color-mix(in srgb, var(--accent-danger) 12%, transparent);
   border: 1px solid var(--accent-danger);
   border-radius: 4px;
   color: var(--accent-danger);
@@ -141,7 +141,7 @@
 
 .summary-warnings {
   padding: 0.5rem 0.75rem;
-  background: rgba(245, 158, 11, 0.12);
+  background: color-mix(in srgb, var(--accent-warning) 12%, transparent);
   border: 1px solid var(--accent-warning);
   border-radius: 4px;
   font-size: 0.85rem;
@@ -220,6 +220,18 @@
     background: #fff !important;
     color: #000 !important;
     font-size: 12pt;
+  }
+
+  /* Error/warning sections: lighten for white paper */
+  .report-section-error {
+    background: rgba(239, 68, 68, 0.08) !important;
+    border-color: #c0392b !important;
+    color: #c0392b !important;
+  }
+  .summary-warnings {
+    background: rgba(245, 158, 11, 0.08) !important;
+    border-color: #d97706 !important;
+    color: #92400e !important;
   }
 
   /* A4 page setup */
