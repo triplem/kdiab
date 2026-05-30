@@ -49,7 +49,7 @@ export function useReportData(
   glucoseUnit: string,
   displayName?: string,
 ): ReportDataState {
-  const enabled = !!userId && !!from && !!to
+  const fetchEnabled = !!userId && !!from && !!to
   const isSelected = (page: ReportPageId) => selectedPages.includes(page)
 
   const results = useQueries({
@@ -59,42 +59,42 @@ export function useReportData(
         queryKey: ['report-summary-page', userId, from, to, glucoseUnit, displayName] as const,
         queryFn: () =>
           analyzeApi.getReportSummary(userId, from, to, glucoseUnit, displayName).then(r => r.data),
-        enabled,
+        enabled: fetchEnabled,
         staleTime: 5 * 60 * 1000,
       },
       // SUMMARY (HbA1c) — always fetched
       {
         queryKey: ['report-summary', userId, from, to, glucoseUnit] as const,
         queryFn: () => analyzeApi.getHba1c(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled,
+        enabled: fetchEnabled,
         staleTime: 5 * 60 * 1000,
       },
       // AGP — only if selected
       {
         queryKey: ['report-agp', userId, from, to, glucoseUnit] as const,
         queryFn: () => analyzeApi.getAgp(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled: enabled && isSelected('AGP'),
+        enabled: fetchEnabled && isSelected('AGP'),
         staleTime: 5 * 60 * 1000,
       },
       // Daily Stats — only if selected
       {
         queryKey: ['report-daily-stats', userId, from, to, glucoseUnit] as const,
         queryFn: () => analyzeApi.getDailyStats(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled: enabled && isSelected('DAILY_STATS'),
+        enabled: fetchEnabled && isSelected('DAILY_STATS'),
         staleTime: 5 * 60 * 1000,
       },
       // Daily Trend — only if selected
       {
         queryKey: ['report-daily-trend', userId, from, to, glucoseUnit] as const,
         queryFn: () => analyzeApi.getDailyTrend(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled: enabled && isSelected('DAILY_TREND'),
+        enabled: fetchEnabled && isSelected('DAILY_TREND'),
         staleTime: 5 * 60 * 1000,
       },
       // Daily Charts (timeline) — only if selected
       {
         queryKey: ['report-daily-charts', userId, from, to] as const,
         queryFn: () => analyzeApi.getTimeline(userId, from, to).then(r => r.data),
-        enabled: enabled && isSelected('DAILY_CHARTS'),
+        enabled: fetchEnabled && isSelected('DAILY_CHARTS'),
         staleTime: 5 * 60 * 1000,
       },
       // Glucose Distribution — only if selected
@@ -102,21 +102,21 @@ export function useReportData(
         queryKey: ['report-glucose-distribution', userId, from, to, glucoseUnit] as const,
         queryFn: () =>
           analyzeApi.getGlucoseDistribution(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled: enabled && isSelected('GLUCOSE_DISTRIBUTION'),
+        enabled: fetchEnabled && isSelected('GLUCOSE_DISTRIBUTION'),
         staleTime: 5 * 60 * 1000,
       },
       // Profile — only if selected
       {
         queryKey: ['report-profile', userId, from, to] as const,
         queryFn: () => analyzeApi.getActiveProfiles(userId, from, to).then(r => r.data),
-        enabled: enabled && isSelected('PROFILE'),
+        enabled: fetchEnabled && isSelected('PROFILE'),
         staleTime: 5 * 60 * 1000,
       },
       // CGP — only if selected
       {
         queryKey: ['report-cgp', userId, from, to, glucoseUnit] as const,
         queryFn: () => analyzeApi.getCgp(userId, from, to, glucoseUnit).then(r => r.data),
-        enabled: enabled && isSelected('CGP'),
+        enabled: fetchEnabled && isSelected('CGP'),
         staleTime: 5 * 60 * 1000,
       },
     ],

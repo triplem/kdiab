@@ -46,9 +46,29 @@ export function ReportPage({ userId, glucoseUnit, patientName }: Props) {
   const serverPageSelection =
     (userData?.settings as Record<string, unknown> | undefined)?.['reportPageSelection'] as string[] | undefined
 
-  const { selectedPages, togglePage, selectAll, deselectAll } = useReportPageSelection(
-    serverPageSelection,
+  const {
+    selectedPages,
+    togglePage: togglePageBase,
+    selectAll: selectAllBase,
+    deselectAll: deselectAllBase,
+  } = useReportPageSelection(serverPageSelection)
+
+  // Reset the report view whenever page selection changes — consistent with handleDateChange
+  const togglePage = useCallback(
+    (page: Parameters<typeof togglePageBase>[0]) => {
+      setShowReport(false)
+      togglePageBase(page)
+    },
+    [togglePageBase],
   )
+  const selectAll = useCallback(() => {
+    setShowReport(false)
+    selectAllBase()
+  }, [selectAllBase])
+  const deselectAll = useCallback(() => {
+    setShowReport(false)
+    deselectAllBase()
+  }, [deselectAllBase])
 
   const reportData = useReportData(
     userId,
