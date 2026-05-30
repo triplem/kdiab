@@ -83,7 +83,7 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
             if (uncappedTotal > MAX_ABSOLUTE_DOSE) {
                 add(
                     "Calculated dose ${round2(uncappedTotal)}U exceeds maximum." +
-                        " Capped at ${MAX_ABSOLUTE_DOSE}U — verify with your care team"
+                        " Capped at ${MAX_ABSOLUTE_DOSE.toInt()}U — verify with your care team"
                 )
             }
         }
