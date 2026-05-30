@@ -42,11 +42,11 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 interface UserSettingsProps {
-  /** When true, only locale settings (language + timezone) are shown. */
-  adminOnly?: boolean
+  /** When true, only locale settings (language + timezone) are shown and submitted. */
+  localeOnly?: boolean
 }
 
-export function UserSettings({ adminOnly = false }: UserSettingsProps) {
+export function UserSettings({ localeOnly = false }: UserSettingsProps) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
 
@@ -91,17 +91,21 @@ export function UserSettings({ adminOnly = false }: UserSettingsProps) {
   })
 
   const onSubmit = (values: FormData) => {
-    mutation.mutate({
-      locale: { timezone: values.timezone, language: values.language, timeFormat: values.timeFormat },
-      units: { glucoseUnit: values.glucoseUnit, weightUnit: values.weightUnit },
-      alarms: {
-        urgentHigh: values.alarmUrgentHigh,
-        high: values.alarmHigh,
-        low: values.alarmLow,
-        urgentLow: values.alarmUrgentLow,
-      },
-      diabetes: { sensorDurationHours: values.sensorDurationHours },
-    })
+    mutation.mutate(
+      localeOnly
+        ? { locale: { timezone: values.timezone, language: values.language, timeFormat: values.timeFormat } }
+        : {
+            locale: { timezone: values.timezone, language: values.language, timeFormat: values.timeFormat },
+            units: { glucoseUnit: values.glucoseUnit, weightUnit: values.weightUnit },
+            alarms: {
+              urgentHigh: values.alarmUrgentHigh,
+              high: values.alarmHigh,
+              low: values.alarmLow,
+              urgentLow: values.alarmUrgentLow,
+            },
+            diabetes: { sensorDurationHours: values.sensorDurationHours },
+          },
+    )
   }
 
   if (isLoading) return <p>{t('common.loading')}</p>
@@ -139,7 +143,7 @@ export function UserSettings({ adminOnly = false }: UserSettingsProps) {
           </select>
         </div>
 
-        {!adminOnly && (
+        {!localeOnly && (
           <div className="form-group">
             <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
               <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.timeFormat')}</legend>
@@ -170,7 +174,7 @@ export function UserSettings({ adminOnly = false }: UserSettingsProps) {
           </div>
         )}
 
-        {!adminOnly && (
+        {!localeOnly && (
           <div className="form-group">
             <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
               <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.glucoseUnit')}</legend>
@@ -186,7 +190,7 @@ export function UserSettings({ adminOnly = false }: UserSettingsProps) {
           </div>
         )}
 
-        {!adminOnly && (
+        {!localeOnly && (
           <div className="form-group">
             <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
               <legend style={{ fontWeight: 600, marginBottom: '0.5rem' }}>{t('settings.weightUnit')}</legend>
@@ -202,7 +206,7 @@ export function UserSettings({ adminOnly = false }: UserSettingsProps) {
           </div>
         )}
 
-        {!adminOnly && (
+        {!localeOnly && (
           <div className="form-group">
             <label htmlFor="sensorDurationHours">{t('settings.sensorDurationHours')}</label>
             <input
@@ -224,7 +228,7 @@ export function UserSettings({ adminOnly = false }: UserSettingsProps) {
           </div>
         )}
 
-        {!adminOnly && (
+        {!localeOnly && (
           <fieldset style={{ border: '1px solid var(--border)', borderRadius: 4, padding: '0.75rem', marginBottom: '1rem' }}>
             <legend style={{ padding: '0 0.3rem', fontSize: '0.9rem' }}>{t('settings.alarmThresholds')}</legend>
 
@@ -261,4 +265,3 @@ export function UserSettings({ adminOnly = false }: UserSettingsProps) {
     </div>
   )
 }
-

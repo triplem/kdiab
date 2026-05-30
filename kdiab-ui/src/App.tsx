@@ -107,12 +107,18 @@ export default function App() {
   const isDoctor = roles.includes('DOCTOR')
   const isAdmin = roles.includes('ADMIN')
 
+  // Tabs that are valid for admins — used to decide whether to redirect on login.
+  const ADMIN_TABS: Tab[] = ['admin-users', 'admin-doctors', 'preferences']
+
   // Reset active tab to 'admin-users' when the user is an admin so they don't
-  // land on a tab that is hidden from them (e.g. 'dashboard').
+  // land on a tab that is hidden from them (e.g. 'dashboard'). Use a functional
+  // update so we only redirect if the current tab is not already an admin tab —
+  // this preserves navigation when the user manually switches to Preferences.
   useEffect(() => {
     if (isAdmin) {
-      setActiveTab('admin-users')
+      setActiveTab((prev) => (ADMIN_TABS.includes(prev) ? prev : 'admin-users'))
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin])
 
   const ownUserId = auth.user?.profile?.sub ?? ''
@@ -460,7 +466,7 @@ export default function App() {
         return isAdmin ? <AdminDoctorPatients /> : null
 
       case 'preferences':
-        return <UserSettings adminOnly={isAdmin} />
+        return <UserSettings localeOnly={isAdmin} />
     }
   }
 

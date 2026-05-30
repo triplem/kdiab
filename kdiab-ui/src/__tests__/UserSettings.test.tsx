@@ -132,9 +132,9 @@ describe('UserSettings', () => {
     expect(mockedPatch).not.toHaveBeenCalled()
   })
 
-  test('adminOnly=true hides glucose unit, weight unit, alarms, and sensor duration', async () => {
+  test('localeOnly=true hides glucose unit, weight unit, alarms, and sensor duration', async () => {
     mockedGetMe.mockResolvedValue({ data: makeUser() } as never)
-    render(<UserSettings adminOnly />, { wrapper })
+    render(<UserSettings localeOnly />, { wrapper })
     await waitFor(() => expect(screen.getByLabelText(/timezone/i)).toBeInTheDocument())
 
     // These locale fields should still be visible
@@ -149,9 +149,9 @@ describe('UserSettings', () => {
     expect(screen.queryByLabelText(/urgent high/i)).toBeNull()
   })
 
-  test('adminOnly=false (default) shows all fields', async () => {
+  test('localeOnly=false (default) shows all fields', async () => {
     mockedGetMe.mockResolvedValue({ data: makeUser() } as never)
-    render(<UserSettings adminOnly={false} />, { wrapper })
+    render(<UserSettings localeOnly={false} />, { wrapper })
     await waitFor(() => expect(screen.getByLabelText(/timezone/i)).toBeInTheDocument())
 
     expect(screen.getByText(/glucose unit/i)).toBeInTheDocument()

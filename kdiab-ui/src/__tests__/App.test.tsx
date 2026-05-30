@@ -123,8 +123,8 @@ vi.mock('../features/treatments/TreatmentList', () => ({
   TreatmentList: () => <div data-testid="treatment-list" />,
 }))
 vi.mock('../features/users/UserSettings', () => ({
-  UserSettings: ({ adminOnly }: { adminOnly?: boolean }) => (
-    <div data-testid="user-settings" data-admin-only={adminOnly ? 'true' : 'false'} />
+  UserSettings: ({ localeOnly }: { localeOnly?: boolean }) => (
+    <div data-testid="user-settings" data-locale-only={localeOnly ? 'true' : 'false'} />
   ),
 }))
 vi.mock('../features/users/AdminUserList', () => ({
@@ -809,7 +809,7 @@ describe('App — ADMIN tab visibility', () => {
     expect(tabLabels).not.toContain('Doctors')
   })
 
-  test('Preferences tab renders UserSettings with adminOnly=true for admins', async () => {
+  test('Preferences tab renders UserSettings with localeOnly=true for admins', async () => {
     mockedParseRoles.mockReturnValue(['ADMIN'])
 
     renderApp()
@@ -826,15 +826,15 @@ describe('App — ADMIN tab visibility', () => {
       fireEvent.click(preferencesBtn!)
     })
 
-    // UserSettings should be rendered with adminOnly=true
+    // UserSettings should be rendered with localeOnly=true
     await waitFor(() => {
       const settings = document.querySelector('[data-testid="user-settings"]')
       expect(settings).not.toBeNull()
-      expect(settings?.getAttribute('data-admin-only')).toBe('true')
+      expect(settings?.getAttribute('data-locale-only')).toBe('true')
     })
   })
 
-  test('Preferences tab renders UserSettings with adminOnly=false for patients', async () => {
+  test('Preferences tab renders UserSettings with localeOnly=false for patients', async () => {
     mockedParseRoles.mockReturnValue(['PATIENT'])
 
     renderApp()
@@ -851,11 +851,11 @@ describe('App — ADMIN tab visibility', () => {
       fireEvent.click(preferencesBtn!)
     })
 
-    // UserSettings should be rendered with adminOnly=false
+    // UserSettings should be rendered with localeOnly=false
     await waitFor(() => {
       const settings = document.querySelector('[data-testid="user-settings"]')
       expect(settings).not.toBeNull()
-      expect(settings?.getAttribute('data-admin-only')).toBe('false')
+      expect(settings?.getAttribute('data-locale-only')).toBe('false')
     })
   })
 })

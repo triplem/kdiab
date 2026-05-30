@@ -45,7 +45,7 @@
     "settings": "Einstellungen",
     "adminUsers": "Benutzer",
     "adminDoctors": "Ärzte",
-    "preferences": "Einstellungen"
+    "preferences": "Grundeinstellungen"
   },
   "patientBanner": {
     "viewingMessage": "Sie sehen Patientendaten",
