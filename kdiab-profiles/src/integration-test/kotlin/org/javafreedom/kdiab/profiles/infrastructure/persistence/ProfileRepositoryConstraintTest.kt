@@ -124,7 +124,6 @@ class ProfileRepositoryConstraintTest {
             it[Profiles.userId] = userId
             it[name] = "Test Profile"
             it[insulinType] = "Fiasp"
-            it[units] = "mg/dl"
             it[durationOfAction] = 180
             it[timeZone] = "UTC"
             it[createdAt] = Clock.System.now()

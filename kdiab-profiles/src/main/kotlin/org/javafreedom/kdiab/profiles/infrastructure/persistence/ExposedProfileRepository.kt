@@ -40,14 +40,12 @@ data class ProfileSegments(
 object Profiles : Table("profiles") {
     private const val NAME_LENGTH = 255
     private const val INSULIN_TYPE_LENGTH = 100
-    private const val UNITS_LENGTH = 20
 
     val id = uuid("id")
     val userId = uuid("user_id")
     val previousProfileId = uuid("previous_profile_id").references(id).nullable()
     val name = varchar("name", NAME_LENGTH)
     val insulinType = varchar("insulin_type", INSULIN_TYPE_LENGTH)
-    val units = varchar("units", UNITS_LENGTH).default("mg/dL")
     val durationOfAction = integer("duration_of_action")
     val timeZone = varchar("time_zone", 50)
     val createdAt = timestamp("created_at")
@@ -318,7 +316,6 @@ class ExposedProfileRepository(
             it[previousProfileId] = profile.previousProfileId
             it[name] = profile.name
             it[insulinType] = profile.settings.insulinType
-            it[units] = "mg/dL"  // legacy column — kept for backward compat
             it[durationOfAction] = profile.settings.durationOfAction
             it[timeZone] = "UTC"  // legacy column — kept for backward compat
             it[createdAt] = profile.createdAt

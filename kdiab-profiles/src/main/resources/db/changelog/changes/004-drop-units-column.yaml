@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-drop-units-column
+      author: kdiab
+      comment: "Remove vestigial units column — glucose unit preference lives in user_settings"
+      changes:
+        - dropColumn:
+            tableName: profiles
+            columnName: units

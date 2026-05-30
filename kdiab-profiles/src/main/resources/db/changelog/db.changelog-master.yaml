@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/changes/002-initial-data.yaml
   - include:
       file: db/changelog/changes/003-add-carb-absorption-rate.yaml
+  - include:
+      file: db/changelog/changes/004-drop-units-column.yaml
