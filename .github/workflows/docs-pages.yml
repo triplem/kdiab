@@ -28,8 +28,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  resolve-version:
+    if: github.repository == 'triplem/kdiab'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Derive version from latest tag
+        id: ver
+        run: |
+          TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
   build-root:
     if: github.repository == 'triplem/kdiab'
+    needs: resolve-version
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -47,7 +63,7 @@ jobs:
 
       - name: Build root docs
         # (#661) Uses root Gradle asciidoctor task (bundles JRuby + gem) — no system gem install needed.
-        run: ./gradlew asciidoctor
+        run: ./gradlew asciidoctor -Pversion=${{ needs.resolve-version.outputs.version }}
 
       - name: Upload root docs artifact
         uses: actions/upload-artifact@v4
@@ -57,6 +73,7 @@ jobs:
 
   build-service:
     if: github.repository == 'triplem/kdiab'
+    needs: resolve-version
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -93,7 +110,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Build ${{ matrix.service }} docs
-        run: cd ${{ matrix.service }} && ./gradlew asciidoctor
+        run: cd ${{ matrix.service }} && ./gradlew asciidoctor -Pversion=${{ needs.resolve-version.outputs.version }}
 
       - name: Upload ${{ matrix.service }} docs artifact
         uses: actions/upload-artifact@v4
