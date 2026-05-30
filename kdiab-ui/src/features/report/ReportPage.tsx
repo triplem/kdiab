@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { usersApi } from '../../api/usersApi'
@@ -23,7 +23,7 @@ interface Props {
  * Responsibilities:
  * - Date range selection (presets + custom)
  * - Page selection (persisted in UserSettings + localStorage)
- * - Fan-out data fetching via useReportData
+ * - Fan-out data fetching via useReportData (gated on Generate button click)
  * - Print / Download PDF trigger
  */
 export function ReportPage({ userId, glucoseUnit, patientName }: Props) {
@@ -31,6 +31,9 @@ export function ReportPage({ userId, glucoseUnit, patientName }: Props) {
 
   const [dateRange, setDateRange] = useState<DateRange>(buildInitialRange(14))
   const [showReport, setShowReport] = useState(false)
+
+  // Ref for scrolling the report section into view after Generate is clicked
+  const reportViewRef = useRef<HTMLDivElement>(null)
 
   // Fetch persisted page selection from UserSettings
   // TODO(#1118): Once kdiab-users backend adds reportPageSelection field,
@@ -57,6 +60,7 @@ export function ReportPage({ userId, glucoseUnit, patientName }: Props) {
     selectedPages,
     glucoseUnit,
     patientName,
+    showReport,
   )
 
   const handleDateChange = useCallback((range: DateRange) => {
@@ -71,6 +75,14 @@ export function ReportPage({ userId, glucoseUnit, patientName }: Props) {
   const handleDownloadPdf = useCallback(() => {
     window.print()
   }, [])
+
+  // Scroll the report section into view as soon as Generate is clicked so the
+  // user sees the loading indicator and the report without having to scroll down.
+  useEffect(() => {
+    if (showReport) {
+      reportViewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [showReport])
 
   return (
     <div className="report-page">
@@ -115,29 +127,32 @@ export function ReportPage({ userId, glucoseUnit, patientName }: Props) {
         </div>
       </div>
 
-      {/* Loading state */}
-      {showReport && reportData.isAnyLoading && (
-        <div
-          role="status"
-          aria-live="polite"
-          style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}
-        >
-          {t('report.loading')}
-        </div>
-      )}
+      {/* Report output area — ref anchors scroll target */}
+      <div ref={reportViewRef}>
+        {/* Loading state */}
+        {showReport && reportData.isAnyLoading && (
+          <div
+            role="status"
+            aria-live="polite"
+            style={{ padding: '1rem 0', color: 'var(--text-secondary)' }}
+          >
+            {t('report.loading')}
+          </div>
+        )}
 
-      {/* Report output */}
-      {showReport && (
-        <ReportView
-          userId={userId}
-          from={dateRange.from}
-          to={dateRange.to}
-          selectedPages={selectedPages}
-          data={reportData}
-          glucoseUnit={glucoseUnit}
-          {...(patientName !== undefined && { patientName })}
-        />
-      )}
+        {/* Report output */}
+        {showReport && (
+          <ReportView
+            userId={userId}
+            from={dateRange.from}
+            to={dateRange.to}
+            selectedPages={selectedPages}
+            data={reportData}
+            glucoseUnit={glucoseUnit}
+            {...(patientName !== undefined && { patientName })}
+          />
+        )}
+      </div>
     </div>
   )
 }
