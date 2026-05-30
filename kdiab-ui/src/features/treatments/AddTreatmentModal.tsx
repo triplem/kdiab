@@ -248,6 +248,7 @@ export const AddTreatmentModal: React.FC<AddTreatmentModalProps> = ({
           <BasalForm
             {...(isEditMode && { initialData: { insulin: editData.insulin as number, insulinType: editData.insulinType as string, duration: editData.duration as number } })}
             validationError={validationError}
+            {...(userId !== undefined && { userId })}
             onDataChange={(data) => setPendingData(data as Record<string, unknown> | null)}
           />
         )

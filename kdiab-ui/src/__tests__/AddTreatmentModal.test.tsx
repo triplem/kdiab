@@ -1,14 +1,25 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { AxiosResponse } from 'axios'
 import type { ReactNode } from 'react'
 import { AddTreatmentModal } from '../features/treatments/AddTreatmentModal'
+import { profilesApi } from '../api/profilesApi'
+import type { PagedProfiles, Insulin } from '../api/profilesApi'
 import '../i18n'
 
 // Mock carbsApi used by CarbsForm
 vi.mock('../api/carbsApi', () => ({
   carbsApi: {
     listFoods: vi.fn().mockResolvedValue({ data: { items: [] } }),
+  },
+}))
+
+// Mock profilesApi used by BasalForm
+vi.mock('../api/profilesApi', () => ({
+  profilesApi: {
+    listProfiles: vi.fn(),
+    getInsulins: vi.fn(),
   },
 }))
 
@@ -28,6 +39,8 @@ const baseProps = {
 describe('AddTreatmentModal', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(profilesApi.listProfiles).mockResolvedValue({ data: { items: [], page: 0, size: 20, totalCount: 0 } } as AxiosResponse<PagedProfiles>)
+    vi.mocked(profilesApi.getInsulins).mockResolvedValue({ data: [] } as AxiosResponse<Insulin[]>)
   })
 
   test('renders nothing when isOpen is false', () => {
@@ -251,6 +264,15 @@ describe('AddTreatmentModal', () => {
     expect(baseProps.onSave).toHaveBeenCalledOnce()
     const call = baseProps.onSave.mock.calls[0][0] as { type: string }
     expect(call.type).toBe('INSULIN_CHANGE')
+  })
+
+  test('switching to BASAL type shows insulin type input', () => {
+    render(<AddTreatmentModal {...baseProps} />, { wrapper })
+    const select = screen.getByRole('combobox')
+    fireEvent.change(select, { target: { value: 'BASAL' } })
+    // BasalForm renders a text input for insulin type
+    const textInputs = screen.getAllByRole('textbox')
+    expect(textInputs.length).toBeGreaterThanOrEqual(1)
   })
 
   test('CORRECTION_BOLUS type also uses BolusForm', () => {

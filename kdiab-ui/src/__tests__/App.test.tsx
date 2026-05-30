@@ -86,7 +86,7 @@ vi.mock('../api/profilesApi', () => ({
     updateProfile: vi.fn(),
     activateProfile: vi.fn(),
     archiveProfile: vi.fn(),
-    listInsulins: vi.fn().mockResolvedValue({ data: [] }),
+    getInsulins: vi.fn().mockResolvedValue({ data: [] }),
   },
 }))
 
