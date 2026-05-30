@@ -463,9 +463,7 @@ export const AddMeasureModal: React.FC<AddMeasureModalProps> = ({
             </div>
           )}
 
-          <div
-            style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}
-          >
+          <div className="modal-footer">
             <button type="button" onClick={onClose} style={{ padding: '8px 16px' }}>
               {t('modal.cancel')}
             </button>

@@ -418,10 +418,11 @@ label {
 .card { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
 
 /* Modal */
-.modal-overlay { position: fixed; inset: 0; background: var(--overlay-bg); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-.modal-box { background: var(--modal-bg); border: 1px solid var(--modal-border); border-radius: 16px; padding: 2rem; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
+.modal-overlay { position: fixed; inset: 0; background: var(--overlay-bg); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 1rem; overflow-y: auto; }
+@media (min-height: 700px) { .modal-overlay { align-items: center; } }
+.modal-box { background: var(--modal-bg); border: 1px solid var(--modal-border); border-radius: 16px; padding: 2rem 2rem 0; width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; }
 .modal-title { font-size: 1.3rem; font-weight: 600; margin-bottom: 1.5rem; }
-.modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+.modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; position: sticky; bottom: 0; background: var(--modal-bg); padding: 1rem 0 1.5rem; margin-top: 1rem; }
 .field-error { color: var(--accent-danger); font-size: 0.82rem; margin-top: 0.2rem; }
 .form-group { margin-bottom: 1rem; }
 
