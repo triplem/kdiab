@@ -5,6 +5,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.test.runTest
@@ -65,5 +66,32 @@ class RegistrationServiceTest {
         service.register("seed@example.com", "Seed User", "pass")
 
         coVerify(exactly = 1) { settingsRepo.save(match { it.userId == newUserId }) }
+    }
+
+    @Test
+    fun `register rolls back identity provider user when settings save fails`() = runTest {
+        val service = RegistrationService(identityProvider, settingsRepo, requiresApproval = false)
+        coEvery { identityProvider.createUser(any()) } returns newUserId
+        coEvery { identityProvider.assignRoles(any(), any()) } returns Unit
+        coEvery { settingsRepo.save(any()) } throws RuntimeException("DB unavailable")
+        coEvery { identityProvider.deleteUser(newUserId) } returns Unit
+
+        assertFailsWith<RuntimeException> {
+            service.register("fail@example.com", "Fail User", "pass")
+        }
+        coVerify(exactly = 1) { identityProvider.deleteUser(newUserId) }
+    }
+
+    @Test
+    fun `register propagates exception when rollback also fails`() = runTest {
+        val service = RegistrationService(identityProvider, settingsRepo, requiresApproval = true)
+        coEvery { identityProvider.createUser(any()) } returns newUserId
+        coEvery { settingsRepo.save(any()) } throws RuntimeException("DB unavailable")
+        coEvery { identityProvider.deleteUser(newUserId) } throws RuntimeException("Keycloak down too")
+
+        // The original DB exception must still propagate
+        assertFailsWith<RuntimeException> {
+            service.register("rollback-fail@example.com", "Rollback Fail", "pass")
+        }
     }
 }
