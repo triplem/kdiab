@@ -106,32 +106,35 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
         )
     }
 
+    private fun <T> lookupSegment(
+        segments: List<T>,
+        refTime: LocalTime,
+        getStartTime: (T) -> String,
+        label: String,
+    ): T {
+        if (segments.isEmpty()) throw BusinessValidationException("Profile has no $label segments")
+        val parsed = segments.map { it to parseSegmentTime(getStartTime(it)) }
+        return parsed
+            .filter { (_, t) -> t <= refTime }
+            .maxByOrNull { (_, t) -> t }
+            ?.first
+            ?: parsed.last().first
+    }
+
     private fun lookupIsfSegment(segments: List<IsfRatio>, refTime: LocalTime): Double {
-        if (segments.isEmpty()) throw BusinessValidationException("Profile has no ISF segments")
-        val match = segments
-            .filter { parseSegmentTime(it.startTime) <= refTime }
-            .maxByOrNull { parseSegmentTime(it.startTime) }
-            ?: segments.last()
+        val match = lookupSegment(segments, refTime, { it.startTime }, "ISF")
         if (match.value <= 0.0) throw BusinessValidationException("ISF value must be positive")
         return match.value
     }
 
     private fun lookupIcrSegment(segments: List<IcrRatio>, refTime: LocalTime): Double {
-        if (segments.isEmpty()) throw BusinessValidationException("Profile has no ICR segments")
-        val match = segments
-            .filter { parseSegmentTime(it.startTime) <= refTime }
-            .maxByOrNull { parseSegmentTime(it.startTime) }
-            ?: segments.last()
+        val match = lookupSegment(segments, refTime, { it.startTime }, "ICR")
         if (match.value <= 0.0) throw BusinessValidationException("ICR value must be positive")
         return match.value
     }
 
     private fun lookupTargetSegment(segments: List<GlucoseTarget>, refTime: LocalTime): Double {
-        if (segments.isEmpty()) throw BusinessValidationException("Profile has no target segments")
-        val match = segments
-            .filter { parseSegmentTime(it.startTime) <= refTime }
-            .maxByOrNull { parseSegmentTime(it.startTime) }
-            ?: segments.last()
+        val match = lookupSegment(segments, refTime, { it.startTime }, "target")
         return (match.low + match.high) / 2.0
     }
 
