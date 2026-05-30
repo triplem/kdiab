@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import '../i18n'
-import type { AgpHourlyData } from '../api/analyzeApi'
+import type { AgpBucketData } from '../api/analyzeApi'
 import React from 'react'
 
 vi.mock('recharts', () => ({
@@ -18,9 +18,10 @@ vi.mock('recharts', () => ({
 
 import { AgpChart } from '../features/analytics/AgpChart'
 
-function makeEmptyBuckets(): AgpHourlyData[] {
-  return Array.from({ length: 24 }, (_, i) => ({
-    hour: i,
+// 288 five-minute buckets covering a full day (minuteOfDay 0, 5, 10, …, 1435)
+function makeEmptyBuckets(): AgpBucketData[] {
+  return Array.from({ length: 288 }, (_, i) => ({
+    minuteOfDay: i * 5,
     p10: null,
     p25: null,
     median: null,
@@ -30,45 +31,45 @@ function makeEmptyBuckets(): AgpHourlyData[] {
   }))
 }
 
-function makePopulatedBuckets(): AgpHourlyData[] {
-  return Array.from({ length: 24 }, (_, i) => ({
-    hour: i,
-    p10: 80 + i,
-    p25: 90 + i,
-    median: 120 + i,
-    p75: 150 + i,
-    p90: 180 + i,
+function makePopulatedBuckets(): AgpBucketData[] {
+  return Array.from({ length: 288 }, (_, i) => ({
+    minuteOfDay: i * 5,
+    p10: 80 + (i % 24),
+    p25: 90 + (i % 24),
+    median: 120 + (i % 24),
+    p75: 150 + (i % 24),
+    p90: 180 + (i % 24),
     count: 10,
   }))
 }
 
 describe('AgpChart', () => {
-  test('renders without crashing with empty hourly data (all null percentiles)', () => {
-    render(<AgpChart hourlyData={makeEmptyBuckets()} glucoseUnit="mg/dL" />)
+  test('renders without crashing with empty bucket data (all null percentiles)', () => {
+    render(<AgpChart bucketData={makeEmptyBuckets()} glucoseUnit="mg/dL" />)
   })
 
   test('renders without crashing with populated data', () => {
-    render(<AgpChart hourlyData={makePopulatedBuckets()} glucoseUnit="mg/dL" />)
+    render(<AgpChart bucketData={makePopulatedBuckets()} glucoseUnit="mg/dL" />)
   })
 
   test('chart figure has role=img and a non-empty aria-label', () => {
-    const { getByRole } = render(<AgpChart hourlyData={makePopulatedBuckets()} glucoseUnit="mg/dL" />)
+    const { getByRole } = render(<AgpChart bucketData={makePopulatedBuckets()} glucoseUnit="mg/dL" />)
     const figure = getByRole('img')
     expect(figure.getAttribute('aria-label')).toBeTruthy()
   })
 
   test('renders without crashing in mmol/L mode', () => {
-    render(<AgpChart hourlyData={makePopulatedBuckets()} glucoseUnit="mmol/L" />)
+    render(<AgpChart bucketData={makePopulatedBuckets()} glucoseUnit="mmol/L" />)
   })
 
   test('renders without crashing with empty array', () => {
-    render(<AgpChart hourlyData={[]} glucoseUnit="mg/dL" />)
+    render(<AgpChart bucketData={[]} glucoseUnit="mg/dL" />)
   })
 
   test('renders warning banner when warnings provided', () => {
     const { getByRole } = render(
       <AgpChart
-        hourlyData={makeEmptyBuckets()}
+        bucketData={makeEmptyBuckets()}
         glucoseUnit="mg/dL"
         warnings={['Insufficient data for reliable AGP']}
       />,
@@ -79,7 +80,7 @@ describe('AgpChart', () => {
   test('renders sensor wear indicator when sensorWearDays and totalReadingCount are provided', () => {
     const { getByLabelText } = render(
       <AgpChart
-        hourlyData={makePopulatedBuckets()}
+        bucketData={makePopulatedBuckets()}
         glucoseUnit="mg/dL"
         sensorWearDays={14}
         totalReadingCount={4032}
@@ -93,7 +94,7 @@ describe('AgpChart', () => {
   test('renders only sensorWearDays when totalReadingCount is absent', () => {
     const { getByLabelText } = render(
       <AgpChart
-        hourlyData={makePopulatedBuckets()}
+        bucketData={makePopulatedBuckets()}
         glucoseUnit="mg/dL"
         sensorWearDays={7}
       />,
@@ -104,14 +105,14 @@ describe('AgpChart', () => {
 
   test('does not render sensor wear indicator when neither prop is provided', () => {
     const { queryByLabelText } = render(
-      <AgpChart hourlyData={makePopulatedBuckets()} glucoseUnit="mg/dL" />,
+      <AgpChart bucketData={makePopulatedBuckets()} glucoseUnit="mg/dL" />,
     )
     expect(queryByLabelText('AGP data quality')).toBeNull()
   })
 
   test('renders without warnings when warnings is empty array', () => {
     const { queryByRole } = render(
-      <AgpChart hourlyData={makeEmptyBuckets()} glucoseUnit="mg/dL" warnings={[]} />,
+      <AgpChart bucketData={makeEmptyBuckets()} glucoseUnit="mg/dL" warnings={[]} />,
     )
     // empty warnings array → no alert rendered
     const alert = queryByRole('alert')

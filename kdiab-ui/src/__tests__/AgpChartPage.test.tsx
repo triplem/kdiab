@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import '../i18n'
-import type { AgpHourlyData, AgpResponse, TirBreakdown } from '../api/analyzeApi'
+import type { AgpBucketData, AgpResponse, TirBreakdown } from '../api/analyzeApi'
 import React from 'react'
 
 // Stub out recharts — heavy SVG components break jsdom
@@ -21,9 +21,10 @@ import { AgpChartPage } from '../features/report/AgpChartPage'
 
 // ---- helpers ----
 
-function makeEmptyHourlyData(): AgpHourlyData[] {
-  return Array.from({ length: 24 }, (_, i) => ({
-    hour: i,
+// 288 five-minute buckets covering a full day (minuteOfDay 0, 5, 10, …, 1435)
+function makeEmptyBucketData(): AgpBucketData[] {
+  return Array.from({ length: 288 }, (_, i) => ({
+    minuteOfDay: i * 5,
     p10: null,
     p25: null,
     median: null,
@@ -33,27 +34,27 @@ function makeEmptyHourlyData(): AgpHourlyData[] {
   }))
 }
 
-function makePopulatedHourlyData(): AgpHourlyData[] {
-  return Array.from({ length: 24 }, (_, i) => ({
-    hour: i,
-    p10: 80 + i,
-    p25: 90 + i,
-    median: 120 + i,
-    p75: 150 + i,
-    p90: 180 + i,
+function makePopulatedBucketData(): AgpBucketData[] {
+  return Array.from({ length: 288 }, (_, i) => ({
+    minuteOfDay: i * 5,
+    p10: 80 + (i % 24),
+    p25: 90 + (i % 24),
+    median: 120 + (i % 24),
+    p75: 150 + (i % 24),
+    p90: 180 + (i % 24),
     count: 12,
   }))
 }
 
 function makeMinimalAgpResponse(): AgpResponse {
   return {
-    hourlyData: makeEmptyHourlyData(),
+    bucketData: makeEmptyBucketData(),
   }
 }
 
 function makeFullAgpResponse(): AgpResponse {
   return {
-    hourlyData: makePopulatedHourlyData(),
+    bucketData: makePopulatedBucketData(),
     totalReadingCount: 4032,
     sensorWearDays: 14,
   }

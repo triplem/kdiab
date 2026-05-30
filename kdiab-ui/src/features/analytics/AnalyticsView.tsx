@@ -124,7 +124,7 @@ export function AnalyticsView({ userId, glucoseUnit, patientName }: Props) {
         {agpQuery.isError && <div className="error-banner" role="alert">{t('analytics.agpError')}</div>}
         {agpQuery.data && (
           <AgpChart
-            hourlyData={agpQuery.data.hourlyData}
+            bucketData={agpQuery.data.bucketData}
             glucoseUnit={glucoseUnit}
             {...(agpQuery.data.warnings !== undefined && { warnings: agpQuery.data.warnings })}
             {...(agpQuery.data.totalReadingCount !== undefined && { totalReadingCount: agpQuery.data.totalReadingCount })}

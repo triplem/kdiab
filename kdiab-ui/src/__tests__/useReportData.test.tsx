@@ -76,7 +76,7 @@ const FAKE_HBA1C = {
 }
 
 const FAKE_AGP = {
-  hourlyData: [],
+  bucketData: [],
   totalReadingCount: 2016,
   sensorWearDays: 14,
 }

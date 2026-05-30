@@ -36,8 +36,8 @@ export interface Hba1cResponse {
   warnings?: string[]
 }
 
-export interface AgpHourlyData {
-  hour: number
+export interface AgpBucketData {
+  minuteOfDay: number
   p10: number | null
   p25: number | null
   median: number | null
@@ -47,7 +47,7 @@ export interface AgpHourlyData {
 }
 
 export interface AgpResponse {
-  hourlyData: AgpHourlyData[]
+  bucketData: AgpBucketData[]
   totalReadingCount?: number
   sensorWearDays?: number
   warnings?: string[]
