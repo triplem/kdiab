@@ -62,6 +62,6 @@ data class KeycloakClientInfo(
     val clientId: String,
     val secret: String,
     val name: String,
-    val expiresAt: kotlinx.datetime.Instant?,
-    val createdAt: kotlinx.datetime.Instant,
+    val expiresAt: kotlin.time.Instant?,
+    val createdAt: kotlin.time.Instant,
 )

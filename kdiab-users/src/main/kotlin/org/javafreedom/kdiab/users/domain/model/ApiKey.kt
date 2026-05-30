@@ -1,7 +1,7 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.users.domain.model
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 
 @Suppress("MagicNumber")
 enum class ApiKeyExpiry(val months: Int?) {
