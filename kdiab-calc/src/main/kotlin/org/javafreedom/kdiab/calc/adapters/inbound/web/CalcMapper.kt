@@ -35,6 +35,7 @@ data class DoseResponseDto(
     val breakdown: DoseBreakdownDto,
     val profileId: String,
     val warnings: List<String>,
+    val recommendedWaitMinutes: Int? = null,
 )
 
 fun DoseRequestDto.toDomain(): DoseRequest {
@@ -58,6 +59,7 @@ fun DoseResult.toDto() = DoseResponseDto(
     breakdown = breakdown.toDto(),
     profileId = profileId,
     warnings = warnings,
+    recommendedWaitMinutes = recommendedWaitMinutes,
 )
 
 fun DoseBreakdown.toDto() = DoseBreakdownDto(

@@ -418,6 +418,9 @@
     "tooltipIcr": "Grams of carbs covered by 1 unit of insulin. Typical: 1:8 to 1:20",
     "tooltipIsf": "How much 1 unit of insulin lowers your glucose. Typical: 30–80 mg/dL per unit",
     "tooltipTarget": "Your goal glucose range. ADA recommends 80–130 mg/dL pre-meal for most adults",
+    "tooltipSeaTitle": "Insulin-to-Meal Interval (SEA)",
+    "tooltipSea": "Spritz-Ess-Abstand: recommended wait time in minutes between injecting insulin and eating. Typically 0–30 min depending on glucose level and trend.",
+    "addSeaSegment": "Add SEA Segment",
     "timeZone": "Timezone",
     "timeZonePlaceholder": "IANA timezone (e.g. UTC, Europe/Berlin)",
     "zeroBasalWarning": "Warning: one or more basal segments have a rate of 0 U/h. This will stop basal insulin delivery for those hours — verify this is intentional."
@@ -468,7 +471,9 @@
     "errorNoTarget": "The active profile has no target range segments. Please update your profile.",
     "errorGeneric": "Calculation failed: {{detail}}",
     "toastSaved": "Dose saved — {{dose}} U bolus recorded at {{time}}",
-    "toastError": "Failed to save dose — please try again"
+    "toastError": "Failed to save dose — please try again",
+    "seaWait": "Wait {{minutes}} min before eating",
+    "seaLabel": "(Spritz-Ess-Abstand)"
   },
   "dashboard": {
     "delta": "Δ",

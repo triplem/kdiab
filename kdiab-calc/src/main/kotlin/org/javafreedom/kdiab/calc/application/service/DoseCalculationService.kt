@@ -14,6 +14,7 @@ import org.javafreedom.kdiab.calc.domain.model.DoseResult
 import org.javafreedom.kdiab.calc.domain.model.GlucoseTarget
 import org.javafreedom.kdiab.calc.domain.model.IcrRatio
 import org.javafreedom.kdiab.calc.domain.model.IsfRatio
+import org.javafreedom.kdiab.calc.domain.model.InsulinToMealInterval
 import org.javafreedom.kdiab.calc.domain.repository.ProfilesPort
 
 private const val MMOL_TO_MGDL_FACTOR = 18.0
@@ -53,6 +54,7 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
         val isf = lookupIsfSegment(profile.isf, refTime)
         val icr = lookupIcrSegment(profile.icr, refTime)
         val target = lookupTargetSegment(profile.targets, refTime)
+        val recommendedWaitMinutes = lookupSeaSegment(profile.insulinToMealInterval, refTime)
 
         if (isf <= 0.0) throw BusinessValidationException("ISF value must be positive")
         if (request.carbsGrams > 0 && icr <= 0.0) {
@@ -105,6 +107,7 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
             ),
             profileId = profile.id,
             warnings = warnings,
+            recommendedWaitMinutes = recommendedWaitMinutes,
         )
     }
 
@@ -138,6 +141,11 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
     private fun lookupTargetSegment(segments: List<GlucoseTarget>, refTime: LocalTime): Double {
         val match = lookupSegment(segments, refTime, { it.startTime }, "target")
         return (match.low + match.high) / 2.0
+    }
+
+    internal fun lookupSeaSegment(segments: List<InsulinToMealInterval>, refTime: LocalTime): Int? {
+        if (segments.isEmpty()) return null
+        return lookupSegment(segments, refTime, { it.startTime }, "insulinToMealInterval").minutes
     }
 
     private fun parseSegmentTime(time: String): LocalTime =

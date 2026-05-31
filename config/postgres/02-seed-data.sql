@@ -427,7 +427,7 @@ VALUES (
   240,
   'Europe/Berlin',
   NOW() - INTERVAL '31 days',
-  '{"basal":[{"startTime":"00:00","value":0.90},{"startTime":"06:00","value":1.20},{"startTime":"10:00","value":1.00},{"startTime":"18:00","value":1.05},{"startTime":"22:00","value":0.80}],"icr":[{"startTime":"00:00","value":10.0},{"startTime":"12:00","value":12.0}],"isf":[{"startTime":"00:00","value":50.0},{"startTime":"14:00","value":45.0}],"targets":[{"startTime":"00:00","low":80.0,"high":120.0}]}',
+  '{"basal":[{"startTime":"00:00","value":0.90},{"startTime":"06:00","value":1.20},{"startTime":"10:00","value":1.00},{"startTime":"18:00","value":1.05},{"startTime":"22:00","value":0.80}],"icr":[{"startTime":"00:00","value":10.0},{"startTime":"12:00","value":12.0}],"isf":[{"startTime":"00:00","value":50.0},{"startTime":"14:00","value":45.0}],"targets":[{"startTime":"00:00","low":80.0,"high":120.0}],"insulinToMealInterval":[{"startTime":"00:00","minutes":15},{"startTime":"06:00","minutes":20},{"startTime":"10:00","minutes":10}]}',
   20.0
 )
 ON CONFLICT (id) DO NOTHING;
@@ -476,7 +476,7 @@ VALUES (
   210,
   'America/New_York',
   NOW() - INTERVAL '20 days',
-  '{"basal":[{"startTime":"00:00","value":0.80},{"startTime":"06:00","value":1.00},{"startTime":"12:00","value":0.80},{"startTime":"20:00","value":0.70}],"icr":[{"startTime":"00:00","value":12.0},{"startTime":"12:00","value":15.0}],"isf":[{"startTime":"00:00","value":45.0},{"startTime":"14:00","value":40.0}],"targets":[{"startTime":"00:00","low":80.0,"high":120.0}]}',
+  '{"basal":[{"startTime":"00:00","value":0.80},{"startTime":"06:00","value":1.00},{"startTime":"12:00","value":0.80},{"startTime":"20:00","value":0.70}],"icr":[{"startTime":"00:00","value":12.0},{"startTime":"12:00","value":15.0}],"isf":[{"startTime":"00:00","value":45.0},{"startTime":"14:00","value":40.0}],"targets":[{"startTime":"00:00","low":80.0,"high":120.0}],"insulinToMealInterval":[{"startTime":"00:00","minutes":10},{"startTime":"06:00","minutes":15}]}',
   25.0
 )
 ON CONFLICT (id) DO NOTHING;

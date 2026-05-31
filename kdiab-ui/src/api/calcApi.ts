@@ -17,6 +17,7 @@ export interface DoseResponse {
   breakdown: DoseBreakdown
   profileId: string
   warnings: string[]
+  recommendedWaitMinutes: number | null
 }
 
 export interface DoseRequestBody {

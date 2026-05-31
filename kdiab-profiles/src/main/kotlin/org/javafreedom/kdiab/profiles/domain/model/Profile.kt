@@ -37,6 +37,7 @@ data class ProfileSchedule(
         val icr: List<IcrSegment>,
         val isf: List<IsfSegment>,
         val targets: List<TargetSegment>,
+        val insulinToMealInterval: List<InsulinToMealIntervalSegment> = emptyList(),
 )
 
 /** Doctor-patient collaboration metadata. */
@@ -69,6 +70,7 @@ data class Profile(
         validateTimeSegments()
         validateIcrRange()
         validateAnalysisThresholds()
+        validateInsulinToMealInterval()
     }
 
     private fun validateTimeSegments() {
@@ -167,6 +169,14 @@ data class Profile(
         }
     }
 
+    private fun validateInsulinToMealInterval() {
+        if (schedule.insulinToMealInterval.any { it.minutes < MIN_SEA_MINUTES || it.minutes > MAX_SEA_MINUTES }) {
+            throw BusinessValidationException(
+                "Insulin-to-meal interval must be between $MIN_SEA_MINUTES and $MAX_SEA_MINUTES minutes"
+            )
+        }
+    }
+
     companion object {
         const val SECONDS_IN_DAY = 86400
         const val SECONDS_IN_HOUR = 3600.0
@@ -182,6 +192,8 @@ data class Profile(
         const val ANALYSIS_LOW_MAX = 180.0  // mg/dL -- analysisLow may not exceed target high ceiling
         const val ANALYSIS_HIGH_MIN = 120.0 // mg/dL -- analysisHigh minimum sensible threshold
         const val ANALYSIS_HIGH_MAX = 400.0 // mg/dL -- clinical very-high threshold ceiling
+        const val MIN_SEA_MINUTES = 0       // minimum insulin-to-meal interval in minutes
+        const val MAX_SEA_MINUTES = 120     // maximum insulin-to-meal interval in minutes (2 hours)
     }
 }
 
@@ -208,3 +220,9 @@ data class IsfSegment(override val startTime: LocalTime, val value: Double) : Ti
 @Serializable
 data class TargetSegment(override val startTime: LocalTime, val low: Double, val high: Double) :
         TimeSegment
+
+@Serializable
+data class InsulinToMealIntervalSegment(
+    override val startTime: LocalTime,
+    val minutes: Int,
+) : TimeSegment

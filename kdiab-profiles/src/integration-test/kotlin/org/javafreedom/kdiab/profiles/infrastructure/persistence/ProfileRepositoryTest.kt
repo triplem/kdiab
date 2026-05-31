@@ -265,6 +265,43 @@ class ProfileRepositoryTest {
         assertEquals(2L, count)
     }
 
+    // ── insulinToMealInterval (SEA) persistence ────────────────────────────────
+
+    @Test
+    fun `save and retrieve profile with insulinToMealInterval segments`() = runBlocking {
+        val profile = createTestProfile().copy(
+            schedule = ProfileSchedule(
+                basal = listOf(BasalSegment(LocalTime(0, 0), 0.5)),
+                icr = listOf(IcrSegment(LocalTime(0, 0), 15.0)),
+                isf = listOf(IsfSegment(LocalTime(0, 0), 40.0)),
+                targets = listOf(TargetSegment(LocalTime(0, 0), 100.0, 110.0)),
+                insulinToMealInterval = listOf(
+                    InsulinToMealIntervalSegment(LocalTime(0, 0), 15),
+                    InsulinToMealIntervalSegment(LocalTime(6, 0), 20),
+                )
+            )
+        )
+        repository.save(profile)
+
+        val retrieved = repository.findById(profile.id)
+        assertNotNull(retrieved)
+        assertEquals(2, retrieved.schedule.insulinToMealInterval.size)
+        assertEquals(LocalTime(0, 0), retrieved.schedule.insulinToMealInterval[0].startTime)
+        assertEquals(15, retrieved.schedule.insulinToMealInterval[0].minutes)
+        assertEquals(LocalTime(6, 0), retrieved.schedule.insulinToMealInterval[1].startTime)
+        assertEquals(20, retrieved.schedule.insulinToMealInterval[1].minutes)
+    }
+
+    @Test
+    fun `save and retrieve profile with empty insulinToMealInterval`() = runBlocking {
+        val profile = createTestProfile() // no SEA segments by default
+        repository.save(profile)
+
+        val retrieved = repository.findById(profile.id)
+        assertNotNull(retrieved)
+        assertEquals(0, retrieved.schedule.insulinToMealInterval.size)
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun createTestProfile(

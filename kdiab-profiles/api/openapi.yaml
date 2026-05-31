@@ -502,7 +502,7 @@ paths:
           required: true
           schema:
             type: string
-            enum: [basal, icr, isf, targets]
+            enum: [basal, icr, isf, targets, insulintomealinterval]
         - name: startTime
           in: path
           required: true
@@ -605,6 +605,11 @@ components:
           description: Blood glucose target range segments
           items:
             $ref: '#/components/schemas/TargetSegment'
+        insulinToMealInterval:
+          type: array
+          description: Insulin-to-meal interval (Spritz-Ess-Abstand) segments — recommended wait time in minutes between injection and eating
+          items:
+            $ref: '#/components/schemas/InsulinToMealIntervalSegment'
       required:
         - basal
         - icr
@@ -833,6 +838,26 @@ components:
         - startTime
         - low
         - high
+
+    InsulinToMealIntervalSegment:
+      type: object
+      description: A single insulin-to-meal interval (SEA) time segment
+      properties:
+        startTime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):([0-5]\d)$'
+          description: Start of the time window in HH:mm format
+          example: "06:00"
+        minutes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 120
+          description: Recommended wait time in minutes between injection and eating (0–120)
+          example: 20
+      required:
+        - startTime
+        - minutes
 
     RejectProfileRequest:
       type: object

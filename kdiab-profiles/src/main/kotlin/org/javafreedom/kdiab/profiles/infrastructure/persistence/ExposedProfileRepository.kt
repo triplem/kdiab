@@ -29,7 +29,8 @@ data class ProfileSegments(
     val basal: List<BasalSegment> = emptyList(),
     val icr: List<IcrSegment> = emptyList(),
     val isf: List<IsfSegment> = emptyList(),
-    val targets: List<TargetSegment> = emptyList()
+    val targets: List<TargetSegment> = emptyList(),
+    val insulinToMealInterval: List<InsulinToMealIntervalSegment> = emptyList(),
 )
 
 /**
@@ -329,7 +330,8 @@ class ExposedProfileRepository(
                 basal = profile.schedule.basal,
                 icr = profile.schedule.icr,
                 isf = profile.schedule.isf,
-                targets = profile.schedule.targets
+                targets = profile.schedule.targets,
+                insulinToMealInterval = profile.schedule.insulinToMealInterval,
             )
         }
     }
@@ -358,7 +360,8 @@ class ExposedProfileRepository(
                 basal = profile.schedule.basal,
                 icr = profile.schedule.icr,
                 isf = profile.schedule.isf,
-                targets = profile.schedule.targets
+                targets = profile.schedule.targets,
+                insulinToMealInterval = profile.schedule.insulinToMealInterval,
             )
         }
         updateStatusInTx(profile.id, profile.status, profile.activatedAt, profile.archivedAt)
@@ -410,6 +413,7 @@ class ExposedProfileRepository(
                 icr = pSegments.icr,
                 isf = pSegments.isf,
                 targets = pSegments.targets,
+                insulinToMealInterval = pSegments.insulinToMealInterval,
             ),
             collaboration = if (proposalReason != null || rejectionReason != null) {
                 ProfileCollaboration(proposalReason = proposalReason, rejectionReason = rejectionReason)

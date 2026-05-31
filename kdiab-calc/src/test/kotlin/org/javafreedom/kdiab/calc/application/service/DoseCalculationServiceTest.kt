@@ -11,6 +11,7 @@ import org.javafreedom.kdiab.calc.domain.model.DoseRequest
 import org.javafreedom.kdiab.calc.domain.model.GlucoseTarget
 import org.javafreedom.kdiab.calc.domain.model.IcrRatio
 import org.javafreedom.kdiab.calc.domain.model.IsfRatio
+import org.javafreedom.kdiab.calc.domain.model.InsulinToMealInterval
 import org.javafreedom.kdiab.calc.domain.repository.ProfilesPort
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -558,5 +559,71 @@ class DoseCalculationServiceTest {
         assertEquals(0.0, result.correctionDose)
         assertEquals(0.0, result.totalRecommended)
         assertTrue(result.warnings.any { it.contains("IOB covers the full correction") })
+    }
+
+    // --- Insulin-to-Meal Interval (SEA) tests ---
+
+    @Test
+    fun `lookupSeaSegment returns null when segments list is empty`() {
+        val result = service.lookupSeaSegment(emptyList(), kotlinx.datetime.LocalTime(8, 0))
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `lookupSeaSegment returns segment minutes for matching time`() {
+        val segments = listOf(
+            InsulinToMealInterval("00:00", 10),
+            InsulinToMealInterval("06:00", 20),
+            InsulinToMealInterval("12:00", 15),
+        )
+        val result = service.lookupSeaSegment(segments, kotlinx.datetime.LocalTime(8, 0))
+        assertEquals(20, result)
+    }
+
+    @Test
+    fun `lookupSeaSegment falls back to last segment when time is before all segments`() {
+        val segments = listOf(
+            InsulinToMealInterval("06:00", 20),
+            InsulinToMealInterval("12:00", 15),
+        )
+        // 03:00 is before 06:00 — should wrap around to last segment (12:00)
+        val result = service.lookupSeaSegment(segments, kotlinx.datetime.LocalTime(3, 0))
+        assertEquals(15, result)
+    }
+
+    @Test
+    fun `calculateDose includes recommendedWaitMinutes from sea segment`() = runTest {
+        val profileWithSea = testProfile.copy(
+            insulinToMealInterval = listOf(
+                InsulinToMealInterval("00:00", 15),
+                InsulinToMealInterval("06:00", 20),
+            )
+        )
+        coEvery { profilesPort.getActiveProfile(any(), any(), any()) } returns profileWithSea
+
+        val request = DoseRequest(
+            currentBg = 150.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 30.0,
+            useProfileTime = "2024-01-15T08:00:00Z", // 08:00 UTC → falls in 06:00 segment
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+        assertEquals(20, result.recommendedWaitMinutes)
+    }
+
+    @Test
+    fun `calculateDose returns null recommendedWaitMinutes when no sea segments`() = runTest {
+        coEvery { profilesPort.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        val request = DoseRequest(
+            currentBg = 150.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+        assertEquals(null, result.recommendedWaitMinutes)
     }
 }

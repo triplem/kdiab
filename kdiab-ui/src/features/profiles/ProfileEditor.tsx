@@ -59,6 +59,11 @@ const targetSegmentSchema = z
   })
   .refine((data) => data.low <= data.high, { message: 'Low must be <= High', path: ['high'] })
 
+const seaSegmentSchema = z.object({
+  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time (HH:MM)'),
+  minutes: z.number().int().min(0, 'Minutes must be >= 0').max(120, 'Minutes must be <= 120'),
+})
+
 interface ProfileFormValues {
   name: string
   insulinType: string
@@ -68,6 +73,7 @@ interface ProfileFormValues {
   icr: { startTime: string; value: number }[]
   isf: { startTime: string; value: number }[]
   targets: { startTime: string; low: number; high: number }[]
+  insulinToMealInterval: { startTime: string; minutes: number }[]
 }
 
 interface ProfileEditorProps {
@@ -165,6 +171,9 @@ export function ProfileEditor({
               'Targets must start at 00:00',
             )
             .refine(validateChronological, 'Target segments must be chronological'),
+          insulinToMealInterval: z
+            .array(seaSegmentSchema)
+            .refine(validateChronological, 'SEA segments must be chronological'),
         })
         .refine(
           (data) => {
@@ -219,6 +228,7 @@ export function ProfileEditor({
           icr: initialProfile.icr || [],
           isf: initialProfile.isf || [],
           targets: initialProfile.targets || [],
+          insulinToMealInterval: initialProfile.insulinToMealInterval || [],
         }
       : {
           name: '',
@@ -229,6 +239,7 @@ export function ProfileEditor({
           icr: [],
           isf: [],
           targets: [],
+          insulinToMealInterval: [],
         },
   })
 
@@ -266,8 +277,9 @@ export function ProfileEditor({
   const { fields: icrFields, append: appendIcr, remove: removeIcr } = useFieldArray({ control, name: 'icr' })
   const { fields: isfFields, append: appendIsf, remove: removeIsf } = useFieldArray({ control, name: 'isf' })
   const { fields: targetFields, append: appendTarget, remove: removeTarget } = useFieldArray({ control, name: 'targets' })
+  const { fields: seaFields, append: appendSea, remove: removeSea } = useFieldArray({ control, name: 'insulinToMealInterval' })
 
-  const [activeTab, setActiveTab] = useState<'basal' | 'icr' | 'isf' | 'targets'>('basal')
+  const [activeTab, setActiveTab] = useState<'basal' | 'icr' | 'isf' | 'targets' | 'sea'>('basal')
   const [apiError, setApiError] = useState<string | null>(null)
   const [isAddingNewInsulin, setIsAddingNewInsulin] = useState(false)
 
@@ -285,6 +297,7 @@ export function ProfileEditor({
         icr: data.icr,
         isf: data.isf,
         targets: data.targets,
+        insulinToMealInterval: data.insulinToMealInterval,
       }
       if (initialProfile?.id) {
         return profilesApi.updateProfile(userId, initialProfile.id, {
@@ -478,14 +491,14 @@ export function ProfileEditor({
         )}
 
         <div className="tabs">
-          {(['basal', 'icr', 'isf', 'targets'] as const).map((tab) => (
+          {(['basal', 'icr', 'isf', 'targets', 'sea'] as const).map((tab) => (
             <button
               key={tab}
               type="button"
               className={`tab-button ${activeTab === tab ? 'active' : ''}`}
               onClick={() => setActiveTab(tab)}
             >
-              {tab.toUpperCase()}
+              {tab === 'sea' ? 'SEA' : tab.toUpperCase()}
             </button>
           ))}
         </div>
@@ -651,6 +664,51 @@ export function ProfileEditor({
               Add Target Segment
             </button>
             {errors.targets && <div className="error-text">{errors.targets.message}</div>}
+          </div>
+        )}
+
+        {activeTab === 'sea' && (
+          <div className="tab-content">
+            <h4>
+              <span className="tooltip-wrapper">
+                {t('profile.tooltipSeaTitle')}
+                <HelpTooltip text={t('profile.tooltipSea')} />
+              </span>
+            </h4>
+            {seaFields.map((field, index) => (
+              <div key={field.id} className="segment-row">
+                <Controller
+                  control={control}
+                  name={`insulinToMealInterval.${index}.startTime`}
+                  render={({ field: f }) => <TimeInput {...f} />}
+                />
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="120"
+                  {...register(`insulinToMealInterval.${index}.minutes`, { valueAsNumber: true })}
+                  placeholder="Wait (min)"
+                  aria-label={`SEA minutes ${index}`}
+                />
+                <button type="button" onClick={() => removeSea(index)}>
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => {
+                const current = getValues('insulinToMealInterval') || seaFields
+                const next = getNextSegment(current.map((s) => ({ startTime: s.startTime, value: s.minutes })), 15)
+                appendSea({ startTime: next.startTime, minutes: next.value })
+              }}
+            >
+              {t('profile.addSeaSegment')}
+            </button>
+            {errors.insulinToMealInterval && (
+              <div className="error-text">{errors.insulinToMealInterval.message}</div>
+            )}
           </div>
         )}
 

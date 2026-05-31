@@ -28,4 +28,5 @@ data class DoseResult(
     val breakdown: DoseBreakdown,
     val profileId: String,
     val warnings: List<String>,
+    val recommendedWaitMinutes: Int? = null,
 )

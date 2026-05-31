@@ -17,6 +17,7 @@ import org.javafreedom.kdiab.calc.domain.model.ActiveProfile
 import org.javafreedom.kdiab.calc.domain.model.GlucoseTarget
 import org.javafreedom.kdiab.calc.domain.model.IcrRatio
 import org.javafreedom.kdiab.calc.domain.model.IsfRatio
+import org.javafreedom.kdiab.calc.domain.model.InsulinToMealInterval
 import org.javafreedom.kdiab.calc.domain.repository.ProfilesPort
 import org.javafreedom.kdiab.common.plugins.CircuitBreaker
 import org.javafreedom.kdiab.common.plugins.CircuitBreakerOpenException
@@ -118,4 +119,7 @@ private fun Profile.toDomain() = ActiveProfile(
     isf = schedule.isf.map { IsfRatio(it.startTime, it.`value`) },
     icr = schedule.icr.map { IcrRatio(it.startTime, it.`value`) },
     targets = schedule.targets.map { GlucoseTarget(it.startTime, it.low, it.high) },
+    insulinToMealInterval = schedule.insulinToMealInterval
+        ?.map { InsulinToMealInterval(it.startTime, it.minutes) }
+        ?: emptyList(),
 )

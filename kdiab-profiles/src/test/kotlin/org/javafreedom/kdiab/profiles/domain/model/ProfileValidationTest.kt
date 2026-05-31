@@ -234,6 +234,71 @@ class ProfileValidationTest {
         assertFailsWith<BusinessValidationException> { profile.validate() }
     }
 
+    // --- insulinToMealInterval (SEA) validation ---
+
+    @Test
+    fun `should pass validation when insulinToMealInterval is empty`() {
+        val profile = createValidProfile().copy(
+            schedule = createValidProfile().schedule.copy(insulinToMealInterval = emptyList())
+        )
+        profile.validate()
+    }
+
+    @Test
+    fun `should pass validation for valid sea segments`() {
+        val profile = createValidProfile().copy(
+            schedule = createValidProfile().schedule.copy(
+                insulinToMealInterval = listOf(
+                    InsulinToMealIntervalSegment(LocalTime(0, 0), 15),
+                    InsulinToMealIntervalSegment(LocalTime(6, 0), 20),
+                )
+            )
+        )
+        profile.validate()
+    }
+
+    @Test
+    fun `should pass validation when sea minutes is exactly 0 boundary`() {
+        val profile = createValidProfile().copy(
+            schedule = createValidProfile().schedule.copy(
+                insulinToMealInterval = listOf(InsulinToMealIntervalSegment(LocalTime(0, 0), 0))
+            )
+        )
+        profile.validate()
+    }
+
+    @Test
+    fun `should pass validation when sea minutes is exactly 120 boundary`() {
+        val profile = createValidProfile().copy(
+            schedule = createValidProfile().schedule.copy(
+                insulinToMealInterval = listOf(InsulinToMealIntervalSegment(LocalTime(0, 0), 120))
+            )
+        )
+        profile.validate()
+    }
+
+    @Test
+    fun `should fail when sea minutes is negative`() {
+        val profile = createValidProfile().copy(
+            schedule = createValidProfile().schedule.copy(
+                insulinToMealInterval = listOf(InsulinToMealIntervalSegment(LocalTime(0, 0), -1))
+            )
+        )
+        val ex = assertFailsWith<BusinessValidationException> { profile.validate() }
+        assert(ex.message?.contains("Insulin-to-meal interval") == true)
+    }
+
+    @Test
+    fun `should fail when sea minutes exceeds 120`() {
+        val profile = createValidProfile().copy(
+            schedule = createValidProfile().schedule.copy(
+                insulinToMealInterval = listOf(InsulinToMealIntervalSegment(LocalTime(0, 0), 121))
+            )
+        )
+        val ex = assertFailsWith<BusinessValidationException> { profile.validate() }
+        assert(ex.message?.contains("Insulin-to-meal interval") == true)
+    }
+
     private fun createValidProfile(): Profile {
         return Profile(
             userId = Uuid.random(),

@@ -13,6 +13,11 @@ export interface TargetSegment {
   high: number
 }
 
+export interface InsulinToMealIntervalSegment {
+  startTime: string
+  minutes: number
+}
+
 export interface Profile {
   id: string
   userId: string
@@ -25,6 +30,7 @@ export interface Profile {
   icr?: ProfileSegment[]
   isf?: ProfileSegment[]
   targets?: TargetSegment[]
+  insulinToMealInterval?: InsulinToMealIntervalSegment[]
   createdAt?: string
   activatedAt?: string
   archivedAt?: string
