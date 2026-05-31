@@ -104,6 +104,39 @@ class ExposedDoctorInvitationsRepository : DoctorInvitationRepository {
             }
         }
 
+    override suspend fun findAll(
+        status: InvitationStatus?,
+        limit: Int,
+        offset: Long,
+    ): List<DoctorInvitation> =
+        withContext(Dispatchers.IO) {
+            suspendTransaction {
+                DoctorInvitationsTable.selectAll()
+                    .apply {
+                        if (status != null) {
+                            adjustWhere { DoctorInvitationsTable.status eq status.name }
+                        }
+                    }
+                    .orderBy(DoctorInvitationsTable.createdAt to SortOrder.DESC)
+                    .limit(limit)
+                    .offset(offset)
+                    .map { it.toInvitation() }
+            }
+        }
+
+    override suspend fun countAll(status: InvitationStatus?): Long =
+        withContext(Dispatchers.IO) {
+            suspendTransaction {
+                DoctorInvitationsTable.selectAll()
+                    .apply {
+                        if (status != null) {
+                            adjustWhere { DoctorInvitationsTable.status eq status.name }
+                        }
+                    }
+                    .count()
+            }
+        }
+
     override suspend fun findPendingByPatientId(patientId: Uuid): List<DoctorInvitation> =
         withContext(Dispatchers.IO) {
             suspendTransaction {

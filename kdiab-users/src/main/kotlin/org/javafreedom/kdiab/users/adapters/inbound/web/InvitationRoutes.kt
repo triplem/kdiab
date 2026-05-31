@@ -12,9 +12,46 @@ import org.javafreedom.kdiab.users.application.service.InvitationService
 import org.javafreedom.kdiab.users.domain.model.InvitationStatus
 
 private const val DEFAULT_PAGE_SIZE = 20
+private const val DEFAULT_PAGE_INDEX = 0
 
 fun Route.invitationRoutes(invitationService: InvitationService) {
     authenticate("auth-jwt") {
+        // Admin routes use the literal path segment "admin" and MUST be registered before any
+        // /{userId} wildcard routes to prevent Ktor treating "admin" as a userId parameter.
+        get("/users/admin/invitations") {
+            val principal = call.principal<UserPrincipal>()!!
+            val statusParam = call.request.queryParameters["status"]
+            val status = statusParam?.let { runCatching { InvitationStatus.valueOf(it) }.getOrNull() }
+            val page = call.request.queryParameters["page"]?.toIntOrNull() ?: DEFAULT_PAGE_INDEX
+            val size = call.request.queryParameters["size"]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+            val result = invitationService.listAllInvitations(
+                principal = principal,
+                status = status,
+                page = page,
+                size = size,
+            )
+            call.respond(result.toPageResponse())
+        }
+
+        delete("/users/admin/invitations/{invitationId}") {
+            val principal = call.principal<UserPrincipal>()!!
+            val invitationId = parseUuid(call.parameters["invitationId"]!!)
+            invitationService.adminCancelInvitation(principal, invitationId)
+            call.respond(HttpStatusCode.NoContent)
+        }
+
+        // GET /incoming uses a literal path segment and must be registered before any
+        // /{invitationId} wildcard routes to prevent Ktor treating "incoming" as an invitationId.
+        get("/users/{patientId}/invitations/incoming") {
+            val principal = call.principal<UserPrincipal>()!!
+            val patientId = parseUuid(call.parameters["patientId"]!!)
+            val invitations = invitationService.listIncomingInvitations(
+                principal = principal,
+                patientId = patientId,
+            )
+            call.respond(invitations.map { it.toResponse() })
+        }
+
         get("/users/{doctorId}/invitations") {
             val principal = call.principal<UserPrincipal>()!!
             val doctorId = parseUuid(call.parameters["doctorId"]!!)
@@ -33,18 +70,6 @@ fun Route.invitationRoutes(invitationService: InvitationService) {
                 size = size,
             )
             call.respond(result.toPageResponse())
-        }
-
-        // GET /incoming uses a literal path segment and must be registered before any
-        // /{invitationId} wildcard routes to prevent Ktor treating "incoming" as an invitationId.
-        get("/users/{patientId}/invitations/incoming") {
-            val principal = call.principal<UserPrincipal>()!!
-            val patientId = parseUuid(call.parameters["patientId"]!!)
-            val invitations = invitationService.listIncomingInvitations(
-                principal = principal,
-                patientId = patientId,
-            )
-            call.respond(invitations.map { it.toResponse() })
         }
 
         post("/users/{doctorId}/invitations") {
@@ -80,6 +105,14 @@ fun Route.invitationRoutes(invitationService: InvitationService) {
                 action = action,
             )
             call.respond(HttpStatusCode.OK, invitation.toResponse())
+        }
+
+        delete("/users/{doctorId}/invitations/{invitationId}") {
+            val principal = call.principal<UserPrincipal>()!!
+            val doctorId = parseUuid(call.parameters["doctorId"]!!)
+            val invitationId = parseUuid(call.parameters["invitationId"]!!)
+            invitationService.cancelInvitation(principal, doctorId, invitationId)
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }

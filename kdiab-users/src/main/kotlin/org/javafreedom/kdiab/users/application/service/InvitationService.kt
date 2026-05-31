@@ -25,8 +25,9 @@ private val INVITATION_TTL = 7.days
 private const val MAX_PAGE_SIZE = 100
 
 /**
- * Paginated list result for the GET /users/{doctorId}/invitations endpoint.
- * [doctorDisplayName] is null when the Keycloak profile lookup fails (best-effort).
+ * Paginated list result for invitation list endpoints.
+ * [doctorDisplayName] is null when the Keycloak profile lookup fails (best-effort),
+ * and also null for admin-scoped list (cross-doctor view).
  * [patientDisplayNames] maps patientId string → display name (null on lookup failure).
  */
 data class InvitationListResult(
@@ -266,6 +267,133 @@ class InvitationService(
     private suspend fun syncAllowedPatients(doctorId: Uuid) {
         val patientIds = doctorPatientRepo.findAllPatientIdsByDoctorId(doctorId).map { it.toString() }
         identityProvider.updateUserAttributes(doctorId, mapOf("allowed_patients" to patientIds))
+    }
+
+    /**
+     * Expires all PENDING invitations whose [DoctorInvitation.expiresAt] is before [cutoff].
+     *
+     * This is an internal housekeeping operation called by
+     * [org.javafreedom.kdiab.users.application.jobs.InvitationExpiryJob] on a scheduled basis.
+     * No principal is required.
+     *
+     * @return the number of invitations that were transitioned to EXPIRED.
+     */
+    suspend fun expireOldInvitations(cutoff: kotlin.time.Instant = Clock.System.now()): Int {
+        val count = invitationRepo.expireBefore(cutoff)
+        if (count > 0) logger.info { "invitation_expiry expired count=$count" }
+        return count
+    }
+
+    /**
+     * Cancels a PENDING invitation belonging to [doctorId].
+     *
+     * Authorization rules:
+     * - ADMIN may cancel on behalf of any doctorId.
+     * - DOCTOR may only cancel their own invitations (principal.userId == doctorId).
+     * - Any other principal gets a 403.
+     *
+     * Business rules:
+     * - Invitation must exist and belong to [doctorId] — otherwise 404.
+     * - Invitation must be in PENDING status — otherwise 409.
+     * - Status is updated to CANCELLED (soft delete) with resolvedAt timestamp.
+     */
+    suspend fun cancelInvitation(
+        principal: UserPrincipal,
+        doctorId: Uuid,
+        invitationId: Uuid,
+    ) {
+        authorizeDoctor(principal, doctorId)
+
+        val invitation = invitationRepo.findById(invitationId)
+            ?: throw ResourceNotFoundException("Invitation $invitationId not found")
+
+        if (invitation.doctorId != doctorId) {
+            throw ResourceNotFoundException("Invitation $invitationId not found")
+        }
+
+        if (invitation.status != InvitationStatus.PENDING) {
+            throw ConflictException(
+                "Invitation $invitationId cannot be cancelled: status is ${invitation.status}",
+            )
+        }
+
+        val now = Clock.System.now()
+        invitationRepo.updateStatus(invitationId, InvitationStatus.CANCELLED, now)
+        logger.info {
+            "invitation_cancelled doctor=$doctorId invitation=$invitationId"
+        }
+    }
+
+    /**
+     * Lists all invitations across all doctors (admin-only, paginated, optionally filtered by status).
+     *
+     * Authorization rules:
+     * - Only ADMIN may call this endpoint.
+     * - Any other principal gets a 403.
+     */
+    suspend fun listAllInvitations(
+        principal: UserPrincipal,
+        status: InvitationStatus?,
+        page: Int,
+        size: Int,
+    ): InvitationListResult {
+        if (!principal.isAdmin()) {
+            throw AuthorizationException("Only admins may list all invitations")
+        }
+        val clampedSize = size.coerceIn(1, MAX_PAGE_SIZE)
+        val safePageIndex = page.coerceAtLeast(0)
+        val offset = safePageIndex.toLong() * clampedSize
+        val invitations = invitationRepo.findAll(status, clampedSize, offset)
+        val totalElements = invitationRepo.countAll(status)
+        val totalPages = if (totalElements == 0L) 0
+        else ((totalElements + clampedSize - 1) / clampedSize).toInt()
+        val patientDisplayNames = resolvePatientDisplayNames(invitations)
+        logger.info {
+            "admin_list_all_invitations status=$status page=$safePageIndex size=$clampedSize total=$totalElements"
+        }
+        return InvitationListResult(
+            invitations = invitations,
+            doctorDisplayName = null,
+            patientDisplayNames = patientDisplayNames,
+            page = safePageIndex,
+            size = clampedSize,
+            totalElements = totalElements,
+            totalPages = totalPages,
+        )
+    }
+
+    /**
+     * Admin cancels any PENDING invitation regardless of which doctor owns it.
+     *
+     * Authorization rules:
+     * - Only ADMIN may call this endpoint.
+     * - Any other principal gets a 403.
+     *
+     * Business rules:
+     * - Invitation must exist — otherwise 404.
+     * - Invitation must be in PENDING status — otherwise 409.
+     * - Status is updated to CANCELLED with a resolvedAt timestamp.
+     */
+    suspend fun adminCancelInvitation(
+        principal: UserPrincipal,
+        invitationId: Uuid,
+    ) {
+        if (!principal.isAdmin()) {
+            throw AuthorizationException("Only admins may use the admin cancel endpoint")
+        }
+        val invitation = invitationRepo.findById(invitationId)
+            ?: throw ResourceNotFoundException("Invitation $invitationId not found")
+        if (invitation.status != InvitationStatus.PENDING) {
+            throw ConflictException(
+                "Invitation $invitationId cannot be cancelled: status is ${invitation.status}",
+            )
+        }
+        val now = Clock.System.now()
+        invitationRepo.updateStatus(invitationId, InvitationStatus.CANCELLED, now)
+        logger.info {
+            "admin_invitation_cancelled admin=${principal.userId} invitation=$invitationId" +
+                " doctor=${invitation.doctorId}"
+        }
     }
 
     private suspend fun resolveDisplayName(userId: Uuid): String? =

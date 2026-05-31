@@ -50,31 +50,6 @@ data class InvitationResponse(
     val patientDisplayName: String?,
 )
 
-/**
- * Paginated response body for GET /users/{doctorId}/invitations.
- */
-@Serializable
-data class InvitationPageResponse(
-    val content: List<InvitationResponse>,
-    val page: Int,
-    val size: Int,
-    val totalElements: Long,
-    val totalPages: Int,
-)
-
-fun InvitationListResult.toPageResponse() = InvitationPageResponse(
-    content = invitations.map { invitation ->
-        invitation.toResponse(
-            doctorDisplayName = doctorDisplayName,
-            patientDisplayName = patientDisplayNames[invitation.patientId?.toString()],
-        )
-    },
-    page = page,
-    size = size,
-    totalElements = totalElements,
-    totalPages = totalPages,
-)
-
 // doctorDisplayName and patientDisplayName are populated by list/detail endpoints
 // that resolve display names from the identity provider. The POST and PATCH responses omit them (null).
 fun DoctorInvitation.toResponse(
@@ -91,4 +66,30 @@ fun DoctorInvitation.toResponse(
     resolvedAt = resolvedAt?.toString(),
     doctorDisplayName = doctorDisplayName,
     patientDisplayName = patientDisplayName,
+)
+
+/**
+ * Paginated response for invitation list endpoints.
+ */
+@Serializable
+data class InvitationPageResponse(
+    val content: List<InvitationResponse>,
+    val page: Int,
+    val size: Int,
+    val totalElements: Long,
+    val totalPages: Int,
+)
+
+fun InvitationListResult.toPageResponse() = InvitationPageResponse(
+    content = invitations.map { invitation ->
+        invitation.toResponse(
+            doctorDisplayName = doctorDisplayName,
+            patientDisplayName = invitation.patientId?.toString()
+                ?.let { patientDisplayNames[it] },
+        )
+    },
+    page = page,
+    size = size,
+    totalElements = totalElements,
+    totalPages = totalPages,
 )

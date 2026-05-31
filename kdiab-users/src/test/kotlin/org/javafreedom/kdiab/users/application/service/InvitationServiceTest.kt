@@ -485,4 +485,310 @@ class InvitationServiceTest {
         coVerify(exactly = 1) { doctorPatientRepo.delete(doctorId, patientId) }
         coVerify(exactly = 1) { invitationRepo.updateStatus(invitationId, InvitationStatus.PENDING, null) }
     }
+
+    // ---- expireOldInvitations ----
+
+    @Test
+    fun `expireOldInvitations delegates to repo and returns count`() = runTest {
+        val cutoff = Clock.System.now()
+        coEvery { invitationRepo.expireBefore(cutoff) } returns 5
+
+        val result = service.expireOldInvitations(cutoff)
+
+        assertEquals(5, result)
+        coVerify(exactly = 1) { invitationRepo.expireBefore(cutoff) }
+    }
+
+    @Test
+    fun `expireOldInvitations returns zero when no invitations expired`() = runTest {
+        val cutoff = Clock.System.now()
+        coEvery { invitationRepo.expireBefore(cutoff) } returns 0
+
+        val result = service.expireOldInvitations(cutoff)
+
+        assertEquals(0, result)
+    }
+
+    @Test
+    fun `expireOldInvitations uses Clock dot System dot now as default cutoff`() = runTest {
+        coEvery { invitationRepo.expireBefore(any()) } returns 0
+
+        service.expireOldInvitations()
+
+        coVerify(exactly = 1) { invitationRepo.expireBefore(any()) }
+    }
+
+    // ---- cancelInvitation ----
+
+    private val cancelInvitationId = Uuid.parse("11111111-1111-1111-1111-111111111111")
+
+    private fun doctorOwnedInvitation(status: InvitationStatus = InvitationStatus.PENDING): DoctorInvitation {
+        val now = Clock.System.now()
+        return DoctorInvitation(
+            id = cancelInvitationId,
+            doctorId = doctorId,
+            patientIdentifier = patientEmail,
+            patientId = patientId,
+            status = status,
+            message = null,
+            createdAt = now,
+            expiresAt = now + 7.days,
+            resolvedAt = null,
+        )
+    }
+
+    @Test
+    fun `cancelInvitation happy path updates status to CANCELLED`() = runTest {
+        coEvery { invitationRepo.findById(cancelInvitationId) } returns doctorOwnedInvitation()
+        coEvery { invitationRepo.updateStatus(cancelInvitationId, InvitationStatus.CANCELLED, any()) } returns true
+
+        service.cancelInvitation(doctorPrincipal(), doctorId, cancelInvitationId)
+
+        coVerify(exactly = 1) {
+            invitationRepo.updateStatus(cancelInvitationId, InvitationStatus.CANCELLED, any())
+        }
+    }
+
+    @Test
+    fun `cancelInvitation admin can cancel any doctor invitation`() = runTest {
+        coEvery { invitationRepo.findById(cancelInvitationId) } returns doctorOwnedInvitation()
+        coEvery { invitationRepo.updateStatus(cancelInvitationId, InvitationStatus.CANCELLED, any()) } returns true
+
+        service.cancelInvitation(adminPrincipal(), doctorId, cancelInvitationId)
+
+        coVerify(exactly = 1) {
+            invitationRepo.updateStatus(cancelInvitationId, InvitationStatus.CANCELLED, any())
+        }
+    }
+
+    @Test
+    fun `cancelInvitation throws ResourceNotFoundException when invitation does not exist`() = runTest {
+        coEvery { invitationRepo.findById(cancelInvitationId) } returns null
+
+        assertFailsWith<ResourceNotFoundException> {
+            service.cancelInvitation(doctorPrincipal(), doctorId, cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.updateStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `cancelInvitation throws ResourceNotFoundException when invitation belongs to different doctor`() = runTest {
+        val otherDoctorId = Uuid.parse("cccccccc-cccc-cccc-cccc-cccccccccccc")
+        val otherDoctorPrincipal = UserPrincipal(otherDoctorId, setOf(Role.DOCTOR), emptySet())
+        coEvery { invitationRepo.findById(cancelInvitationId) } returns doctorOwnedInvitation()
+
+        assertFailsWith<ResourceNotFoundException> {
+            service.cancelInvitation(otherDoctorPrincipal, otherDoctorId, cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.updateStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `cancelInvitation throws ConflictException when invitation is ACCEPTED`() = runTest {
+        coEvery { invitationRepo.findById(cancelInvitationId) } returns doctorOwnedInvitation(InvitationStatus.ACCEPTED)
+
+        assertFailsWith<ConflictException> {
+            service.cancelInvitation(doctorPrincipal(), doctorId, cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.updateStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `cancelInvitation throws ConflictException when invitation is already CANCELLED`() = runTest {
+        coEvery {
+            invitationRepo.findById(cancelInvitationId)
+        } returns doctorOwnedInvitation(InvitationStatus.CANCELLED)
+
+        assertFailsWith<ConflictException> {
+            service.cancelInvitation(doctorPrincipal(), doctorId, cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.updateStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `cancelInvitation throws ConflictException when invitation is EXPIRED`() = runTest {
+        coEvery { invitationRepo.findById(cancelInvitationId) } returns doctorOwnedInvitation(InvitationStatus.EXPIRED)
+
+        assertFailsWith<ConflictException> {
+            service.cancelInvitation(doctorPrincipal(), doctorId, cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.updateStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `cancelInvitation throws AuthorizationException when doctor acts on different doctorId`() = runTest {
+        val otherDoctorId = Uuid.parse("cccccccc-cccc-cccc-cccc-cccccccccccc")
+
+        assertFailsWith<AuthorizationException> {
+            service.cancelInvitation(doctorPrincipal(), otherDoctorId, cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.findById(any()) }
+    }
+
+    @Test
+    fun `cancelInvitation throws AuthorizationException for patient principal`() = runTest {
+        assertFailsWith<AuthorizationException> {
+            service.cancelInvitation(patientPrincipal(), doctorId, cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.findById(any()) }
+    }
+
+    // ---- listAllInvitations ----
+
+    @Test
+    fun `listAllInvitations returns paginated result for admin`() = runTest {
+        val invitation = doctorOwnedInvitation()
+        coEvery { invitationRepo.findAll(null, any(), any()) } returns listOf(invitation)
+        coEvery { invitationRepo.countAll(null) } returns 1L
+        coEvery { identityProvider.getUserProfile(patientId) } throws
+            ResourceNotFoundException("not found")
+
+        val result = service.listAllInvitations(adminPrincipal(), null, 0, 20)
+
+        assertEquals(1, result.invitations.size)
+        assertEquals(1L, result.totalElements)
+        assertEquals(1, result.totalPages)
+        assertEquals(0, result.page)
+        assertNull(result.doctorDisplayName)
+    }
+
+    @Test
+    fun `listAllInvitations filters by status when provided`() = runTest {
+        val invitation = doctorOwnedInvitation()
+        coEvery { invitationRepo.findAll(InvitationStatus.PENDING, any(), any()) } returns listOf(invitation)
+        coEvery { invitationRepo.countAll(InvitationStatus.PENDING) } returns 1L
+        coEvery { identityProvider.getUserProfile(patientId) } throws
+            ResourceNotFoundException("not found")
+
+        val result = service.listAllInvitations(adminPrincipal(), InvitationStatus.PENDING, 0, 20)
+
+        assertEquals(InvitationStatus.PENDING, result.invitations.first().status)
+        coVerify(exactly = 1) { invitationRepo.findAll(InvitationStatus.PENDING, any(), any()) }
+    }
+
+    @Test
+    fun `listAllInvitations clamps page size to MAX_PAGE_SIZE`() = runTest {
+        coEvery { invitationRepo.findAll(null, 100, 0L) } returns emptyList()
+        coEvery { invitationRepo.countAll(null) } returns 0L
+
+        val result = service.listAllInvitations(adminPrincipal(), null, 0, 999)
+
+        assertEquals(100, result.size)
+        coVerify(exactly = 1) { invitationRepo.findAll(null, 100, 0L) }
+    }
+
+    @Test
+    fun `listAllInvitations returns totalPages 0 when no invitations`() = runTest {
+        coEvery { invitationRepo.findAll(null, any(), any()) } returns emptyList()
+        coEvery { invitationRepo.countAll(null) } returns 0L
+
+        val result = service.listAllInvitations(adminPrincipal(), null, 0, 20)
+
+        assertEquals(0, result.totalPages)
+    }
+
+    @Test
+    fun `listAllInvitations throws AuthorizationException for doctor principal`() = runTest {
+        assertFailsWith<AuthorizationException> {
+            service.listAllInvitations(doctorPrincipal(), null, 0, 20)
+        }
+        coVerify(exactly = 0) { invitationRepo.findAll(any(), any(), any()) }
+    }
+
+    @Test
+    fun `listAllInvitations throws AuthorizationException for patient principal`() = runTest {
+        assertFailsWith<AuthorizationException> {
+            service.listAllInvitations(patientPrincipal(), null, 0, 20)
+        }
+        coVerify(exactly = 0) { invitationRepo.findAll(any(), any(), any()) }
+    }
+
+    // ---- adminCancelInvitation ----
+
+    @Test
+    fun `adminCancelInvitation cancels any pending invitation`() = runTest {
+        coEvery { invitationRepo.findById(cancelInvitationId) } returns doctorOwnedInvitation()
+        coEvery { invitationRepo.updateStatus(cancelInvitationId, InvitationStatus.CANCELLED, any()) } returns true
+
+        service.adminCancelInvitation(adminPrincipal(), cancelInvitationId)
+
+        coVerify(exactly = 1) {
+            invitationRepo.updateStatus(cancelInvitationId, InvitationStatus.CANCELLED, any())
+        }
+    }
+
+    @Test
+    fun `adminCancelInvitation can cancel any doctor's invitation`() = runTest {
+        val otherDoctorInvitation = doctorOwnedInvitation()
+        coEvery { invitationRepo.findById(cancelInvitationId) } returns otherDoctorInvitation
+        coEvery { invitationRepo.updateStatus(cancelInvitationId, InvitationStatus.CANCELLED, any()) } returns true
+
+        service.adminCancelInvitation(adminPrincipal(), cancelInvitationId)
+
+        coVerify(exactly = 1) {
+            invitationRepo.updateStatus(cancelInvitationId, InvitationStatus.CANCELLED, any())
+        }
+    }
+
+    @Test
+    fun `adminCancelInvitation throws ResourceNotFoundException when invitation not found`() = runTest {
+        coEvery { invitationRepo.findById(cancelInvitationId) } returns null
+
+        assertFailsWith<ResourceNotFoundException> {
+            service.adminCancelInvitation(adminPrincipal(), cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.updateStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `adminCancelInvitation throws ConflictException when invitation is ACCEPTED`() = runTest {
+        coEvery {
+            invitationRepo.findById(cancelInvitationId)
+        } returns doctorOwnedInvitation(InvitationStatus.ACCEPTED)
+
+        assertFailsWith<ConflictException> {
+            service.adminCancelInvitation(adminPrincipal(), cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.updateStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `adminCancelInvitation throws ConflictException when invitation is already CANCELLED`() = runTest {
+        coEvery {
+            invitationRepo.findById(cancelInvitationId)
+        } returns doctorOwnedInvitation(InvitationStatus.CANCELLED)
+
+        assertFailsWith<ConflictException> {
+            service.adminCancelInvitation(adminPrincipal(), cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.updateStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `adminCancelInvitation throws ConflictException when invitation is EXPIRED`() = runTest {
+        coEvery {
+            invitationRepo.findById(cancelInvitationId)
+        } returns doctorOwnedInvitation(InvitationStatus.EXPIRED)
+
+        assertFailsWith<ConflictException> {
+            service.adminCancelInvitation(adminPrincipal(), cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.updateStatus(any(), any(), any()) }
+    }
+
+    @Test
+    fun `adminCancelInvitation throws AuthorizationException for doctor principal`() = runTest {
+        assertFailsWith<AuthorizationException> {
+            service.adminCancelInvitation(doctorPrincipal(), cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.findById(any()) }
+    }
+
+    @Test
+    fun `adminCancelInvitation throws AuthorizationException for patient principal`() = runTest {
+        assertFailsWith<AuthorizationException> {
+            service.adminCancelInvitation(patientPrincipal(), cancelInvitationId)
+        }
+        coVerify(exactly = 0) { invitationRepo.findById(any()) }
+    }
 }
