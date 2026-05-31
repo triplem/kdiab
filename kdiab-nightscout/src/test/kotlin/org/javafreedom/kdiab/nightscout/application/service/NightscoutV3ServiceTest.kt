@@ -33,10 +33,11 @@ import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class NightscoutV3ServiceTest {
 
@@ -434,8 +435,8 @@ class NightscoutV3ServiceTest {
         val result = runCatching {
             service.deleteProfile("user1", "Bearer token", "corr", "p1", permanent = true)
         }
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull()?.message?.contains("Permanent deletion") == true)
+        val ex = assertIs<IllegalArgumentException>(result.exceptionOrNull())
+        assertContains(ex.message!!, "Permanent deletion")
     }
 
     @Test
@@ -735,5 +736,62 @@ class NightscoutV3ServiceTest {
         coVerify(exactly = 1) {
             treatmentsClient.deleteTreatment("user1", "Bearer token", "corr", "t1", true)
         }
+    }
+
+    @Test
+    fun `createEntry throws when entry type is not supported by mapper`() = runTest {
+        val unsupportedEntry = Ns3Entry(
+            identifier = "temp",
+            date = 1704067200000L,
+            dateString = "2024-01-01T00:00:00Z",
+            type = "unknown-type",
+        )
+
+        val result = runCatching {
+            service.createEntry("user1", "Bearer token", "corr", unsupportedEntry, "mg/dL")
+        }
+
+        val ex = assertIs<IllegalStateException>(result.exceptionOrNull())
+        assertContains(ex.message!!, "Unsupported entry type")
+    }
+
+    @Test
+    fun `createTreatment throws when treatment eventType is not supported by mapper`() = runTest {
+        val unsupportedTreatment = Ns3Treatment(
+            identifier = "temp",
+            date = 1704067200000L,
+            dateString = "2024-01-01T00:00:00Z",
+            eventType = "UnknownEventType",
+        )
+
+        val result = runCatching {
+            service.createTreatment("user1", "Bearer token", "corr", unsupportedTreatment)
+        }
+
+        val ex = assertIs<IllegalStateException>(result.exceptionOrNull())
+        assertContains(ex.message!!, "Unsupported treatment eventType")
+    }
+
+    @Test
+    fun `updateProfile throws when profile not found`() = runTest {
+        coEvery { profilesClient.getProfile("user1", "Bearer token", "corr", "missing") } returns null
+
+        val input = Ns3Profile(
+            identifier = "missing",
+            defaultProfile = "New Name",
+            startDate = "2024-01-01T00:00:00Z",
+            units = "mg/dl",
+            dia = 4.0,
+            basalSegments = emptyList(),
+            carbratio = emptyList(),
+            sens = emptyList(),
+        )
+
+        val result = runCatching {
+            service.updateProfile("user1", "Bearer token", "corr", "missing", input)
+        }
+
+        val ex = assertIs<IllegalStateException>(result.exceptionOrNull())
+        assertContains(ex.message!!, "Profile not found")
     }
 }
