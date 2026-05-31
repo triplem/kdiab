@@ -45,7 +45,7 @@ class InvitationService(
         }
 
         val patientId = identityProvider.findUserByIdentifier(patientIdentifier)
-            ?: throw BusinessValidationException("No user found for identifier: $patientIdentifier")
+            ?: throw BusinessValidationException("Patient identifier could not be resolved")
 
         val patientRoles = identityProvider.getUserRoles(patientId)
         if (Role.PATIENT !in patientRoles) {

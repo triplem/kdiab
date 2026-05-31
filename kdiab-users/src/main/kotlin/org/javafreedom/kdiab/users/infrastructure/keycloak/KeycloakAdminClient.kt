@@ -121,34 +121,49 @@ class KeycloakAdminClient(
     /**
      * Searches Keycloak for a user with the exact given email or username.
      * Returns the user's UUID string if found, null otherwise.
+     *
+     * Keycloak's `exact=true` parameter prevents partial matches. If the identifier
+     * looks like an email address (contains '@'), only the email lookup is attempted.
+     * Otherwise the username lookup is tried first and, if not found, falls back to email
+     * (to handle edge cases where a username happens to contain '@').
      */
     suspend fun findUserByIdentifier(identifier: String): String? {
         val auth = authHeader()
-        // Try email match first, then fall back to username. Keycloak's `exact=true`
-        // prevents partial matches and avoids returning unintended users.
-        val byEmail: List<KeycloakUser> = circuitBreaker.execute {
+        return if ('@' in identifier) {
+            // Fast path: skip username lookup when the identifier is clearly an email.
+            findExactByEmail(auth, identifier)
+        } else {
+            // Plain username: try username first, fall back to email.
+            findExactByUsername(auth, identifier) ?: findExactByEmail(auth, identifier)
+        }
+    }
+
+    private suspend fun findExactByEmail(auth: String, email: String): String? {
+        val users: List<KeycloakUser> = circuitBreaker.execute {
             val response = httpClient.get(adminUrl("users")) {
                 header(HttpHeaders.Authorization, auth)
-                parameter("email", identifier)
+                parameter("email", email)
                 parameter("exact", "true")
                 parameter("max", 1)
             }
             check(response.status.isSuccess()) { "findUserByEmail failed: ${response.status}" }
             response.body()
         }
-        if (byEmail.isNotEmpty()) return byEmail.first().id
+        return users.firstOrNull()?.id
+    }
 
-        val byUsername: List<KeycloakUser> = circuitBreaker.execute {
+    private suspend fun findExactByUsername(auth: String, username: String): String? {
+        val users: List<KeycloakUser> = circuitBreaker.execute {
             val response = httpClient.get(adminUrl("users")) {
                 header(HttpHeaders.Authorization, auth)
-                parameter("username", identifier)
+                parameter("username", username)
                 parameter("exact", "true")
                 parameter("max", 1)
             }
             check(response.status.isSuccess()) { "findUserByUsername failed: ${response.status}" }
             response.body()
         }
-        return byUsername.firstOrNull()?.id
+        return users.firstOrNull()?.id
     }
 
     suspend fun getUser(userId: Uuid): KeycloakUser {
