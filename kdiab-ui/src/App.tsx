@@ -305,7 +305,7 @@ export default function App() {
     { key: 'patient-invitations', label: t('nav.patientInvitations'), roles: ['PATIENT'] },
     { key: 'admin-users', label: t('nav.adminUsers'), roles: ['ADMIN'] },
     { key: 'admin-doctors', label: t('nav.adminDoctors'), roles: ['ADMIN'] },
-    { key: 'preferences', label: t('nav.preferences') },
+    { key: 'preferences', label: t('nav.preferences'), roles: ['ADMIN'] },
   ]
 
   const visibleTabs = tabs.filter((tab) => !tab.roles?.length || tab.roles.some((r) => roles.includes(r)))
