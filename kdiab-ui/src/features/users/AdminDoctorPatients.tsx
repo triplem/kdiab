@@ -162,7 +162,7 @@ export function AdminDoctorPatients() {
       {/* Assign patient modal */}
       {showAssign && selectedDoctor && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('doctorPatients.assignTitle')}>
-          <div className="modal-content" style={{ maxWidth: 420 }}>
+          <div className="modal-box" style={{ maxWidth: 420 }}>
             <h3>{t('doctorPatients.assignTitle')}</h3>
             <input
               type="search"
@@ -201,7 +201,7 @@ export function AdminDoctorPatients() {
       {/* Remove confirmation */}
       {removePatient && selectedDoctor && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('doctorPatients.removeConfirmTitle')}>
-          <div className="modal-content" style={{ maxWidth: 380 }}>
+          <div className="modal-box" style={{ maxWidth: 380 }}>
             <h3>{t('doctorPatients.removeConfirmTitle')}</h3>
             <p>{t('doctorPatients.removeConfirmBody', { patient: removePatient.displayName, doctor: selectedDoctor.displayName })}</p>
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>

@@ -223,7 +223,7 @@ export function DoctorInvitations({ doctorId }: Props) {
       {/* Cancel confirmation */}
       {cancelTarget && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-label={t('invitations.cancelConfirmTitle')}>
-          <div className="modal-content" style={{ maxWidth: 380 }}>
+          <div className="modal-box" style={{ maxWidth: 380 }}>
             <h3>{t('invitations.cancelConfirmTitle')}</h3>
             <p>{t('invitations.cancelConfirmBody', { identifier: cancelTarget.patientIdentifier })}</p>
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>

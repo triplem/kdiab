@@ -147,7 +147,7 @@ export function PatientInvitations({ patientId }: Props) {
               : t('invitations.declineConfirmTitle')
           }
         >
-          <div className="modal-content" style={{ maxWidth: 420 }}>
+          <div className="modal-box" style={{ maxWidth: 420 }}>
             <h3>
               {confirmState.action === 'ACCEPT'
                 ? t('invitations.acceptConfirmTitle')
