@@ -99,14 +99,14 @@ An epic that introduces a new service typically needs all four. An epic that add
 
 | Service | Prefix |
 |---|---|
-| kdiab-measures | `MEAS` |
-| kdiab-profiles | `PROF` |
-| kdiab-treatments | `TREAT` |
+| kdiab-measures | `MEA` |
+| kdiab-profiles | `PRO` |
+| kdiab-treatments | `TRE` |
 | kdiab-analyze | `ANA` |
-| kdiab-carbs | `CARBS` |
-| kdiab-calc | `CALC` |
-| kdiab-nightscout | `NS` |
-| kdiab-users | `USERS` |
+| kdiab-carbs | `CAR` |
+| kdiab-calc | `CAL` |
+| kdiab-nightscout | `NSC` |
+| kdiab-users | `USR` |
 
 Service ADRs live either in `docs/adr/<service>/` (subdirs of platform ADR dir) or directly in `<service>/docs/adr/`. Never use a bare number alone — always include the prefix so no two ADRs in the whole monorepo share the same effective ID.
 
