@@ -1,0 +1,130 @@
+= ADR-019: Circuit Breaker — Threshold 5 Failures / 30 s Reset
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-31
+* *Deciders*: triplem
+
+== Context
+
+Several kdiab services make synchronous HTTP calls to upstream dependencies:
+
+* `kdiab-analyze` calls kdiab-measures, kdiab-profiles, kdiab-treatments.
+* `kdiab-users` calls the Keycloak Admin API when doctor-patient relationships change.
+* `kdiab-nightscout` calls kdiab-measures, kdiab-treatments, kdiab-profiles, kdiab-carbs.
+
+A slow or unavailable upstream can hold Ktor coroutine dispatcher threads, causing the
+calling service to queue requests until its own thread pool is exhausted — a cascading
+failure known as the "thundering herd" or "cascade collapse" pattern.
+
+A circuit breaker prevents this by fast-failing requests to a known-degraded upstream
+rather than queuing them, giving the upstream time to recover.
+
+== Decision
+
+A lightweight coroutine-safe `CircuitBreaker` class in `kdiab-common` is used to wrap
+all upstream HTTP calls that are not already protected by a per-request timeout.
+
+Default thresholds (named constants in `CircuitBreaker.kt`):
+
+[cols="1,1,2"]
+|===
+| Parameter | Value | Rationale
+
+| `failureThreshold`
+| 5
+| Five consecutive failures signal a systemic problem rather than a transient blip.
+  A threshold of 1–2 would trip on normal transient errors; 10+ would allow too
+  many requests to stack up during a real outage.
+
+| `resetTimeoutMs`
+| 30 000 ms
+| Thirty seconds gives a crashed upstream service time to restart and become healthy.
+  One minute would prolong user-visible outages unnecessarily for fast-recovering services;
+  ten seconds risks re-opening the circuit before the upstream has stabilised.
+
+| HALF_OPEN probe
+| 1 concurrent
+| Exactly one probe request is allowed when the circuit transitions from OPEN to
+  HALF_OPEN. All other concurrent callers fast-fail during the probe to prevent a
+  thundering-herd on recovery.
+|===
+
+States:
+
+* *CLOSED* — normal operation; failures accumulate against `failureThreshold`.
+* *OPEN* — fast-fail; all calls throw `CircuitBreakerOpenException` immediately.
+* *HALF_OPEN* — one probe call allowed; success → CLOSED; failure → OPEN.
+
+`CircuitBreakerOpenException` is mapped to `HTTP 503 Service Unavailable` by
+`StatusPages` in each service.
+
+Individual call sites may override the defaults using named constructor parameters:
+
+```kotlin
+val keycloakBreaker = CircuitBreaker(
+    name = "keycloak-admin",
+    failureThreshold = 3,   // Keycloak is critical; trip faster
+    resetTimeoutMs = 60_000,
+)
+```
+
+== Consequences
+
+=== Positive
+
+* Upstream failures are isolated — a degraded Keycloak Admin API does not cause
+  `kdiab-users` to block all incoming requests; only admin-path operations are fast-failed.
+* Users see a clear `503` rather than a timeout after 30+ seconds.
+* No external dependency: the implementation is ~100 lines of Kotlin using only
+  `java.util.concurrent.atomic` primitives — no Resilience4j or Hystrix dependency.
+* Each `CircuitBreaker` instance logs state transitions at `INFO` level and per-failure
+  counts at `WARN`, providing visibility into upstream health without a separate metrics library.
+
+=== Negative
+
+* The circuit breaker is in-process only. If a service runs as multiple replicas, each
+  instance maintains its own state — one replica may be OPEN while another is CLOSED.
+  For kdiab's expected scale (1–3 replicas), this is acceptable.
+* Thresholds are configured at code level, not runtime. Changing thresholds requires a
+  redeployment.
+* A single HALF_OPEN probe is a conservative recovery strategy; a busy service may be
+  slow to recover if the upstream stabilises gradually rather than abruptly.
+
+=== Neutral
+
+* The `isInfrastructureFailure` predicate parameter allows callers to exclude business
+  exceptions (e.g., `404 Not Found`) from the failure count. Only network timeouts,
+  connection failures, and `5xx` responses should trip the breaker.
+
+== Alternatives Considered
+
+=== Resilience4j
+
+Production-grade resilience library for the JVM with circuit breaker, retry, rate limiter,
+bulkhead, and time limiter. *Rejected*:
+
+* Adds a transitive dependency (Resilience4j core + Kotlin extensions + Micrometer
+  integration) for a feature that is simple enough to implement in-house.
+* Resilience4j's `CircuitBreakerConfig` is powerful but verbose; the kdiab use case
+  requires only the basic three-state machine.
+* The in-house implementation has zero framework coupling and is easier to test.
+
+=== Ktor `HttpTimeout` Plugin Only
+
+Configure `requestTimeoutMillis` on each Ktor `HttpClient` to prevent indefinite blocking
+without a circuit breaker. *Rejected* as the sole protection:
+
+* A timeout prevents an individual call from hanging but does not stop subsequent calls
+  from being made to a known-down upstream. Each request still takes `requestTimeoutMillis`
+  (e.g., 10 s) before failing.
+* Under sustained load this means each coroutine waits 10 s before failing, rapidly
+  exhausting the I/O thread pool. The circuit breaker adds the critical fast-fail layer
+  on top of the timeout.
+
+=== No Circuit Breaker
+
+Accept cascading failures and rely on Kubernetes liveness probes to restart pods.
+*Rejected*: a restart takes 10–30 seconds during which all requests are lost. A circuit
+breaker degrades gracefully (503) rather than crashing the caller.

@@ -1,0 +1,102 @@
+= ADR-018: HMAC256 Symmetric JWT for Integration and E2E Tests
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-31
+* *Deciders*: triplem
+
+== Context
+
+All eight kdiab backend services verify incoming JWTs using Keycloak's JWKS endpoint
+(RS256 asymmetric signing). Running the full Keycloak stack in every integration test
+adds 10–20 seconds of startup time, requires network access to fetch JWKS keys, and
+introduces a hard dependency on Keycloak's Docker image in CI.
+
+A lighter test-time alternative is needed that:
+
+1. Does not require Keycloak to be running.
+2. Produces real JWTs that the existing `configureSecurity()` plugin verifies.
+3. Is impossible to accidentally activate in production.
+
+== Decision
+
+`configureSecurity()` in `kdiab-common` accepts a test mode flag (`jwt.test=true`).
+When active, it switches from JWKS-based RS256 verification to HMAC256 symmetric
+verification using a shared secret (`jwt.secret` / `JWT_SECRET` env var).
+
+Safety invariants enforced in code:
+
+* `check(!isTest || jwtSecret != null)` — the secret must be supplied explicitly; there
+  is no default value.
+* JWKS URL must be `https://` for non-localhost URLs (`check(isInternal || uri.scheme == "https")`),
+  so production deployments cannot accidentally configure a plaintext endpoint.
+* A `check(isInternal || jwksUri.scheme == "https")` guard refuses to connect to a remote
+  HTTP JWKS endpoint, further reducing the risk of misconfiguration.
+
+Test fixtures generate tokens with `com.auth0:java-jwt` using `Algorithm.HMAC256(secret)`,
+embedding realistic `sub`, `roles`, `allowed_patients`, and `aud` claims that mirror what
+Keycloak would issue.
+
+The test secret is set in `application-test.conf`:
+```
+jwt.test = true
+jwt.secret = test-secret-value
+```
+
+This file is committed to source control. The secret is intentionally not sensitive — it
+is only valid in test mode and cannot verify tokens against a production Keycloak.
+
+== Consequences
+
+=== Positive
+
+* Integration and E2E tests start in under 2 seconds with no external dependency on Keycloak.
+* JWTs are generated in-process; no HTTP round-trip to an external server.
+* The same `configureSecurity()` code path is exercised in tests as in production —
+  only the signing algorithm switches.
+* Pre-seeded test principals (`sarah`, `mike`, `dr_house`) are constructed with realistic
+  `roles` and `allowed_patients` claim values, exercising authorization logic end-to-end.
+
+=== Negative
+
+* HMAC256 is a symmetric algorithm — anyone who knows the test secret can forge tokens.
+  This is acceptable only because `jwt.test=true` is inert in production (it is never
+  set in production config).
+* The `jwt.test` flag is a non-standard configuration; new contributors must be briefed
+  that this mode exists and must not appear in production.
+* If a developer accidentally deploys a container with `JWT_TEST=true` and a known secret,
+  any JWT signed with that secret would be accepted. Mitigation: `JWT_TEST` is not present
+  in any production Docker Compose or Helm chart; production secrets management should
+  explicitly exclude this variable.
+
+=== Neutral
+
+* The test secret value is checked into `application-test.conf`. Rotating it requires
+  updating all test fixtures — acceptable because the secret has no production value.
+
+== Alternatives Considered
+
+=== Embedded Keycloak (Keycloak Testcontainer)
+
+Run a Keycloak container during integration tests via Testcontainers. *Rejected*:
+
+* Cold-start time of 15–20 seconds per test suite run significantly slows CI.
+* Requires a Docker daemon in CI and a Keycloak realm export to be imported at test time.
+* Adds Testcontainers as a transitive dependency to every service test suite.
+
+=== Mock JWT Verifier (test double)
+
+Replace the `JwtVerifier` with a mock that accepts all tokens in tests. *Rejected*:
+
+* Authorization logic (`canAccess()`, role checks) would not be exercised. Tests would
+  pass even if the `UserPrincipal` extraction or claim mapping was broken.
+* The mock diverges from production behaviour over time without compile-time enforcement.
+
+=== WireMock JWKS Endpoint
+
+Serve a fake JWKS endpoint from WireMock that returns a test RSA key pair. *Rejected*:
+
+* More setup complexity than HMAC256 (RSA key generation, JWKS document construction).
+* Still requires a network call from the test JVM to the WireMock server.
+* No meaningful correctness advantage over HMAC256 for the claim verification being tested.

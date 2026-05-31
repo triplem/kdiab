@@ -1,0 +1,92 @@
+= ADR-016: JetBrains Exposed ORM over JPA/Hibernate
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-31
+* *Deciders*: triplem
+
+== Context
+
+All kdiab persistence services (kdiab-measures, kdiab-profiles, kdiab-treatments, kdiab-carbs,
+kdiab-users) need an ORM or database-access layer for PostgreSQL. The choice affects the
+Kotlin idiom compatibility, type safety, transaction model, and the learning curve for contributors.
+
+Three realistic options were evaluated for a Kotlin-first Ktor monorepo:
+
+1. *JPA/Hibernate* — the de-facto standard in JVM enterprise applications.
+2. *JetBrains Exposed* — Kotlin-first SQL library with optional ORM and DSL layers.
+3. *JOOQ* — type-safe SQL builder with code generation from the DB schema.
+
+== Decision
+
+JetBrains Exposed v1 (now migrated to Exposed v2 / `exposed-jdbc`) is used across all
+persistence services. Each service defines its tables as Kotlin objects extending `Table` or
+`IntIdTable`, maps results to domain models in `infrastructure/persistence/` adapters, and
+executes queries inside `suspendTransaction { }` blocks.
+
+Repositories are `suspend` functions to integrate cleanly with Ktor's coroutine dispatcher.
+The `withContext(Dispatchers.IO)` wrapper handles the blocking JDBC layer transparently.
+
+== Consequences
+
+=== Positive
+
+* *Kotlin-first API*: Exposed table and query DSL use idiomatic Kotlin — no XML mapping files,
+  no annotation processing, no generated proxy classes. Repository code is plain Kotlin.
+* *Lightweight*: Exposed has no session cache, no L1/L2 cache, and no lazy-loading proxy magic.
+  Every query is explicit, making N+1 problems impossible to accidentally introduce.
+* *No schema generation*: Exposed does not manage the schema. Liquibase runs as a dedicated init
+  container and owns all DDL. Exposed only performs DML — a clean separation.
+* *Coroutine-compatible*: `suspendTransaction` integrates with Ktor's coroutine dispatcher without
+  thread-pool contention.
+* *No entity lifecycle*: Domain objects are plain `data class` values. There is no Hibernate
+  `EntityManager`, persistent context, `@Entity` lifecycle, or detached-object problem.
+
+=== Negative
+
+* *No lazy loading*: All associations must be eagerly fetched or fetched explicitly in the
+  repository. For complex domain graphs this requires more deliberate query planning.
+* *Smaller ecosystem*: Fewer community extensions and third-party libraries compared to JPA.
+  Migrations from Exposed v1 to v2 required manual updates across all services.
+* *Manual mapping*: Result rows are manually mapped to domain classes. Boilerplate is higher than
+  JPA `@Entity` + `@Column` annotation scanning, though the explicitness is also a benefit.
+
+=== Neutral
+
+* Exposed runs on top of JDBC (HikariCP connection pool). The underlying driver and connection
+  semantics are identical to any other JDBC-based solution.
+* `DatabaseFactory.kt` in each service wires HikariCP and registers the Exposed `Database`
+  instance; this is the only framework-aware startup code.
+
+== Alternatives Considered
+
+=== JPA / Hibernate
+
+Spring Data JPA with Hibernate is the dominant JVM ORM. *Rejected* for two reasons:
+
+1. *Spring coupling*: All kdiab backends use Ktor, not Spring. Adopting Hibernate would require
+   the `hibernate-core` dependency without Spring's auto-configuration, creating significant
+   boilerplate for session factory setup, transaction management, and entity scanning.
+2. *Proxy and lifecycle complexity*: Hibernate entity proxies, lazy loading, detached entities,
+   and the persistence context model are a poor fit for Ktor's coroutine-oriented request
+   handling. The `open class` requirement for Hibernate proxies conflicts with Kotlin's default
+   `final` classes.
+
+=== JOOQ
+
+JOOQ generates type-safe Java/Kotlin code from an existing database schema and produces queries
+through a fluent DSL that mirrors SQL closely. *Rejected*:
+
+* Requires a running database during code generation (schema introspection phase), which
+  complicates CI — the DB must be available before the Kotlin compiler can run.
+* The generated DSL is Java-flavoured (method chains, no Kotlin extension syntax by default).
+* Additional commercial licence required for non-open-source databases (PostgreSQL is OSS, so
+  the open-source edition applies, but the tooling adds build complexity).
+
+=== R2DBC (Reactive JDBC)
+
+Fully non-blocking reactive database drivers would remove the `withContext(Dispatchers.IO)` wrap.
+*Rejected*: The R2DBC ecosystem for Kotlin is immature compared to JDBC, and Exposed does not
+support R2DBC — switching would require a different ORM entirely. The performance benefit of
+non-blocking DB I/O is negligible at kdiab's scale; the added complexity is not justified.
