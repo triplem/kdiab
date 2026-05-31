@@ -1,5 +1,7 @@
 # kdiab
 
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE.md)
+
 > [!WARNING]
 > **Demo project — not for production use.**
 > This project was built as a proof of concept to explore the possibilities of AI-assisted software development using [Claude Code](https://claude.ai/code). It is not validated, audited, or certified for any medical or clinical purpose. **Do not use this software to manage insulin dosing, glucose monitoring, or any other aspect of diabetes care in a real-world setting.** No warranty is provided. Use at your own risk.
@@ -223,6 +225,9 @@ See [ADR-014](docs/adr/ADR-014-otel-grpc-exporter-dual-stack.adoc) for the reaso
 
 ## Documentation
 
+**[Online Documentation](https://triplem.github.io/kdiab/)** — full platform and service docs published on GitHub Pages.
+
+Source documents (AsciiDoc):
 - [How to Build and Run](docs/how-to-run.adoc)
 - [Platform Architecture](docs/architecture.adoc)
 - [Keycloak Setup](docs/keycloak-setup.adoc)
