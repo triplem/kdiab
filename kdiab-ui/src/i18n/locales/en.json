@@ -309,6 +309,7 @@
     "icr": "ICR Segments",
     "isf": "ISF Segments",
     "targets": "BG Targets",
+    "sea": "Insulin-to-Meal Interval (SEA)",
     "noChanges": "No differences detected",
     "acceptSuccess": "Proposed profile accepted and is now active.",
     "acceptError": "Failed to accept the proposed profile.",
@@ -423,6 +424,8 @@
     "tooltipSeaTitle": "Insulin-to-Meal Interval (SEA)",
     "tooltipSea": "Spritz-Ess-Abstand: recommended wait time in minutes between injecting insulin and eating. Typically 0–30 min depending on glucose level and trend.",
     "addSeaSegment": "Add SEA Segment",
+    "seaSummary": "SEA: {{count}} segment",
+    "seaSummary_plural": "SEA: {{count}} segments",
     "timeZone": "Timezone",
     "timeZonePlaceholder": "IANA timezone (e.g. UTC, Europe/Berlin)",
     "zeroBasalWarning": "Warning: one or more basal segments have a rate of 0 U/h. This will stop basal insulin delivery for those hours — verify this is intentional."
