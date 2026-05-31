@@ -37,6 +37,17 @@ import { ProposedBadge } from './features/profiles/ProposedBadge'
 
 type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'analytics' | 'report' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors' | 'preferences'
 
+// Default OIDC client_id for the kdiab OIDC configuration (matches nginx proxy and Keycloak realm)
+const DEFAULT_OIDC_CLIENT_ID = 'kdiab-analyze-frontend'
+
+function buildKeycloakRegistrationUrl(): string | null {
+  const env = import.meta.env as Record<string, string>
+  const authority = (env['VITE_OIDC_AUTHORITY'] ?? '').replace(/\/$/, '')
+  if (!authority) return null
+  const clientId = env['VITE_OIDC_CLIENT_ID'] ?? DEFAULT_OIDC_CLIENT_ID
+  return `${authority}/protocol/openid-connect/registrations?client_id=${clientId}&response_type=code`
+}
+
 export default function App() {
   const auth = useAuth()
   const { t } = useTranslation()
@@ -244,11 +255,7 @@ export default function App() {
 
   if (!auth.isAuthenticated) {
     const oidcError = auth.error?.message ?? loginError
-    const keycloakBase = ((import.meta.env as Record<string, string>)['VITE_OIDC_AUTHORITY'] ?? '').replace(/\/$/, '')
-    const clientId = (import.meta.env as Record<string, string>)['VITE_OIDC_CLIENT_ID'] ?? 'kdiab-analyze-frontend'
-    const registrationUrl = keycloakBase
-      ? `${keycloakBase}/protocol/openid-connect/registrations?client_id=${clientId}&response_type=code`
-      : null
+    const registrationUrl = buildKeycloakRegistrationUrl()
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <h1>{t('app.title')}</h1>

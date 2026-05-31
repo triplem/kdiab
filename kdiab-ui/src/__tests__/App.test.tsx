@@ -195,6 +195,18 @@ function makeAuthState(overrides: Record<string, unknown> = {}) {
   }
 }
 
+function makeUnauthState(overrides: Record<string, unknown> = {}) {
+  return {
+    isLoading: false,
+    isAuthenticated: false,
+    user: undefined,
+    signinRedirect: vi.fn().mockResolvedValue(undefined),
+    signoutRedirect: vi.fn().mockResolvedValue(undefined),
+    error: undefined,
+    ...overrides,
+  }
+}
+
 function renderApp() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
@@ -865,14 +877,11 @@ describe('App — unauthenticated: Keycloak registration link', () => {
   test('register link is visible with correct href when VITE_OIDC_AUTHORITY is set', () => {
     vi.stubEnv('VITE_OIDC_AUTHORITY', 'http://localhost:8081/realms/kdiab')
     vi.stubEnv('VITE_OIDC_CLIENT_ID', 'kdiab-analyze-frontend')
-    mockedUseAuth.mockReturnValue({
-      ...makeAuthState({ isAuthenticated: false, user: undefined }),
-    } as ReturnType<typeof useAuth>)
+    mockedUseAuth.mockReturnValue(makeUnauthState() as ReturnType<typeof useAuth>)
 
     renderApp()
 
     const link = screen.getByTestId('register-link')
-    expect(link).toBeDefined()
     expect(link.getAttribute('href')).toBe(
       'http://localhost:8081/realms/kdiab/protocol/openid-connect/registrations?client_id=kdiab-analyze-frontend&response_type=code',
     )
@@ -881,9 +890,7 @@ describe('App — unauthenticated: Keycloak registration link', () => {
 
   test('register link is not rendered when VITE_OIDC_AUTHORITY is not set', () => {
     vi.stubEnv('VITE_OIDC_AUTHORITY', '')
-    mockedUseAuth.mockReturnValue({
-      ...makeAuthState({ isAuthenticated: false, user: undefined }),
-    } as ReturnType<typeof useAuth>)
+    mockedUseAuth.mockReturnValue(makeUnauthState() as ReturnType<typeof useAuth>)
 
     renderApp()
 
