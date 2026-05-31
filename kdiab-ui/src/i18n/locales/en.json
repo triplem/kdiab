@@ -18,6 +18,9 @@
     "page": "Page {{page}}",
     "actions": "Actions"
   },
+  "doctor": {
+    "selectPatientPrompt": "Please select a patient from the dropdown above to view their data."
+  },
   "app": {
     "title": "kdiab",
     "loading": "Loading authentication...",
