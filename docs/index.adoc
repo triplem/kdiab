@@ -46,13 +46,21 @@
 * link:testing/manual-test-plan.html[Manual Test Plan]
 * link:ai-development.html[AI Development Prompts]
 
+== Contributing
+
+Contributions are welcome. See the link:https://github.com/triplem/kdiab/blob/main/CONTRIBUTING.md[Contributing Guide] for the development workflow, branching strategy, and quality gate requirements.
+
+== License
+
+kdiab is released under the https://opensource.org/licenses/MIT[MIT License]. See link:https://github.com/triplem/kdiab/blob/main/LICENSE.md[LICENSE.md] for the full text.
+
 == Architecture Decision Records
 
 All ADRs (platform-wide and service-specific) are consolidated in the link:adr/index.html[ADR Index].
 
 === Platform ADRs
 
-link:adr/index.html#platform-adrs[All platform ADRs] (ADR-001 through ADR-015)
+link:adr/index.html#platform-adrs[All platform ADRs] (ADR-001 through ADR-019)
 
 === Service ADRs
 

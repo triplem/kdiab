@@ -107,3 +107,38 @@
 {"ts":"2026-05-26T07:12:31Z","agent":"PrReviewerAgent","action":"pr_review","pr":1062,"verdict":"REQUEST_CHANGES_FIXED","blockers":0,"majors":1,"minors":2}
 {"ts":"2026-05-26T07:12:31Z","agent":"PrReviewerAgent","action":"pr_review","pr":1064,"verdict":"REQUEST_CHANGES_FIXED","blockers":1,"majors":3,"minors":1}
 {"ts":"2026-05-26T07:21:12Z","agent":"ImplementEpicAgent","action":"epic_complete","epic":1038,"waves":1,"implemented":4,"failed":0,"skipped":0}
+{"ts":"2026-05-31T13:49:33Z","agent":"PrReviewerAgent","action":"pr_review","pr":1326,"verdict":"APPROVE","blockers":0,"majors":0,"minors":1}
+{"ts":"2026-05-31T13:49:33Z","agent":"PrReviewerAgent","action":"pr_review","pr":1323,"verdict":"APPROVE","blockers":0,"majors":0,"minors":1}
+{"ts":"2026-05-31T13:49:33Z","agent":"PrReviewerAgent","action":"pr_review","pr":1324,"verdict":"APPROVE","blockers":0,"majors":0,"minors":0}
+{"ts":"2026-05-31T13:49:33Z","agent":"PrReviewerAgent","action":"pr_review","pr":1325,"verdict":"APPROVE","blockers":0,"majors":0,"minors":0}
+{"ts":"2026-05-31T13:49:33Z","agent":"PrReviewerAgent","action":"pr_review","pr":1322,"verdict":"APPROVE","blockers":0,"majors":0,"minors":2}
+{"ts":"2026-05-31T14:02:35Z","agent":"PrReviewerAgent","action":"pr_review","pr":1322,"verdict":"APPROVE","blockers":0,"majors":0,"minors":0}
+{"ts":"2026-05-31T14:02:35Z","agent":"PrReviewerAgent","action":"pr_review","pr":1323,"verdict":"APPROVE","blockers":0,"majors":0,"minors":0}
+{"ts":"2026-05-31T14:02:35Z","agent":"PrReviewerAgent","action":"pr_review","pr":1324,"verdict":"APPROVE","blockers":0,"majors":0,"minors":0}
+{"ts":"2026-05-31T14:02:35Z","agent":"PrReviewerAgent","action":"pr_review","pr":1325,"verdict":"APPROVE","blockers":0,"majors":0,"minors":0}
+{"ts":"2026-05-31T14:02:35Z","agent":"PrReviewerAgent","action":"pr_review","pr":1326,"verdict":"APPROVE","blockers":0,"majors":0,"minors":0}
+{"ts":"2026-05-31T14:45:04Z","agent":"ImplementEpicAgent","action":"wave_start","epic":1337,"wave":1,"stories":[1339,1340]}
+{"ts":"2026-05-31T14:48:30Z","agent":"ImplementEpicAgent","action":"wave_complete","epic":1337,"wave":1,"completed":[1339,1340],"failed":[]}
+{"ts":"2026-05-31T14:48:30Z","agent":"ImplementEpicAgent","action":"epic_complete","epic":1337,"waves":1,"implemented":2,"failed":0,"skipped":1}
+{"ts":"2026-05-31T14:53:15Z","agent":"PrReviewerAgent","action":"pr_review","pr":1342,"verdict":"APPROVE","blockers":0,"majors":0,"minors":1}
+{"ts":"2026-05-31T14:53:15Z","agent":"PrReviewerAgent","action":"pr_review","pr":1341,"verdict":"APPROVE","blockers":0,"majors":1,"minors":2}
+{"ts":"2026-05-31T15:10:15Z","agent":"ImplementEpicAgent","action":"wave_start","epic":1328,"wave":1,"stories":[1329,1330,1331,1332,1333,1334,1335,1336]}
+{"ts":"2026-05-31T15:21:27Z","agent":"PrReviewerAgent","action":"pr_review","pr":1344,"verdict":"APPROVE","blockers":0,"majors":1,"minors":1}
+{"ts":"2026-05-31T15:21:27Z","agent":"PrReviewerAgent","action":"pr_review","pr":1345,"verdict":"APPROVE","blockers":0,"majors":0,"minors":0}
+{"ts":"2026-05-31T15:21:27Z","agent":"PrReviewerAgent","action":"pr_review","pr":1348,"verdict":"APPROVE","blockers":0,"majors":1,"minors":1}
+{"ts":"2026-05-31T15:21:27Z","agent":"PrReviewerAgent","action":"pr_review","pr":1347,"verdict":"APPROVE","blockers":0,"majors":1,"minors":1}
+{"ts":"2026-05-31T15:21:27Z","agent":"PrReviewerAgent","action":"pr_review","pr":1346,"verdict":"APPROVE","blockers":0,"majors":0,"minors":0}
+{"ts":"2026-05-31T15:21:27Z","agent":"PrReviewerAgent","action":"pr_review","pr":1350,"verdict":"APPROVE","blockers":0,"majors":1,"minors":1}
+{"ts":"2026-05-31T15:21:27Z","agent":"PrReviewerAgent","action":"pr_review","pr":1349,"verdict":"APPROVE","blockers":0,"majors":0,"minors":1}
+{"ts":"2026-05-31T15:25:44Z","agent":"PrReviewerAgent","action":"pr_review","pr":1351,"verdict":"REQUEST_CHANGES","blockers":4,"majors":2,"minors":2}
+{"ts":"2026-05-31T15:34:42Z","agent":"Claude","action":"pr_fix","pr":1351,"description":"Reset branch to main, applied clean 2-file story commit: i18n.changeLanguage on login, LanguageSwitcher persist, console.warn. Resolved all 4 blockers + 2 majors + 2 minors."}
+{"ts":"2026-05-31T15:34:42Z","agent":"Claude","action":"pr_fix","pr":1344,"description":"NIT: replaced React.FC<{size?:number}> with LucideIcon type in TreatmentList.tsx"}
+{"ts":"2026-05-31T15:34:42Z","agent":"Claude","action":"pr_fix","pr":1348,"description":"MINOR: added inline comments to WARNING_KEYS about first-match ordering; replaced JSDoc block with single-line comment"}
+{"ts":"2026-05-31T15:34:42Z","agent":"Claude","action":"pr_fix","pr":1347,"description":"MINOR: extracted carbsAt IIFE to two explicit variable assignments"}
+{"ts":"2026-05-31T15:34:42Z","agent":"Claude","action":"pr_fix","pr":1349,"description":"NIT: added comment about window.location.origin subpath limitation"}
+{"ts":"2026-05-31T15:34:42Z","agent":"Claude","action":"pr_fix","pr":1350,"description":"NIT: added comment clarifying renderTabContent guard is a defensive fallback"}
+{"ts":"2026-05-31T16:17:37Z","agent":"PrReviewerAgent","action":"pr_review","pr":1355,"verdict":"APPROVE","blockers":0,"majors":0,"minors":2,"nits":1}
+{"ts":"2026-05-31T16:17:37Z","agent":"PrReviewerAgent","action":"pr_review","pr":1354,"verdict":"REQUEST_CHANGES","blockers":0,"majors":1,"minors":2,"nits":1}
+{"ts":"2026-05-31T16:17:37Z","agent":"PrReviewerAgent","action":"pr_review","pr":1353,"verdict":"APPROVE","blockers":0,"majors":0,"minors":0,"nits":0}
+{"ts":"2026-05-31T18:38:37Z","agent":"Claude","action":"fix","pr":1355,"detail":"fixed shell injection: SERVICE env var, GITHUB_REF builtin"}
+{"ts":"2026-05-31T18:38:37Z","agent":"Claude","action":"fix","pr":1354,"detail":"X-Internal-Token guard, pin curlimages/curl:8.12.1, scheduler failure logging, remove ExpireResponse docstring, 3 new auth tests"}

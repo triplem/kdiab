@@ -1,4 +1,4 @@
-= ADR-002: Feature-Flagged Self-Registration with Optional Approval
+= ADR-USR-002: Feature-Flagged Self-Registration with Optional Approval
 :author: kdiab team
 :date: 2026-05-15
 :status: Superseded by ADR-003

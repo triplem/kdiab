@@ -85,12 +85,30 @@ Minimum required docs per epic:
 
 | Type | When required | Output path |
 |---|---|---|
-| **ADR** | Any non-obvious architectural decision (data split, external API adoption, workflow design) | `<service>/docs/adr/ADR-NNN-<slug>.adoc` |
+| **ADR** | Any non-obvious architectural decision (data split, external API adoption, workflow design) | Platform: `docs/adr/ADR-NNN-<slug>.adoc`; Service: `<service>/docs/adr/ADR-{SVC}-NNN-<slug>.adoc` |
 | **Developer reference** | Any translation layer, mapping table, or non-trivial formula | `<service>/docs/<feature>-reference.adoc` |
 | **Operations guide** | Any new service or significant new infrastructure dependency | `<service>/docs/operations-guide.adoc` |
 | **User/admin guide** | Any feature visible to end users or operators | `<service>/docs/user-guide.adoc` |
 
 An epic that introduces a new service typically needs all four. An epic that adds endpoints to an existing service typically needs an ADR and a developer reference at minimum.
+
+### ADR naming convention
+
+- **Platform ADRs** (`docs/adr/`): `ADR-NNN-<slug>.adoc` (range 001–099).
+- **Service ADRs**: `ADR-{SVC}-NNN-<slug>.adoc` where `{SVC}` is the service abbreviation:
+
+| Service | Prefix |
+|---|---|
+| kdiab-measures | `MEAS` |
+| kdiab-profiles | `PROF` |
+| kdiab-treatments | `TREAT` |
+| kdiab-analyze | `ANA` |
+| kdiab-carbs | `CARBS` |
+| kdiab-calc | `CALC` |
+| kdiab-nightscout | `NS` |
+| kdiab-users | `USERS` |
+
+Service ADRs live either in `docs/adr/<service>/` (subdirs of platform ADR dir) or directly in `<service>/docs/adr/`. Never use a bare number alone — always include the prefix so no two ADRs in the whole monorepo share the same effective ID.
 
 ### What belongs in an ADR
 

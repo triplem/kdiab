@@ -3,8 +3,9 @@
 :icons: font
 
 All ADRs for the kdiab platform are consolidated here.
-Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
-(1xx = tooling, 2xx = domain, 3xx = infrastructure) scoped to their service.
+Platform-wide ADRs are numbered ADR-001–ADR-099.
+Service ADRs use a `ADR-{SVC}-NNN` prefix (e.g. `ADR-MEA-`, `ADR-PRO-`, `ADR-TRE-`, `ADR-ANA-`, `ADR-NSC-`, `ADR-USR-`).
+Within each service the three-digit number groups by concern: 1xx = tooling, 2xx = domain, 3xx = infrastructure.
 
 [#platform-adrs]
 == Platform ADRs
@@ -32,69 +33,76 @@ Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
 [#kdiab-measures-adrs]
 == kdiab-measures ADRs
 
-* link:measures/101-development-tooling.html[101 Development Tooling]
-* link:measures/102-code-quality-standards.html[102 Code Quality Standards]
-* link:measures/106-global-exception-handling.html[106 Global Exception Handling]
-* link:measures/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
-* link:measures/108-main-ktor-server.html[108 Main Ktor Server]
-* link:measures/110-correlation-id-logging.html[110 Correlation ID Logging]
-* link:measures/111-semantic-release-conventional-commits.html[111 Semantic Release / Conventional Commits]
-* link:measures/201-flexible-measures-model.html[201 Flexible Measures Model]
-* link:measures/301-postgresql.html[301 PostgreSQL]
-* link:measures/302-implicit-user-management.html[302 Implicit User Management]
-* link:measures/303-jwt-authentication.html[303 JWT Authentication]
-* link:measures/305-liquibase-init-container.html[305 Liquibase Init Container]
+* link:measures/ADR-MEA-101-development-tooling.html[ADR-MEA-101 Development Tooling]
+* link:measures/ADR-MEA-102-code-quality-standards.html[ADR-MEA-102 Code Quality Standards]
+* link:measures/ADR-MEA-106-global-exception-handling.html[ADR-MEA-106 Global Exception Handling]
+* link:measures/ADR-MEA-107-bdd-testing-with-kotest.html[ADR-MEA-107 BDD Testing with Kotest]
+* link:measures/ADR-MEA-108-main-ktor-server.html[ADR-MEA-108 Main Ktor Server]
+* link:measures/ADR-MEA-110-correlation-id-logging.html[ADR-MEA-110 Correlation ID Logging]
+* link:measures/ADR-MEA-111-semantic-release-conventional-commits.html[ADR-MEA-111 Semantic Release / Conventional Commits]
+* link:measures/ADR-MEA-201-flexible-measures-model.html[ADR-MEA-201 Flexible Measures Model]
+* link:measures/ADR-MEA-301-postgresql.html[ADR-MEA-301 PostgreSQL]
+* link:measures/ADR-MEA-302-implicit-user-management.html[ADR-MEA-302 Implicit User Management]
+* link:measures/ADR-MEA-303-jwt-authentication.html[ADR-MEA-303 JWT Authentication]
+* link:measures/ADR-MEA-305-liquibase-init-container.html[ADR-MEA-305 Liquibase Init Container]
 
 [#kdiab-profiles-adrs]
 == kdiab-profiles ADRs
 
-* link:profiles/015-profile-history-and-archiving.html[015 Profile History and Archiving]
-* link:profiles/016-doctor-patient-collaboration.html[016 Doctor-Patient Collaboration]
-* link:profiles/101-development-tooling.html[101 Development Tooling]
-* link:profiles/102-code-quality-standards.html[102 Code Quality Standards]
-* link:profiles/103-package-structure.html[103 Package Structure]
-* link:profiles/104-kotlinx-serialization.html[104 Kotlinx Serialization]
-* link:profiles/105-kotlin-native-types.html[105 Kotlin-Native Types in Domain Layer]
-* link:profiles/106-global-exception-handling.html[106 Global Exception Handling]
-* link:profiles/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
-* link:profiles/108-main-ktor-server.html[108 Main Ktor Server]
-* link:profiles/109-strict-24h-time-format.html[109 Strict 24h Time Format]
-* link:profiles/110-correlation-id-logging.html[110 Correlation ID Logging]
-* link:profiles/111-semantic-release-conventional-commits.html[111 Semantic Release / Conventional Commits]
-* link:profiles/112-ci-cd-performance-optimizations.html[112 CI/CD Performance Optimizations]
-* link:profiles/113-liquibase-single-schema-authority.html[113 Liquibase Single Schema Authority]
-* link:profiles/201-independent-schedules.html[201 Independent Schedules]
-* link:profiles/202-jsonb-storage.html[202 JSONB Storage]
-* link:profiles/203-profile-status-separation.html[203 Profile Status Separation]
-* link:profiles/301-postgresql.html[301 PostgreSQL]
-* link:profiles/302-implicit-user-management.html[302 Implicit User Management]
-* link:profiles/303-jwt-authentication.html[303 JWT Authentication]
-* link:profiles/304-data-retention.html[304 Data Retention]
-* link:profiles/305-liquibase-init-container.html[305 Liquibase Init Container]
-* link:profiles/306-content-security-policy.html[306 Content Security Policy]
-* link:profiles/017-insulin-to-meal-interval.html[017 Insulin-to-Meal Interval (Spritz-Ess-Abstand)]
+* link:profiles/ADR-PRO-015-profile-history-and-archiving.html[ADR-PRO-015 Profile History and Archiving]
+* link:profiles/ADR-PRO-016-doctor-patient-collaboration.html[ADR-PRO-016 Doctor-Patient Collaboration]
+* link:profiles/ADR-PRO-017-insulin-to-meal-interval.html[ADR-PRO-017 Insulin-to-Meal Interval (Spritz-Ess-Abstand)]
+* link:profiles/ADR-PRO-101-development-tooling.html[ADR-PRO-101 Development Tooling]
+* link:profiles/ADR-PRO-102-code-quality-standards.html[ADR-PRO-102 Code Quality Standards]
+* link:profiles/ADR-PRO-103-package-structure.html[ADR-PRO-103 Package Structure]
+* link:profiles/ADR-PRO-104-kotlinx-serialization.html[ADR-PRO-104 Kotlinx Serialization]
+* link:profiles/ADR-PRO-105-kotlin-native-types.html[ADR-PRO-105 Kotlin-Native Types in Domain Layer]
+* link:profiles/ADR-PRO-106-global-exception-handling.html[ADR-PRO-106 Global Exception Handling]
+* link:profiles/ADR-PRO-107-bdd-testing-with-kotest.html[ADR-PRO-107 BDD Testing with Kotest]
+* link:profiles/ADR-PRO-108-main-ktor-server.html[ADR-PRO-108 Main Ktor Server]
+* link:profiles/ADR-PRO-109-strict-24h-time-format.html[ADR-PRO-109 Strict 24h Time Format]
+* link:profiles/ADR-PRO-110-correlation-id-logging.html[ADR-PRO-110 Correlation ID Logging]
+* link:profiles/ADR-PRO-111-semantic-release-conventional-commits.html[ADR-PRO-111 Semantic Release / Conventional Commits]
+* link:profiles/ADR-PRO-112-ci-cd-performance-optimizations.html[ADR-PRO-112 CI/CD Performance Optimizations]
+* link:profiles/ADR-PRO-113-liquibase-single-schema-authority.html[ADR-PRO-113 Liquibase Single Schema Authority]
+* link:profiles/ADR-PRO-201-independent-schedules.html[ADR-PRO-201 Independent Schedules]
+* link:profiles/ADR-PRO-202-jsonb-storage.html[ADR-PRO-202 JSONB Storage]
+* link:profiles/ADR-PRO-203-profile-status-separation.html[ADR-PRO-203 Profile Status Separation]
+* link:profiles/ADR-PRO-301-postgresql.html[ADR-PRO-301 PostgreSQL]
+* link:profiles/ADR-PRO-302-implicit-user-management.html[ADR-PRO-302 Implicit User Management]
+* link:profiles/ADR-PRO-303-jwt-authentication.html[ADR-PRO-303 JWT Authentication]
+* link:profiles/ADR-PRO-304-data-retention.html[ADR-PRO-304 Data Retention]
+* link:profiles/ADR-PRO-305-liquibase-init-container.html[ADR-PRO-305 Liquibase Init Container]
+* link:profiles/ADR-PRO-306-content-security-policy.html[ADR-PRO-306 Content Security Policy]
 
 [#kdiab-treatments-adrs]
 == kdiab-treatments ADRs
 
-* link:treatments/101-development-tooling.html[101 Development Tooling]
-* link:treatments/102-code-quality-standards.html[102 Code Quality Standards]
-* link:treatments/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
-* link:treatments/108-main-ktor-server.html[108 Main Ktor Server]
-* link:treatments/201-flexible-treatments-model.html[201 Flexible Treatments Model]
-* link:treatments/202-nightscout-treatment-types.html[202 Nightscout Treatment Types]
-* link:treatments/301-postgresql.html[301 PostgreSQL]
-* link:treatments/302-implicit-user-management.html[302 Implicit User Management]
-* link:treatments/303-jwt-authentication.html[303 JWT Authentication]
-* link:treatments/305-liquibase-init-container.html[305 Liquibase Init Container]
+* link:treatments/ADR-TRE-101-development-tooling.html[ADR-TRE-101 Development Tooling]
+* link:treatments/ADR-TRE-102-code-quality-standards.html[ADR-TRE-102 Code Quality Standards]
+* link:treatments/ADR-TRE-107-bdd-testing-with-kotest.html[ADR-TRE-107 BDD Testing with Kotest]
+* link:treatments/ADR-TRE-108-main-ktor-server.html[ADR-TRE-108 Main Ktor Server]
+* link:treatments/ADR-TRE-201-flexible-treatments-model.html[ADR-TRE-201 Flexible Treatments Model]
+* link:treatments/ADR-TRE-202-nightscout-treatment-types.html[ADR-TRE-202 Nightscout Treatment Types]
+* link:treatments/ADR-TRE-301-postgresql.html[ADR-TRE-301 PostgreSQL]
+* link:treatments/ADR-TRE-302-implicit-user-management.html[ADR-TRE-302 Implicit User Management]
+* link:treatments/ADR-TRE-303-jwt-authentication.html[ADR-TRE-303 JWT Authentication]
+* link:treatments/ADR-TRE-305-liquibase-init-container.html[ADR-TRE-305 Liquibase Init Container]
+
+[#kdiab-analyze-adrs]
+== kdiab-analyze ADRs
+
+* link:../../analyze/adr/ADR-ANA-019-report-computation-architecture.html[ADR-ANA-019 Report Computation Architecture — Server-Side Statistics and Browser-Based PDF]
 
 [#kdiab-users-adrs]
 == kdiab-users ADRs
 
-* link:../../users/adr/ADR-001-user-settings-split.html[ADR-001 User Settings Split — Keycloak vs Database]
-* link:../../users/adr/ADR-002-self-registration-workflow.html[ADR-002 Feature-Flagged Self-Registration Workflow]
+* link:../../users/adr/ADR-USR-001-user-settings-split.html[ADR-USR-001 User Settings Split — Keycloak vs Database]
+* link:../../users/adr/ADR-USR-002-self-registration-workflow.html[ADR-USR-002 Feature-Flagged Self-Registration Workflow]
+* link:../../users/adr/ADR-USR-003-registration-keycloak.html[ADR-USR-003 Registration via Keycloak Admin API]
+* link:../../users/adr/ADR-USR-016-invitation-state-machine.html[ADR-USR-016 Invitation State Machine]
 
 [#kdiab-nightscout-adrs]
 == kdiab-nightscout ADRs
 
-* link:../../nightscout/adr/ADR-001-nightscout-v3-api-adoption.html[ADR-001 Adopt Nightscout API v3 as the Primary External Interface]
+* link:../../nightscout/adr/ADR-NSC-001-nightscout-v3-api-adoption.html[ADR-NSC-001 Adopt Nightscout API v3 as the Primary External Interface]

@@ -308,6 +308,7 @@ tasks.asciidoctor {
             "toc" to "left",
             "icons" to "font",
             "source-highlighter" to "rouge",
+            "docinfo" to "shared-footer",
             "revnumber" to project.version.toString(),
             "revdate" to LocalDate.now().toString()
         )

@@ -1,8 +1,8 @@
-= How to Run the KDiab Profiles Application
+= How to Run kdiab profiles
 :toc: left
 :icons: font
 
-This guide provide instructions on how to set up and run the KDiab Profiles application locally for development or testing.
+This guide provide instructions on how to set up and run kdiab profiles locally for development or testing.
 
 == Prerequisites
 

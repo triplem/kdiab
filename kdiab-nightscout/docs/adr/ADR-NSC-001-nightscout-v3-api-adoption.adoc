@@ -1,4 +1,4 @@
-= ADR-001: Adopt Nightscout API v3 as the Primary External Interface
+= ADR-NSC-001: Adopt Nightscout API v3 as the Primary External Interface
 
 Status: Accepted
 Decision date: 2026-05-24

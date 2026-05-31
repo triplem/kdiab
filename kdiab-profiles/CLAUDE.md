@@ -40,10 +40,10 @@ The `IDX_PROFILES_USER_ACTIVE` partial index (`WHERE status = 'ACTIVE'`) enforci
 
 ## Key ADRs
 
-- ADR-015 — Copy-on-Write profiles
-- ADR-016 — Doctor-Patient collaboration via PROPOSED status
-- ADR-302 — No Users table (userId from JWT `sub`)
-- ADR-303 — JWT/RBAC via Keycloak `realm_access.roles`
+- ADR-PRO-015 — Copy-on-Write profiles
+- ADR-PRO-016 — Doctor-Patient collaboration via PROPOSED status
+- ADR-PRO-302 — No Users table (userId from JWT `sub`)
+- ADR-PRO-303 — JWT/RBAC via Keycloak `realm_access.roles`
 
 ## Environment Variables
 

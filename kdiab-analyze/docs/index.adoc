@@ -24,4 +24,4 @@ Platform ADRs relevant to kdiab-analyze:
 
 Service-specific ADRs:
 
-* link:adr/ADR-019-report-computation-architecture.html[ADR-019 Report Computation Architecture — Server-Side Statistics and Browser-Based PDF]
+* link:adr/ADR-ANA-019-report-computation-architecture.html[ADR-ANA-019 Report Computation Architecture — Server-Side Statistics and Browser-Based PDF]
