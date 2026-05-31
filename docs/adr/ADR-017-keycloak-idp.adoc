@@ -1,0 +1,106 @@
+= ADR-017: Keycloak as Identity Provider
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-05-31
+* *Deciders*: triplem
+
+== Context
+
+The kdiab platform needs an identity and access-management (IAM) solution to handle:
+
+* User registration and credential management
+* JWT issuance and JWKS-based verification across all nine backend services
+* Role assignment (PATIENT, DOCTOR, ADMIN)
+* Doctor-patient relationship expressed as a JWT claim (`allowed_patients`)
+* OIDC integration for the `kdiab-ui` React SPA
+
+Options considered: self-built auth, Keycloak, Auth0/Okta (SaaS), Zitadel.
+
+== Decision
+
+Keycloak is deployed as a self-hosted identity provider inside the kdiab Docker Compose stack.
+
+Key configuration decisions:
+
+* A single `kdiab` realm hosts all users, clients, and roles.
+* Each backend service is a Keycloak *resource server* with its own `aud` audience
+  (e.g. `measure`, `profile`, `users`, `nightscout`).
+* `kdiab-analyze-frontend` is the SPA's OIDC client; its access token carries audience mappers
+  for all eight backend audiences so one token is accepted everywhere without token exchange.
+* Custom user attributes (`glucose_unit`, `allowed_patients`) are mapped to JWT claims by
+  Keycloak protocol mappers. This eliminates a per-request database lookup for frequently
+  read settings.
+* Self-registration is Keycloak-native — no service-side registration endpoint exists.
+  A custom Keycloak login theme (`config/keycloak-theme/`) provides the kdiab look and feel.
+* Machine-to-machine (M2M) admin operations (e.g., setting `allowed_patients` when a
+  doctor-patient relationship is created) use a dedicated `kdiab-users-service` confidential
+  client with the Keycloak Admin API.
+
+JWT verification in each backend uses `com.auth0:java-jwt` with Keycloak's JWKS endpoint
+(`/protocol/openid-connect/certs`). JWK keys are cached in-process for 24 hours with a
+rate-limited fetch to prevent hammering Keycloak during a service restart storm.
+
+== Consequences
+
+=== Positive
+
+* *No custom credential store*: passwords, MFA, password reset flows, and brute-force
+  protection are Keycloak's responsibility. kdiab services never touch raw credentials.
+* *Standard OIDC*: `kdiab-ui` uses `react-oidc-context` with standard OIDC flows; no
+  custom auth protocol to maintain.
+* *Role and relationship in the token*: `roles` and `allowed_patients` travel in every JWT,
+  so authorization decisions are local to each service — no synchronous lookup to a
+  central user service on every request.
+* *Self-hosted*: patient health data never leaves the operator's infrastructure.
+  No vendor dependency on a SaaS auth provider.
+
+=== Negative
+
+* *Single point of failure*: if Keycloak is unavailable, no new tokens can be issued and
+  services that have not yet cached the JWKS keys cannot verify tokens. Mitigation: the
+  24-hour JWK cache allows services to continue verifying tokens during short Keycloak
+  outages.
+* *Admin API coupling*: `kdiab-users` makes synchronous Keycloak Admin API calls when
+  doctor-patient relationships change. A circuit breaker (`CircuitBreaker` in kdiab-common)
+  protects against cascading failure when Keycloak Admin is slow.
+* *JWT claim staleness*: changes to `allowed_patients` or `glucose_unit` take effect only
+  after the user's next login (new token). The UI displays a "takes effect on next login"
+  notice after these settings are saved.
+* *Realm import complexity*: the full Keycloak realm is a single `keycloak-realm.json` file
+  (partial imports are not supported by `--import-realm`). Structural changes require
+  exporting a new full realm snapshot.
+
+=== Neutral
+
+* Keycloak Admin credentials are separate from application user credentials.
+  The `KEYCLOAK_ADMIN_CLIENT_SECRET` env var must be rotated post-deploy.
+* Test environments use the same Keycloak instance with pre-seeded test accounts
+  (`sarah`, `mike`, `dr_house`, `dr_cameron`, `admin`) — no separate mock IdP is needed.
+
+== Alternatives Considered
+
+=== Auth0 / Okta (SaaS)
+
+Managed identity provider with a generous free tier. *Rejected*:
+
+* Patient health data (user identifiers, doctor-patient relationships) would reside on a
+  third-party SaaS platform, raising GDPR and data sovereignty concerns.
+* Custom JWT claims (`allowed_patients`) require Pro/Enterprise tier features.
+* Vendor lock-in for a core infrastructure component.
+
+=== Zitadel
+
+Modern, Kubernetes-native identity server. *Rejected* at the time of adoption because:
+
+* Less mature than Keycloak (smaller community, fewer production case studies for healthcare).
+* Less documentation and fewer examples for the Kotlin/Ktor stack.
+* Zitadel remains a valid future migration target if Keycloak operational complexity grows.
+
+=== Self-built Auth Service
+
+Implement JWT issuance, JWKS, user management, and OIDC in a custom service. *Rejected*:
+implementing secure credential storage, password reset, MFA, and OIDC flows correctly is a
+multi-month engineering effort with high ongoing security maintenance burden.
+Off-the-shelf IdPs exist precisely to eliminate this work.

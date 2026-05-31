@@ -1,0 +1,306 @@
+= AI-Assisted Development Workflow
+:toc: left
+:icons: font
+:toclevels: 3
+
+This document describes the AI-assisted development process used in the kdiab project.
+All SDLC stages — from requirements through implementation to review and release — are
+driven by Claude Code slash commands backed by skill files in `.claude/skills/`.
+
+Automated rules in `.claude/rules/` are applied to every session without requiring an
+explicit invocation.
+
+== Overview
+
+Claude Code is configured in this repository via `CLAUDE.md` (shared project instructions)
+and per-service `CLAUDE.md` files (service-specific context). The `.claude/` directory
+contains:
+
+* `rules/` — auto-applied guidelines (style, security, architecture, testing, API design)
+* `skills/` — skill files backing each slash command
+* `scripts/` — helper scripts (branch creation, etc.)
+
+Audit entries for every significant agent action are appended to `audit/agent-log.jsonl`.
+
+== SDLC Stages and Slash Commands
+
+=== Requirements
+
+`/gather-requirements`::
+  Elicits, challenges, and documents requirements for a new feature or epic.
+  The agent asks clarifying questions, validates completeness against NFRs, and
+  produces a structured requirements document in `docs/requirements/`.
++
+*Example*:
++
+----
+/gather-requirements "add insulin-to-meal interval to basal profiles"
+----
+
+=== Epics
+
+`/write-epics`::
+  Decomposes a requirements document into epics (GitHub issues labelled `epic`).
+  Each epic covers one major feature area and links to its requirements document.
++
+*Example*:
++
+----
+/write-epics docs/requirements/sea-intervals.md
+----
+
+=== User Stories
+
+`/write-stories <epic-number>`::
+  Decomposes an epic into user stories. Each story becomes a GitHub issue labelled `story`
+  with a size estimate (S/M/L), acceptance criteria, and technical notes.
+  Stories are linked to the epic via GitHub's native sub-issue API.
++
+*Example*:
++
+----
+/write-stories 1214
+----
+
+=== Implementation
+
+`/implement <story-number>`::
+  Implements a single story on a feature branch. The agent:
++
+. Creates a branch (`feature/<number>-<slug>`) from `main`
+. Writes code, tests, and OpenAPI spec changes
+. Runs quality gates (`./gradlew check` or `npm run build && npm run test`)
+. Opens a PR with `Closes #<number>` in the body
++
+*Example*:
++
+----
+/implement 1307
+----
+
+`/implement-epic <epic-number>`::
+  Implements **all open stories** under an epic in dependency order.
+  The agent:
++
+. Scans sub-issues and filters to the implementable set (open, labelled `story`, not blocked)
+. Detects dependencies and builds execution waves (Kahn's algorithm)
+. Runs stories within each wave **in parallel** using separate git worktrees
+. Waits for all stories in a wave to complete before starting the next wave
++
+Worktrees are created at `../.claude/worktrees/epic-<N>-story-<M>` and cleaned up after each story.
++
+*Example*:
++
+----
+/implement-epic 1214
+----
++
+If the epic has no open `story`-labelled sub-issues (only `documentation`, `adr`, or
+already-closed stories), the command exits with a summary and does nothing.
+
+=== Documentation and ADRs
+
+`/create-adr <issue-numbers>`::
+  Researches the codebase, reads existing ADRs for consistency, and writes new Architecture
+  Decision Records. Each ADR follows the Context / Decision / Consequences / Alternatives
+  structure (AsciiDoc format, matching existing ADRs in `docs/adr/`).
++
+*Example*:
++
+----
+/create-adr 1182 1308
+----
+
+=== Code Review
+
+`/pr-reviewer [<pr-number> | all]`::
+  Conducts a pre-merge code review against all project rules. The agent reads the diff,
+  classifies findings by severity (BLOCKER / MAJOR / MINOR / NIT), and formats a review
+  report. With confirmation, it posts the review as a GitHub PR comment.
++
+*Example*:
++
+----
+/pr-reviewer 1310
+/pr-reviewer all
+----
+
+`/challenge-all <target>`::
+  Runs all 11 specialist review perspectives (T1D doctor, T1D patient, security, QA,
+  architect, DevOps, UX, requirements, performance, operations, technical writer) against
+  a story or epic. Returns a consolidated ACCEPT/REVISE/REJECT verdict.
++
+*Example*:
++
+----
+/challenge-all "epic #1214 insulin-to-meal interval"
+----
+
+=== Release
+
+`/create-pr`::
+  Opens a guided pull request with a structured description (summary, test plan, linked issues).
+
+`/release`::
+  Tags a release on `main`, generates a changelog from conventional commits, and publishes
+  Docker images via `docker-publish.yml`.
+
+=== Specialist Reviews (on-demand)
+
+The following skills provide focused specialist perspectives and can be invoked individually:
+
+[cols="1,2"]
+|===
+| Skill | Focus
+
+| `/doctor-t1d-review`
+| Clinical correctness, safety, medical workflow
+
+| `/patient-t1d-review`
+| Usability, real-world fit, trust
+
+| `/security-review`
+| OWASP Top 10, auth, secrets, injection
+
+| `/qa-review`
+| Test coverage, acceptance criteria, edge cases, regression risk
+
+| `/architect-review`
+| Hexagonal layers, SOLID, coupling, API design
+
+| `/devops-review`
+| Container hygiene, env config, CI/CD, supply chain
+
+| `/ux-review`
+| WCAG AA, ease of use, interaction design
+
+| `/requirements-review`
+| Completeness, testability, consistency, NFRs
+
+| `/performance-review`
+| Query efficiency, bundle size, response times
+
+| `/operations-review`
+| Observability, graceful degradation, runbooks
+
+| `/technical-writer-review`
+| Documentation clarity, in-app help text, audience fit
+|===
+
+=== Utility Skills
+
+[cols="1,2"]
+|===
+| Skill | Purpose
+
+| `/write-tests <story>`
+| Write tests for an existing implementation
+
+| `/learn`
+| Extract a reusable rule from a completed story and save it to `.claude/rules/`
+
+| `/audit`
+| Review and summarise the audit log (`audit/agent-log.jsonl`)
+
+| `/domain-model`
+| Build or update the project domain model document
+
+| `/kotlin-patterns`
+| Apply Kotlin idioms: coroutines, data classes, sealed types
+
+| `/typescript-patterns`
+| Apply TypeScript strict patterns, generics, utility types
+
+| `/react-patterns`
+| Apply React hooks, context, and component design patterns
+
+| `/openapi-patterns`
+| Apply spec-first API design patterns
+|===
+
+== Rules and Configuration
+
+Rules in `.claude/rules/` are loaded automatically at the start of every Claude Code session.
+They cover:
+
+* `commit-conventions.md` — Conventional Commits format
+* `branching-strategy.md` — branch naming, merge policy (merge commits, never squash)
+* `quality-gates.md` — mandatory checks before any PR
+* `test-pyramid.md` — unit / integration / E2E ratios
+* `solid-principles.md` — SOLID + Clean Code
+* `api-design.md` — OpenAPI / REST best practices
+* `security.md` — OWASP Top 10, secret hygiene
+* `kotlin-style.md` — Kotlin idioms, Detekt, Gradle DSL
+* `typescript-style.md` — TypeScript strict mode, ESLint
+* `react.md` — React patterns and hooks discipline
+* `logging.md` — structured logging across all stacks
+* `openapi.md` — OpenAPI spec discipline
+* `github-issue-management.md` — native sub-issues, issue assignment, epic body structure
+
+== Parallel Execution in `/implement-epic`
+
+`/implement-epic` uses `git worktree` to run stories concurrently without interfering:
+
+[source,bash]
+----
+# Wave 1: two independent stories run in separate worktrees simultaneously
+git worktree add ../.claude/worktrees/epic-1214-story-1307 feature/1307-sea-ui
+git worktree add ../.claude/worktrees/epic-1214-story-1308 feature/1308-sea-adr
+
+# Each worktree runs /implement <N> and creates its own PR
+# After both complete, worktrees are removed:
+git worktree remove -f -f ../.claude/worktrees/epic-1214-story-1307
+git worktree remove -f -f ../.claude/worktrees/epic-1214-story-1308
+----
+
+Stories with declared dependencies (`Depends on #NNN` in the body) are placed in later
+waves and only start after their blockers' PRs are merged.
+
+== Quality Gates
+
+All quality gates are mandatory before any PR can be opened. Agents enforce them automatically.
+
+For Kotlin/Ktor backends:
+----
+./gradlew check    # unit tests + integration tests + Detekt + Kover coverage (≥ 80%)
+----
+
+For the React frontend (`kdiab-ui`):
+----
+npm run build      # TypeScript compile + Vite build
+npm run lint       # ESLint
+npm run test       # Vitest unit tests
+----
+
+No gate may be skipped or bypassed with `--no-verify` without explicit human approval.
+
+== Tips and Troubleshooting
+
+Re-run a failed story::
+  If `/implement-epic` reports a story as failed, re-run it individually:
+  `/implement <story-number>`
+
+Add a new project rule::
+  After completing a story that revealed a non-obvious pattern, run `/learn` to extract
+  a reusable rule and save it to `.claude/rules/`.
+
+Peer-review agent output::
+  Use `/challenge "description of agent output"` to get a critical second opinion before
+  merging.
+
+Merge conflicts on worktrees::
+  Agent worktrees are locked. Remove them with double-force:
+  `git worktree remove -f -f /path/to/worktree`
+  Then delete the local branch:
+  `git branch -D feature/<slug>`
+
+Branch already exists::
+  If a previous agent run left a branch, check out the existing branch and continue from
+  there, or delete it and let `/implement` recreate it.
+
+== Further Reading
+
+* `.claude/rules/` — all auto-applied rules (full text)
+* `.claude/skills/` — all skill definitions (implementation details)
+* `CLAUDE.md` — root project instructions (commands, architecture, conventions)
+* `audit/agent-log.jsonl` — audit trail of all agent actions this session

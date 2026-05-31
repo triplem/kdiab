@@ -1,0 +1,83 @@
+= 17. Insulin-to-Meal Interval (Spritz-Ess-Abstand) as a Time-Segmented Profile Field
+
+Date: 2026-05-31
+
+== Status
+
+Accepted
+
+== Context
+
+The *Insulin-to-Meal Interval* (German: *Spritz-Ess-Abstand*, SEA) is the time in minutes a
+patient should wait between injecting a pre-bolus and eating. It varies by time of day and
+current glucose level: in the morning, when insulin sensitivity is typically lower, a longer
+SEA is common. Patients with pumps and CGMs actively adjust this interval to reach their
+glucose target at meal start.
+
+This value is clinically significant for bolus therapy management. It does not adjust the
+bolus dose itself — it is guidance for *when to eat* after injecting, complementing the
+dose recommendation.
+
+Two design questions arose:
+
+1. **Where does the SEA live?** — as a flat user setting, or as a time-segmented profile field?
+2. **How does it interact with the dose calculator?** — as a dose modifier, or as informational guidance only?
+
+== Decision
+
+=== Storage: time-segmented profile field
+
+`InsulinToMealInterval` is added to the `Profile` domain model in `kdiab-profiles` as a
+list of segments parallel to ISF, ICR, and glucose targets:
+
+[source,kotlin]
+----
+data class InsulinToMealInterval(
+    val startTime: String,   // HH:mm, 24-hour
+    val minutes: Int,        // range [0, 120]
+)
+----
+
+The segment list is stored in a dedicated `profile_insulin_interval` table with a
+`profile_id` FK and `ON DELETE CASCADE`. The constraint `CHECK (minutes >= 0 AND minutes <= 120)`
+is enforced at the database level.
+
+An empty segment list is the default and means the patient does not use a fixed pre-bolus wait.
+The field is optional in the API request and response.
+
+=== Dose calculator integration: informational only
+
+`kdiab-calc`'s `DoseCalculationService` uses the existing `lookupSegment<T>()` helper to
+find the SEA for the current time of day and exposes it as `DoseResult.recommendedWaitMinutes: Int?`.
+
+The SEA does **not** modify the calculated bolus dose. It is displayed to the patient as
+guidance ("Wait *N* min before eating") alongside the dose recommendation. If no SEA
+segments are configured, `recommendedWaitMinutes` is `null` and the UI omits the line.
+
+== Consequences
+
+* The profile API (`/api/profiles/v1`) and the calculator API (`/api/calc/v1`) are both
+  extended — openapi.yaml updated in both services and clients regenerated.
+* `kdiab-ui` profile editor gains a "SEA" tab with segment rows (startTime + minutes inputs)
+  using the same UX pattern as ISF and ICR tabs. Profile diff view and profile list cards
+  also display SEA segment counts.
+* Re-login is not required — SEA is stored in the database, not the JWT.
+* A Liquibase migration adds the `profile_insulin_interval` table.
+* Seed data includes at least one SEA segment for the `sarah` and `mike` test profiles.
+
+== Alternatives Considered
+
+=== Flat user setting (single SEA value)
+
+Store a single SEA value in `UserSettings` rather than a time-segmented profile field.
+*Rejected*: clinical evidence shows that morning/evening SEA variance is significant for
+many patients. A single value cannot express the time-of-day dependency that practitioners
+rely on.
+
+=== Dose modifier (SEA adjusts bolus dose)
+
+Use the SEA to modify the bolus timing by adjusting insulin onset parameters in the
+calculation. *Rejected*: the SEA is patient guidance, not a pharmacokinetic parameter.
+Incorporating it into the dose formula would require clinical validation beyond the scope
+of this project. It is safer and clearer to surface it as a display-only recommendation
+that the patient uses at their own judgment.

@@ -24,6 +24,10 @@ Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
 * link:ADR-013-cio-engine.html[ADR-013 Ktor CIO Engine]
 * link:ADR-014-otel-grpc-exporter-dual-stack.html[ADR-014 OTEL gRPC Exporter Dual-Stack Configuration]
 * link:ADR-015-coverage-exclusions.html[ADR-015 Coverage Exclusions]
+* link:ADR-016-exposed-orm.html[ADR-016 JetBrains Exposed ORM over JPA/Hibernate]
+* link:ADR-017-keycloak-idp.html[ADR-017 Keycloak as Identity Provider]
+* link:ADR-018-jwt-hmac256-test-mode.html[ADR-018 HMAC256 Symmetric JWT for Integration and E2E Tests]
+* link:ADR-019-circuit-breaker.html[ADR-019 Circuit Breaker — Threshold 5 Failures / 30 s Reset]
 
 [#kdiab-measures-adrs]
 == kdiab-measures ADRs
@@ -68,6 +72,7 @@ Platform-wide ADRs are numbered 001–099; service ADRs use a three-digit prefix
 * link:profiles/304-data-retention.html[304 Data Retention]
 * link:profiles/305-liquibase-init-container.html[305 Liquibase Init Container]
 * link:profiles/306-content-security-policy.html[306 Content Security Policy]
+* link:profiles/017-insulin-to-meal-interval.html[017 Insulin-to-Meal Interval (Spritz-Ess-Abstand)]
 
 [#kdiab-treatments-adrs]
 == kdiab-treatments ADRs
