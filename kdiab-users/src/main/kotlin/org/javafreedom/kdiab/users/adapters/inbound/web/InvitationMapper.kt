@@ -68,6 +68,9 @@ fun DoctorInvitation.toResponse(
     patientDisplayName = patientDisplayName,
 )
 
+@Serializable
+data class ExpireResponse(val expired: Int)
+
 /**
  * Paginated response for invitation list endpoints.
  */
