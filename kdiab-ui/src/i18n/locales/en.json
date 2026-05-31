@@ -480,7 +480,14 @@
     "seaWait": "Wait {{minutes}} min before eating",
     "seaLabel": "(Spritz-Ess-Abstand)",
     "carbsInMinutes": "Carbs in (minutes):",
-    "carbsInMinutesPlaceholder": "0 = eating now"
+    "carbsInMinutesPlaceholder": "0 = eating now",
+    "warning": {
+      "hypoglycemic": "BG is hypoglycemic — no correction dose recommended; treat hypo first",
+      "belowTarget": "BG is below target; carb dose only",
+      "iobCoversCorrection": "IOB covers the full correction — no additional correction dose recommended",
+      "unusuallyHighDose": "Calculated dose is unusually high — please verify inputs",
+      "doseCapped": "Calculated dose exceeds maximum — capped at safety limit; verify with your care team"
+    }
   },
   "dashboard": {
     "delta": "Δ",

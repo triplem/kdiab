@@ -1,11 +1,29 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { calcApi, type DoseResponse } from '../../api/calcApi'
 import { measuresApi } from '../../api/measuresApi'
 import { treatmentsApi } from '../../api/treatmentsApi'
 import { calcIOB } from '../dashboard/basalUtils'
+
+// Substring-match map: first hit wins — more-specific prefixes must come before shorter ones.
+// 'Calculated dose is unusually high' must precede 'Calculated dose' or it would never match.
+const WARNING_KEYS: Record<string, string> = {
+  'BG is hypoglycemic': 'doseCalc.warning.hypoglycemic',
+  'BG is below target': 'doseCalc.warning.belowTarget',
+  'IOB covers the full correction': 'doseCalc.warning.iobCoversCorrection',
+  'Calculated dose is unusually high': 'doseCalc.warning.unusuallyHighDose',
+  'Calculated dose': 'doseCalc.warning.doseCapped', // must follow the longer match above
+}
+
+// Unknown strings fall through to their original English text as a safe default.
+function translateWarning(w: string, t: TFunction): string {
+  const matchedKey = Object.keys(WARNING_KEYS).find(k => w.toLowerCase().includes(k.toLowerCase()))
+  const i18nKey = matchedKey !== undefined ? WARNING_KEYS[matchedKey] : undefined
+  return i18nKey !== undefined ? t(i18nKey) : w
+}
 
 interface Props {
   userId: string
@@ -386,7 +404,7 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
               <ul style={{ margin: '0.5rem 0 0 0', paddingLeft: '1.2rem' }}>
                 {result.warnings.map((w, i) => (
                   <li key={i} style={{ color: 'var(--color-warning, #d97706)', fontSize: '0.875rem' }}>
-                    {w}
+                    {translateWarning(w, t)}
                   </li>
                 ))}
               </ul>
