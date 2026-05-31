@@ -332,6 +332,8 @@ export default function App() {
   })
 
   const renderTabContent = () => {
+    // Defensive guard: mirrors the visibleTabs filter above in case the useEffect tab reset
+    // fires after the render (e.g. on the very first auth tick with a doctor account).
     if (isDoctor && !isPatient && activePatientId === null && PATIENT_CONTEXT_TABS.includes(activeTab)) {
       return (
         <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
