@@ -19,5 +19,7 @@ for the kdiab platform.
 ADRs for this service are consolidated in the platform ADR index under
 link:../root/adr/index.html#kdiab-users-adrs[kdiab-users ADRs].
 
-* link:adr/ADR-001-user-settings-split.html[ADR-001 User Settings Split — Keycloak vs Database]
-* link:adr/ADR-002-self-registration-workflow.html[ADR-002 Feature-Flagged Self-Registration Workflow]
+* link:adr/ADR-USERS-001-user-settings-split.html[ADR-USERS-001 User Settings Split — Keycloak vs Database]
+* link:adr/ADR-USERS-002-self-registration-workflow.html[ADR-USERS-002 Feature-Flagged Self-Registration Workflow]
+* link:adr/ADR-USERS-003-registration-keycloak.html[ADR-USERS-003 Registration via Keycloak Admin API]
+* link:adr/ADR-USERS-016-invitation-state-machine.html[ADR-USERS-016 Invitation State Machine]

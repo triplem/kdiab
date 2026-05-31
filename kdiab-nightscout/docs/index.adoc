@@ -33,4 +33,4 @@ COMPOSE_PROFILES=optional docker compose up --build
 ADRs for this service are consolidated in the platform ADR index under
 link:../root/adr/index.html#kdiab-nightscout-adrs[kdiab-nightscout ADRs].
 
-* link:adr/ADR-001-nightscout-v3-api-adoption.html[ADR-001 Adopt Nightscout API v3 as the Primary External Interface]
+* link:adr/ADR-NS-001-nightscout-v3-api-adoption.html[ADR-NS-001 Adopt Nightscout API v3 as the Primary External Interface]
