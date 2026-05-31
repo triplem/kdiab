@@ -3,7 +3,6 @@ package org.javafreedom.kdiab.users.domain.model
 
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
-import kotlinx.datetime.LocalDate
 
 data class LocalePreferences(
     val timezone: String = "UTC",
@@ -44,7 +43,6 @@ data class UserSettings(
     val userId: Uuid,
     val createdAt: Instant,
     val updatedAt: Instant,
-    val birthday: LocalDate? = null,         // PII — never log this field
     val locale: LocalePreferences = LocalePreferences(),
     val units: UnitPreferences = UnitPreferences(),
     val alarms: AlarmThresholds? = null,

@@ -27,6 +27,7 @@ import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
+import org.javafreedom.kdiab.users.domain.repository.UserProfileRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.module
 
@@ -36,13 +37,17 @@ private fun Application.installMockDi(
     mockIdentityProvider: IdentityProviderPort,
     mockSettingsRepo: UserSettingsRepository,
     mockDoctorRepo: DoctorPatientRepository,
+    mockUserProfileRepo: UserProfileRepository = mockk(relaxed = true),
 ) {
     install(DI) { }
     dependencies {
         provide<IdentityProviderPort> { mockIdentityProvider }
         provide<UserSettingsRepository> { mockSettingsRepo }
+        provide<UserProfileRepository> { mockUserProfileRepo }
         provide<DoctorPatientRepository> { mockDoctorRepo }
-        provide<UserService> { UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo) }
+        provide<UserService> {
+            UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo, mockUserProfileRepo)
+        }
         provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
         provide<RegistrationService> { RegistrationService(mockIdentityProvider, mockSettingsRepo, false) }
         provide<ApiKeyService> { mockk(relaxed = true) }
