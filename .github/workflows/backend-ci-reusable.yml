@@ -40,7 +40,7 @@ jobs:
 
       - name: Determine Version
         run: |
-          if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
+          if [[ "$GITHUB_REF" == 'refs/heads/main' ]]; then
             echo "VERSION=latest" >> $GITHUB_ENV
           else
             BRANCH_NAME=${GITHUB_REF#refs/heads/}
@@ -50,7 +50,9 @@ jobs:
           fi
 
       - name: Build and Test
-        run: cd ${{ inputs.service }} && ./gradlew :check :koverVerify :buildFatJar :cyclonedxBom -Pversion=${{ env.VERSION }}
+        env:
+          SERVICE: ${{ inputs.service }}
+        run: cd "$SERVICE" && ./gradlew :check :koverVerify :buildFatJar :cyclonedxBom -Pversion="$VERSION"
 
       - name: SonarCloud Scan
         if: ${{ env.SONAR_TOKEN != '' }}
