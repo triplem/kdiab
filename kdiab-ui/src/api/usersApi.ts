@@ -89,17 +89,6 @@ export interface PatchSettingsRequest {
   diabetes?: DiabetesProfilePatch
 }
 
-export interface RegisterRequest {
-  email: string
-  displayName: string
-  password: string
-}
-
-export interface RegisterResponse {
-  userId: string
-  message: string
-}
-
 export interface DoctorPatientResponse {
   doctorId: string
   patientId: string
@@ -125,6 +114,4 @@ export const usersApi = {
     axiosInstance.post<DoctorPatientResponse>(`${BASE}/users/${doctorId}/patients`, { patientId }),
   removePatient: (doctorId: string, patientId: string) =>
     axiosInstance.delete(`${BASE}/users/${doctorId}/patients/${patientId}`),
-  register: (body: RegisterRequest) =>
-    axiosInstance.post<RegisterResponse>(`${BASE}/register`, body),
 }

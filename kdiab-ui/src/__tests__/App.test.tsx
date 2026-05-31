@@ -133,9 +133,6 @@ vi.mock('../features/users/AdminUserList', () => ({
 vi.mock('../features/users/AdminDoctorPatients', () => ({
   AdminDoctorPatients: () => <div data-testid="admin-doctor-patients" />,
 }))
-vi.mock('../features/users/RegistrationForm', () => ({
-  RegistrationForm: () => <div data-testid="registration-form" />,
-}))
 vi.mock('../components/LanguageSwitcher', () => ({
   LanguageSwitcher: () => <div data-testid="language-switcher" />,
 }))
@@ -857,5 +854,51 @@ describe('App — ADMIN tab visibility', () => {
       expect(settings).not.toBeNull()
       expect(settings?.getAttribute('data-locale-only')).toBe('false')
     })
+  })
+})
+
+describe('App — unauthenticated: Keycloak registration link', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  test('register link is visible with correct href when VITE_OIDC_AUTHORITY is set', () => {
+    vi.stubEnv('VITE_OIDC_AUTHORITY', 'http://localhost:8081/realms/kdiab')
+    vi.stubEnv('VITE_OIDC_CLIENT_ID', 'kdiab-analyze-frontend')
+    mockedUseAuth.mockReturnValue({
+      ...makeAuthState({ isAuthenticated: false, user: undefined }),
+    } as ReturnType<typeof useAuth>)
+
+    renderApp()
+
+    const link = screen.getByTestId('register-link')
+    expect(link).toBeDefined()
+    expect(link.getAttribute('href')).toBe(
+      'http://localhost:8081/realms/kdiab/protocol/openid-connect/registrations?client_id=kdiab-analyze-frontend&response_type=code',
+    )
+    expect(link.textContent?.trim()).toBe('Create an account')
+  })
+
+  test('register link is not rendered when VITE_OIDC_AUTHORITY is not set', () => {
+    vi.stubEnv('VITE_OIDC_AUTHORITY', '')
+    mockedUseAuth.mockReturnValue({
+      ...makeAuthState({ isAuthenticated: false, user: undefined }),
+    } as ReturnType<typeof useAuth>)
+
+    renderApp()
+
+    const link = document.querySelector('[data-testid="register-link"]')
+    expect(link).toBeNull()
+  })
+
+  test('register link is NOT visible when user is authenticated', () => {
+    vi.stubEnv('VITE_OIDC_AUTHORITY', 'http://localhost:8081/realms/kdiab')
+    vi.stubEnv('VITE_OIDC_CLIENT_ID', 'kdiab-analyze-frontend')
+    mockedUseAuth.mockReturnValue(makeAuthState() as ReturnType<typeof useAuth>)
+
+    renderApp()
+
+    const link = document.querySelector('[data-testid="register-link"]')
+    expect(link).toBeNull()
   })
 })

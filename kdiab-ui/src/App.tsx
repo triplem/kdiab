@@ -28,7 +28,6 @@ import { DoseCalculator } from './features/calc/DoseCalculator'
 import { UserSettings } from './features/users/UserSettings'
 import { AdminUserList } from './features/users/AdminUserList'
 import { AdminDoctorPatients } from './features/users/AdminDoctorPatients'
-import { RegistrationForm } from './features/users/RegistrationForm'
 import { measuresApi } from './api/measuresApi'
 import { treatmentsApi } from './api/treatmentsApi'
 import { useQueryClient } from '@tanstack/react-query'
@@ -43,7 +42,6 @@ export default function App() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
-  const [showRegistration, setShowRegistration] = useState(false)
 
   // Auth-derived state
   const [roles, setRoles] = useState<string[]>([])
@@ -245,10 +243,12 @@ export default function App() {
   }
 
   if (!auth.isAuthenticated) {
-    if (showRegistration) {
-      return <RegistrationForm onBack={() => setShowRegistration(false)} />
-    }
     const oidcError = auth.error?.message ?? loginError
+    const keycloakBase = ((import.meta.env as Record<string, string>)['VITE_OIDC_AUTHORITY'] ?? '').replace(/\/$/, '')
+    const clientId = (import.meta.env as Record<string, string>)['VITE_OIDC_CLIENT_ID'] ?? 'kdiab-analyze-frontend'
+    const registrationUrl = keycloakBase
+      ? `${keycloakBase}/protocol/openid-connect/registrations?client_id=${clientId}&response_type=code`
+      : null
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <h1>{t('app.title')}</h1>
@@ -269,11 +269,11 @@ export default function App() {
             {t('app.loginError')}: {oidcError}
           </p>
         )}
-        {(import.meta.env as Record<string, string>)['VITE_SELF_REGISTRATION_ENABLED'] === 'true' && (
+        {registrationUrl && (
           <p style={{ marginTop: '1rem' }}>
-            <button className="btn outline" onClick={() => setShowRegistration(true)}>
+            <a href={registrationUrl} className="btn outline" data-testid="register-link">
               {t('app.register')}
-            </button>
+            </a>
           </p>
         )}
       </div>
