@@ -31,6 +31,7 @@ object LiquibaseTestHelper {
         transaction(db) {
             exec("DELETE FROM doctor_invitations")
             exec("DELETE FROM doctor_patient")
+            exec("DELETE FROM user_profile")
             exec("DELETE FROM user_settings")
         }
     }

@@ -18,6 +18,7 @@ data class UserResponse(
     val email: String,
     val displayName: String,
     val roles: List<String>,
+    val birthday: String? = null,
     val settings: UserSettingsResponse?,
 )
 
@@ -51,7 +52,6 @@ data class DiabetesProfileResponse(
 
 @Serializable
 data class UserSettingsResponse(
-    val birthday: String?,
     val locale: LocalePreferencesResponse,
     val units: UnitPreferencesResponse,
     val alarms: AlarmThresholdsResponse?,
@@ -103,8 +103,12 @@ data class DiabetesProfilePatch(
 )
 
 @Serializable
-data class PatchSettingsRequest(
+data class PatchProfileRequest(
     val birthday: String? = null,
+)
+
+@Serializable
+data class PatchSettingsRequest(
     val locale: LocalePreferencesPatch? = null,
     val units: UnitPreferencesPatch? = null,
     val alarms: AlarmThresholdsPatch? = null,
@@ -128,11 +132,11 @@ fun User.toResponse(): UserResponse = UserResponse(
     email = email,
     displayName = displayName,
     roles = roles.map { it.name },
+    birthday = birthday?.toString(),
     settings = settings?.toResponse(),
 )
 
 fun UserSettings.toResponse(jwtBackedNote: String? = null): UserSettingsResponse = UserSettingsResponse(
-    birthday = birthday?.toString(),
     locale = LocalePreferencesResponse(
         timezone = locale.timezone,
         language = locale.language,
@@ -160,7 +164,6 @@ fun UserSettings.toResponse(jwtBackedNote: String? = null): UserSettingsResponse
 )
 
 fun PatchSettingsRequest.toPatch() = SettingsPatch(
-    birthday = birthday?.let { LocalDate.parse(it) },
     timezone = locale?.timezone,
     language = locale?.language,
     timeFormat = locale?.timeFormat,
@@ -174,6 +177,8 @@ fun PatchSettingsRequest.toPatch() = SettingsPatch(
     diabetesSince = diabetes?.diabetesSince,
     carbAbsorptionRateGPerHour = diabetes?.carbAbsorptionRateGPerHour,
 )
+
+fun PatchProfileRequest.toBirthday(): LocalDate? = birthday?.let { LocalDate.parse(it) }
 
 fun DoctorPatientRelation.toResponse() = DoctorPatientResponse(
     doctorId = doctorId.toString(),

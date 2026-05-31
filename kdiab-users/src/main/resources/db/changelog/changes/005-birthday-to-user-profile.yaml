@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-user-profile
+      author: kdiab
+      changes:
+        - createTable:
+            tableName: user_profile
+            columns:
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: birthday
+                  type: date
+                  constraints:
+                    nullable: true
+  - changeSet:
+      id: 006-drop-birthday-from-user-settings
+      author: kdiab
+      dbms: postgresql
+      changes:
+        - dropColumn:
+            tableName: user_settings
+            columnName: birthday

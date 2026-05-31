@@ -30,6 +30,7 @@ import org.javafreedom.kdiab.users.domain.repository.DoctorInvitationRepository
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
+import org.javafreedom.kdiab.users.domain.repository.UserProfileRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.module
 
@@ -40,14 +41,18 @@ private fun Application.installMockDi(
     mockDoctorRepo: DoctorPatientRepository,
     mockApiKeyService: ApiKeyService,
     mockInvitationRepo: DoctorInvitationRepository,
+    mockUserProfileRepo: UserProfileRepository = mockk(relaxed = true),
 ) {
     install(DI) { }
     dependencies {
         provide<IdentityProviderPort> { mockIdentityProvider }
         provide<UserSettingsRepository> { mockSettingsRepo }
+        provide<UserProfileRepository> { mockUserProfileRepo }
         provide<DoctorPatientRepository> { mockDoctorRepo }
         provide<DoctorInvitationRepository> { mockInvitationRepo }
-        provide<UserService> { UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo) }
+        provide<UserService> {
+            UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo, mockUserProfileRepo)
+        }
         provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
         provide<InvitationService> { InvitationService(mockInvitationRepo, mockIdentityProvider) }
         provide<ApiKeyService> { mockApiKeyService }
@@ -119,6 +124,7 @@ class UserSettingsApiTest {
         val mockDoctorRepo       = mockk<DoctorPatientRepository>(relaxed = true)
         val mockApiKeyService    = mockk<ApiKeyService>(relaxed = true)
         val mockInvitationRepo   = mockk<DoctorInvitationRepository>(relaxed = true)
+        val mockUserProfileRepo  = mockk<UserProfileRepository>(relaxed = true)
 
         coEvery { mockIdentityProvider.getUserProfile(any()) } answers {
             identityProfile(firstArg<Uuid>().toString())
@@ -126,6 +132,7 @@ class UserSettingsApiTest {
         coEvery { mockIdentityProvider.getUserRoles(any()) } returns emptySet()
         coEvery { mockSettingsRepo.findByUserId(any()) } returns settingsInRepo
         coEvery { mockSettingsRepo.save(any()) } answers { firstArg() }
+        coEvery { mockUserProfileRepo.findBirthdayByUserId(any()) } returns null
 
         testApplication {
             environment {
@@ -153,6 +160,7 @@ class UserSettingsApiTest {
                     mockDoctorRepo,
                     mockApiKeyService,
                     mockInvitationRepo,
+                    mockUserProfileRepo,
                 )
                 module()
             }
