@@ -1,4 +1,4 @@
-= ADR-019: Report Computation Architecture — Server-Side Statistics and Browser-Based PDF
+= ADR-ANA-019: Report Computation Architecture — Server-Side Statistics and Browser-Based PDF
 :date: 2026-05-30
 :status: Accepted
 :deciders: triplem

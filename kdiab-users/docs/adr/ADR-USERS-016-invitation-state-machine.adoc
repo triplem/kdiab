@@ -1,4 +1,4 @@
-= ADR-016: Doctor Invitation State Machine, Expiry Policy, and Compensating Transaction
+= ADR-USERS-016: Doctor Invitation State Machine, Expiry Policy, and Compensating Transaction
 :author: kdiab team
 :date: 2026-05-31
 :status: Accepted

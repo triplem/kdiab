@@ -1,4 +1,4 @@
-= ADR-003: Keycloak-Native Self-Registration Replaces Service-Side Endpoint
+= ADR-USERS-003: Keycloak-Native Self-Registration Replaces Service-Side Endpoint
 :author: kdiab team
 :date: 2026-05-31
 :status: Accepted

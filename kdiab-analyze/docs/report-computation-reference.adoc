@@ -14,7 +14,7 @@ The report aggregates data from `kdiab-measures` (CGM/BGM readings) and `kdiab-p
 (active insulin profile) via six dedicated endpoints, all implemented in `AnalyticsService`
 under `kdiab-analyze`.
 
-See ADR-019 for the architectural rationale behind server-side computation and browser-based
+See ADR-ANA-019 for the architectural rationale behind server-side computation and browser-based
 PDF export.
 
 == Clinical Formulas
@@ -473,9 +473,9 @@ The `docs/index.adoc` for `kdiab-analyze` links to this document under "Core Doc
 * link:report-computation-reference.html[Report Computation Reference]
 ----
 
-And the ADR section links to ADR-019:
+And the ADR section links to ADR-ANA-019:
 
 [source,asciidoc]
 ----
-* link:adr/ADR-019-report-computation-architecture.html[ADR-019 Report Computation Architecture]
+* link:adr/ADR-ANA-019-report-computation-architecture.html[ADR-ANA-019 Report Computation Architecture]
 ----

@@ -1,4 +1,4 @@
-= ADR-001: Split User Settings Between Keycloak and Database
+= ADR-USERS-001: Split User Settings Between Keycloak and Database
 :author: kdiab team
 :date: 2026-05-15
 :status: Accepted
