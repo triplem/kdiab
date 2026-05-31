@@ -136,9 +136,9 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
       const bolusAt = nowIso()
       const carbs = parseFloat(carbsGrams) || 0
       // Offset the carbs treatment time by carbsInMinutes so the record reflects actual carb intake time
-      const carbsAt = carbsInMinutes > 0
-        ? (() => { const d = new Date(); d.setMinutes(d.getMinutes() + carbsInMinutes); return d.toISOString() })()
-        : bolusAt
+      const carbsDate = new Date()
+      carbsDate.setMinutes(carbsDate.getMinutes() + carbsInMinutes)
+      const carbsAt = carbsInMinutes > 0 ? carbsDate.toISOString() : bolusAt
       const bolusResponse = await treatmentsApi.createTreatment(userId, {
         type: 'BOLUS',
         treatedAt: bolusAt,
