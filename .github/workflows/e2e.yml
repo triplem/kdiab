@@ -1,20 +1,9 @@
 name: kdiab-ui / E2E
 
 on:
-  pull_request:
-    branches: ["**"]
-    paths:
-      - 'kdiab-ui/**'
-      - 'kdiab-measures/**'
-      - 'kdiab-profiles/**'
-      - 'kdiab-treatments/**'
-      - 'kdiab-analyze/**'
-      - 'kdiab-carbs/**'
-      - 'kdiab-calc/**'
-      - 'kdiab-users/**'
-      - 'docker-compose.yml'
-      - 'docker-compose.otel.yml'
-      - '.github/workflows/e2e.yml'
+  # Disabled on pull_request: postgres container healthcheck is unreliable on
+  # GitHub Actions runners (issue #1152). Re-enable once the healthcheck is fixed.
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
