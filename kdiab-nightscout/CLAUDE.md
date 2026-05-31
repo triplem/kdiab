@@ -33,7 +33,7 @@ domain/exception/
 
 Implements **Nightscout API v3** (paths under `/api/v3/{collection}`) as a translation layer
 over the kdiab upstream services. The v1 API (`/api/v1/`) is retained unchanged for backward
-compatibility with legacy client installations. See `kdiab-nightscout/docs/adr/ADR-NS-001-nightscout-v3-api-adoption.adoc` for the full decision.
+compatibility with legacy client installations. See `kdiab-nightscout/docs/adr/ADR-NSC-001-nightscout-v3-api-adoption.adoc` for the full decision.
 
 ## Circuit Breakers
 

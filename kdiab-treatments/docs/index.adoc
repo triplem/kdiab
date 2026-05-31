@@ -18,13 +18,13 @@ Welcome to the kdiab treatments project documentation hub. Use the links below t
 ADRs for this service are consolidated in the platform ADR index under
 link:../root/adr/index.html#kdiab-treatments-adrs[kdiab-treatments ADRs].
 
-* link:../root/adr/treatments/ADR-TREAT-101-development-tooling.html[ADR-TREAT-101 Development Tooling]
-* link:../root/adr/treatments/ADR-TREAT-102-code-quality-standards.html[ADR-TREAT-102 Code Quality Standards]
-* link:../root/adr/treatments/ADR-TREAT-107-bdd-testing-with-kotest.html[ADR-TREAT-107 BDD Testing with Kotest]
-* link:../root/adr/treatments/ADR-TREAT-108-main-ktor-server.html[ADR-TREAT-108 Main Ktor Server]
-* link:../root/adr/treatments/ADR-TREAT-201-flexible-treatments-model.html[ADR-TREAT-201 Flexible Treatments Model]
-* link:../root/adr/treatments/ADR-TREAT-202-nightscout-treatment-types.html[ADR-TREAT-202 Nightscout Treatment Types]
-* link:../root/adr/treatments/ADR-TREAT-301-postgresql.html[ADR-TREAT-301 PostgreSQL]
-* link:../root/adr/treatments/ADR-TREAT-302-implicit-user-management.html[ADR-TREAT-302 Implicit User Management]
-* link:../root/adr/treatments/ADR-TREAT-303-jwt-authentication.html[ADR-TREAT-303 JWT Authentication]
-* link:../root/adr/treatments/ADR-TREAT-305-liquibase-init-container.html[ADR-TREAT-305 Liquibase Init Container]
+* link:../root/adr/treatments/ADR-TRE-101-development-tooling.html[ADR-TRE-101 Development Tooling]
+* link:../root/adr/treatments/ADR-TRE-102-code-quality-standards.html[ADR-TRE-102 Code Quality Standards]
+* link:../root/adr/treatments/ADR-TRE-107-bdd-testing-with-kotest.html[ADR-TRE-107 BDD Testing with Kotest]
+* link:../root/adr/treatments/ADR-TRE-108-main-ktor-server.html[ADR-TRE-108 Main Ktor Server]
+* link:../root/adr/treatments/ADR-TRE-201-flexible-treatments-model.html[ADR-TRE-201 Flexible Treatments Model]
+* link:../root/adr/treatments/ADR-TRE-202-nightscout-treatment-types.html[ADR-TRE-202 Nightscout Treatment Types]
+* link:../root/adr/treatments/ADR-TRE-301-postgresql.html[ADR-TRE-301 PostgreSQL]
+* link:../root/adr/treatments/ADR-TRE-302-implicit-user-management.html[ADR-TRE-302 Implicit User Management]
+* link:../root/adr/treatments/ADR-TRE-303-jwt-authentication.html[ADR-TRE-303 JWT Authentication]
+* link:../root/adr/treatments/ADR-TRE-305-liquibase-init-container.html[ADR-TRE-305 Liquibase Init Container]
