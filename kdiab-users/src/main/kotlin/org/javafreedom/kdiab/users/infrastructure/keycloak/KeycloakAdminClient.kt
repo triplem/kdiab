@@ -118,6 +118,39 @@ class KeycloakAdminClient(
         }
     }
 
+    /**
+     * Searches Keycloak for a user with the exact given email or username.
+     * Returns the user's UUID string if found, null otherwise.
+     */
+    suspend fun findUserByIdentifier(identifier: String): String? {
+        val auth = authHeader()
+        // Try email match first, then fall back to username. Keycloak's `exact=true`
+        // prevents partial matches and avoids returning unintended users.
+        val byEmail: List<KeycloakUser> = circuitBreaker.execute {
+            val response = httpClient.get(adminUrl("users")) {
+                header(HttpHeaders.Authorization, auth)
+                parameter("email", identifier)
+                parameter("exact", "true")
+                parameter("max", 1)
+            }
+            check(response.status.isSuccess()) { "findUserByEmail failed: ${response.status}" }
+            response.body()
+        }
+        if (byEmail.isNotEmpty()) return byEmail.first().id
+
+        val byUsername: List<KeycloakUser> = circuitBreaker.execute {
+            val response = httpClient.get(adminUrl("users")) {
+                header(HttpHeaders.Authorization, auth)
+                parameter("username", identifier)
+                parameter("exact", "true")
+                parameter("max", 1)
+            }
+            check(response.status.isSuccess()) { "findUserByUsername failed: ${response.status}" }
+            response.body()
+        }
+        return byUsername.firstOrNull()?.id
+    }
+
     suspend fun getUser(userId: Uuid): KeycloakUser {
         val auth = authHeader()
         return circuitBreaker.execute {

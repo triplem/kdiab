@@ -20,11 +20,13 @@ import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.users.application.service.ApiKeyService
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
+import org.javafreedom.kdiab.users.application.service.InvitationService
 import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.domain.model.AlarmThresholds
 import org.javafreedom.kdiab.users.domain.model.LocalePreferences
 import org.javafreedom.kdiab.users.domain.model.UnitPreferences
 import org.javafreedom.kdiab.users.domain.model.UserSettings
+import org.javafreedom.kdiab.users.domain.repository.DoctorInvitationRepository
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
@@ -37,14 +39,17 @@ private fun Application.installMockDi(
     mockSettingsRepo: UserSettingsRepository,
     mockDoctorRepo: DoctorPatientRepository,
     mockApiKeyService: ApiKeyService,
+    mockInvitationRepo: DoctorInvitationRepository,
 ) {
     install(DI) { }
     dependencies {
         provide<IdentityProviderPort> { mockIdentityProvider }
         provide<UserSettingsRepository> { mockSettingsRepo }
         provide<DoctorPatientRepository> { mockDoctorRepo }
+        provide<DoctorInvitationRepository> { mockInvitationRepo }
         provide<UserService> { UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo) }
         provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
+        provide<InvitationService> { InvitationService(mockInvitationRepo, mockIdentityProvider) }
         provide<ApiKeyService> { mockApiKeyService }
     }
 }
@@ -113,6 +118,7 @@ class UserSettingsApiTest {
         val mockSettingsRepo     = mockk<UserSettingsRepository>(relaxed = true)
         val mockDoctorRepo       = mockk<DoctorPatientRepository>(relaxed = true)
         val mockApiKeyService    = mockk<ApiKeyService>(relaxed = true)
+        val mockInvitationRepo   = mockk<DoctorInvitationRepository>(relaxed = true)
 
         coEvery { mockIdentityProvider.getUserProfile(any()) } answers {
             identityProfile(firstArg<Uuid>().toString())
@@ -141,7 +147,13 @@ class UserSettingsApiTest {
                 )
             }
             application {
-                installMockDi(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo, mockApiKeyService)
+                installMockDi(
+                    mockIdentityProvider,
+                    mockSettingsRepo,
+                    mockDoctorRepo,
+                    mockApiKeyService,
+                    mockInvitationRepo,
+                )
                 module()
             }
             block(mockSettingsRepo)

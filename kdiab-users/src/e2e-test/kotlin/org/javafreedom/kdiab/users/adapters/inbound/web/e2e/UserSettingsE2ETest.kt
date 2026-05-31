@@ -22,7 +22,9 @@ import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.users.application.service.ApiKeyService
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
+import org.javafreedom.kdiab.users.application.service.InvitationService
 import org.javafreedom.kdiab.users.application.service.UserService
+import org.javafreedom.kdiab.users.domain.repository.DoctorInvitationRepository
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
@@ -35,14 +37,17 @@ private fun Application.installMockDi(
     mockIdentityProvider: IdentityProviderPort,
     mockSettingsRepo: UserSettingsRepository,
     mockDoctorRepo: DoctorPatientRepository,
+    mockInvitationRepo: DoctorInvitationRepository = mockk(relaxed = true),
 ) {
     install(DI) { }
     dependencies {
         provide<IdentityProviderPort> { mockIdentityProvider }
         provide<UserSettingsRepository> { mockSettingsRepo }
         provide<DoctorPatientRepository> { mockDoctorRepo }
+        provide<DoctorInvitationRepository> { mockInvitationRepo }
         provide<UserService> { UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo) }
         provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
+        provide<InvitationService> { InvitationService(mockInvitationRepo, mockIdentityProvider) }
         provide<ApiKeyService> { mockk(relaxed = true) }
     }
 }
