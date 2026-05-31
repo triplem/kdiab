@@ -13,6 +13,7 @@ import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
@@ -263,6 +264,68 @@ class MeasureRoutesTest {
             bearerAuth(sarahToken)
         }
         assertEquals(HttpStatusCode.BadRequest, resp.status)
+    }
+
+    @Test
+    fun `list measures - 200 with status=ARCHIVED query param`() = routeTest { repo ->
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 0L
+        val resp = client.get("/api/v1/users/$SARAH_ID/measures?status=ARCHIVED") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `list measures - 200 with glucoseUnit=mmol-L query param`() = routeTest { repo ->
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns listOf(testMeasure())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 1L
+        val resp = client.get("/api/v1/users/$SARAH_ID/measures?glucoseUnit=mmol/L") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `list measures - 200 with weightUnit=lbs query param`() = routeTest { repo ->
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns listOf(testMeasure())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 1L
+        val resp = client.get("/api/v1/users/$SARAH_ID/measures?weightUnit=lbs") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `list measures - 200 with explicit page and size query params`() = routeTest { repo ->
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 0L
+        val resp = client.get("/api/v1/users/$SARAH_ID/measures?page=1&size=10") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+    }
+
+    @Test
+    fun `list measures - 200 with negative page coerced to 0`() = routeTest { repo ->
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 0L
+        val resp = client.get("/api/v1/users/$SARAH_ID/measures?page=-5") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+        coVerify { repo.findByUserId(Uuid.parse(SARAH_ID), 0, any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `list measures - 200 with oversized size param clamped to max`() = routeTest { repo ->
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 0L
+        val resp = client.get("/api/v1/users/$SARAH_ID/measures?size=9999") {
+            bearerAuth(sarahToken)
+        }
+        assertEquals(HttpStatusCode.OK, resp.status)
+        coVerify { repo.findByUserId(Uuid.parse(SARAH_ID), any(), 200, any(), any(), any()) }
     }
 
     // ── PUT /api/v1/users/{userId}/measures/{measureId} ───────────────────────
