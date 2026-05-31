@@ -9,9 +9,32 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.users.application.service.InvitationService
+import org.javafreedom.kdiab.users.domain.model.InvitationStatus
+
+private const val DEFAULT_PAGE_SIZE = 20
 
 fun Route.invitationRoutes(invitationService: InvitationService) {
     authenticate("auth-jwt") {
+        get("/users/{doctorId}/invitations") {
+            val principal = call.principal<UserPrincipal>()!!
+            val doctorId = parseUuid(call.parameters["doctorId"]!!)
+            val statuses = call.request.queryParameters.getAll("status")
+                ?.mapNotNull { runCatching { InvitationStatus.valueOf(it) }.getOrNull() }
+                ?.toSet()
+                ?.takeIf { it.isNotEmpty() }
+                ?: setOf(InvitationStatus.PENDING)
+            val page = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(0) ?: 0
+            val size = call.request.queryParameters["size"]?.toIntOrNull() ?: DEFAULT_PAGE_SIZE
+            val result = invitationService.listDoctorInvitations(
+                principal = principal,
+                doctorId = doctorId,
+                statuses = statuses,
+                page = page,
+                size = size,
+            )
+            call.respond(result.toPageResponse())
+        }
+
         post("/users/{doctorId}/invitations") {
             val principal = call.principal<UserPrincipal>()!!
             val doctorId = parseUuid(call.parameters["doctorId"]!!)
