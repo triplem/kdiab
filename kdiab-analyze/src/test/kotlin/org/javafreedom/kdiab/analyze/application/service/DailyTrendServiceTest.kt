@@ -369,7 +369,6 @@ class DailyTrendServiceTest {
 
         assertTrue(result.days.isNotEmpty(), "Days must still be returned when profiles port fails")
         val jan1 = result.days.first { it.date == "2024-01-01" }
-        // basalRate should be null because no profile was loaded
         assertNull(jan1.hours[10].basalRateIePerH, "basalRate must be null when profiles fail")
     }
 }
