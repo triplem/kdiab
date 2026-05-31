@@ -18,7 +18,10 @@ production Keycloak deployment:
 | Section | Contents |
 |---|---|
 | `realm`, `enabled`, `sslRequired` | Realm identity and TLS policy |
-| `registrationAllowed`, `loginTheme` | Self-service and UI settings |
+| `registrationAllowed`, `registrationEmailAsUsername`, `loginWithEmailAllowed`, `resetPasswordAllowed` | Self-service registration settings |
+| `verifyEmail` | Require email verification before first login |
+| `smtpServer` | Email relay config (empty defaults — operator must fill in before enabling email verification) |
+| `loginTheme` | Custom Keycloak login UI theme |
 | `internationalizationEnabled`, `supportedLocales`, `defaultLocale` | i18n |
 | `roles.realm` | `PATIENT`, `DOCTOR`, `ADMIN` |
 | `requiredActions` | `VERIFY_PROFILE` (enforced on all users) |
@@ -57,6 +60,25 @@ tests. **These users must never be created in a production Keycloak instance.**
 
 To deploy to production: remove the `"users"` array from the realm JSON before importing,
 or use the Keycloak Admin UI to create real users separately.
+
+## SMTP server configuration (required for email verification)
+
+`verifyEmail: true` is set in the realm, but the `smtpServer` block in the realm JSON contains
+empty defaults. In production you **must** configure a real SMTP relay before emails can be sent.
+Set the following fields via the Keycloak Admin Console under **Realm settings → Email** or by
+patching the realm JSON before import:
+
+| Field | Description |
+|---|---|
+| `host` | SMTP hostname (e.g. `smtp.mailgun.org`) |
+| `port` | SMTP port (`587` for STARTTLS, `465` for SSL) |
+| `from` | Sender address (e.g. `noreply@example.com`) |
+| `fromDisplayName` | Display name in From header |
+| `auth` | `"true"` if the relay requires authentication |
+| `user` / `password` | Credentials when `auth` is `"true"` |
+
+In local development and CI the SMTP block is intentionally empty; Keycloak will log a warning
+but continue to operate — registration works but no verification email is sent.
 
 ## M2M client secret rotation (required in production)
 

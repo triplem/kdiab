@@ -3,7 +3,11 @@
   "realm": "kdiab",
   "enabled": true,
   "sslRequired": "external",
-  "registrationAllowed": false,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "verifyEmail": true,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": true,
   "bruteForceProtected": true,
   "permanentLockout": false,
   "maxFailureWaitSeconds": 900,
@@ -14,6 +18,15 @@
   "failureFactor": 5,
   "passwordPolicy": "length(8) and notUsername and notEmail",
   "loginTheme": "kdiab",
+  "smtpServer": {
+    "host": "",
+    "port": "587",
+    "from": "",
+    "fromDisplayName": "kdiab",
+    "ssl": "false",
+    "starttls": "true",
+    "auth": "false"
+  },
   "internationalizationEnabled": true,
   "supportedLocales": [
     "en",
