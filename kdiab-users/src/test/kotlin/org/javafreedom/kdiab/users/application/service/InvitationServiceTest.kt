@@ -498,9 +498,10 @@ class InvitationServiceTest {
         coEvery { identityProvider.updateUserAttributes(doctorId, any()) } throws RuntimeException("KC unavailable")
 
         // Original KC exception must propagate even when both rollback operations fail
-        assertFailsWith<RuntimeException> {
+        val ex = assertFailsWith<RuntimeException> {
             service.respondToInvitation(patientPrincipal(), patientId, invitationId, InvitationAction.ACCEPT)
         }
+        assertEquals("KC unavailable", ex.message)
 
         // Invitation status rollback is still attempted even when relation delete fails
         coVerify(exactly = 1) { invitationRepo.updateStatus(invitationId, InvitationStatus.PENDING, null) }
