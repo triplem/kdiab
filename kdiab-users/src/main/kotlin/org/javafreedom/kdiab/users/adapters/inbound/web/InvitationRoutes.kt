@@ -35,6 +35,18 @@ fun Route.invitationRoutes(invitationService: InvitationService) {
             call.respond(result.toPageResponse())
         }
 
+        // GET /incoming uses a literal path segment and must be registered before any
+        // /{invitationId} wildcard routes to prevent Ktor treating "incoming" as an invitationId.
+        get("/users/{patientId}/invitations/incoming") {
+            val principal = call.principal<UserPrincipal>()!!
+            val patientId = parseUuid(call.parameters["patientId"]!!)
+            val invitations = invitationService.listIncomingInvitations(
+                principal = principal,
+                patientId = patientId,
+            )
+            call.respond(invitations.map { it.toResponse() })
+        }
+
         post("/users/{doctorId}/invitations") {
             val principal = call.principal<UserPrincipal>()!!
             val doctorId = parseUuid(call.parameters["doctorId"]!!)

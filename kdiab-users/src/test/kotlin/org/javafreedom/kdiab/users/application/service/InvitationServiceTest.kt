@@ -289,4 +289,55 @@ class InvitationServiceTest {
         assertEquals(1, result.invitations.size)
         coVerify(exactly = 1) { invitationRepo.findByDoctorId(doctorId, statuses, 20, 0L) }
     }
+
+    // ---- listIncomingInvitations ----
+
+    @Test
+    fun `listIncomingInvitations returns pending invitations for own patientId`() = runTest {
+        val invitation = pendingInvitation()
+        coEvery { invitationRepo.findPendingByPatientId(patientId) } returns listOf(invitation)
+
+        val result = service.listIncomingInvitations(patientPrincipal(), patientId)
+
+        assertEquals(1, result.size)
+        assertEquals(invitation.id, result[0].id)
+        coVerify(exactly = 1) { invitationRepo.findPendingByPatientId(patientId) }
+    }
+
+    @Test
+    fun `listIncomingInvitations returns empty list when no pending invitations exist`() = runTest {
+        coEvery { invitationRepo.findPendingByPatientId(patientId) } returns emptyList()
+
+        val result = service.listIncomingInvitations(patientPrincipal(), patientId)
+
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun `listIncomingInvitations admin can list any patient inbox`() = runTest {
+        val invitation = pendingInvitation()
+        coEvery { invitationRepo.findPendingByPatientId(patientId) } returns listOf(invitation)
+
+        val result = service.listIncomingInvitations(adminPrincipal(), patientId)
+
+        assertEquals(1, result.size)
+    }
+
+    @Test
+    fun `listIncomingInvitations throws AuthorizationException when patient requests different patientId`() = runTest {
+        val otherPatientId = Uuid.parse("ffffffff-ffff-ffff-ffff-ffffffffffff")
+
+        assertFailsWith<AuthorizationException> {
+            service.listIncomingInvitations(patientPrincipal(), otherPatientId)
+        }
+        coVerify(exactly = 0) { invitationRepo.findPendingByPatientId(any()) }
+    }
+
+    @Test
+    fun `listIncomingInvitations throws AuthorizationException for doctor principal`() = runTest {
+        assertFailsWith<AuthorizationException> {
+            service.listIncomingInvitations(doctorPrincipal(), patientId)
+        }
+        coVerify(exactly = 0) { invitationRepo.findPendingByPatientId(any()) }
+    }
 }
