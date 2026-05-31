@@ -277,8 +277,8 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 with glucoseUnit=mmol-L query param`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any()) } returns listOf(testMeasure())
-        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns 1L
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns listOf(testMeasure())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 1L
         val resp = client.get("/api/v1/users/$SARAH_ID/measures?glucoseUnit=mmol/L") {
             bearerAuth(sarahToken)
         }
@@ -287,8 +287,8 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 with weightUnit=lbs query param`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any()) } returns listOf(testMeasure())
-        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns 1L
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns listOf(testMeasure())
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 1L
         val resp = client.get("/api/v1/users/$SARAH_ID/measures?weightUnit=lbs") {
             bearerAuth(sarahToken)
         }
@@ -297,8 +297,8 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 with explicit page and size query params`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any()) } returns emptyList()
-        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns 0L
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 0L
         val resp = client.get("/api/v1/users/$SARAH_ID/measures?page=1&size=10") {
             bearerAuth(sarahToken)
         }
@@ -307,8 +307,8 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 with negative page coerced to 0`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any()) } returns emptyList()
-        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns 0L
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 0L
         val resp = client.get("/api/v1/users/$SARAH_ID/measures?page=-5") {
             bearerAuth(sarahToken)
         }
@@ -317,8 +317,8 @@ class MeasureRoutesTest {
 
     @Test
     fun `list measures - 200 with oversized size param clamped to max`() = routeTest { repo ->
-        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any()) } returns emptyList()
-        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any()) } returns 0L
+        coEvery { repo.findByUserId(Uuid.parse(SARAH_ID), any(), any(), any(), any(), any()) } returns emptyList()
+        coEvery { repo.countByUserId(Uuid.parse(SARAH_ID), any(), any(), any()) } returns 0L
         val resp = client.get("/api/v1/users/$SARAH_ID/measures?size=9999") {
             bearerAuth(sarahToken)
         }
