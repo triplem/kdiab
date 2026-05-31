@@ -13,6 +13,7 @@ import io.ktor.server.plugins.di.*
 import io.ktor.server.testing.ApplicationTestBuilder
 import io.ktor.server.testing.testApplication
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
@@ -313,6 +314,7 @@ class MeasureRoutesTest {
             bearerAuth(sarahToken)
         }
         assertEquals(HttpStatusCode.OK, resp.status)
+        coVerify { repo.findByUserId(Uuid.parse(SARAH_ID), 0, any(), any(), any(), any()) }
     }
 
     @Test
@@ -323,6 +325,7 @@ class MeasureRoutesTest {
             bearerAuth(sarahToken)
         }
         assertEquals(HttpStatusCode.OK, resp.status)
+        coVerify { repo.findByUserId(Uuid.parse(SARAH_ID), any(), 200, any(), any(), any()) }
     }
 
     // ── PUT /api/v1/users/{userId}/measures/{measureId} ───────────────────────
