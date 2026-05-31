@@ -1,9 +1,19 @@
 name: Publish Docker Images to ghcr.io
 
 on:
-  push:
-    branches:
-      - main
+  workflow_run:
+    workflows:
+      - "kdiab-users / Backend CI"
+      - "kdiab-measures / Backend CI"
+      - "kdiab-nightscout / Backend CI"
+      - "kdiab-analyze / Backend CI"
+      - "kdiab-profiles / Backend CI"
+      - "kdiab-treatments / Backend CI"
+      - "kdiab-carbs / Backend CI"
+      - "kdiab-calc / Backend CI"
+      - "kdiab-ui / CI"
+    types: [completed]
+    branches: [main]
   release:
     types:
       - published
@@ -22,6 +32,7 @@ jobs:
     name: Publish ${{ matrix.service }} backend
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
 
     strategy:
       fail-fast: false
@@ -95,6 +106,7 @@ jobs:
     name: Publish kdiab-ui frontend
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout
