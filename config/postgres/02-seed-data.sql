@@ -544,3 +544,10 @@ VALUES
   ('44444444-4444-4444-4444-444444444444', '22222222-2222-2222-2222-222222222222',
    TO_CHAR((NOW() AT TIME ZONE 'UTC') - INTERVAL '90 days', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'))
 ON CONFLICT (doctor_id, patient_id) DO NOTHING;
+
+-- User Profile (birthday) -----------------------------------------------
+INSERT INTO user_profile(user_id, birthday)
+VALUES
+  ('11111111-1111-1111-1111-111111111111', '1990-05-15'),
+  ('22222222-2222-2222-2222-222222222222', '1985-03-22')
+ON CONFLICT (user_id) DO NOTHING;

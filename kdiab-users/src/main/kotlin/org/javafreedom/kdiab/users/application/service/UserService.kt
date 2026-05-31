@@ -121,6 +121,7 @@ class UserService(
                 }
             }
         }
+        // TODO(#1297): batch-load birthdays to avoid N+1 DB round-trips on listUsers
         return coroutineScope {
             validProfiles.map { (userId, profile) ->
                 async {
