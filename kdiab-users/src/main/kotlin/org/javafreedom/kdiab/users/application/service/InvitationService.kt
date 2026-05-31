@@ -136,6 +136,24 @@ class InvitationService(
         )
     }
 
+    /**
+     * Returns PENDING invitations addressed to [patientId].
+     *
+     * Authorization rules:
+     * - PATIENT may only list their own inbox (principal.userId == patientId).
+     * - ADMIN may list any patient's inbox.
+     * - Any other principal gets a 403.
+     */
+    suspend fun listIncomingInvitations(
+        principal: UserPrincipal,
+        patientId: Uuid,
+    ): List<DoctorInvitation> {
+        authorizePatient(principal, patientId)
+        val invitations = invitationRepo.findPendingByPatientId(patientId)
+        logger.info { "list_incoming_invitations patient=$patientId count=${invitations.size}" }
+        return invitations
+    }
+
     private suspend fun resolveDisplayName(userId: Uuid): String? =
         runCatching { identityProvider.getUserProfile(userId) }
             .onFailure { logger.warn { "display_name_lookup_failed userId=$userId reason=${it.message}" } }
@@ -161,6 +179,16 @@ class InvitationService(
             principal.isDoctor() && principal.userId == doctorId -> Unit
             else -> throw AuthorizationException(
                 "Only the doctor themselves or an admin may send invitations on behalf of doctor $doctorId",
+            )
+        }
+    }
+
+    private fun authorizePatient(principal: UserPrincipal, patientId: Uuid) {
+        when {
+            principal.isAdmin() -> Unit
+            principal.userId == patientId -> Unit
+            else -> throw AuthorizationException(
+                "Only the patient themselves or an admin may view incoming invitations for patient $patientId",
             )
         }
     }
