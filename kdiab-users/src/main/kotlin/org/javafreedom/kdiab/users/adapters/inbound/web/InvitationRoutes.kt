@@ -14,8 +14,12 @@ import org.javafreedom.kdiab.users.domain.model.InvitationStatus
 private const val DEFAULT_PAGE_SIZE = 20
 private const val DEFAULT_PAGE_INDEX = 0
 
-fun Route.internalInvitationRoutes(invitationService: InvitationService) {
+fun Route.internalInvitationRoutes(invitationService: InvitationService, internalToken: String? = null) {
     post("/internal/invitations/expire") {
+        if (internalToken != null && call.request.headers["X-Internal-Token"] != internalToken) {
+            call.respond(HttpStatusCode.Unauthorized)
+            return@post
+        }
         val count = invitationService.expireOldInvitations()
         call.respond(HttpStatusCode.OK, ExpireResponse(expired = count))
     }

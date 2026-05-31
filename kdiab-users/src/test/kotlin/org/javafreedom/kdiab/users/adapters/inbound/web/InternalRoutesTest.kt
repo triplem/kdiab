@@ -55,31 +55,33 @@ class InternalRoutesTest {
     private companion object {
         const val JWT_SECRET = "test-secret-for-unit-tests-only"
         const val ISSUER = "http://localhost:8081/realms/kdiab"
+        const val INTERNAL_TOKEN = "test-internal-token"
     }
 
     private fun routeTest(
+        internalApiToken: String? = null,
         block: suspend ApplicationTestBuilder.(invitationService: InvitationService) -> Unit,
     ) {
         val mockInvitationService = mockk<InvitationService>(relaxed = true)
+        val configEntries = mutableListOf(
+            "jwt.domain" to ISSUER,
+            "jwt.audience" to "users",
+            "jwt.realm" to "kdiab",
+            "jwt.test" to "true",
+            "jwt.secret" to JWT_SECRET,
+            "keycloakAdmin.clientSecret" to "test-secret",
+            "keycloakAdmin.url" to "http://localhost:8081",
+            "keycloakAdmin.realm" to "kdiab",
+            "keycloakAdmin.clientId" to "kdiab-users-service",
+            "storage.jdbcUrl" to "jdbc:h2:mem:test",
+            "storage.username" to "root",
+            "storage.password" to "test",
+            "app.initDatabase" to "false",
+        )
+        if (internalApiToken != null) configEntries += "app.internalApiToken" to internalApiToken
 
         testApplication {
-            environment {
-                config = MapApplicationConfig(
-                    "jwt.domain" to ISSUER,
-                    "jwt.audience" to "users",
-                    "jwt.realm" to "kdiab",
-                    "jwt.test" to "true",
-                    "jwt.secret" to JWT_SECRET,
-                    "keycloakAdmin.clientSecret" to "test-secret",
-                    "keycloakAdmin.url" to "http://localhost:8081",
-                    "keycloakAdmin.realm" to "kdiab",
-                    "keycloakAdmin.clientId" to "kdiab-users-service",
-                    "storage.jdbcUrl" to "jdbc:h2:mem:test",
-                    "storage.username" to "root",
-                    "storage.password" to "test",
-                    "app.initDatabase" to "false",
-                )
-            }
+            environment { config = MapApplicationConfig(*configEntries.toTypedArray()) }
             application {
                 installMockDiWithInvitationService(mockInvitationService)
                 module()
@@ -108,9 +110,36 @@ class InternalRoutesTest {
         }
 
     @Test
-    fun `POST internal invitations expire requires no auth token`() = routeTest { invitationService ->
-        coEvery { invitationService.expireOldInvitations(any()) } returns 0
-        val response = client.post("/internal/invitations/expire")
-        assertEquals(HttpStatusCode.OK, response.status)
-    }
+    fun `POST internal invitations expire requires no auth token when INTERNAL_API_TOKEN not configured`() =
+        routeTest { invitationService ->
+            coEvery { invitationService.expireOldInvitations(any()) } returns 0
+            val response = client.post("/internal/invitations/expire")
+            assertEquals(HttpStatusCode.OK, response.status)
+        }
+
+    @Test
+    fun `POST internal invitations expire returns 200 when correct token header provided`() =
+        routeTest(internalApiToken = INTERNAL_TOKEN) { invitationService ->
+            coEvery { invitationService.expireOldInvitations(any()) } returns 1
+            val response = client.post("/internal/invitations/expire") {
+                header("X-Internal-Token", INTERNAL_TOKEN)
+            }
+            assertEquals(HttpStatusCode.OK, response.status)
+        }
+
+    @Test
+    fun `POST internal invitations expire returns 401 when token configured but header missing`() =
+        routeTest(internalApiToken = INTERNAL_TOKEN) { _ ->
+            val response = client.post("/internal/invitations/expire")
+            assertEquals(HttpStatusCode.Unauthorized, response.status)
+        }
+
+    @Test
+    fun `POST internal invitations expire returns 401 when wrong token provided`() =
+        routeTest(internalApiToken = INTERNAL_TOKEN) { _ ->
+            val response = client.post("/internal/invitations/expire") {
+                header("X-Internal-Token", "wrong-token")
+            }
+            assertEquals(HttpStatusCode.Unauthorized, response.status)
+        }
 }

@@ -663,15 +663,20 @@ services:
 
   users-expiry-scheduler:
     container_name: kdiab-users-expiry-scheduler
-    image: curlimages/curl:latest
+    image: curlimages/curl:8.12.1
     entrypoint:
       - sh
       - -c
       - |
         while true; do
-          curl -sf -X POST http://users-backend:8088/internal/invitations/expire || true
+          curl -sf -X POST \
+            -H "X-Internal-Token: ${INTERNAL_API_TOKEN:-}" \
+            http://users-backend:8088/internal/invitations/expire \
+            || echo "expiry-scheduler: call failed at $(date)" >&2
           sleep 3600
         done
+    environment:
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:-}
     depends_on:
       users-backend:
         condition: service_healthy

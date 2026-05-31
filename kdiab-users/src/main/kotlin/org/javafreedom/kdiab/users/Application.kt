@@ -162,7 +162,8 @@ fun Application.module() {
             else call.respond(HttpStatusCode.ServiceUnavailable)
         }
 
-        internalInvitationRoutes(invitationService)
+        val internalToken = environment.config.propertyOrNull("app.internalApiToken")?.getString()
+        internalInvitationRoutes(invitationService, internalToken)
 
         route("/api/v1") {
             userRoutes(userService)

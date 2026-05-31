@@ -68,9 +68,6 @@ fun DoctorInvitation.toResponse(
     patientDisplayName = patientDisplayName,
 )
 
-/**
- * Response body for POST /internal/invitations/expire.
- */
 @Serializable
 data class ExpireResponse(val expired: Int)
 
