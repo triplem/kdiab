@@ -418,6 +418,9 @@
     "tooltipIcr": "Gramm Kohlenhydrate pro Insulineinheit. Typisch: 1:8 bis 1:20",
     "tooltipIsf": "Wie stark 1 Insulineinheit Ihren Blutzucker senkt. Typisch: 30–80 mg/dL pro Einheit",
     "tooltipTarget": "Ihr Blutzuckerzielbereich. Die ADA empfiehlt für die meisten Erwachsenen 80–130 mg/dL vor dem Essen",
+    "tooltipSeaTitle": "Spritz-Ess-Abstand (SEA)",
+    "tooltipSea": "Spritz-Ess-Abstand: empfohlene Wartezeit in Minuten zwischen der Insulininjektion und dem Essen. Typisch 0–30 Minuten je nach Blutzucker und Trend.",
+    "addSeaSegment": "SEA-Segment hinzufügen",
     "timeZone": "Zeitzone",
     "timeZonePlaceholder": "IANA-Zeitzone (z.B. UTC, Europe/Berlin)",
     "zeroBasalWarning": "Warnung: Ein oder mehrere Basalsegmente haben eine Rate von 0 E/h. Dies stoppt die Basalinsulinabgabe — bitte prüfen Sie, ob dies beabsichtigt ist."
@@ -468,7 +471,9 @@
     "errorNoTarget": "Das aktive Profil enthält keine Zielbereich-Segmente. Bitte das Profil ergänzen.",
     "errorGeneric": "Berechnung fehlgeschlagen: {{detail}}",
     "toastSaved": "Dosis gespeichert — {{dose}} E Bolus protokolliert um {{time}}",
-    "toastError": "Dosis konnte nicht gespeichert werden — bitte erneut versuchen"
+    "toastError": "Dosis konnte nicht gespeichert werden — bitte erneut versuchen",
+    "seaWait": "{{minutes}} Min. vor dem Essen warten",
+    "seaLabel": "(Spritz-Ess-Abstand)"
   },
   "dashboard": {
     "delta": "Δ",

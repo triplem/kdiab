@@ -153,6 +153,16 @@ components:
           type: array
           items:
             type: string
+        recommendedWaitMinutes:
+          type: integer
+          format: int32
+          nullable: true
+          description: >
+            Recommended wait time in minutes between injection and eating
+            (Spritz-Ess-Abstand / SEA), derived from the active profile's
+            insulin-to-meal interval segment. Null when no SEA segments are
+            configured.
+          example: 20
     ErrorResponse:
       type: object
       description: Standard error envelope returned by all error responses

@@ -9,6 +9,7 @@ import org.javafreedom.kdiab.profiles.api.models.BasalSegment
 import org.javafreedom.kdiab.profiles.api.models.CreateProfileRequest
 import org.javafreedom.kdiab.profiles.api.models.IcrSegment
 import org.javafreedom.kdiab.profiles.api.models.InsulinSettings as ApiInsulinSettings
+import org.javafreedom.kdiab.profiles.api.models.InsulinToMealIntervalSegment as ApiInsulinToMealIntervalSegment
 import org.javafreedom.kdiab.profiles.api.models.IsfSegment
 import org.javafreedom.kdiab.profiles.api.models.Profile
 import org.javafreedom.kdiab.profiles.api.models.ProfileCollaboration as ApiProfileCollaboration
@@ -16,6 +17,7 @@ import org.javafreedom.kdiab.profiles.api.models.ProfileSchedule as ApiProfileSc
 import org.javafreedom.kdiab.profiles.api.models.TargetSegment
 import org.javafreedom.kdiab.profiles.domain.model.AnalysisRange
 import org.javafreedom.kdiab.profiles.domain.model.InsulinSettings
+import org.javafreedom.kdiab.profiles.domain.model.InsulinToMealIntervalSegment
 import org.javafreedom.kdiab.profiles.domain.model.Profile.Companion.DEFAULT_DURATION_OF_ACTION
 import org.javafreedom.kdiab.profiles.domain.model.ProfileCollaboration
 import org.javafreedom.kdiab.profiles.domain.model.ProfileSchedule
@@ -36,6 +38,7 @@ fun CreateProfileRequest.toDomain(
     val icrList = this.schedule?.icr ?: this.icr ?: emptyList()
     val isfList = this.schedule?.isf ?: this.isf ?: emptyList()
     val targetsList = this.schedule?.targets ?: this.targets ?: emptyList()
+    val seaList = this.schedule?.insulinToMealInterval ?: emptyList()
     val proposalReasonVal = this.collaboration?.proposalReason ?: this.proposalReason
 
     return DomainProfile(
@@ -80,6 +83,12 @@ fun CreateProfileRequest.toDomain(
                     it.high
                 )
             },
+            insulinToMealInterval = seaList.map {
+                InsulinToMealIntervalSegment(
+                    kotlinx.datetime.LocalTime.parse(it.startTime),
+                    it.minutes
+                )
+            },
         ),
         collaboration = if (proposalReasonVal != null) {
             ProfileCollaboration(proposalReason = proposalReasonVal)
@@ -100,6 +109,7 @@ fun Profile.toDomain(): DomainProfile {
     val icrList = this.schedule.icr
     val isfList = this.schedule.isf
     val targetsList = this.schedule.targets
+    val seaList = this.schedule.insulinToMealInterval ?: emptyList()
     val proposalReasonVal = this.collaboration?.proposalReason ?: this.proposalReason
     val rejectionReasonVal = this.collaboration?.rejectionReason ?: this.rejectionReason
 
@@ -146,6 +156,12 @@ fun Profile.toDomain(): DomainProfile {
                     it.high
                 )
             },
+            insulinToMealInterval = seaList.map {
+                InsulinToMealIntervalSegment(
+                    kotlinx.datetime.LocalTime.parse(it.startTime),
+                    it.minutes
+                )
+            },
         ),
         collaboration = if (proposalReasonVal != null || rejectionReasonVal != null) {
             ProfileCollaboration(
@@ -183,6 +199,9 @@ fun DomainProfile.toApi(): Profile {
             icr = this.schedule.icr.map { IcrSegment(it.startTime.toString(), it.value) },
             isf = this.schedule.isf.map { IsfSegment(it.startTime.toString(), it.value) },
             targets = this.schedule.targets.map { TargetSegment(it.startTime.toString(), it.low, it.high) },
+            insulinToMealInterval = this.schedule.insulinToMealInterval
+                .map { ApiInsulinToMealIntervalSegment(it.startTime.toString(), it.minutes) }
+                .takeIf { it.isNotEmpty() },
         ),
         collaboration = if (this.collaboration != null) {
             ApiProfileCollaboration(

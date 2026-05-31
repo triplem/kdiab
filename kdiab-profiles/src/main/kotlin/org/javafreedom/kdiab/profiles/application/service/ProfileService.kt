@@ -203,6 +203,7 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                         "icr" -> profile.schedule.icr.size
                         "isf" -> profile.schedule.isf.size
                         "targets" -> profile.schedule.targets.size
+                        "insulintomealinterval" -> profile.schedule.insulinToMealInterval.size
                         else -> throw IllegalArgumentException("Unknown segment type: $segmentType")
                 }
 
@@ -219,6 +220,10 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                         "targets" -> profile.schedule.copy(
                                 targets = profile.schedule.targets.filterNot { it.startTime == startTime }
                         )
+                        "insulintomealinterval" -> profile.schedule.copy(
+                                insulinToMealInterval = profile.schedule.insulinToMealInterval
+                                        .filterNot { it.startTime == startTime }
+                        )
                         else -> throw IllegalArgumentException("Unknown segment type: $segmentType")
                 }
                 val updatedProfile = profile.copy(schedule = updatedSchedule)
@@ -227,7 +232,8 @@ class ProfileService(private val profileRepository: ProfileRepository) {
                         "basal" -> updatedProfile.schedule.basal.size
                         "icr" -> updatedProfile.schedule.icr.size
                         "isf" -> updatedProfile.schedule.isf.size
-                        else -> updatedProfile.schedule.targets.size
+                        "targets" -> updatedProfile.schedule.targets.size
+                        else -> updatedProfile.schedule.insulinToMealInterval.size
                 }
 
                 if (newSize == originalSize) {

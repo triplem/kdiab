@@ -371,6 +371,30 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
             </div>
           )}
 
+          {result.recommendedWaitMinutes !== null && result.recommendedWaitMinutes !== undefined && (
+            <div
+              role="note"
+              style={{
+                marginTop: '1rem',
+                padding: '0.75rem',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                border: '1px solid rgba(59, 130, 246, 0.3)',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+            >
+              <span style={{ fontSize: '1.25rem' }}>⏱</span>
+              <span style={{ fontSize: '0.9rem' }}>
+                <strong>{t('doseCalc.seaWait', { minutes: result.recommendedWaitMinutes })}</strong>
+                <span style={{ color: 'var(--text-secondary)', marginLeft: '0.4rem' }}>
+                  {t('doseCalc.seaLabel')}
+                </span>
+              </span>
+            </div>
+          )}
+
           {/* Patient correction and accept */}
           <div style={{ marginTop: '1.25rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem' }}>
             <div style={{ marginBottom: '0.75rem' }}>
