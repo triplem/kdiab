@@ -478,7 +478,9 @@
     "toastSaved": "Dose saved — {{dose}} U bolus recorded at {{time}}",
     "toastError": "Failed to save dose — please try again",
     "seaWait": "Wait {{minutes}} min before eating",
-    "seaLabel": "(Spritz-Ess-Abstand)"
+    "seaLabel": "(Spritz-Ess-Abstand)",
+    "carbsInMinutes": "Carbs in (minutes):",
+    "carbsInMinutesPlaceholder": "0 = eating now"
   },
   "dashboard": {
     "delta": "Δ",

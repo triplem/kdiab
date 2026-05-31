@@ -478,7 +478,9 @@
     "toastSaved": "Dosis gespeichert — {{dose}} E Bolus protokolliert um {{time}}",
     "toastError": "Dosis konnte nicht gespeichert werden — bitte erneut versuchen",
     "seaWait": "{{minutes}} Min. vor dem Essen warten",
-    "seaLabel": "(Spritz-Ess-Abstand)"
+    "seaLabel": "(Spritz-Ess-Abstand)",
+    "carbsInMinutes": "KH in (Minuten):",
+    "carbsInMinutesPlaceholder": "0 = jetzt essen"
   },
   "dashboard": {
     "delta": "Δ",
