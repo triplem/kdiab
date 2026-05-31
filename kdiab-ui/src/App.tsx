@@ -28,7 +28,6 @@ import { DoseCalculator } from './features/calc/DoseCalculator'
 import { UserSettings } from './features/users/UserSettings'
 import { AdminUserList } from './features/users/AdminUserList'
 import { AdminDoctorPatients } from './features/users/AdminDoctorPatients'
-import { RegistrationForm } from './features/users/RegistrationForm'
 import { measuresApi } from './api/measuresApi'
 import { treatmentsApi } from './api/treatmentsApi'
 import { useQueryClient } from '@tanstack/react-query'
@@ -38,12 +37,22 @@ import { ProposedBadge } from './features/profiles/ProposedBadge'
 
 type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'analytics' | 'report' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors' | 'preferences'
 
+// Default OIDC client_id for the kdiab OIDC configuration (matches nginx proxy and Keycloak realm)
+const DEFAULT_OIDC_CLIENT_ID = 'kdiab-analyze-frontend'
+
+function buildKeycloakRegistrationUrl(): string | null {
+  const env = import.meta.env as Record<string, string>
+  const authority = (env['VITE_OIDC_AUTHORITY'] ?? '').replace(/\/$/, '')
+  if (!authority) return null
+  const clientId = env['VITE_OIDC_CLIENT_ID'] ?? DEFAULT_OIDC_CLIENT_ID
+  return `${authority}/protocol/openid-connect/registrations?client_id=${clientId}&response_type=code`
+}
+
 export default function App() {
   const auth = useAuth()
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
-  const [showRegistration, setShowRegistration] = useState(false)
 
   // Auth-derived state
   const [roles, setRoles] = useState<string[]>([])
@@ -245,10 +254,8 @@ export default function App() {
   }
 
   if (!auth.isAuthenticated) {
-    if (showRegistration) {
-      return <RegistrationForm onBack={() => setShowRegistration(false)} />
-    }
     const oidcError = auth.error?.message ?? loginError
+    const registrationUrl = buildKeycloakRegistrationUrl()
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <h1>{t('app.title')}</h1>
@@ -269,11 +276,11 @@ export default function App() {
             {t('app.loginError')}: {oidcError}
           </p>
         )}
-        {(import.meta.env as Record<string, string>)['VITE_SELF_REGISTRATION_ENABLED'] === 'true' && (
+        {registrationUrl && (
           <p style={{ marginTop: '1rem' }}>
-            <button className="btn outline" onClick={() => setShowRegistration(true)}>
+            <a href={registrationUrl} className="btn outline" data-testid="register-link">
               {t('app.register')}
-            </button>
+            </a>
           </p>
         )}
       </div>

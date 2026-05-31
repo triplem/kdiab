@@ -609,20 +609,6 @@
     "GOOGLE_FIT": "Google Fit",
     "APPLE_HEALTH": "Apple Health"
   },
-  "registration": {
-    "title": "Konto erstellen",
-    "fieldName": "Vollständiger Name",
-    "fieldEmail": "E-Mail",
-    "fieldPassword": "Passwort",
-    "fieldConfirmPassword": "Passwort bestätigen",
-    "passwordMismatch": "Passwörter stimmen nicht überein",
-    "submit": "Registrieren",
-    "backToLogin": "Zurück zur Anmeldung",
-    "disabled": "Selbstregistrierung ist derzeit nicht verfügbar.",
-    "emailTaken": "Diese E-Mail-Adresse ist bereits registriert.",
-    "pendingTitle": "Kontoantrag eingegangen",
-    "pendingMessage": "Ihr Kontoantrag wurde eingegangen. Ein Administrator wird ihn in Kürze prüfen."
-  },
   "report": {
     "title": "Patientenbericht",
     "generate": "Bericht erstellen",

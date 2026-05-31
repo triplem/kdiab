@@ -609,20 +609,6 @@
     "GOOGLE_FIT": "Google Fit",
     "APPLE_HEALTH": "Apple Health"
   },
-  "registration": {
-    "title": "Create an account",
-    "fieldName": "Full name",
-    "fieldEmail": "Email",
-    "fieldPassword": "Password",
-    "fieldConfirmPassword": "Confirm password",
-    "passwordMismatch": "Passwords do not match",
-    "submit": "Register",
-    "backToLogin": "Back to login",
-    "disabled": "Self-registration is not available at this time.",
-    "emailTaken": "This email address is already registered.",
-    "pendingTitle": "Account request received",
-    "pendingMessage": "Your account request has been received. An admin will review it shortly."
-  },
   "report": {
     "title": "Patient Report",
     "generate": "Generate Report",
