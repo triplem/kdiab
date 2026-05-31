@@ -7,6 +7,20 @@ import type { TreatmentEditMode } from './AddTreatmentModal'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import {
+  Syringe,
+  MapPin,
+  Activity,
+  Zap,
+  Droplets,
+  PauseCircle,
+  Battery,
+  Utensils,
+  Apple,
+  Candy,
+  PersonStanding,
+  FileText,
+} from 'lucide-react'
 
 interface TreatmentListProps {
   userId: string
@@ -14,27 +28,27 @@ interface TreatmentListProps {
   canArchive: boolean
 }
 
-const TREATMENT_ICONS: Record<string, string> = {
-  INSULIN_CHANGE: '\u{1F489}',
-  SITE_CHANGE: '\u{1F4CD}',
-  SENSOR_INSERT: '\u{1FA79}',
-  BOLUS: '\u{1F489}',
-  CORRECTION_BOLUS: '\u{1F489}',
-  COMBO_BOLUS: '\u{1F489}',
-  BASAL: '\u{1F489}',
-  TEMP_BASAL: '\u{1F489}',
-  PUMP_SUSPEND: '⏸️',
-  PUMP_BATTERY_CHANGE: '\u{1F50B}',
-  CARBS: '\u{1F35E}',
-  MEAL: '\u{1F37D}️',
-  HYPO_TREATMENT: '\u{1F36C}',
-  EXERCISE: '\u{1F3C3}',
-  ACTIVITY: '\u{1F3C3}',
-  NOTE: '\u{1F4DD}',
+const TREATMENT_ICONS: Record<string, React.FC<{ size?: number }>> = {
+  INSULIN_CHANGE: Syringe,
+  SITE_CHANGE: MapPin,
+  SENSOR_INSERT: Activity,
+  BOLUS: Zap,
+  CORRECTION_BOLUS: Zap,
+  COMBO_BOLUS: Zap,
+  BASAL: Droplets,
+  TEMP_BASAL: Droplets,
+  PUMP_SUSPEND: PauseCircle,
+  PUMP_BATTERY_CHANGE: Battery,
+  CARBS: Apple,
+  MEAL: Utensils,
+  HYPO_TREATMENT: Candy,
+  EXERCISE: PersonStanding,
+  ACTIVITY: PersonStanding,
+  NOTE: FileText,
 }
 
-function getTreatmentIcon(type: string): string {
-  return TREATMENT_ICONS[type] ?? ''
+function getTreatmentIcon(type: string): React.FC<{ size?: number }> | null {
+  return TREATMENT_ICONS[type] ?? null
 }
 
 const FIELD_LABELS: Record<string, string> = {
@@ -379,7 +393,7 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
         <tbody>
           {treatments.map((tr) => {
             const isExpanded = expandedIds.has(tr.id)
-            const typeIcon = getTreatmentIcon(tr.type)
+            const TypeIcon = getTreatmentIcon(tr.type)
             return (
               <React.Fragment key={tr.id}>
                 <tr
@@ -431,9 +445,9 @@ export const TreatmentList: React.FC<TreatmentListProps> = ({ userId, canDelete,
                         color: 'var(--text-primary)',
                       }}
                     >
-                      {typeIcon && (
-                        <span aria-hidden="true" style={{ marginRight: '4px' }}>
-                          {typeIcon}
+                      {TypeIcon && (
+                        <span aria-hidden="true" style={{ marginRight: '4px', display: 'inline-flex', verticalAlign: 'middle' }}>
+                          <TypeIcon size={14} />
                         </span>
                       )}
                       {t(`treatmentModal.types.${tr.type}`, { defaultValue: tr.type })}

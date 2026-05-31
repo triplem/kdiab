@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { treatmentsApi } from '../../api/treatmentsApi'
 import { toast } from 'sonner'
+import { Syringe, MapPin, Activity } from 'lucide-react'
 
 interface QuickLogButtonsProps {
   userId: string
@@ -10,10 +11,10 @@ interface QuickLogButtonsProps {
 
 type PumpEventType = 'INSULIN_CHANGE' | 'SITE_CHANGE' | 'SENSOR_INSERT'
 
-const PUMP_EVENTS: { type: PumpEventType; icon: string }[] = [
-  { type: 'INSULIN_CHANGE', icon: '\u{1F489}' },
-  { type: 'SITE_CHANGE', icon: '\u{1F4CD}' },
-  { type: 'SENSOR_INSERT', icon: '\u{1F4F6}' },
+const PUMP_EVENTS: { type: PumpEventType; icon: React.FC<{ size?: number }> }[] = [
+  { type: 'INSULIN_CHANGE', icon: Syringe },
+  { type: 'SITE_CHANGE', icon: MapPin },
+  { type: 'SENSOR_INSERT', icon: Activity },
 ]
 
 export const QuickLogButtons: React.FC<QuickLogButtonsProps> = ({ userId, onLogged }) => {
@@ -50,7 +51,7 @@ export const QuickLogButtons: React.FC<QuickLogButtonsProps> = ({ userId, onLogg
       <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
         {t('treatments.quickLog', { defaultValue: 'Quick log:' })}
       </span>
-      {PUMP_EVENTS.map(({ type, icon }) => (
+      {PUMP_EVENTS.map(({ type, icon: Icon }) => (
         <button
           key={type}
           className="btn outline"
@@ -60,7 +61,7 @@ export const QuickLogButtons: React.FC<QuickLogButtonsProps> = ({ userId, onLogg
           aria-label={t(`treatmentModal.types.${type}`)}
           onClick={() => void handleQuickLog(type)}
         >
-          {icon} {saving === type
+          <Icon size={16} /> {saving === type
             ? t('common.saving')
             : t(`treatmentModal.types.${type}`)}
         </button>
