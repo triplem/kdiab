@@ -30,12 +30,11 @@ class UserMapperTest {
         alarms = AlarmThresholds(urgentHigh = 260, high = 200, low = 75, urgentLow = 55),
     )
 
-    private fun user(s: UserSettings? = settings(), birthday: LocalDate? = null) = User(
+    private fun user(s: UserSettings? = settings()) = User(
         userId = userId,
         email = "test@example.com",
         displayName = "Test User",
         roles = setOf(Role.PATIENT),
-        birthday = birthday,
         settings = s,
     )
 
@@ -47,14 +46,6 @@ class UserMapperTest {
         assertEquals("Test User", response.displayName)
         assertEquals(listOf("PATIENT"), response.roles)
         assertNotNull(response.settings)
-        assertNull(response.birthday)
-    }
-
-    @Test
-    fun `toResponse maps birthday from User domain object`() {
-        val birthday = LocalDate(1990, 5, 15)
-        val response = user(birthday = birthday).toResponse()
-        assertEquals("1990-05-15", response.birthday)
     }
 
     @Test
@@ -76,16 +67,19 @@ class UserMapperTest {
         assertEquals(200, alarms.high)
         assertEquals(75, alarms.low)
         assertEquals(55, alarms.urgentLow)
+        assertNull(response.birthday)
         assertNull(response.diabetes.diabetesSince)
         assertNull(response.jwtBackedNote)
     }
 
     @Test
-    fun `UserSettings toResponse maps diabetesSince when set`() {
-        val settingsWithDiabetes = settings().copy(
+    fun `UserSettings toResponse maps birthday and diabetesSince when set`() {
+        val settingsWithDates = settings().copy(
+            birthday = LocalDate(1990, 5, 15),
             diabetes = DiabetesProfile(sensorDurationHours = 240, diabetesSince = 2010),
         )
-        val response = settingsWithDiabetes.toResponse()
+        val response = settingsWithDates.toResponse()
+        assertEquals("1990-05-15", response.birthday)
         assertEquals(2010, response.diabetes.diabetesSince)
     }
 
@@ -100,19 +94,6 @@ class UserMapperTest {
     fun `UserSettings toResponse includes jwtBackedNote when provided`() {
         val response = settings().toResponse(jwtBackedNote = "Takes effect on next login.")
         assertEquals("Takes effect on next login.", response.jwtBackedNote)
-    }
-
-    @Test
-    fun `PatchProfileRequest toBirthday parses valid date string`() {
-        val req = PatchProfileRequest(birthday = "1990-05-15")
-        val birthday = req.toBirthday()
-        assertEquals(LocalDate(1990, 5, 15), birthday)
-    }
-
-    @Test
-    fun `PatchProfileRequest toBirthday returns null when birthday is null`() {
-        val req = PatchProfileRequest(birthday = null)
-        assertNull(req.toBirthday())
     }
 
     @Test
@@ -135,11 +116,13 @@ class UserMapperTest {
     }
 
     @Test
-    fun `PatchSettingsRequest toPatch maps diabetesSince`() {
+    fun `PatchSettingsRequest toPatch maps birthday and diabetesSince`() {
         val req = PatchSettingsRequest(
+            birthday = "1990-05-15",
             diabetes = DiabetesProfilePatch(diabetesSince = 2010),
         )
         val patch = req.toPatch()
+        assertEquals(LocalDate(1990, 5, 15), patch.birthday)
         assertEquals(2010, patch.diabetesSince)
     }
 
@@ -148,6 +131,7 @@ class UserMapperTest {
         val patch = PatchSettingsRequest().toPatch()
         assertNull(patch.timezone)
         assertNull(patch.glucoseUnit)
+        assertNull(patch.birthday)
         assertNull(patch.diabetesSince)
     }
 }

@@ -17,8 +17,8 @@ tags:
     description: Admin-only user management
   - name: DoctorPatient
     description: Doctor–patient relationship management
-  - name: Registration
-    description: Self-registration (feature-flagged)
+  - name: Invitations
+    description: Doctor invitation flow — doctors invite patients, patients accept or decline
 
 paths:
   /users/me:
@@ -35,31 +35,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-
-  /users/me/profile:
-    patch:
-      operationId: patchMyProfile
-      summary: Update own profile data
-      description: Partially updates the authenticated user's biographical profile data (e.g. birthday). Birthday is PII and must never appear in logs.
-      tags: [Self]
-      security: [{ bearerAuth: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PatchProfileRequest"
-      responses:
-        "200":
-          description: Updated user profile
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
 
@@ -416,41 +391,233 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /register:
-    post:
-      operationId: register
-      summary: Self-register (public, feature-flagged — returns 404 when disabled)
-      description: >
-        Creates a new user account. Returns 404 when SELF_REGISTRATION_ENABLED is false.
-        When SELF_REGISTRATION_REQUIRES_APPROVAL is true, the account is created with no
-        roles and must be approved by an admin before the user can log in.
+  /users/admin/invitations:
+    get:
+      operationId: listAllInvitations
+      summary: List all invitations (admin only)
+      description: Returns a paginated list of all invitations across all doctors and patients. Supports optional filtering by status.
+      tags: [Invitations]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/InvitationStatus"
+          description: Filter by invitation status. Returns all statuses when omitted.
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Zero-based page number
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Page size (max 100)
+      responses:
+        "200":
+          description: Paginated list of all invitations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitationPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
 
-        Duplicate email addresses are intentionally absorbed: if the email is already
-        registered, the response is identical to a successful registration (201). This
-        prevents user enumeration via differing response codes or bodies.
-      tags: [Registration]
-      security: []
+  /users/admin/invitations/{invitationId}:
+    delete:
+      operationId: adminCancelInvitation
+      summary: Cancel any invitation (admin only)
+      description: Sets the invitation status to CANCELLED. This is a soft cancel — the invitation record is retained for audit purposes.
+      tags: [Invitations]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/invitationId"
+      responses:
+        "204":
+          description: Invitation cancelled
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /users/{doctorId}/invitations:
+    post:
+      operationId: sendInvitation
+      summary: Send a doctor invitation to a patient
+      description: Creates a new PENDING invitation from the authenticated doctor to a patient identified by email or username. The doctor may only send invitations on their own behalf; admins may send on behalf of any doctor.
+      tags: [Invitations]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/doctorId"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RegisterRequest"
+              $ref: "#/components/schemas/SendInvitationRequest"
       responses:
         "201":
-          description: Registration accepted
+          description: Invitation created
           headers:
             Location:
               schema:
                 type: string
+              description: URL of the created invitation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RegisterResponse"
+                $ref: "#/components/schemas/InvitationResponse"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
-          description: Registration is disabled on this server
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+    get:
+      operationId: listDoctorInvitations
+      summary: List outgoing invitations for a doctor
+      description: Returns invitations sent by the given doctor. Defaults to PENDING status. Admins may query any doctor; the doctor may only query their own invitations.
+      tags: [Invitations]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/doctorId"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/InvitationStatus"
+          description: Filter by invitation status. Defaults to PENDING when omitted.
+      responses:
+        "200":
+          description: List of outgoing invitations for the doctor
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvitationResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /users/{userId}/invitations/incoming:
+    get:
+      operationId: listIncomingInvitations
+      summary: List incoming invitations for a patient
+      description: Returns invitations received by the given patient. The patient may only list their own incoming invitations; admins may list for any patient.
+      tags: [Invitations]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/userId"
+      responses:
+        "200":
+          description: List of incoming invitations for the patient
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InvitationResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /users/{userId}/invitations/{invitationId}:
+    delete:
+      operationId: cancelInvitation
+      summary: Cancel an outgoing invitation (doctor or admin)
+      description: >
+        Sets the invitation status to CANCELLED. Only PENDING invitations can be cancelled.
+        {userId} must be the UUID of the doctor who sent the invitation.
+        The doctor may only cancel their own invitations (self-access); admins may cancel any.
+      tags: [Invitations]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/userId"
+        - $ref: "#/components/parameters/invitationId"
+      responses:
+        "204":
+          description: Invitation cancelled
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+    patch:
+      operationId: respondToInvitation
+      summary: Accept or decline an incoming invitation (patient or admin)
+      description: >
+        Allows the patient to respond to a PENDING invitation. action=ACCEPT creates the
+        doctor–patient relation and updates the doctor's allowed_patients Keycloak attribute.
+        action=DECLINE sets the status to DECLINED. Only PENDING invitations can be responded to.
+      tags: [Invitations]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/userId"
+        - $ref: "#/components/parameters/invitationId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RespondToInvitationRequest"
+      responses:
+        "200":
+          description: Updated invitation after the patient's response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvitationResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
 
 components:
   securitySchemes:
@@ -478,6 +645,15 @@ components:
         format: uuid
         example: "dddddddd-dddd-dddd-dddd-dddddddddddd"
       description: UUID of the doctor
+    invitationId:
+      name: invitationId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+        example: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+      description: UUID of the invitation
 
   responses:
     Unauthorized:
@@ -550,12 +726,6 @@ components:
           items:
             type: string
           example: ["PATIENT"]
-        birthday:
-          type: string
-          format: date
-          nullable: true
-          description: "Birthday in YYYY-MM-DD format (PII — handle with care)"
-          example: "1990-05-15"
         settings:
           $ref: "#/components/schemas/UserSettingsResponse"
 
@@ -638,6 +808,12 @@ components:
       type: object
       required: [locale, units, diabetes, updatedAt]
       properties:
+        birthday:
+          type: string
+          format: date
+          nullable: true
+          description: "Birthday in YYYY-MM-DD format (PII — handle with care)"
+          example: "1990-05-15"
         locale:
           $ref: "#/components/schemas/LocalePreferences"
         units:
@@ -711,7 +887,7 @@ components:
           description: "Carbohydrate absorption rate in grams per hour"
           example: 20.0
 
-    PatchProfileRequest:
+    PatchSettingsRequest:
       type: object
       properties:
         birthday:
@@ -720,10 +896,6 @@ components:
           nullable: true
           description: "Birthday in YYYY-MM-DD format (PII — handle with care)"
           example: "1990-05-15"
-
-    PatchSettingsRequest:
-      type: object
-      properties:
         locale:
           $ref: "#/components/schemas/LocalePreferencesPatch"
         units:
@@ -759,29 +931,7 @@ components:
           type: string
           enum: [PATIENT, DOCTOR, ADMIN]
 
-    RegisterRequest:
-      type: object
-      required: [email, displayName, password]
-      properties:
-        email:
-          type: string
-          example: "new@example.com"
-        displayName:
-          type: string
-          example: "New Patient"
-        password:
-          type: string
-          example: "SecurePass123!"
 
-    RegisterResponse:
-      type: object
-      required: [userId, message]
-      properties:
-        userId:
-          type: string
-          format: uuid
-        message:
-          type: string
 
     DoctorPatientResponse:
       type: object
@@ -861,6 +1011,118 @@ components:
               type: string
               description: Keycloak token endpoint URL for the client_credentials grant
               example: "http://keycloak:8080/realms/kdiab/protocol/openid-connect/token"
+
+    InvitationPage:
+      type: object
+      required: [content, page, size, totalElements, totalPages]
+      description: "Paginated list of invitations"
+      properties:
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvitationResponse"
+          description: "Invitations on the current page"
+        page:
+          type: integer
+          description: "Zero-based current page number"
+          example: 0
+        size:
+          type: integer
+          description: "Number of items per page"
+          example: 20
+        totalElements:
+          type: integer
+          format: int64
+          description: "Total number of invitations matching the filter"
+          example: 42
+        totalPages:
+          type: integer
+          description: "Total number of pages"
+          example: 3
+
+    InvitationStatus:
+      type: string
+      enum: [PENDING, ACCEPTED, DECLINED, CANCELLED, EXPIRED]
+      description: "Lifecycle status of a doctor invitation"
+      example: "PENDING"
+
+    InvitationResponse:
+      type: object
+      required: [id, doctorId, patientIdentifier, status, createdAt, expiresAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "UUID of the invitation"
+          example: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        doctorId:
+          type: string
+          format: uuid
+          description: "UUID of the doctor who sent the invitation"
+          example: "dddddddd-dddd-dddd-dddd-dddddddddddd"
+        patientIdentifier:
+          type: string
+          description: "Email address or username used to identify the patient at invitation time"
+          example: "sarah@example.com"
+        patientId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "UUID of the patient once resolved from patientIdentifier; null if not yet resolved"
+          example: "11111111-1111-1111-1111-111111111111"
+        status:
+          $ref: "#/components/schemas/InvitationStatus"
+        createdAt:
+          type: string
+          format: date-time
+          description: "ISO-8601 timestamp when the invitation was created"
+          example: "2026-05-31T10:00:00Z"
+        expiresAt:
+          type: string
+          format: date-time
+          description: "ISO-8601 timestamp when the invitation expires if not responded to"
+          example: "2026-06-14T10:00:00Z"
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "ISO-8601 timestamp when the patient accepted or declined; null while PENDING"
+          example: "2026-06-01T08:30:00Z"
+        doctorDisplayName:
+          type: string
+          nullable: true
+          description: "Display name of the doctor at the time of invitation; null if not available"
+          example: "Dr. House"
+        patientDisplayName:
+          type: string
+          nullable: true
+          description: "Display name of the patient once resolved; null while unresolved"
+          example: "Sarah Johnson"
+
+    SendInvitationRequest:
+      type: object
+      required: [patientIdentifier]
+      properties:
+        patientIdentifier:
+          type: string
+          description: "Email address or username of the patient to invite"
+          example: "sarah@example.com"
+        message:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: "Optional personal message from the doctor to the patient"
+          example: "I would like to be your doctor on kdiab."
+
+    RespondToInvitationRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [ACCEPT, DECLINE]
+          description: "Patient's response to the invitation"
+          example: "ACCEPT"
 
     ErrorResponse:
       type: object

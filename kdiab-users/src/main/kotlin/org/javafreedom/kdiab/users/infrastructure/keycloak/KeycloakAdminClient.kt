@@ -336,10 +336,12 @@ class KeycloakAdminClient(
                 val clientId = client.clientId ?: return@mapNotNull null
                 val name = client.attributes?.get("kdiab.key.name") ?: client.name ?: return@mapNotNull null
                 val expiresAtStr = client.attributes?.get("kdiab.key.expires_at")?.takeIf { it.isNotBlank() }
+                @Suppress("UnreachableCode") // false positive: ?.let inside mapNotNull is reachable
                 val expiresAt = expiresAtStr?.let {
                     runCatching { Instant.parse(it) }.getOrNull()
                 }
                 val createdAtStr = client.attributes?.get("kdiab.key.created_at")?.takeIf { it.isNotBlank() }
+                @Suppress("UnreachableCode") // false positive: ?.let inside mapNotNull is reachable
                 val createdAt = createdAtStr?.let {
                     runCatching { Instant.parse(it) }.getOrNull()
                 } ?: Instant.DISTANT_PAST

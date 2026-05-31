@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.uuid.Uuid
 import org.jetbrains.exposed.v1.core.*
+import org.jetbrains.exposed.v1.datetime.date
 import org.jetbrains.exposed.v1.jdbc.*
 import org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction
 import org.javafreedom.kdiab.users.domain.model.AlarmThresholds
@@ -34,6 +35,7 @@ object UserSettingsTable : Table("user_settings") {
     val alarmLow = integer("alarm_low").nullable()
     val alarmUrgentLow = integer("alarm_urgent_low").nullable()
     val sensorDurationHours = integer("sensor_duration_hours").default(DEFAULT_SENSOR_DURATION_HOURS)
+    val birthday = date("birthday").nullable()
     val diabetesSince = integer("diabetes_since").nullable()
     val createdAt = varchar("created_at", ISO_INSTANT_LEN)
     val updatedAt = varchar("updated_at", ISO_INSTANT_LEN)
@@ -57,6 +59,7 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
                     )
                     UserSettings(
                         userId = userId,
+                        birthday = row[UserSettingsTable.birthday],
                         locale = LocalePreferences(
                             timezone = row[UserSettingsTable.timezone],
                             language = row[UserSettingsTable.language],
@@ -82,6 +85,7 @@ class ExposedUserSettingsRepository : UserSettingsRepository {
         suspendTransaction {
             UserSettingsTable.upsert {
                 it[userId] = settings.userId
+                it[birthday] = settings.birthday
                 it[timezone] = settings.locale.timezone
                 it[language] = settings.locale.language
                 it[timeFormat] = settings.locale.timeFormat

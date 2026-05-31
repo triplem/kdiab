@@ -24,21 +24,17 @@ import org.javafreedom.kdiab.common.plugins.configureStatusPages
 import org.javafreedom.kdiab.common.plugins.configureTracing
 import org.javafreedom.kdiab.users.adapters.inbound.web.apiKeyRoutes
 import org.javafreedom.kdiab.users.adapters.inbound.web.doctorPatientRoutes
-import org.javafreedom.kdiab.users.adapters.inbound.web.registrationRoutes
 import org.javafreedom.kdiab.users.adapters.inbound.web.userRoutes
 import org.javafreedom.kdiab.users.application.service.ApiKeyService
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
-import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
-import org.javafreedom.kdiab.users.domain.repository.UserProfileRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakIdentityProviderAdapter
 import org.javafreedom.kdiab.users.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedDoctorPatientRepository
-import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedUserProfileRepository
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedUserSettingsRepository
 
 fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
@@ -79,28 +75,20 @@ fun Application.module() {
 
         val identityProvider: IdentityProviderPort = KeycloakIdentityProviderAdapter(keycloak)
 
-        val requiresApproval = environment.config
-            .propertyOrNull("registration.requiresApproval")?.getString()?.toBoolean() ?: false
-
         val settingsRepo = ExposedUserSettingsRepository()
         val doctorPatientRepo = ExposedDoctorPatientRepository()
-        val userProfileRepo = ExposedUserProfileRepository()
 
         install(DI) { }
         dependencies {
             provide<KeycloakAdminClient> { keycloak }
             provide<IdentityProviderPort> { identityProvider }
             provide<UserSettingsRepository> { settingsRepo }
-            provide<UserProfileRepository> { userProfileRepo }
             provide<DoctorPatientRepository> { doctorPatientRepo }
             provide<UserService> {
-                UserService(identityProvider, settingsRepo, doctorPatientRepo, userProfileRepo)
+                UserService(identityProvider, settingsRepo, doctorPatientRepo)
             }
             provide<DoctorPatientService> {
                 DoctorPatientService(doctorPatientRepo, identityProvider)
-            }
-            provide<RegistrationService> {
-                RegistrationService(identityProvider, settingsRepo, requiresApproval)
             }
             provide<ApiKeyService> {
                 ApiKeyService(keycloak, keycloakTokenEndpoint)
@@ -147,11 +135,7 @@ fun Application.module() {
 
     val userService: UserService by dependencies
     val doctorPatientService: DoctorPatientService by dependencies
-    val registrationService: RegistrationService by dependencies
     val apiKeyService: ApiKeyService by dependencies
-
-    val registrationEnabled = environment.config
-        .propertyOrNull("registration.enabled")?.getString()?.toBoolean() ?: false
 
     routing {
         get("/healthz") { call.respond(HttpStatusCode.OK) }
@@ -167,9 +151,6 @@ fun Application.module() {
             userRoutes(userService)
             doctorPatientRoutes(doctorPatientService)
             apiKeyRoutes(apiKeyService)
-            if (registrationEnabled) {
-                registrationRoutes(registrationService)
-            }
         }
     }
 }

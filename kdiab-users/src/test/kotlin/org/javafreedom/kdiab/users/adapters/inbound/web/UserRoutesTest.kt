@@ -22,14 +22,12 @@ import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.users.application.service.ApiKeyService
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
-import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.domain.model.ApiKey
 import org.javafreedom.kdiab.users.domain.model.ApiKeyCreated
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
-import org.javafreedom.kdiab.users.domain.repository.UserProfileRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.module
 
@@ -40,19 +38,14 @@ private fun Application.installMockDi(
     mockSettingsRepo: UserSettingsRepository,
     mockDoctorRepo: DoctorPatientRepository,
     mockApiKeyService: ApiKeyService,
-    mockUserProfileRepo: UserProfileRepository = mockk(relaxed = true),
 ) {
     install(DI) { }
     dependencies {
         provide<IdentityProviderPort> { mockIdentityProvider }
         provide<UserSettingsRepository> { mockSettingsRepo }
         provide<DoctorPatientRepository> { mockDoctorRepo }
-        provide<UserProfileRepository> { mockUserProfileRepo }
-        provide<UserService> {
-            UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo, mockUserProfileRepo)
-        }
+        provide<UserService> { UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo) }
         provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
-        provide<RegistrationService> { RegistrationService(mockIdentityProvider, mockSettingsRepo, false) }
         provide<ApiKeyService> { mockApiKeyService }
     }
 }

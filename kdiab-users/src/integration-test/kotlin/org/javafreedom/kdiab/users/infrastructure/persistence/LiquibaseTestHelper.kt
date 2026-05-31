@@ -30,7 +30,6 @@ object LiquibaseTestHelper {
     fun cleanData(db: Database) {
         transaction(db) {
             exec("DELETE FROM doctor_patient")
-            exec("DELETE FROM user_profile")
             exec("DELETE FROM user_settings")
         }
     }

@@ -33,15 +33,6 @@ private fun Route.selfRoutes(userService: UserService) {
         call.respond(user.toResponse())
     }
 
-    patch("/users/me/profile") {
-        val principal = call.principal<UserPrincipal>()!!
-        val req = call.receive<PatchProfileRequest>()
-        val birthday = req.toBirthday()
-        userService.updateMyProfile(principal, birthday)
-        val user = userService.getMe(principal)
-        call.respond(user.toResponse())
-    }
-
     patch("/users/me/settings") {
         val principal = call.principal<UserPrincipal>()!!
         val req = call.receive<PatchSettingsRequest>()
