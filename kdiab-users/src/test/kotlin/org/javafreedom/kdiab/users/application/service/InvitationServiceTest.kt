@@ -17,11 +17,14 @@ import kotlinx.coroutines.test.runTest
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.users.domain.model.DoctorInvitation
+import org.javafreedom.kdiab.users.domain.model.InvitationAction
 import org.javafreedom.kdiab.users.domain.model.InvitationStatus
 import org.javafreedom.kdiab.users.domain.repository.DoctorInvitationRepository
+import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
 
@@ -29,7 +32,8 @@ class InvitationServiceTest {
 
     private val invitationRepo = mockk<DoctorInvitationRepository>()
     private val identityProvider = mockk<IdentityProviderPort>()
-    private val service = InvitationService(invitationRepo, identityProvider)
+    private val doctorPatientRepo = mockk<DoctorPatientRepository>()
+    private val service = InvitationService(invitationRepo, identityProvider, doctorPatientRepo)
 
     private val adminId = Uuid.parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
     private val doctorId = Uuid.parse("dddddddd-dddd-dddd-dddd-dddddddddddd")
@@ -153,7 +157,7 @@ class InvitationServiceTest {
         coVerify(exactly = 0) { identityProvider.getUserRoles(any()) }
     }
 
-    // ---- listDoctorInvitations ----
+    // ── listDoctorInvitations ─────────────────────────────────────────────────
 
     private val doctorProfile = IdentityUserProfile(
         id = doctorId.toString(),
@@ -339,5 +343,146 @@ class InvitationServiceTest {
             service.listIncomingInvitations(doctorPrincipal(), patientId)
         }
         coVerify(exactly = 0) { invitationRepo.findPendingByPatientId(any()) }
+    }
+
+    // ── respondToInvitation ───────────────────────────────────────────────────
+
+    private val invitationId = Uuid.parse("11111111-2222-3333-4444-555555555555")
+
+    private fun pendingInvitationWithFixedId() = DoctorInvitation(
+        id = invitationId,
+        doctorId = doctorId,
+        patientIdentifier = patientEmail,
+        patientId = patientId,
+        status = InvitationStatus.PENDING,
+        message = null,
+        createdAt = Clock.System.now(),
+        expiresAt = Clock.System.now(),
+        resolvedAt = null,
+    )
+
+    @Test
+    fun `respondToInvitation ACCEPT happy path creates doctor-patient link and returns ACCEPTED`() = runTest {
+        val inv = pendingInvitationWithFixedId()
+        coEvery { invitationRepo.findById(invitationId) } returns inv
+        coEvery { invitationRepo.updateStatus(invitationId, InvitationStatus.ACCEPTED, any()) } returns true
+        coEvery { doctorPatientRepo.save(any()) } answers { firstArg() }
+        coEvery { doctorPatientRepo.findAllPatientIdsByDoctorId(doctorId) } returns listOf(patientId)
+        coEvery { identityProvider.updateUserAttributes(doctorId, any()) } returns Unit
+
+        val result = service.respondToInvitation(patientPrincipal(), patientId, invitationId, InvitationAction.ACCEPT)
+
+        assertEquals(InvitationStatus.ACCEPTED, result.status)
+        assertNotNull(result.resolvedAt)
+        coVerify(exactly = 1) { doctorPatientRepo.save(any()) }
+        coVerify(exactly = 1) { identityProvider.updateUserAttributes(doctorId, any()) }
+    }
+
+    @Test
+    fun `respondToInvitation ACCEPT admin can accept on behalf of patient`() = runTest {
+        val inv = pendingInvitationWithFixedId()
+        coEvery { invitationRepo.findById(invitationId) } returns inv
+        coEvery { invitationRepo.updateStatus(invitationId, InvitationStatus.ACCEPTED, any()) } returns true
+        coEvery { doctorPatientRepo.save(any()) } answers { firstArg() }
+        coEvery { doctorPatientRepo.findAllPatientIdsByDoctorId(doctorId) } returns listOf(patientId)
+        coEvery { identityProvider.updateUserAttributes(doctorId, any()) } returns Unit
+
+        val result = service.respondToInvitation(adminPrincipal(), patientId, invitationId, InvitationAction.ACCEPT)
+
+        assertEquals(InvitationStatus.ACCEPTED, result.status)
+    }
+
+    @Test
+    fun `respondToInvitation DECLINE happy path returns DECLINED without creating relation`() = runTest {
+        val inv = pendingInvitationWithFixedId()
+        coEvery { invitationRepo.findById(invitationId) } returns inv
+        coEvery { invitationRepo.updateStatus(invitationId, InvitationStatus.DECLINED, any()) } returns true
+
+        val result = service.respondToInvitation(patientPrincipal(), patientId, invitationId, InvitationAction.DECLINE)
+
+        assertEquals(InvitationStatus.DECLINED, result.status)
+        assertNotNull(result.resolvedAt)
+        coVerify(exactly = 0) { doctorPatientRepo.save(any()) }
+        coVerify(exactly = 0) { identityProvider.updateUserAttributes(any(), any()) }
+    }
+
+    @Test
+    fun `respondToInvitation throws ResourceNotFoundException when invitation does not exist`() = runTest {
+        coEvery { invitationRepo.findById(invitationId) } returns null
+
+        assertFailsWith<ResourceNotFoundException> {
+            service.respondToInvitation(patientPrincipal(), patientId, invitationId, InvitationAction.ACCEPT)
+        }
+    }
+
+    @Test
+    fun `respondToInvitation throws ResourceNotFoundException when invitation belongs to different patient`() = runTest {
+        val otherPatientId = Uuid.parse("ffffffff-ffff-ffff-ffff-ffffffffffff")
+        val inv = pendingInvitationWithFixedId().copy(patientId = otherPatientId)
+        coEvery { invitationRepo.findById(invitationId) } returns inv
+
+        assertFailsWith<ResourceNotFoundException> {
+            service.respondToInvitation(adminPrincipal(), patientId, invitationId, InvitationAction.ACCEPT)
+        }
+    }
+
+    @Test
+    fun `respondToInvitation throws ConflictException when invitation is already ACCEPTED`() = runTest {
+        val inv = pendingInvitationWithFixedId().copy(status = InvitationStatus.ACCEPTED)
+        coEvery { invitationRepo.findById(invitationId) } returns inv
+
+        assertFailsWith<ConflictException> {
+            service.respondToInvitation(patientPrincipal(), patientId, invitationId, InvitationAction.DECLINE)
+        }
+    }
+
+    @Test
+    fun `respondToInvitation throws ConflictException when invitation is CANCELLED`() = runTest {
+        val inv = pendingInvitationWithFixedId().copy(status = InvitationStatus.CANCELLED)
+        coEvery { invitationRepo.findById(invitationId) } returns inv
+
+        assertFailsWith<ConflictException> {
+            service.respondToInvitation(patientPrincipal(), patientId, invitationId, InvitationAction.ACCEPT)
+        }
+    }
+
+    @Test
+    fun `respondToInvitation throws ConflictException when invitation is EXPIRED`() = runTest {
+        val inv = pendingInvitationWithFixedId().copy(status = InvitationStatus.EXPIRED)
+        coEvery { invitationRepo.findById(invitationId) } returns inv
+
+        assertFailsWith<ConflictException> {
+            service.respondToInvitation(patientPrincipal(), patientId, invitationId, InvitationAction.ACCEPT)
+        }
+    }
+
+    @Test
+    fun `respondToInvitation throws AuthorizationException when principal is different patient`() = runTest {
+        val otherPatientId = Uuid.parse("ffffffff-ffff-ffff-ffff-ffffffffffff")
+        val otherPrincipal = UserPrincipal(otherPatientId, setOf(Role.PATIENT), emptySet())
+
+        assertFailsWith<AuthorizationException> {
+            service.respondToInvitation(otherPrincipal, patientId, invitationId, InvitationAction.ACCEPT)
+        }
+        coVerify(exactly = 0) { invitationRepo.findById(any()) }
+    }
+
+    @Test
+    fun `respondToInvitation rolls back invitation to PENDING when KC sync fails on ACCEPT`() = runTest {
+        val inv = pendingInvitationWithFixedId()
+        coEvery { invitationRepo.findById(invitationId) } returns inv
+        coEvery { invitationRepo.updateStatus(invitationId, InvitationStatus.ACCEPTED, any()) } returns true
+        coEvery { invitationRepo.updateStatus(invitationId, InvitationStatus.PENDING, null) } returns true
+        coEvery { doctorPatientRepo.save(any()) } answers { firstArg() }
+        coEvery { doctorPatientRepo.findAllPatientIdsByDoctorId(doctorId) } returns listOf(patientId)
+        coEvery { doctorPatientRepo.delete(doctorId, patientId) } returns true
+        coEvery { identityProvider.updateUserAttributes(doctorId, any()) } throws RuntimeException("KC unavailable")
+
+        assertFailsWith<RuntimeException> {
+            service.respondToInvitation(patientPrincipal(), patientId, invitationId, InvitationAction.ACCEPT)
+        }
+
+        coVerify(exactly = 1) { doctorPatientRepo.delete(doctorId, patientId) }
+        coVerify(exactly = 1) { invitationRepo.updateStatus(invitationId, InvitationStatus.PENDING, null) }
     }
 }

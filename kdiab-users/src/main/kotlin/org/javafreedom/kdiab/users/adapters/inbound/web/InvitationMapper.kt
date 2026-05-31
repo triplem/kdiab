@@ -4,6 +4,7 @@ package org.javafreedom.kdiab.users.adapters.inbound.web
 import kotlinx.serialization.Serializable
 import org.javafreedom.kdiab.users.application.service.InvitationListResult
 import org.javafreedom.kdiab.users.domain.model.DoctorInvitation
+import org.javafreedom.kdiab.users.domain.model.InvitationAction
 
 /**
  * Request body for POST /users/{doctorId}/invitations.
@@ -13,6 +14,23 @@ data class SendInvitationRequest(
     val patientIdentifier: String,
     val message: String? = null,
 )
+
+/**
+ * Request body for PATCH /users/{patientId}/invitations/{invitationId}.
+ * The action field must be "ACCEPT" or "DECLINE".
+ */
+@Serializable
+data class RespondToInvitationRequest(
+    val action: String,
+) {
+    fun toAction(): InvitationAction =
+        runCatching { InvitationAction.valueOf(action.uppercase()) }
+            .getOrElse {
+                throw IllegalArgumentException(
+                    "Invalid action '$action'. Must be ACCEPT or DECLINE.",
+                )
+            }
+}
 
 /**
  * Response body for invitation endpoints.
@@ -58,7 +76,7 @@ fun InvitationListResult.toPageResponse() = InvitationPageResponse(
 )
 
 // doctorDisplayName and patientDisplayName are populated by list/detail endpoints
-// that resolve display names from the identity provider. The POST response omits them (null).
+// that resolve display names from the identity provider. The POST and PATCH responses omit them (null).
 fun DoctorInvitation.toResponse(
     doctorDisplayName: String? = null,
     patientDisplayName: String? = null,
