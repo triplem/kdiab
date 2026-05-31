@@ -736,4 +736,61 @@ class NightscoutV3ServiceTest {
             treatmentsClient.deleteTreatment("user1", "Bearer token", "corr", "t1", true)
         }
     }
+
+    @Test
+    fun `createEntry throws when entry type is not supported by mapper`() = runTest {
+        val unsupportedEntry = Ns3Entry(
+            identifier = "temp",
+            date = 1704067200000L,
+            dateString = "2024-01-01T00:00:00Z",
+            type = "unknown-type",
+        )
+
+        val result = runCatching {
+            service.createEntry("user1", "Bearer token", "corr", unsupportedEntry, "mg/dL")
+        }
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("Unsupported entry type") == true)
+    }
+
+    @Test
+    fun `createTreatment throws when treatment eventType is not supported by mapper`() = runTest {
+        val unsupportedTreatment = Ns3Treatment(
+            identifier = "temp",
+            date = 1704067200000L,
+            dateString = "2024-01-01T00:00:00Z",
+            eventType = "UnknownEventType",
+        )
+
+        val result = runCatching {
+            service.createTreatment("user1", "Bearer token", "corr", unsupportedTreatment)
+        }
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("Unsupported treatment eventType") == true)
+    }
+
+    @Test
+    fun `updateProfile throws when profile not found`() = runTest {
+        coEvery { profilesClient.getProfile("user1", "Bearer token", "corr", "missing") } returns null
+
+        val input = Ns3Profile(
+            identifier = "missing",
+            defaultProfile = "New Name",
+            startDate = "2024-01-01T00:00:00Z",
+            units = "mg/dl",
+            dia = 4.0,
+            basalSegments = emptyList(),
+            carbratio = emptyList(),
+            sens = emptyList(),
+        )
+
+        val result = runCatching {
+            service.updateProfile("user1", "Bearer token", "corr", "missing", input)
+        }
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message?.contains("Profile not found") == true)
+    }
 }
