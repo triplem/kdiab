@@ -293,109 +293,11 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
-  /users/{doctorId}/patients:
-    get:
-      operationId: listPatients
-      summary: List patients assigned to a doctor (admin or the doctor)
-      description: Returns doctor–patient relations for the given doctor, ordered by createdAt ascending. Admins may query any doctor; the doctor themselves may query their own list.
-      tags: [DoctorPatient]
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: "#/components/parameters/doctorId"
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 0
-          description: Zero-based page number
-        - name: size
-          in: query
-          schema:
-            type: integer
-            default: 20
-            maximum: 100
-          description: Page size (max 100)
-      responses:
-        "200":
-          description: List of doctor–patient relations
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/DoctorPatientResponse"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-
-    post:
-      operationId: assignPatient
-      summary: Assign a patient to a doctor (admin only)
-      description: Creates a doctor–patient relation and synchronously writes the updated allowed_patients list back to the doctor's Keycloak attributes. The change takes effect in the doctor's next JWT.
-      tags: [DoctorPatient]
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: "#/components/parameters/doctorId"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AssignPatientRequest"
-      responses:
-        "201":
-          description: Assignment created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DoctorPatientResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-        "409":
-          $ref: "#/components/responses/Conflict"
-
-  /users/{doctorId}/patients/{patientId}:
-    delete:
-      operationId: removePatient
-      summary: Remove doctor–patient assignment (admin only)
-      description: Removes the doctor–patient relation and synchronously updates the doctor's allowed_patients Keycloak attribute. The change takes effect in the doctor's next JWT.
-      tags: [DoctorPatient]
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: "#/components/parameters/doctorId"
-        - name: patientId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: UUID of the patient
-      responses:
-        "204":
-          description: Assignment removed
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
-        '429':
-          $ref: '#/components/responses/TooManyRequests'
-        "404":
-          $ref: "#/components/responses/NotFound"
-
   /users/admin/invitations:
     get:
       operationId: listAllInvitations
       summary: List all invitations (admin only)
-      description: Returns a paginated list of all invitations across all doctors and patients. Supports optional filtering by status.
+      description: Returns all invitations across all doctors and patients. Supports optional filtering by status.
       tags: [Invitations]
       security: [{ bearerAuth: [] }]
       parameters:
@@ -511,6 +413,21 @@ paths:
           schema:
             $ref: "#/components/schemas/InvitationStatus"
           description: Filter by invitation status. Defaults to PENDING when omitted.
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Zero-based page number
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Page size (max 100)
       responses:
         "200":
           description: List of outgoing invitations for the doctor
@@ -520,8 +437,6 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/InvitationResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -538,6 +453,21 @@ paths:
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: "#/components/parameters/userId"
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Zero-based page number
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Page size (max 100)
       responses:
         "200":
           description: List of incoming invitations for the patient
@@ -558,10 +488,7 @@ paths:
     delete:
       operationId: cancelInvitation
       summary: Cancel an outgoing invitation (doctor or admin)
-      description: >
-        Sets the invitation status to CANCELLED. Only PENDING invitations can be cancelled.
-        {userId} must be the UUID of the doctor who sent the invitation.
-        The doctor may only cancel their own invitations (self-access); admins may cancel any.
+      description: Sets the invitation status to CANCELLED. Only PENDING invitations can be cancelled. The doctor may only cancel their own invitations; admins may cancel any.
       tags: [Invitations]
       security: [{ bearerAuth: [] }]
       parameters:
@@ -618,6 +545,104 @@ paths:
           $ref: "#/components/responses/Conflict"
         "429":
           $ref: "#/components/responses/TooManyRequests"
+
+  /users/{doctorId}/patients:
+    get:
+      operationId: listPatients
+      summary: List patients assigned to a doctor (admin or the doctor)
+      description: Returns doctor–patient relations for the given doctor, ordered by createdAt ascending. Admins may query any doctor; the doctor themselves may query their own list.
+      tags: [DoctorPatient]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/doctorId"
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+          description: Zero-based page number
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+          description: Page size (max 100)
+      responses:
+        "200":
+          description: List of doctor–patient relations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DoctorPatientResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+    post:
+      operationId: assignPatient
+      summary: Assign a patient to a doctor (admin only)
+      description: Creates a doctor–patient relation and synchronously writes the updated allowed_patients list back to the doctor's Keycloak attributes. The change takes effect in the doctor's next JWT.
+      tags: [DoctorPatient]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/doctorId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignPatientRequest"
+      responses:
+        "201":
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoctorPatientResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /users/{doctorId}/patients/{patientId}:
+    delete:
+      operationId: removePatient
+      summary: Remove doctor–patient assignment (admin only)
+      description: Removes the doctor–patient relation and synchronously updates the doctor's allowed_patients Keycloak attribute. The change takes effect in the doctor's next JWT.
+      tags: [DoctorPatient]
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/doctorId"
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the patient
+      responses:
+        "204":
+          description: Assignment removed
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        "404":
+          $ref: "#/components/responses/NotFound"
 
 components:
   securitySchemes:

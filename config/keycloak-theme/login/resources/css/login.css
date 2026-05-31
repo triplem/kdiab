@@ -176,7 +176,8 @@ html, body {
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
 }
 
-.kc-error-text {
+.kc-error-text,
+.kc-field-error {
     font-size: 0.8rem;
     color: #fca5a5;
     margin-top: 0.15rem;
