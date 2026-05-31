@@ -4,6 +4,7 @@ package org.javafreedom.kdiab.users.application.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Instant
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
@@ -278,7 +279,7 @@ class InvitationService(
      *
      * @return the number of invitations that were transitioned to EXPIRED.
      */
-    suspend fun expireOldInvitations(cutoff: kotlin.time.Instant = Clock.System.now()): Int {
+    suspend fun expireOldInvitations(cutoff: Instant = Clock.System.now()): Int {
         val count = invitationRepo.expireBefore(cutoff)
         if (count > 0) logger.info { "invitation_expiry expired count=$count" }
         return count
@@ -420,7 +421,7 @@ class InvitationService(
             principal.isAdmin() -> Unit
             principal.isDoctor() && principal.userId == doctorId -> Unit
             else -> throw AuthorizationException(
-                "Only the doctor themselves or an admin may send invitations on behalf of doctor $doctorId",
+                "Only the doctor themselves or an admin may perform this action on behalf of doctor $doctorId",
             )
         }
     }
