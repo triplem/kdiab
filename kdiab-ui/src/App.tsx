@@ -47,6 +47,7 @@ function buildKeycloakRegistrationUrl(): string | null {
   const authority = (env['VITE_OIDC_AUTHORITY'] ?? '').replace(/\/$/, '')
   if (!authority) return null
   const clientId = env['VITE_OIDC_CLIENT_ID'] ?? DEFAULT_OIDC_CLIENT_ID
+  // window.location.origin excludes any subpath — works for root-path deployments.
   const redirectUri = encodeURIComponent(window.location.origin)
   return `${authority}/protocol/openid-connect/registrations?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}`
 }
