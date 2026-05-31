@@ -252,7 +252,7 @@ export function AdminUserList() {
           aria-labelledby="create-user-modal-title"
           tabIndex={-1}
         >
-          <div className="modal-content" style={{ maxWidth: 420 }}>
+          <div className="modal-box" style={{ maxWidth: 420 }}>
             <h3 id="create-user-modal-title">{t('adminUsers.createTitle')}</h3>
             <form onSubmit={(e) => { void createForm.handleSubmit((v) => createMutation.mutate(v))(e) }} noValidate>
               <div className="form-group">
@@ -301,7 +301,7 @@ export function AdminUserList() {
           aria-labelledby="edit-user-modal-title"
           tabIndex={-1}
         >
-          <div className="modal-content" style={{ maxWidth: 420 }}>
+          <div className="modal-box" style={{ maxWidth: 420 }}>
             <h3 id="edit-user-modal-title">{t('adminUsers.editTitle')}</h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0 0 0.75rem' }}>
               {editUser.email} · {editUser.userId}
@@ -342,7 +342,7 @@ export function AdminUserList() {
           aria-labelledby="delete-user-modal-title"
           tabIndex={-1}
         >
-          <div className="modal-content" style={{ maxWidth: 420 }}>
+          <div className="modal-box" style={{ maxWidth: 420 }}>
             <h3 id="delete-user-modal-title">{t('adminUsers.deleteTitle')}</h3>
             <p>{t('adminUsers.deleteConfirmPrompt', { email: deleteUser.email })}</p>
             <input
