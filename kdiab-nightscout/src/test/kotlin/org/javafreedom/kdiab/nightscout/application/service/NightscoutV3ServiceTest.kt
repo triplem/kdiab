@@ -33,10 +33,11 @@ import org.javafreedom.kdiab.nightscout.domain.model.Ns3Profile
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3SearchParams
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Treatment
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class NightscoutV3ServiceTest {
 
@@ -434,8 +435,8 @@ class NightscoutV3ServiceTest {
         val result = runCatching {
             service.deleteProfile("user1", "Bearer token", "corr", "p1", permanent = true)
         }
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull()?.message?.contains("Permanent deletion") == true)
+        val ex = assertIs<IllegalArgumentException>(result.exceptionOrNull())
+        assertContains(ex.message!!, "Permanent deletion")
     }
 
     @Test
@@ -750,8 +751,8 @@ class NightscoutV3ServiceTest {
             service.createEntry("user1", "Bearer token", "corr", unsupportedEntry, "mg/dL")
         }
 
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull()?.message?.contains("Unsupported entry type") == true)
+        val ex = assertIs<IllegalStateException>(result.exceptionOrNull())
+        assertContains(ex.message!!, "Unsupported entry type")
     }
 
     @Test
@@ -767,8 +768,8 @@ class NightscoutV3ServiceTest {
             service.createTreatment("user1", "Bearer token", "corr", unsupportedTreatment)
         }
 
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull()?.message?.contains("Unsupported treatment eventType") == true)
+        val ex = assertIs<IllegalStateException>(result.exceptionOrNull())
+        assertContains(ex.message!!, "Unsupported treatment eventType")
     }
 
     @Test
@@ -790,7 +791,7 @@ class NightscoutV3ServiceTest {
             service.updateProfile("user1", "Bearer token", "corr", "missing", input)
         }
 
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull()?.message?.contains("Profile not found") == true)
+        val ex = assertIs<IllegalStateException>(result.exceptionOrNull())
+        assertContains(ex.message!!, "Profile not found")
     }
 }
