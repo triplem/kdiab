@@ -112,19 +112,6 @@ data class PatchSettingsRequest(
 )
 
 @Serializable
-data class RegisterRequest(
-    val email: String,
-    val displayName: String,
-    val password: String,
-)
-
-@Serializable
-data class RegisterResponse(
-    val userId: String,
-    val message: String,
-)
-
-@Serializable
 data class DoctorPatientResponse(
     val doctorId: String,
     val patientId: String,

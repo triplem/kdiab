@@ -1,6 +1,6 @@
 # kdiab-users — Agent Context
 
-Port **8088**. User management: Keycloak-backed registration, settings, doctor-patient relationships.
+Port **8088**. User management: settings, doctor-patient relationships. Self-registration is handled natively by Keycloak (#1272).
 See root `CLAUDE.md` for shared conventions.
 
 Root package: `org.javafreedom.kdiab.users`
@@ -10,12 +10,10 @@ Root package: `org.javafreedom.kdiab.users`
 ```
 adapters/inbound/web/
   UserRoutes.kt            # My profile + settings endpoints
-  RegistrationRoutes.kt    # Self-registration (if enabled)
   DoctorPatientRoutes.kt   # Doctor-patient relationship management
   UserMapper.kt            # API ↔ domain mappers
 application/service/
   UserService.kt           # Settings update with alarm validation
-  RegistrationService.kt   # User creation via Keycloak Admin API
   DoctorPatientService.kt
 domain/model/
   User.kt
@@ -53,7 +51,6 @@ infrastructure/persistence/
 | `KEYCLOAK_REALM` | `kdiab` | Realm name |
 | `KEYCLOAK_ADMIN_CLIENT_ID` | `kdiab-users-service` | M2M client ID |
 | `KEYCLOAK_ADMIN_CLIENT_SECRET` | — | M2M client secret (rotate post-deploy) |
-| `SELF_REGISTRATION_ENABLED` | `false` | Whether public self-registration is allowed |
 | `JDBC_URL` | — | PostgreSQL JDBC URL |
 | `DB_USER` / `DB_PASSWORD` | — | DB credentials |
 | `PORT` | `8088` | HTTP listen port |
