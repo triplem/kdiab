@@ -891,6 +891,21 @@
       "siteChanges": "Katheterwechsel ×{{count}}",
       "sensorInserts": "Sensorwechsel ×{{count}}",
       "insulinChanges": "Insulinwechsel ×{{count}}"
+    },
+    "basalRate": {
+      "totalDailyBasal": "Tägliche Basalrate gesamt",
+      "colStartTime": "Startzeit",
+      "colRate": "Rate (E/h)",
+      "colDuration": "Dauer",
+      "colIE": "Einheiten (IE)",
+      "summaryAriaLabel": "Zusammenfassung der Basalrate",
+      "chartAriaLabel": "Basalraten-Diagramm",
+      "chartCaption": "Basalrate über 24 Stunden",
+      "xAxisLabel": "Tageszeit",
+      "yAxisLabel": "Rate (E/h)",
+      "rate": "Rate",
+      "tableAriaLabel": "Basalraten-Zeitplantabelle",
+      "totalDaily": "Gesamt täglich"
     }
   }
 }

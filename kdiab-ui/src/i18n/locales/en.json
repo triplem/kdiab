@@ -880,6 +880,21 @@
       "siteChanges": "Site change ×{{count}}",
       "sensorInserts": "Sensor insert ×{{count}}",
       "insulinChanges": "Insulin change ×{{count}}"
+    },
+    "basalRate": {
+      "totalDailyBasal": "Total Daily Basal",
+      "colStartTime": "Start Time",
+      "colRate": "Rate (U/h)",
+      "colDuration": "Duration",
+      "colIE": "Units (IE)",
+      "summaryAriaLabel": "Basal rate summary",
+      "chartAriaLabel": "Basal rate chart",
+      "chartCaption": "Basal rate over 24 hours",
+      "xAxisLabel": "Time of day",
+      "yAxisLabel": "Rate (U/h)",
+      "rate": "Rate",
+      "tableAriaLabel": "Basal rate schedule table",
+      "totalDaily": "Total Daily"
     }
   }
 }
