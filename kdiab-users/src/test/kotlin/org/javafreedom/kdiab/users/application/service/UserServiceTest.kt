@@ -114,7 +114,7 @@ class UserServiceTest {
         coEvery { identityProvider.listUserProfiles(any(), any(), any()) } returns listOf(identityProfile())
         coEvery { identityProvider.getUserRoles(userId) } returns emptySet()
         coEvery { settingsRepo.findByUserId(any()) } returns null
-        coEvery { userProfileRepo.findBirthdayByUserId(any()) } returns null
+        coEvery { userProfileRepo.findBirthdaysByUserIds(any()) } returns emptyMap()
         val results = service.listUsers(adminPrincipal(), null, 0, 20)
         assertEquals(1, results.size)
     }
@@ -406,6 +406,7 @@ class UserServiceTest {
     fun `listUsers skips profiles with null id`() = runTest {
         val profileWithNullId = IdentityUserProfile(id = null, email = "no-id@example.com")
         coEvery { identityProvider.listUserProfiles(any(), any(), any()) } returns listOf(profileWithNullId)
+        coEvery { userProfileRepo.findBirthdaysByUserIds(any()) } returns emptyMap()
         val results = service.listUsers(adminPrincipal(), null, 0, 20)
         assertEquals(0, results.size)
     }
@@ -414,6 +415,7 @@ class UserServiceTest {
     fun `listUsers skips profiles with unparseable UUID id`() = runTest {
         val profileWithBadId = IdentityUserProfile(id = "not-a-uuid", email = "bad@example.com")
         coEvery { identityProvider.listUserProfiles(any(), any(), any()) } returns listOf(profileWithBadId)
+        coEvery { userProfileRepo.findBirthdaysByUserIds(any()) } returns emptyMap()
         val results = service.listUsers(adminPrincipal(), null, 0, 20)
         assertEquals(0, results.size)
     }
@@ -423,10 +425,27 @@ class UserServiceTest {
         coEvery { identityProvider.listUserProfiles("alice", 0, 10) } returns listOf(identityProfile())
         coEvery { identityProvider.getUserRoles(userId) } returns emptySet()
         coEvery { settingsRepo.findByUserId(any()) } returns null
-        coEvery { userProfileRepo.findBirthdayByUserId(any()) } returns null
+        coEvery { userProfileRepo.findBirthdaysByUserIds(any()) } returns emptyMap()
         val results = service.listUsers(adminPrincipal(), "alice", 0, 10)
         assertEquals(1, results.size)
         coVerify(exactly = 1) { identityProvider.listUserProfiles("alice", 0, 10) }
+    }
+
+    @Test
+    fun `listUsers batch-loads birthdays in a single call`() = runTest {
+        val userId2 = Uuid.parse("22222222-2222-2222-2222-222222222222")
+        val birthday = LocalDate(1990, 5, 15)
+        coEvery { identityProvider.listUserProfiles(any(), any(), any()) } returns
+            listOf(identityProfile(userId), identityProfile(userId2))
+        coEvery { identityProvider.getUserRoles(any()) } returns emptySet()
+        coEvery { settingsRepo.findByUserId(any()) } returns null
+        coEvery { userProfileRepo.findBirthdaysByUserIds(setOf(userId, userId2)) } returns
+            mapOf(userId to birthday, userId2 to null)
+        val results = service.listUsers(adminPrincipal(), null, 0, 20)
+        assertEquals(2, results.size)
+        assertEquals(birthday, results.first { it.userId == userId }.birthday)
+        coVerify(exactly = 1) { userProfileRepo.findBirthdaysByUserIds(any()) }
+        coVerify(exactly = 0) { userProfileRepo.findBirthdayByUserId(any()) }
     }
 
     // --- toDomain displayName derivation edge cases ---

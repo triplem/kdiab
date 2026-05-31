@@ -75,7 +75,37 @@ class ExposedUserProfileRepositoryTest {
 
     @Test
     fun `delete is a no-op when row does not exist`() = runTest {
-        // Should not throw
         repo.delete(Uuid.random())
+    }
+
+    @Test
+    fun `findBirthdaysByUserIds returns empty map when set is empty`() = runTest {
+        val result = repo.findBirthdaysByUserIds(emptySet())
+        assertEquals(emptyMap(), result)
+    }
+
+    @Test
+    fun `findBirthdaysByUserIds returns only rows that exist`() = runTest {
+        val id1 = Uuid.random()
+        val id2 = Uuid.random()
+        val birthday = LocalDate(1990, 5, 15)
+        repo.saveBirthday(id1, birthday)
+        val result = repo.findBirthdaysByUserIds(setOf(id1, id2))
+        assertEquals(1, result.size)
+        assertEquals(birthday, result[id1])
+    }
+
+    @Test
+    fun `findBirthdaysByUserIds returns multiple rows`() = runTest {
+        val id1 = Uuid.random()
+        val id2 = Uuid.random()
+        val b1 = LocalDate(1990, 5, 15)
+        val b2 = LocalDate(1985, 3, 22)
+        repo.saveBirthday(id1, b1)
+        repo.saveBirthday(id2, b2)
+        val result = repo.findBirthdaysByUserIds(setOf(id1, id2))
+        assertEquals(2, result.size)
+        assertEquals(b1, result[id1])
+        assertEquals(b2, result[id2])
     }
 }

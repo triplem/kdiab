@@ -6,6 +6,7 @@ import kotlinx.datetime.LocalDate
 
 interface UserProfileRepository {
     suspend fun findBirthdayByUserId(userId: Uuid): LocalDate?
+    suspend fun findBirthdaysByUserIds(userIds: Set<Uuid>): Map<Uuid, LocalDate?>
     suspend fun saveBirthday(userId: Uuid, birthday: LocalDate?)
     suspend fun delete(userId: Uuid)
 }

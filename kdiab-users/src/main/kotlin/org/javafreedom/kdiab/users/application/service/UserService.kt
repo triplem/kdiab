@@ -121,14 +121,14 @@ class UserService(
                 }
             }
         }
-        // TODO(#1297): batch-load birthdays to avoid N+1 DB round-trips on listUsers
+        val userIds = validProfiles.map { (id, _) -> id }.toSet()
+        val birthdayMap = userProfileRepo.findBirthdaysByUserIds(userIds)
         return coroutineScope {
             validProfiles.map { (userId, profile) ->
                 async {
                     val roles = identityProvider.getUserRoles(userId)
                     val settings = settingsRepo.findByUserId(userId)
-                    val birthday = userProfileRepo.findBirthdayByUserId(userId)
-                    profile.toDomain(settings, roles, birthday)
+                    profile.toDomain(settings, roles, birthdayMap[userId])
                 }
             }.awaitAll()
         }

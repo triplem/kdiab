@@ -30,6 +30,16 @@ class ExposedUserProfileRepository : UserProfileRepository {
         }
     }
 
+    override suspend fun findBirthdaysByUserIds(userIds: Set<Uuid>): Map<Uuid, LocalDate?> =
+        withContext(Dispatchers.IO) {
+            if (userIds.isEmpty()) return@withContext emptyMap()
+            suspendTransaction {
+                UserProfileTable.selectAll()
+                    .where { UserProfileTable.userId inList userIds.toList() }
+                    .associate { row -> row[UserProfileTable.userId] to row[UserProfileTable.birthday] }
+            }
+        }
+
     override suspend fun saveBirthday(userId: Uuid, birthday: LocalDate?): Unit = withContext(Dispatchers.IO) {
         suspendTransaction {
             UserProfileTable.upsert {
