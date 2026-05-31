@@ -52,7 +52,7 @@ function buildKeycloakRegistrationUrl(): string | null {
 
 export default function App() {
   const auth = useAuth()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<Tab>('dashboard')
 
@@ -98,11 +98,14 @@ export default function App() {
       const names = parseAllowedPatientNamesFromToken(token)
       setPatientNames(new Map(patients.map((id, i) => [id, names[i] ?? id])))
 
-      // Fetch glucose/weight units from users service (DB is the source of truth)
+      // Fetch units and language from users service (DB is the source of truth)
       void usersApi.getMe().then(res => {
         setGlucoseUnit(res.data.settings?.units?.glucoseUnit ?? 'mg/dL')
         setWeightUnit(res.data.settings?.units?.weightUnit ?? 'kg')
-      }).catch(() => {
+        const lang = res.data.settings?.locale?.language
+        if (lang) void i18n.changeLanguage(lang)
+      }).catch((err: unknown) => {
+        console.warn('Failed to load user settings on login:', err)
         // Keep defaults on failure — they are already set to mg/dL / kg
       })
 
