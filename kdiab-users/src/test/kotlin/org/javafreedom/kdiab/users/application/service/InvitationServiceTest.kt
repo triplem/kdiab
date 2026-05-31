@@ -486,6 +486,45 @@ class InvitationServiceTest {
         coVerify(exactly = 1) { invitationRepo.updateStatus(invitationId, InvitationStatus.PENDING, null) }
     }
 
+    @Test
+    fun `respondToInvitation continues rollback when doctorPatientRepo delete fails on ACCEPT`() = runTest {
+        val inv = pendingInvitationWithFixedId()
+        coEvery { invitationRepo.findById(invitationId) } returns inv
+        coEvery { invitationRepo.updateStatus(invitationId, InvitationStatus.ACCEPTED, any()) } returns true
+        coEvery { invitationRepo.updateStatus(invitationId, InvitationStatus.PENDING, null) } returns true
+        coEvery { doctorPatientRepo.save(any()) } answers { firstArg() }
+        coEvery { doctorPatientRepo.findAllPatientIdsByDoctorId(doctorId) } returns listOf(patientId)
+        coEvery { doctorPatientRepo.delete(doctorId, patientId) } throws RuntimeException("DB unavailable")
+        coEvery { identityProvider.updateUserAttributes(doctorId, any()) } throws RuntimeException("KC unavailable")
+
+        // Original KC exception must propagate even when both rollback operations fail
+        assertFailsWith<RuntimeException> {
+            service.respondToInvitation(patientPrincipal(), patientId, invitationId, InvitationAction.ACCEPT)
+        }
+
+        // Invitation status rollback is still attempted even when relation delete fails
+        coVerify(exactly = 1) { invitationRepo.updateStatus(invitationId, InvitationStatus.PENDING, null) }
+    }
+
+    @Test
+    fun `respondToInvitation propagates original exception when invitation status rollback also fails on ACCEPT`() = runTest {
+        val inv = pendingInvitationWithFixedId()
+        coEvery { invitationRepo.findById(invitationId) } returns inv
+        coEvery { invitationRepo.updateStatus(invitationId, InvitationStatus.ACCEPTED, any()) } returns true
+        coEvery { invitationRepo.updateStatus(invitationId, InvitationStatus.PENDING, null) } throws
+            RuntimeException("Status rollback DB error")
+        coEvery { doctorPatientRepo.save(any()) } answers { firstArg() }
+        coEvery { doctorPatientRepo.findAllPatientIdsByDoctorId(doctorId) } returns listOf(patientId)
+        coEvery { doctorPatientRepo.delete(doctorId, patientId) } returns true
+        coEvery { identityProvider.updateUserAttributes(doctorId, any()) } throws RuntimeException("KC unavailable")
+
+        // Original KC exception must still propagate
+        val ex = assertFailsWith<RuntimeException> {
+            service.respondToInvitation(patientPrincipal(), patientId, invitationId, InvitationAction.ACCEPT)
+        }
+        assertEquals("KC unavailable", ex.message)
+    }
+
     // ---- expireOldInvitations ----
 
     @Test

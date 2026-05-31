@@ -588,4 +588,21 @@ class UserServiceTest {
         val user = service.getUser(principal, userId)
         assertEquals(userId, user.userId)
     }
+
+    @Test
+    fun `getMe uses empty string as displayName when firstName lastName username and email are all null`() = runTest {
+        val profileAllNull = IdentityUserProfile(
+            id = userId.toString(),
+            email = null,
+            firstName = null,
+            lastName = null,
+            username = null,
+            enabled = true,
+        )
+        coEvery { identityProvider.getUserProfile(userId) } returns profileAllNull
+        coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
+        val user = service.getMe(patientPrincipal())
+        assertEquals("", user.displayName)
+    }
 }
