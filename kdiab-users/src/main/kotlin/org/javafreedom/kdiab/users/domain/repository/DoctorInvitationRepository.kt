@@ -19,6 +19,12 @@ interface DoctorInvitationRepository {
         doctorId: Uuid,
         statuses: Set<InvitationStatus> = emptySet(),
     ): Long
+    suspend fun findAll(
+        status: InvitationStatus? = null,
+        limit: Int = 100,
+        offset: Long = 0,
+    ): List<DoctorInvitation>
+    suspend fun countAll(status: InvitationStatus? = null): Long
     suspend fun findPendingByPatientId(patientId: Uuid): List<DoctorInvitation>
     suspend fun updateStatus(id: Uuid, status: InvitationStatus, resolvedAt: Instant?): Boolean
     suspend fun expireBefore(cutoff: Instant): Int
