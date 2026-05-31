@@ -39,6 +39,10 @@ import { ProposedBadge } from './features/profiles/ProposedBadge'
 
 type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'analytics' | 'report' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors' | 'preferences' | 'doctor-invitations' | 'patient-invitations'
 
+// Tabs that require a patient to be selected when the user is a doctor.
+// Doctors without a selected patient should not see these tabs.
+const PATIENT_CONTEXT_TABS: Tab[] = ['dashboard', 'measures', 'treatments', 'profiles', 'analytics', 'report', 'carbs', 'calc']
+
 // Default OIDC client_id for the kdiab OIDC configuration (matches nginx proxy and Keycloak realm)
 const DEFAULT_OIDC_CLIENT_ID = 'kdiab-analyze-frontend'
 
@@ -131,6 +135,14 @@ export default function App() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin])
+
+  // When a doctor (without a patient role) has no patient selected and is on a
+  // patient-context tab, fall back to doctor-invitations so they are not stranded.
+  useEffect(() => {
+    if (isDoctor && !isPatient && activePatientId === null) {
+      setActiveTab((prev) => (PATIENT_CONTEXT_TABS.includes(prev) ? 'doctor-invitations' : prev))
+    }
+  }, [isDoctor, isPatient, activePatientId])
 
   const ownUserId = auth.user?.profile?.sub ?? ''
   const viewingUserId = activePatientId ?? ownUserId
@@ -308,9 +320,26 @@ export default function App() {
     { key: 'preferences', label: t('nav.preferences') },
   ]
 
-  const visibleTabs = tabs.filter((tab) => !tab.roles?.length || tab.roles.some((r) => roles.includes(r)))
+  const visibleTabs = tabs.filter((tab) => {
+    if (!tab.roles?.length || tab.roles.some((r) => roles.includes(r))) {
+      // Doctors without a selected patient must not see patient-context tabs
+      if (isDoctor && !isPatient && activePatientId === null && PATIENT_CONTEXT_TABS.includes(tab.key)) {
+        return false
+      }
+      return true
+    }
+    return false
+  })
 
   const renderTabContent = () => {
+    if (isDoctor && !isPatient && activePatientId === null && PATIENT_CONTEXT_TABS.includes(activeTab)) {
+      return (
+        <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <p>{t('doctor.selectPatientPrompt')}</p>
+        </div>
+      )
+    }
+
     switch (activeTab) {
       case 'dashboard':
         return <DashboardView userId={viewingUserId} glucoseUnit={activeGlucoseUnit} />

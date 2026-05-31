@@ -18,6 +18,9 @@
     "page": "Seite {{page}}",
     "actions": "Aktionen"
   },
+  "doctor": {
+    "selectPatientPrompt": "Bitte wählen Sie oben einen Patienten aus, um dessen Daten einzusehen."
+  },
   "app": {
     "title": "kdiab",
     "loading": "Authentifizierung wird geladen...",
