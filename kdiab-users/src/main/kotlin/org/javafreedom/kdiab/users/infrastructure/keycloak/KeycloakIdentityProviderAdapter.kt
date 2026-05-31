@@ -49,6 +49,9 @@ class KeycloakIdentityProviderAdapter(
         val kcRoles = roles.map { client.getRealmRole(it.toKeycloakName()) }
         client.removeRoles(userId, kcRoles)
     }
+
+    override suspend fun findUserByIdentifier(identifier: String): Uuid? =
+        client.findUserByIdentifier(identifier)?.let { Uuid.parse(it) }
 }
 
 private fun KeycloakUser.toIdentityProfile() = IdentityUserProfile(

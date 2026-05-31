@@ -60,6 +60,12 @@ interface IdentityProviderPort {
      * Removes [roles] from [userId] in the identity provider.
      */
     suspend fun removeRoles(userId: Uuid, roles: Set<Role>)
+
+    /**
+     * Searches for a user by exact email or username match.
+     * Returns the user's UUID if found, null if no match exists.
+     */
+    suspend fun findUserByIdentifier(identifier: String): Uuid?
 }
 
 /**
