@@ -1,0 +1,161 @@
+= ADR-016: Doctor Invitation State Machine, Expiry Policy, and Compensating Transaction
+:author: kdiab team
+:date: 2026-05-31
+:status: Accepted
+
+== Context
+
+Doctors request access to a patient's health data by sending an invitation. The patient can accept
+or decline. If neither action is taken within a configurable window the invitation expires
+automatically. An admin can also cancel any PENDING invitation.
+
+The design had to resolve three non-trivial questions:
+
+1. *Which transitions are valid, and who may trigger them?*
+   Allowing arbitrary status updates (e.g. accepting an already-declined invitation) produces
+   confusing data.
+
+2. *How is Keycloak kept consistent when a patient accepts?*
+   Accepting an invitation must both create a `doctor_patient` row and update the doctor's
+   `allowed_patients` Keycloak attribute. Both writes must succeed or neither must persist.
+
+3. *How are long-lived PENDING invitations cleaned up?*
+   An invitation that is never answered must eventually be closed, but a background job running
+   on every application instance creates a race condition when the service is horizontally scaled.
+
+== Decision
+
+=== State machine
+
+The `InvitationStatus` enum defines five states:
+
+[source]
+----
+              ┌──────────┐
+   ADMIN/DOCTOR cancel    │  PENDING  │◄── initial state on sendInvitation()
+              └──────┬───┤
+                     │   └────┬────┬────┐
+                     │        │    │    │
+              CANCEL │  ACCEPT│    │DECLINE  EXPIRE (job)
+                     ▼        ▼    ▼    ▼
+                CANCELLED  ACCEPTED DECLINED EXPIRED
+----
+
+Terminal states: `ACCEPTED`, `DECLINED`, `CANCELLED`, `EXPIRED`. Any attempt to respond to or
+cancel an invitation that is not in `PENDING` raises `ConflictException` → HTTP 409.
+
+Valid transitions and who may trigger them:
+
+|===
+| Transition | Actor | Method
+
+| PENDING → ACCEPTED | Patient (self) or ADMIN | `POST /api/v1/users/{patientId}/invitations/{id}/respond` `{"action":"ACCEPT"}`
+| PENDING → DECLINED | Patient (self) or ADMIN | `POST /api/v1/users/{patientId}/invitations/{id}/respond` `{"action":"DECLINE"}`
+| PENDING → CANCELLED | Doctor (own) or ADMIN | `DELETE /api/v1/users/{doctorId}/invitations/{id}`
+| PENDING → CANCELLED | ADMIN only | `DELETE /api/v1/invitations/{id}` (admin endpoint)
+| PENDING → EXPIRED | `InvitationExpiryJob` | Background, no principal
+|===
+
+Authorization uses **resource-scoped 404 over 403**: `findById(id)` on an invitation the caller
+does not own returns 404 rather than 403, preventing invitation-ID enumeration.
+
+=== Expiry policy
+
+An invitation expires 7 days after creation (`INVITATION_TTL = 7.days` in `InvitationService`).
+`expiresAt = createdAt + 7 days` is written at creation time and stored in the `doctor_invitations`
+table. The `InvitationExpiryJob` runs on a coroutine loop (default interval: 60 minutes) and
+calls `invitationRepo.expireBefore(now)`, which issues a single bulk `UPDATE` with `status =
+'EXPIRED'` where `status = 'PENDING' AND expires_at < now`. The interval is configurable via
+`INVITATION_EXPIRY_INTERVAL_MINUTES`.
+
+NOTE: The background job runs inside every application instance. At the current single-instance
+deployment scale this is safe. For horizontally scaled deployments, the bulk-expiry `UPDATE`
+is idempotent — running it concurrently on N instances produces the same result as running it
+once — so correctness is preserved, but N-1 redundant DB round-trips are wasted. A future
+improvement would move expiry to an internal HTTP endpoint triggered by a container-external
+scheduler (e.g. a `docker-compose` cron service or a Kubernetes CronJob).
+
+=== Compensating transaction on ACCEPT
+
+Accepting an invitation has two write targets that must remain consistent:
+
+1. `doctor_patient` table (PostgreSQL)
+2. `allowed_patients` Keycloak user attribute (Keycloak Admin API)
+
+Because Keycloak is a remote service outside the PostgreSQL transaction boundary, a two-phase
+approach with explicit rollback is used:
+
+[source]
+----
+1. UPDATE doctor_invitations SET status='ACCEPTED', resolved_at=now WHERE id=?
+2. INSERT INTO doctor_patient (doctor_id, patient_id, created_at) VALUES (...)
+3. CALL Keycloak Admin API: updateUserAttributes(doctorId, allowed_patients=[...])
+   ┌── SUCCESS → return ACCEPTED invitation
+   └── FAILURE → compensating transaction:
+         DELETE FROM doctor_patient WHERE doctor_id=? AND patient_id=?
+         UPDATE doctor_invitations SET status='PENDING', resolved_at=NULL WHERE id=?
+         log ERROR; rethrow original exception → HTTP 500
+----
+
+The rollback itself can fail (e.g. the DB is also unreachable). Both the primary failure and any
+rollback failure are logged as ERROR with the invitation ID, doctor ID, and patient ID so that an
+operator can manually reconcile if needed. There is no silent data loss.
+
+*Why not a distributed transaction or saga?* At kdiab's scale a full saga with compensation events
+adds significant infrastructure complexity for a failure mode that occurs only when Keycloak is
+down — an event covered by the circuit breaker. The two-write pattern with in-process rollback is
+the simplest approach that achieves the required consistency guarantee.
+
+== Consequences
+
+=== Positive
+
+* The five-state machine is closed: once an invitation leaves PENDING it cannot re-enter any state.
+  This makes the invitation log an immutable audit trail of doctor-patient access requests.
+* Bulk expiry is a single indexed `UPDATE`; it scales to large invitation tables without N+1 queries.
+* The compensating transaction guarantees that a failed Keycloak sync never leaves a
+  `doctor_patient` row without the corresponding Keycloak attribute update (or vice versa).
+* 404 responses on ownership mismatch prevent invitation-ID enumeration by unauthorized callers.
+
+=== Negative
+
+* *No distributed transaction.* If the rollback itself fails (e.g. DB unavailable after Keycloak
+  call fails), the `doctor_patient` row and the invitation status may diverge. Manual
+  reconciliation is required. This is logged with sufficient detail for an operator to recover.
+* *Redundant expiry on multi-instance deployments.* Each instance runs the expiry job
+  independently. The job is idempotent but wastes resources at scale.
+
+=== Neutral
+
+* `resolvedAt` is non-null on all terminal states except none — it is always set when the status
+  transitions from PENDING (via accept, decline, cancel, or expiry). It is null on PENDING
+  invitations, which is the initial state and therefore always has no resolution timestamp.
+* Display names (doctor and patient) are resolved from Keycloak best-effort: a Keycloak lookup
+  failure returns `null` for the display name, never a 500. The invitation data itself is always
+  returned regardless of lookup success.
+
+== Alternatives Considered
+
+=== Soft-delete instead of a terminal CANCELLED/DECLINED state
+
+Mark removed invitations with `deleted_at` and filter them out of queries.
+
+*Rejected.* Soft-delete hides the transition history. The five-state machine preserves a
+complete audit trail of every invitation outcome, which is valuable in a medical context where
+a patient may want to know whether a doctor cancelled an invitation.
+
+=== DB-level expiry (PostgreSQL scheduled job / `pg_cron`)
+
+Run the expiry `UPDATE` inside the database on a schedule via `pg_cron` or a similar extension.
+
+*Rejected.* Adds a PostgreSQL extension dependency and couples schema management to a scheduler
+configured outside Liquibase. The in-process job is simpler and removes the need for superuser
+access in the application DB schema.
+
+=== Saga with a message broker (Kafka, RabbitMQ)
+
+Publish a `InvitationAccepted` event; a separate consumer updates Keycloak asynchronously.
+
+*Rejected.* Introduces a message broker dependency for a single write path. The current
+deployment has no broker; adding one for this one use case is disproportionate. The
+compensating-transaction pattern achieves equivalent consistency without infrastructure additions.

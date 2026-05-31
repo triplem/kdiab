@@ -1,7 +1,11 @@
 = ADR-002: Feature-Flagged Self-Registration with Optional Approval
 :author: kdiab team
 :date: 2026-05-15
-:status: Accepted
+:status: Superseded by ADR-003
+
+NOTE: This decision was superseded by link:ADR-003-registration-keycloak.adoc[ADR-003] on 2026-05-31.
+Self-registration is now handled natively by Keycloak. The `POST /register` endpoint and
+`SELF_REGISTRATION_ENABLED` / `SELF_REGISTRATION_REQUIRES_APPROVAL` env vars no longer exist.
 
 == Context
 
