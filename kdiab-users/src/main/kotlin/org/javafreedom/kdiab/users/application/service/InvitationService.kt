@@ -18,6 +18,22 @@ import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 private val logger = KotlinLogging.logger {}
 
 private val INVITATION_TTL = 7.days
+private const val MAX_PAGE_SIZE = 100
+
+/**
+ * Paginated list result for the GET /users/{doctorId}/invitations endpoint.
+ * [doctorDisplayName] is null when the Keycloak profile lookup fails (best-effort).
+ * [patientDisplayNames] maps patientId string → display name (null on lookup failure).
+ */
+data class InvitationListResult(
+    val invitations: List<DoctorInvitation>,
+    val doctorDisplayName: String?,
+    val patientDisplayNames: Map<String, String>,
+    val page: Int,
+    val size: Int,
+    val totalElements: Long,
+    val totalPages: Int,
+)
 
 class InvitationService(
     private val invitationRepo: DoctorInvitationRepository,
@@ -74,6 +90,69 @@ class InvitationService(
             "invitation_sent doctor=$doctorId patient=$patientId invitation=${saved.id}"
         }
         return saved
+    }
+
+    /**
+     * Returns a paginated list of invitations sent by [doctorId].
+     *
+     * Authorization rules:
+     * - ADMIN may list for any doctorId.
+     * - DOCTOR may only list their own invitations (principal.userId == doctorId).
+     * - Any other principal gets a 403.
+     *
+     * Display names are resolved best-effort: a failed Keycloak lookup produces null names,
+     * never a 500 error.
+     */
+    suspend fun listDoctorInvitations(
+        principal: UserPrincipal,
+        doctorId: Uuid,
+        statuses: Set<InvitationStatus>,
+        page: Int,
+        size: Int,
+    ): InvitationListResult {
+        authorizeDoctor(principal, doctorId)
+
+        val clampedSize = size.coerceIn(1, MAX_PAGE_SIZE)
+        val offset = page.toLong() * clampedSize
+        val total = invitationRepo.countByDoctorId(doctorId, statuses)
+        val invitations = invitationRepo.findByDoctorId(doctorId, statuses, clampedSize, offset)
+
+        val doctorDisplayName = resolveDisplayName(doctorId)
+        val patientDisplayNames = resolvePatientDisplayNames(invitations)
+
+        val totalPages = if (total == 0L) 0 else ((total + clampedSize - 1) / clampedSize).toInt()
+
+        logger.info {
+            "list_doctor_invitations doctor=$doctorId page=$page size=$clampedSize total=$total"
+        }
+        return InvitationListResult(
+            invitations = invitations,
+            doctorDisplayName = doctorDisplayName,
+            patientDisplayNames = patientDisplayNames,
+            page = page,
+            size = clampedSize,
+            totalElements = total,
+            totalPages = totalPages,
+        )
+    }
+
+    private suspend fun resolveDisplayName(userId: Uuid): String? =
+        runCatching { identityProvider.getUserProfile(userId) }
+            .onFailure { logger.warn { "display_name_lookup_failed userId=$userId reason=${it.message}" } }
+            .getOrNull()
+            ?.let { profile ->
+                listOfNotNull(profile.firstName, profile.lastName)
+                    .joinToString(" ")
+                    .takeIf { it.isNotBlank() }
+            }
+
+    private suspend fun resolvePatientDisplayNames(
+        invitations: List<DoctorInvitation>,
+    ): Map<String, String> {
+        val uniquePatientIds = invitations.mapNotNull { it.patientId }.toSet()
+        return uniquePatientIds.mapNotNull { patientId ->
+            resolveDisplayName(patientId)?.let { patientId.toString() to it }
+        }.toMap()
     }
 
     private fun authorizeDoctor(principal: UserPrincipal, doctorId: Uuid) {

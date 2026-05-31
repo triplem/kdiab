@@ -85,6 +85,25 @@ class ExposedDoctorInvitationsRepository : DoctorInvitationRepository {
             }
         }
 
+    override suspend fun countByDoctorId(
+        doctorId: Uuid,
+        statuses: Set<InvitationStatus>,
+    ): Long =
+        withContext(Dispatchers.IO) {
+            suspendTransaction {
+                DoctorInvitationsTable.selectAll()
+                    .where {
+                        if (statuses.isEmpty()) {
+                            DoctorInvitationsTable.doctorId eq doctorId
+                        } else {
+                            (DoctorInvitationsTable.doctorId eq doctorId) and
+                                (DoctorInvitationsTable.status inList statuses.map { it.name })
+                        }
+                    }
+                    .count()
+            }
+        }
+
     override suspend fun findPendingByPatientId(patientId: Uuid): List<DoctorInvitation> =
         withContext(Dispatchers.IO) {
             suspendTransaction {

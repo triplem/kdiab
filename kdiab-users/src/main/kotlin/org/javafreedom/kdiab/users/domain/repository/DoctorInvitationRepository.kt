@@ -15,6 +15,10 @@ interface DoctorInvitationRepository {
         limit: Int = 100,
         offset: Long = 0,
     ): List<DoctorInvitation>
+    suspend fun countByDoctorId(
+        doctorId: Uuid,
+        statuses: Set<InvitationStatus> = emptySet(),
+    ): Long
     suspend fun findPendingByPatientId(patientId: Uuid): List<DoctorInvitation>
     suspend fun updateStatus(id: Uuid, status: InvitationStatus, resolvedAt: Instant?): Boolean
     suspend fun expireBefore(cutoff: Instant): Int

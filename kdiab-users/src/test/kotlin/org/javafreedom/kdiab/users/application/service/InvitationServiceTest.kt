@@ -8,6 +8,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.uuid.Uuid
 import kotlinx.coroutines.test.runTest
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
@@ -15,9 +19,11 @@ import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
+import org.javafreedom.kdiab.users.domain.model.DoctorInvitation
 import org.javafreedom.kdiab.users.domain.model.InvitationStatus
 import org.javafreedom.kdiab.users.domain.repository.DoctorInvitationRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
+import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
 
 class InvitationServiceTest {
 
@@ -145,5 +151,142 @@ class InvitationServiceTest {
             service.sendInvitation(patientPrincipal(), doctorId, patientEmail, null)
         }
         coVerify(exactly = 0) { identityProvider.getUserRoles(any()) }
+    }
+
+    // ---- listDoctorInvitations ----
+
+    private val doctorProfile = IdentityUserProfile(
+        id = doctorId.toString(),
+        firstName = "John",
+        lastName = "Smith",
+    )
+    private val patientProfile = IdentityUserProfile(
+        id = patientId.toString(),
+        firstName = "Jane",
+        lastName = "Doe",
+    )
+
+    private fun pendingInvitation(): DoctorInvitation {
+        val now = Clock.System.now()
+        return DoctorInvitation(
+            id = Uuid.random(),
+            doctorId = doctorId,
+            patientIdentifier = patientEmail,
+            patientId = patientId,
+            status = InvitationStatus.PENDING,
+            message = null,
+            createdAt = now,
+            expiresAt = now + 7.days,
+            resolvedAt = null,
+        )
+    }
+
+    @Test
+    fun `listDoctorInvitations returns paginated invitations for own doctorId`() = runTest {
+        val invitation = pendingInvitation()
+        val statuses = setOf(InvitationStatus.PENDING)
+        coEvery { invitationRepo.countByDoctorId(doctorId, statuses) } returns 1L
+        coEvery { invitationRepo.findByDoctorId(doctorId, statuses, 20, 0L) } returns listOf(invitation)
+        coEvery { identityProvider.getUserProfile(doctorId) } returns doctorProfile
+        coEvery { identityProvider.getUserProfile(patientId) } returns patientProfile
+
+        val result = service.listDoctorInvitations(doctorPrincipal(), doctorId, statuses, 0, 20)
+
+        assertEquals(1, result.invitations.size)
+        assertEquals(invitation.id, result.invitations.first().id)
+        assertEquals("John Smith", result.doctorDisplayName)
+        assertEquals("Jane Doe", result.patientDisplayNames[patientId.toString()])
+        assertEquals(0, result.page)
+        assertEquals(20, result.size)
+        assertEquals(1L, result.totalElements)
+        assertEquals(1, result.totalPages)
+    }
+
+    @Test
+    fun `listDoctorInvitations returns empty content when no invitations exist`() = runTest {
+        val statuses = setOf(InvitationStatus.PENDING)
+        coEvery { invitationRepo.countByDoctorId(doctorId, statuses) } returns 0L
+        coEvery { invitationRepo.findByDoctorId(doctorId, statuses, 20, 0L) } returns emptyList()
+        coEvery { identityProvider.getUserProfile(doctorId) } returns doctorProfile
+
+        val result = service.listDoctorInvitations(doctorPrincipal(), doctorId, statuses, 0, 20)
+
+        assertTrue(result.invitations.isEmpty())
+        assertEquals(0L, result.totalElements)
+        assertEquals(0, result.totalPages)
+    }
+
+    @Test
+    fun `listDoctorInvitations admin can list any doctor invitations`() = runTest {
+        val invitation = pendingInvitation()
+        val statuses = setOf(InvitationStatus.PENDING)
+        coEvery { invitationRepo.countByDoctorId(doctorId, statuses) } returns 1L
+        coEvery { invitationRepo.findByDoctorId(doctorId, statuses, 20, 0L) } returns listOf(invitation)
+        coEvery { identityProvider.getUserProfile(doctorId) } returns doctorProfile
+        coEvery { identityProvider.getUserProfile(patientId) } returns patientProfile
+
+        val result = service.listDoctorInvitations(adminPrincipal(), doctorId, statuses, 0, 20)
+
+        assertEquals(1, result.invitations.size)
+    }
+
+    @Test
+    fun `listDoctorInvitations throws AuthorizationException when doctor requests different doctorId`() = runTest {
+        val otherDoctorId = Uuid.parse("cccccccc-cccc-cccc-cccc-cccccccccccc")
+
+        assertFailsWith<AuthorizationException> {
+            service.listDoctorInvitations(doctorPrincipal(), otherDoctorId, setOf(InvitationStatus.PENDING), 0, 20)
+        }
+        coVerify(exactly = 0) { invitationRepo.countByDoctorId(any(), any()) }
+    }
+
+    @Test
+    fun `listDoctorInvitations throws AuthorizationException for patient principal`() = runTest {
+        assertFailsWith<AuthorizationException> {
+            service.listDoctorInvitations(patientPrincipal(), doctorId, setOf(InvitationStatus.PENDING), 0, 20)
+        }
+        coVerify(exactly = 0) { invitationRepo.countByDoctorId(any(), any()) }
+    }
+
+    @Test
+    fun `listDoctorInvitations returns null display names when identity provider lookup fails`() = runTest {
+        val invitation = pendingInvitation()
+        val statuses = setOf(InvitationStatus.PENDING)
+        coEvery { invitationRepo.countByDoctorId(doctorId, statuses) } returns 1L
+        coEvery { invitationRepo.findByDoctorId(doctorId, statuses, 20, 0L) } returns listOf(invitation)
+        coEvery { identityProvider.getUserProfile(any()) } throws RuntimeException("Keycloak unavailable")
+
+        val result = service.listDoctorInvitations(doctorPrincipal(), doctorId, statuses, 0, 20)
+
+        assertNull(result.doctorDisplayName)
+        assertTrue(result.patientDisplayNames.isEmpty())
+    }
+
+    @Test
+    fun `listDoctorInvitations clamps page size to max 100`() = runTest {
+        val statuses = setOf(InvitationStatus.PENDING)
+        coEvery { invitationRepo.countByDoctorId(doctorId, statuses) } returns 0L
+        coEvery { invitationRepo.findByDoctorId(doctorId, statuses, 100, 0L) } returns emptyList()
+        coEvery { identityProvider.getUserProfile(doctorId) } returns doctorProfile
+
+        val result = service.listDoctorInvitations(doctorPrincipal(), doctorId, statuses, 0, 999)
+
+        assertEquals(100, result.size)
+        coVerify(exactly = 1) { invitationRepo.findByDoctorId(doctorId, statuses, 100, 0L) }
+    }
+
+    @Test
+    fun `listDoctorInvitations filters by multiple statuses`() = runTest {
+        val invitation = pendingInvitation()
+        val statuses = setOf(InvitationStatus.PENDING, InvitationStatus.EXPIRED)
+        coEvery { invitationRepo.countByDoctorId(doctorId, statuses) } returns 1L
+        coEvery { invitationRepo.findByDoctorId(doctorId, statuses, 20, 0L) } returns listOf(invitation)
+        coEvery { identityProvider.getUserProfile(doctorId) } returns doctorProfile
+        coEvery { identityProvider.getUserProfile(patientId) } returns patientProfile
+
+        val result = service.listDoctorInvitations(doctorPrincipal(), doctorId, statuses, 0, 20)
+
+        assertEquals(1, result.invitations.size)
+        coVerify(exactly = 1) { invitationRepo.findByDoctorId(doctorId, statuses, 20, 0L) }
     }
 }

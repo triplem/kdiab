@@ -2,6 +2,7 @@
 package org.javafreedom.kdiab.users.adapters.inbound.web
 
 import kotlinx.serialization.Serializable
+import org.javafreedom.kdiab.users.application.service.InvitationListResult
 import org.javafreedom.kdiab.users.domain.model.DoctorInvitation
 
 /**
@@ -31,7 +32,32 @@ data class InvitationResponse(
     val patientDisplayName: String?,
 )
 
-// doctorDisplayName and patientDisplayName are populated by future list/detail endpoints
+/**
+ * Paginated response body for GET /users/{doctorId}/invitations.
+ */
+@Serializable
+data class InvitationPageResponse(
+    val content: List<InvitationResponse>,
+    val page: Int,
+    val size: Int,
+    val totalElements: Long,
+    val totalPages: Int,
+)
+
+fun InvitationListResult.toPageResponse() = InvitationPageResponse(
+    content = invitations.map { invitation ->
+        invitation.toResponse(
+            doctorDisplayName = doctorDisplayName,
+            patientDisplayName = patientDisplayNames[invitation.patientId?.toString()],
+        )
+    },
+    page = page,
+    size = size,
+    totalElements = totalElements,
+    totalPages = totalPages,
+)
+
+// doctorDisplayName and patientDisplayName are populated by list/detail endpoints
 // that resolve display names from the identity provider. The POST response omits them (null).
 fun DoctorInvitation.toResponse(
     doctorDisplayName: String? = null,
