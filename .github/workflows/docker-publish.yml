@@ -26,13 +26,50 @@ concurrency:
 permissions:
   contents: read
   packages: write
+  checks: read
 
 jobs:
+  gate:
+    name: Verify all CI checks passed
+    runs-on: ubuntu-latest
+    # Skip entirely if the triggering workflow itself failed
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    outputs:
+      should_publish: ${{ steps.check.outputs.result }}
+    steps:
+      - name: Check all CI check-runs on this commit
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ "${{ github.event_name }}" != "workflow_run" ]]; then
+            echo "result=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          sha="${{ github.event.workflow_run.head_sha }}"
+          # Count check-runs that are not yet in a terminal success/skipped/neutral state.
+          # workflow_run fires once per upstream workflow; this gate blocks until all others
+          # have also completed successfully before any images are published.
+          pending=$(gh api \
+            "repos/${{ github.repository }}/commits/${sha}/check-runs" \
+            --paginate \
+            --jq '[.check_runs[] | select(
+              .name != "Verify all CI checks passed" and
+              (.status != "completed" or
+               (.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral"))
+            )] | length')
+          if [[ "$pending" -gt 0 ]]; then
+            echo "result=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=true" >> "$GITHUB_OUTPUT"
+          fi
+
   publish-backends:
+    needs: gate
     name: Publish ${{ matrix.service }} backend
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ needs.gate.outputs.should_publish == 'true' }}
 
     strategy:
       fail-fast: false
@@ -86,7 +123,7 @@ jobs:
             type=sha,prefix=sha-,format=short
 
       - name: Build fat JAR
-        run: cd ${{ matrix.service }} && ./gradlew build -x test
+        run: cd ${{ matrix.service }} && ./gradlew build -x test -x koverVerify
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -103,10 +140,11 @@ jobs:
           cache-to: type=gha,mode=max
 
   publish-ui:
+    needs: gate
     name: Publish kdiab-ui frontend
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ needs.gate.outputs.should_publish == 'true' }}
 
     steps:
       - name: Checkout
