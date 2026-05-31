@@ -8,7 +8,7 @@ This document explains the Keycloak realm configuration used by kdiab and how to
 
 kdiab uses a single Keycloak realm named `kdiab`. The realm configuration lives in `config/keycloak-realm.json` and is imported automatically when the root `docker compose up` starts the Keycloak container.
 
-Each of the four frontends has its own Keycloak client (public client, PKCE S256). All four clients share the same realm, roles, and test users.
+The platform uses a unified React SPA (`kdiab-ui`) served from a single origin. Each of the four Keycloak clients maps to a distinct frontend origin used during development. In production all traffic goes through the `kdiab-analyze-frontend` client, whose token carries audiences for every backend service. The four clients share the same realm, roles, and test users.
 
 == Realm Configuration
 
@@ -90,9 +90,9 @@ User UUIDs are fixed (deterministic) in the realm export so that the seed SQL ca
 
 == Clients
 
-=== Client configuration (all four clients)
+=== Client configuration (all clients)
 
-Each frontend has a separate client with identical security settings:
+Each frontend client uses identical security settings:
 
 [cols="1,2"]
 |===
@@ -130,11 +130,11 @@ Each frontend has a separate client with identical security settings:
 | `treatment`
 
 | `kdiab-analyze-frontend`
-| kdiab-analyze (port 3003)
-| `analyze`, `measure`, `profile`, `treatment`
+| kdiab-analyze (port 3003) — also used by the unified `kdiab-ui` SPA
+| `analyze`, `measure`, `profile`, `treatment`, `carbs`, `calc`, `nightscout`, `users`
 |===
 
-The analyze frontend client has **four** audience mappers because the BFF forwards the user's token unchanged to all three upstream services. The token must be accepted by all four backends simultaneously.
+The analyze frontend client has **eight** audience mappers because the BFF forwards the user's token unchanged to all upstream services. The unified `kdiab-ui` SPA uses this client so a single token is accepted by every backend simultaneously.
 
 == Protocol Mappers
 
@@ -175,14 +175,15 @@ The kdiab-analyze BFF receives the user's bearer token and forwards it unchanged
 
 [source]
 ----
-Browser  →  kdiab-analyze-frontend  →  kdiab-analyze-backend
-                                              │
-                        ┌─────────────────────┼──────────────────────┐
-                        ▼                     ▼                      ▼
-               kdiab-measures       kdiab-profiles        kdiab-treatments
+Browser (kdiab-ui)  →  kdiab-analyze-frontend  →  kdiab-analyze-backend
+                                                          │
+              ┌──────────┬──────────┬──────────┬──────────┼──────────┬──────────┬──────────┐
+              ▼          ▼          ▼          ▼          ▼          ▼          ▼          ▼
+         kdiab-     kdiab-     kdiab-     kdiab-     kdiab-     kdiab-     kdiab-     kdiab-
+         measures   profiles   treatments  carbs      calc       users      nightscout  (self)
 ----
 
-Because the token carries `aud: ["analyze", "measure", "profile", "treatment"]`, each upstream backend accepts it without requiring a separate login or token exchange.
+Because the token carries `aud: ["analyze", "measure", "profile", "treatment", "carbs", "calc", "nightscout", "users"]`, every upstream backend accepts it without requiring a separate login or token exchange.
 
 == Recreating the Realm from Scratch
 
