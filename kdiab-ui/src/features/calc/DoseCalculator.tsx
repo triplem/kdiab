@@ -46,6 +46,7 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
   const [currentBg, setCurrentBg] = useState('')
   const [trend, setTrend] = useState('FLAT')
   const [carbsGrams, setCarbsGrams] = useState('0')
+  const [carbsInMinutes, setCarbsInMinutes] = useState(0)
   const [result, setResult] = useState<DoseResponse | null>(null)
   const [correction, setCorrection] = useState('0')
   const [cgmAgeMin, setCgmAgeMin] = useState<number | null>(null)
@@ -132,11 +133,15 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
 
   const logMutation = useMutation({
     mutationFn: async (dose: number) => {
-      const at = nowIso()
+      const bolusAt = nowIso()
       const carbs = parseFloat(carbsGrams) || 0
+      // Offset the carbs treatment time by carbsInMinutes so the record reflects actual carb intake time
+      const carbsAt = carbsInMinutes > 0
+        ? (() => { const d = new Date(); d.setMinutes(d.getMinutes() + carbsInMinutes); return d.toISOString() })()
+        : bolusAt
       const bolusResponse = await treatmentsApi.createTreatment(userId, {
         type: 'BOLUS',
-        treatedAt: at,
+        treatedAt: bolusAt,
         data: {
           insulin: dose,
           calculatedDose: result?.totalRecommended,
@@ -149,6 +154,7 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
           currentBgMgDl: result?.breakdown?.currentBgMgDl,
           trend: result?.breakdown?.trend,
           carbsGrams: carbs,
+          // TODO: pass carbsInMinutes once calc API supports it in DoseRequest
         },
       })
       const bolusId = bolusResponse.data.id
@@ -156,7 +162,7 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
         try {
           await treatmentsApi.createTreatment(userId, {
             type: 'CARBS',
-            treatedAt: at,
+            treatedAt: carbsAt,
             data: { carbs },
           })
         } catch (carbsErr: unknown) {
@@ -173,6 +179,7 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
     onSuccess: (_data, dose) => {
       setLogSuccess(true)
       setCarbsGrams('0')
+      setCarbsInMinutes(0)
       setResult(null)
       void queryClient.invalidateQueries({ queryKey: ['latestCgm', userId] })
       const now = new Date()
@@ -268,6 +275,21 @@ export function DoseCalculator({ userId, glucoseUnit, activeIob: activeIobProp }
                 min="0"
                 value={carbsGrams}
                 onChange={(e) => setCarbsGrams(e.target.value)}
+                style={{ width: '100%', marginTop: '0.25rem' }}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="carbsInMinutes">{t('doseCalc.carbsInMinutes')}</label>
+              <input
+                id="carbsInMinutes"
+                type="number"
+                min={0}
+                max={120}
+                step={5}
+                value={carbsInMinutes}
+                placeholder={t('doseCalc.carbsInMinutesPlaceholder')}
+                onChange={(e) => setCarbsInMinutes(Number(e.target.value))}
                 style={{ width: '100%', marginTop: '0.25rem' }}
               />
             </div>
