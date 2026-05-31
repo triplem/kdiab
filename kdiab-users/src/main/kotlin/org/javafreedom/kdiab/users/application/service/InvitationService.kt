@@ -8,11 +8,15 @@ import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.common.domain.exception.AuthorizationException
 import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.common.domain.exception.ConflictException
+import org.javafreedom.kdiab.common.domain.exception.ResourceNotFoundException
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
 import org.javafreedom.kdiab.users.domain.model.DoctorInvitation
+import org.javafreedom.kdiab.users.domain.model.DoctorPatientRelation
+import org.javafreedom.kdiab.users.domain.model.InvitationAction
 import org.javafreedom.kdiab.users.domain.model.InvitationStatus
 import org.javafreedom.kdiab.users.domain.repository.DoctorInvitationRepository
+import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 
 private val logger = KotlinLogging.logger {}
@@ -38,6 +42,7 @@ data class InvitationListResult(
 class InvitationService(
     private val invitationRepo: DoctorInvitationRepository,
     private val identityProvider: IdentityProviderPort,
+    private val doctorPatientRepo: DoctorPatientRepository,
 ) {
     /**
      * Sends an invitation from a doctor to a patient identified by email or username.
@@ -154,6 +159,115 @@ class InvitationService(
         return invitations
     }
 
+    /**
+     * Patient accepts or declines a PENDING doctor invitation.
+     *
+     * Authorization rules:
+     * - PATIENT may only respond to their own invitations (principal.userId == patientId).
+     * - ADMIN may respond on behalf of any patient.
+     * - Any other principal gets a 403.
+     *
+     * Business rules:
+     * - Invitation must exist — otherwise 404.
+     * - Invitation must belong to [patientId] — otherwise 404 (not 403, to avoid enumeration).
+     * - Invitation must be in PENDING status — otherwise 409.
+     *
+     * ACCEPT path (compensating transaction):
+     * 1. Update invitation status to ACCEPTED.
+     * 2. Create DoctorPatientRelation and sync Keycloak.
+     * 3. On Keycloak failure: roll back invitation to PENDING; log and rethrow.
+     *
+     * DECLINE path: update status to DECLINED; no doctor-patient link is created.
+     *
+     * @return the updated [DoctorInvitation] with the new status and [DoctorInvitation.resolvedAt] set.
+     */
+    suspend fun respondToInvitation(
+        principal: UserPrincipal,
+        patientId: Uuid,
+        invitationId: Uuid,
+        action: InvitationAction,
+    ): DoctorInvitation {
+        authorizePatient(principal, patientId)
+
+        val invitation = invitationRepo.findById(invitationId)
+            ?: throw ResourceNotFoundException("Invitation $invitationId not found")
+
+        if (invitation.patientId != patientId) {
+            throw ResourceNotFoundException("Invitation $invitationId not found")
+        }
+
+        if (invitation.status != InvitationStatus.PENDING) {
+            throw ConflictException(
+                "Invitation $invitationId cannot be responded to: status is ${invitation.status}",
+            )
+        }
+
+        val now = Clock.System.now()
+        return when (action) {
+            InvitationAction.ACCEPT -> acceptInvitation(invitation, patientId, now)
+            InvitationAction.DECLINE -> declineInvitation(invitation, now)
+        }
+    }
+
+    private suspend fun acceptInvitation(
+        invitation: DoctorInvitation,
+        patientId: Uuid,
+        now: kotlin.time.Instant,
+    ): DoctorInvitation {
+        invitationRepo.updateStatus(invitation.id, InvitationStatus.ACCEPTED, now)
+
+        val relation = DoctorPatientRelation(
+            doctorId = invitation.doctorId,
+            patientId = patientId,
+            createdAt = now,
+        )
+        doctorPatientRepo.save(relation)
+
+        try {
+            syncAllowedPatients(invitation.doctorId)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            logger.error(e) {
+                "invitation_accept kc_sync_failed rolling_back" +
+                    " invitation=${invitation.id} doctor=${invitation.doctorId} patient=$patientId"
+            }
+            runCatching { doctorPatientRepo.delete(invitation.doctorId, patientId) }.onFailure { re ->
+                logger.error(re) {
+                    "invitation_accept rollback_failed invitation=${invitation.id}" +
+                        " doctor=${invitation.doctorId} patient=$patientId"
+                }
+            }
+            runCatching {
+                invitationRepo.updateStatus(invitation.id, InvitationStatus.PENDING, null)
+            }.onFailure { re ->
+                logger.error(re) {
+                    "invitation_accept status_rollback_failed invitation=${invitation.id}"
+                }
+            }
+            throw e
+        }
+
+        logger.info {
+            "invitation_accepted invitation=${invitation.id} doctor=${invitation.doctorId} patient=$patientId"
+        }
+        return invitation.copy(status = InvitationStatus.ACCEPTED, resolvedAt = now)
+    }
+
+    private suspend fun declineInvitation(
+        invitation: DoctorInvitation,
+        now: kotlin.time.Instant,
+    ): DoctorInvitation {
+        invitationRepo.updateStatus(invitation.id, InvitationStatus.DECLINED, now)
+        logger.info {
+            "invitation_declined invitation=${invitation.id} doctor=${invitation.doctorId}"
+        }
+        return invitation.copy(status = InvitationStatus.DECLINED, resolvedAt = now)
+    }
+
+    private suspend fun syncAllowedPatients(doctorId: Uuid) {
+        val patientIds = doctorPatientRepo.findAllPatientIdsByDoctorId(doctorId).map { it.toString() }
+        identityProvider.updateUserAttributes(doctorId, mapOf("allowed_patients" to patientIds))
+    }
+
     private suspend fun resolveDisplayName(userId: Uuid): String? =
         runCatching { identityProvider.getUserProfile(userId) }
             .onFailure { logger.warn { "display_name_lookup_failed userId=$userId reason=${it.message}" } }
@@ -188,7 +302,7 @@ class InvitationService(
             principal.isAdmin() -> Unit
             principal.userId == patientId -> Unit
             else -> throw AuthorizationException(
-                "Only the patient themselves or an admin may view incoming invitations for patient $patientId",
+                "Only the patient themselves or an admin may access invitations for patient $patientId",
             )
         }
     }

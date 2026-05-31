@@ -101,7 +101,7 @@ fun Application.module() {
                 DoctorPatientService(doctorPatientRepo, identityProvider)
             }
             provide<InvitationService> {
-                InvitationService(invitationRepo, identityProvider)
+                InvitationService(invitationRepo, identityProvider, doctorPatientRepo)
             }
             provide<ApiKeyService> {
                 ApiKeyService(keycloak, keycloakTokenEndpoint)

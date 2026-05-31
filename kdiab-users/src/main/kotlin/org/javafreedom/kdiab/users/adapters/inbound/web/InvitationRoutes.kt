@@ -63,5 +63,23 @@ fun Route.invitationRoutes(invitationService: InvitationService) {
             )
             call.respond(HttpStatusCode.Created, invitation.toResponse())
         }
+
+        // PATCH /users/{patientId}/invitations/{invitationId} — patient accept or decline
+        patch("/users/{patientId}/invitations/{invitationId}") {
+            val principal = call.principal<UserPrincipal>()!!
+            val patientId = parseUuid(call.parameters["patientId"]!!)
+            val invitationId = parseUuid(call.parameters["invitationId"]!!)
+            val req = call.receive<RespondToInvitationRequest>()
+            // toAction() throws IllegalArgumentException on an unknown value;
+            // StatusPages maps IllegalArgumentException → 400 Bad Request.
+            val action = req.toAction()
+            val invitation = invitationService.respondToInvitation(
+                principal = principal,
+                patientId = patientId,
+                invitationId = invitationId,
+                action = action,
+            )
+            call.respond(HttpStatusCode.OK, invitation.toResponse())
+        }
     }
 }

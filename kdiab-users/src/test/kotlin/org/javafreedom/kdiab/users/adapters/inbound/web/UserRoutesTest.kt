@@ -55,7 +55,7 @@ private fun Application.installMockDi(
             UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo, mockUserProfileRepo)
         }
         provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
-        provide<InvitationService> { InvitationService(mockInvitationRepo, mockIdentityProvider) }
+        provide<InvitationService> { InvitationService(mockInvitationRepo, mockIdentityProvider, mockDoctorRepo) }
         provide<ApiKeyService> { mockApiKeyService }
     }
 }
