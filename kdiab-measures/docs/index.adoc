@@ -1,9 +1,9 @@
-= KDiab Measures Developer Documentation
+= kdiab measures Developer Documentation
 :toc: left
 :icons: font
 :source-highlighter: rouge
 
-Welcome to the KDiab Measures project documentation hub. Use the links below to navigate through the core project information and architectural decisions.
+Welcome to the kdiab measures project documentation hub. Use the links below to navigate through the core project information and architectural decisions.
 
 == Core Documents
 
@@ -18,15 +18,15 @@ Welcome to the KDiab Measures project documentation hub. Use the links below to 
 ADRs for this service are consolidated in the platform ADR index under
 link:../root/adr/index.html#kdiab-measures-adrs[kdiab-measures ADRs].
 
-* link:../root/adr/measures/101-development-tooling.html[101 Development Tooling]
-* link:../root/adr/measures/102-code-quality-standards.html[102 Code Quality Standards]
-* link:../root/adr/measures/106-global-exception-handling.html[106 Global Exception Handling]
-* link:../root/adr/measures/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
-* link:../root/adr/measures/108-main-ktor-server.html[108 Main Ktor Server]
-* link:../root/adr/measures/110-correlation-id-logging.html[110 Correlation ID Logging]
-* link:../root/adr/measures/111-semantic-release-conventional-commits.html[111 Semantic Release / Conventional Commits]
-* link:../root/adr/measures/201-flexible-measures-model.html[201 Flexible Measures Model]
-* link:../root/adr/measures/301-postgresql.html[301 PostgreSQL]
-* link:../root/adr/measures/302-implicit-user-management.html[302 Implicit User Management]
-* link:../root/adr/measures/303-jwt-authentication.html[303 JWT Authentication]
-* link:../root/adr/measures/305-liquibase-init-container.html[305 Liquibase Init Container]
+* link:../root/adr/measures/ADR-MEAS-101-development-tooling.html[ADR-MEAS-101 Development Tooling]
+* link:../root/adr/measures/ADR-MEAS-102-code-quality-standards.html[ADR-MEAS-102 Code Quality Standards]
+* link:../root/adr/measures/ADR-MEAS-106-global-exception-handling.html[ADR-MEAS-106 Global Exception Handling]
+* link:../root/adr/measures/ADR-MEAS-107-bdd-testing-with-kotest.html[ADR-MEAS-107 BDD Testing with Kotest]
+* link:../root/adr/measures/ADR-MEAS-108-main-ktor-server.html[ADR-MEAS-108 Main Ktor Server]
+* link:../root/adr/measures/ADR-MEAS-110-correlation-id-logging.html[ADR-MEAS-110 Correlation ID Logging]
+* link:../root/adr/measures/ADR-MEAS-111-semantic-release-conventional-commits.html[ADR-MEAS-111 Semantic Release / Conventional Commits]
+* link:../root/adr/measures/ADR-MEAS-201-flexible-measures-model.html[ADR-MEAS-201 Flexible Measures Model]
+* link:../root/adr/measures/ADR-MEAS-301-postgresql.html[ADR-MEAS-301 PostgreSQL]
+* link:../root/adr/measures/ADR-MEAS-302-implicit-user-management.html[ADR-MEAS-302 Implicit User Management]
+* link:../root/adr/measures/ADR-MEAS-303-jwt-authentication.html[ADR-MEAS-303 JWT Authentication]
+* link:../root/adr/measures/ADR-MEAS-305-liquibase-init-container.html[ADR-MEAS-305 Liquibase Init Container]

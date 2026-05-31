@@ -1,4 +1,4 @@
-= KDiab Treatments - Architecture & Design
+= kdiab treatments — Architecture & Design
 :toc: left
 :icons: font
 

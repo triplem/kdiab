@@ -1,8 +1,8 @@
-= How to Run the KDiab Treatments Application
+= How to Run kdiab treatments
 :toc: left
 :icons: font
 
-This guide provides instructions on how to set up and run the KDiab Treatments application locally for development or testing.
+This guide provides instructions on how to set up and run kdiab treatments locally for development or testing.
 
 == Prerequisites
 

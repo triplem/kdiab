@@ -1,9 +1,9 @@
-= KDiab Profiles Developer Documentation
+= kdiab profiles Developer Documentation
 :toc: left
 :icons: font
 :source-highlighter: rouge
 
-Welcome to the KDiab Profiles project documentation hub. Use the links below to navigate through the core project information and architectural decisions.
+Welcome to the kdiab profiles project documentation hub. Use the links below to navigate through the core project information and architectural decisions.
 
 == Core Documents
 
@@ -17,27 +17,28 @@ Welcome to the KDiab Profiles project documentation hub. Use the links below to 
 ADRs for this service are consolidated in the platform ADR index under
 link:../root/adr/index.html#kdiab-profiles-adrs[kdiab-profiles ADRs].
 
-* link:../root/adr/profiles/015-profile-history-and-archiving.html[015 Profile History and Archiving]
-* link:../root/adr/profiles/016-doctor-patient-collaboration.html[016 Doctor-Patient Collaboration]
-* link:../root/adr/profiles/101-development-tooling.html[101 Development Tooling]
-* link:../root/adr/profiles/102-code-quality-standards.html[102 Code Quality Standards]
-* link:../root/adr/profiles/103-package-structure.html[103 Package Structure]
-* link:../root/adr/profiles/104-kotlinx-serialization.html[104 Kotlinx Serialization]
-* link:../root/adr/profiles/105-kotlin-native-types.html[105 Kotlin-Native Types in Domain Layer]
-* link:../root/adr/profiles/106-global-exception-handling.html[106 Global Exception Handling]
-* link:../root/adr/profiles/107-bdd-testing-with-kotest.html[107 BDD Testing with Kotest]
-* link:../root/adr/profiles/108-main-ktor-server.html[108 Main Ktor Server]
-* link:../root/adr/profiles/109-strict-24h-time-format.html[109 Strict 24h Time Format]
-* link:../root/adr/profiles/110-correlation-id-logging.html[110 Correlation ID Logging]
-* link:../root/adr/profiles/111-semantic-release-conventional-commits.html[111 Semantic Release / Conventional Commits]
-* link:../root/adr/profiles/112-ci-cd-performance-optimizations.html[112 CI/CD Performance Optimizations]
-* link:../root/adr/profiles/113-liquibase-single-schema-authority.html[113 Liquibase Single Schema Authority]
-* link:../root/adr/profiles/201-independent-schedules.html[201 Independent Schedules]
-* link:../root/adr/profiles/202-jsonb-storage.html[202 JSONB Storage]
-* link:../root/adr/profiles/203-profile-status-separation.html[203 Profile Status Separation]
-* link:../root/adr/profiles/301-postgresql.html[301 PostgreSQL]
-* link:../root/adr/profiles/302-implicit-user-management.html[302 Implicit User Management]
-* link:../root/adr/profiles/303-jwt-authentication.html[303 JWT Authentication]
-* link:../root/adr/profiles/304-data-retention.html[304 Data Retention]
-* link:../root/adr/profiles/305-liquibase-init-container.html[305 Liquibase Init Container]
-* link:../root/adr/profiles/306-content-security-policy.html[306 Content Security Policy]
+* link:../root/adr/profiles/ADR-PROF-015-profile-history-and-archiving.html[ADR-PROF-015 Profile History and Archiving]
+* link:../root/adr/profiles/ADR-PROF-016-doctor-patient-collaboration.html[ADR-PROF-016 Doctor-Patient Collaboration]
+* link:../root/adr/profiles/ADR-PROF-017-insulin-to-meal-interval.html[ADR-PROF-017 Insulin-to-Meal Interval]
+* link:../root/adr/profiles/ADR-PROF-101-development-tooling.html[ADR-PROF-101 Development Tooling]
+* link:../root/adr/profiles/ADR-PROF-102-code-quality-standards.html[ADR-PROF-102 Code Quality Standards]
+* link:../root/adr/profiles/ADR-PROF-103-package-structure.html[ADR-PROF-103 Package Structure]
+* link:../root/adr/profiles/ADR-PROF-104-kotlinx-serialization.html[ADR-PROF-104 Kotlinx Serialization]
+* link:../root/adr/profiles/ADR-PROF-105-kotlin-native-types.html[ADR-PROF-105 Kotlin-Native Types in Domain Layer]
+* link:../root/adr/profiles/ADR-PROF-106-global-exception-handling.html[ADR-PROF-106 Global Exception Handling]
+* link:../root/adr/profiles/ADR-PROF-107-bdd-testing-with-kotest.html[ADR-PROF-107 BDD Testing with Kotest]
+* link:../root/adr/profiles/ADR-PROF-108-main-ktor-server.html[ADR-PROF-108 Main Ktor Server]
+* link:../root/adr/profiles/ADR-PROF-109-strict-24h-time-format.html[ADR-PROF-109 Strict 24h Time Format]
+* link:../root/adr/profiles/ADR-PROF-110-correlation-id-logging.html[ADR-PROF-110 Correlation ID Logging]
+* link:../root/adr/profiles/ADR-PROF-111-semantic-release-conventional-commits.html[ADR-PROF-111 Semantic Release / Conventional Commits]
+* link:../root/adr/profiles/ADR-PROF-112-ci-cd-performance-optimizations.html[ADR-PROF-112 CI/CD Performance Optimizations]
+* link:../root/adr/profiles/ADR-PROF-113-liquibase-single-schema-authority.html[ADR-PROF-113 Liquibase Single Schema Authority]
+* link:../root/adr/profiles/ADR-PROF-201-independent-schedules.html[ADR-PROF-201 Independent Schedules]
+* link:../root/adr/profiles/ADR-PROF-202-jsonb-storage.html[ADR-PROF-202 JSONB Storage]
+* link:../root/adr/profiles/ADR-PROF-203-profile-status-separation.html[ADR-PROF-203 Profile Status Separation]
+* link:../root/adr/profiles/ADR-PROF-301-postgresql.html[ADR-PROF-301 PostgreSQL]
+* link:../root/adr/profiles/ADR-PROF-302-implicit-user-management.html[ADR-PROF-302 Implicit User Management]
+* link:../root/adr/profiles/ADR-PROF-303-jwt-authentication.html[ADR-PROF-303 JWT Authentication]
+* link:../root/adr/profiles/ADR-PROF-304-data-retention.html[ADR-PROF-304 Data Retention]
+* link:../root/adr/profiles/ADR-PROF-305-liquibase-init-container.html[ADR-PROF-305 Liquibase Init Container]
+* link:../root/adr/profiles/ADR-PROF-306-content-security-policy.html[ADR-PROF-306 Content Security Policy]
