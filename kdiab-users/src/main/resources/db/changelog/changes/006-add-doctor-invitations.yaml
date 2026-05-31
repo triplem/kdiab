@@ -1,0 +1,88 @@
+databaseChangeLog:
+  - logicalFilePath: db/changelog/db.changelog-root.yaml
+  - changeSet:
+      id: 007
+      author: javafreedom
+      comment: "Add doctor_invitations table for doctor-patient invitation flow (issue #1274)"
+      changes:
+        - createTable:
+            tableName: doctor_invitations
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  defaultValueComputed: gen_random_uuid()
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: doctor_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: patient_identifier
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: patient_id
+                  type: uuid
+                  constraints:
+                    nullable: true
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: PENDING
+                  constraints:
+                    nullable: false
+              - column:
+                  name: message
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: created_at
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: resolved_at
+                  type: varchar(50)
+                  constraints:
+                    nullable: true
+        - createIndex:
+            tableName: doctor_invitations
+            indexName: idx_invitations_doctor_id
+            columns:
+              - column:
+                  name: doctor_id
+        - createIndex:
+            tableName: doctor_invitations
+            indexName: idx_invitations_patient_id
+            columns:
+              - column:
+                  name: patient_id
+        - createIndex:
+            tableName: doctor_invitations
+            indexName: idx_invitations_status
+            columns:
+              - column:
+                  name: status
+        - createIndex:
+            tableName: doctor_invitations
+            indexName: idx_invitations_expires_at
+            columns:
+              - column:
+                  name: expires_at
+        - sql:
+            dbms: postgresql
+            sql: >-
+              CREATE UNIQUE INDEX idx_invitations_pending_doctor_patient
+              ON doctor_invitations (doctor_id, patient_id)
+              WHERE status = 'PENDING' AND patient_id IS NOT NULL;

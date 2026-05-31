@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changes/003-uuid-native-columns.yaml
   - include:
       file: db/changelog/changes/004-add-birthday-diabetes-since.yaml
+  - include:
+      file: db/changelog/changes/006-add-doctor-invitations.yaml
