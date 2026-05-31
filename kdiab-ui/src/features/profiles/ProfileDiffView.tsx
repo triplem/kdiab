@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useTranslation } from 'react-i18next'
 import { profilesApi } from '../../api/profilesApi'
-import type { Profile, ProfileSegment, TargetSegment } from '../../api/profilesApi'
+import type { Profile, ProfileSegment, TargetSegment, InsulinToMealIntervalSegment } from '../../api/profilesApi'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 
 interface ProfileDiffViewProps {
@@ -35,6 +35,60 @@ function targetsEqual(a: TargetSegment[] | undefined, b: TargetSegment[] | undef
       seg.startTime === b![i]!.startTime &&
       seg.low === b![i]!.low &&
       seg.high === b![i]!.high,
+  )
+}
+
+function seaSegmentsEqual(
+  a: InsulinToMealIntervalSegment[] | undefined,
+  b: InsulinToMealIntervalSegment[] | undefined,
+): boolean {
+  if ((a?.length ?? 0) !== (b?.length ?? 0)) return false
+  return (a ?? []).every((seg, i) => seg.startTime === b![i]!.startTime && seg.minutes === b![i]!.minutes)
+}
+
+interface SeaRowsProps {
+  label: string
+  activeSegs: InsulinToMealIntervalSegment[] | undefined
+  proposedSegs: InsulinToMealIntervalSegment[] | undefined
+  formatTime: (t: string) => string
+}
+
+function SeaRows({ label, activeSegs, proposedSegs, formatTime }: SeaRowsProps) {
+  const changed = !seaSegmentsEqual(activeSegs, proposedSegs)
+  const highlightStyle: React.CSSProperties = changed
+    ? { background: 'var(--diff-highlight, #fff8c5)' }
+    : {}
+
+  const maxLen = Math.max(activeSegs?.length ?? 0, proposedSegs?.length ?? 0)
+  if (maxLen === 0) return null
+
+  return (
+    <>
+      <tr>
+        <th
+          colSpan={2}
+          style={{ textAlign: 'left', padding: '0.5rem 0.25rem', fontSize: '0.8rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)' }}
+        >
+          {label}
+        </th>
+      </tr>
+      {Array.from({ length: maxLen }, (_, i) => {
+        const a = activeSegs?.[i]
+        const p = proposedSegs?.[i]
+        const rowChanged = a?.startTime !== p?.startTime || a?.minutes !== p?.minutes
+        const rowStyle: React.CSSProperties = rowChanged ? { background: 'var(--diff-highlight, #fff8c5)' } : highlightStyle
+        return (
+          <tr key={i} style={rowStyle}>
+            <td style={{ padding: '0.25rem 0.5rem' }}>
+              {a ? `${formatTime(a.startTime)} — ${a.minutes} min` : '—'}
+            </td>
+            <td style={{ padding: '0.25rem 0.5rem' }}>
+              {p ? `${formatTime(p.startTime)} — ${p.minutes} min` : '—'}
+            </td>
+          </tr>
+        )
+      })}
+    </>
   )
 }
 
@@ -135,6 +189,7 @@ export function ProfileDiffView({ userId, activeProfile, proposedProfile, glucos
   const icrChanged = !segmentsEqual(activeProfile.icr, proposedProfile.icr)
   const isfChanged = !segmentsEqual(activeProfile.isf, proposedProfile.isf)
   const targetsChanged = !targetsEqual(activeProfile.targets, proposedProfile.targets)
+  const seaChanged = !seaSegmentsEqual(activeProfile.insulinToMealInterval, proposedProfile.insulinToMealInterval)
   const nameChanged = activeProfile.name !== proposedProfile.name
   const insulinTypeChanged = activeProfile.insulinType !== proposedProfile.insulinType
   const durationChanged = activeProfile.durationOfAction !== proposedProfile.durationOfAction
@@ -233,7 +288,15 @@ export function ProfileDiffView({ userId, activeProfile, proposedProfile, glucos
                 </td>
               </tr>
             )}
-            {!nameChanged && !insulinTypeChanged && !durationChanged && !basalChanged && !icrChanged && !isfChanged && !targetsChanged && (
+            {(seaChanged || (activeProfile.insulinToMealInterval?.length ?? 0) > 0 || (proposedProfile.insulinToMealInterval?.length ?? 0) > 0) && (
+              <SeaRows
+                label={t('profileDiff.sea')}
+                activeSegs={activeProfile.insulinToMealInterval}
+                proposedSegs={proposedProfile.insulinToMealInterval}
+                formatTime={formatTime}
+              />
+            )}
+            {!nameChanged && !insulinTypeChanged && !durationChanged && !basalChanged && !icrChanged && !isfChanged && !targetsChanged && !seaChanged && (
               <tr>
                 <td colSpan={3} style={{ padding: '0.5rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
                   {t('profileDiff.noChanges')}

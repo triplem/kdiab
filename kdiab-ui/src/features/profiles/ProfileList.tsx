@@ -189,6 +189,11 @@ export function ProfileList({ userId, onSelectProfile, readOnly = false, glucose
             {profile.basal?.length ?? 0} Basal • {profile.icr?.length ?? 0} ICR •{' '}
             {profile.isf?.length ?? 0} ISF
           </p>
+          {(profile.insulinToMealInterval?.length ?? 0) > 0 && (
+            <p className="segments-count">
+              {t('profile.seaSummary', { count: profile.insulinToMealInterval!.length })}
+            </p>
+          )}
           {isExpanded && (
             <div className="profile-details">
               {profile.basal && profile.basal.length > 0 && (

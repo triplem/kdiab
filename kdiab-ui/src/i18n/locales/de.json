@@ -309,6 +309,7 @@
     "icr": "KI-Segmente",
     "isf": "ISF-Segmente",
     "targets": "BZ-Zielwerte",
+    "sea": "Insulin-zu-Mahlzeit-Intervall (SEA)",
     "noChanges": "Keine Unterschiede erkannt",
     "acceptSuccess": "Vorgeschlagenes Profil akzeptiert und ist jetzt aktiv.",
     "acceptError": "Das vorgeschlagene Profil konnte nicht akzeptiert werden.",
@@ -423,6 +424,8 @@
     "tooltipSeaTitle": "Spritz-Ess-Abstand (SEA)",
     "tooltipSea": "Spritz-Ess-Abstand: empfohlene Wartezeit in Minuten zwischen der Insulininjektion und dem Essen. Typisch 0–30 Minuten je nach Blutzucker und Trend.",
     "addSeaSegment": "SEA-Segment hinzufügen",
+    "seaSummary": "SEA: {{count}} Segment",
+    "seaSummary_plural": "SEA: {{count}} Segmente",
     "timeZone": "Zeitzone",
     "timeZonePlaceholder": "IANA-Zeitzone (z.B. UTC, Europe/Berlin)",
     "zeroBasalWarning": "Warnung: Ein oder mehrere Basalsegmente haben eine Rate von 0 E/h. Dies stoppt die Basalinsulinabgabe — bitte prüfen Sie, ob dies beabsichtigt ist."
