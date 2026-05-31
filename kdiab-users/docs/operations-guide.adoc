@@ -34,8 +34,6 @@ All configuration is provided via environment variables (override the defaults i
 | Variable | Default | Description
 
 | `PORT` | `8088` | HTTP listen port
-| `SELF_REGISTRATION_ENABLED` | `false` | Mount the `POST /register` endpoint
-| `SELF_REGISTRATION_REQUIRES_APPROVAL` | `false` | Require admin approval before account is usable
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3005` | Comma-separated allowed CORS origins
 |===
 
@@ -121,9 +119,20 @@ curl -X POST http://localhost:8088/api/v1/users/$DOCTOR_ID/patients \
 
 The doctor's `allowed_patients` Keycloak attribute is updated synchronously. The change takes effect in the doctor's next JWT.
 
-=== Enabling Self-Registration
+=== Enabling or Disabling Self-Registration
 
-Set `SELF_REGISTRATION_ENABLED=true` and redeploy. Optionally set `SELF_REGISTRATION_REQUIRES_APPROVAL=true` for approval-gated registration.
+Self-registration is controlled by the Keycloak realm setting, not by an application env var.
+
+. Log in to the Keycloak Admin Console.
+. Select the **kdiab** realm.
+. Go to **Realm settings → Login**.
+. Toggle **User registration** on or off and click **Save**.
+
+No application restart is required.
+
+NOTE: The `SELF_REGISTRATION_ENABLED` and `SELF_REGISTRATION_REQUIRES_APPROVAL` env vars
+were removed in the Keycloak-native registration migration (ADR-003). Remove them from any
+existing `docker-compose.yml` overrides.
 
 == Troubleshooting
 

@@ -1,0 +1,128 @@
+= ADR-003: Keycloak-Native Self-Registration Replaces Service-Side Endpoint
+:author: kdiab team
+:date: 2026-05-31
+:status: Accepted
+
+== Context
+
+ADR-002 implemented self-registration as a feature-flagged `POST /api/v1/register` endpoint in
+`kdiab-users`. The endpoint created a Keycloak user via the Admin API, seeded `UserSettings` in
+PostgreSQL, and optionally gated access by leaving newly registered accounts without a realm role.
+
+Two problems emerged in practice:
+
+1. *Synchronous Admin API dependency at registration time.* The unauthenticated endpoint calls the
+   Keycloak Admin API. A Keycloak hiccup during the registration call causes a 500 to an anonymous
+   user, with no retry or graceful degradation path.
+
+2. *UI registration form duplication.* The kdiab-ui team built and maintained a custom registration
+   page that reproduced Keycloak's own registration form: name, email, password, confirm-password,
+   CAPTCHA considerations. Every Keycloak update to the registration flow required corresponding
+   UI updates.
+
+Keycloak's built-in self-registration feature — previously rejected in ADR-002 because it did not
+support approval-gating — became acceptable once the approval requirement was re-evaluated. The
+platform's actual deployment pattern is:
+
+* *Clinical / closed deployments*: self-registration is disabled; all accounts are created by an
+  admin. Approval gating adds complexity without providing value in this model.
+* *Open deployments*: self-registration is enabled; new users are granted the PATIENT role
+  immediately. An approval step between registration and first login was not used in any
+  real deployment and added operational burden.
+
+== Decision
+
+Self-registration is delegated entirely to Keycloak:
+
+* `registrationAllowed: true` is set in the Keycloak realm configuration
+  (`config/keycloak-realm.json`). Keycloak renders the "Register" link on its login page.
+* The `POST /api/v1/register` endpoint is removed from `kdiab-users`. The route is no longer
+  mounted and the feature-flag env vars (`SELF_REGISTRATION_ENABLED`,
+  `SELF_REGISTRATION_REQUIRES_APPROVAL`) are deprecated.
+* `UserSettings` are seeded on the **first authenticated request** rather than at registration
+  time. `UserService.getOrCreateSettings()` performs an upsert: if no row exists for the
+  authenticated `userId`, a row with defaults is inserted before returning the settings.
+* To disable self-registration on a deployment, set `registrationAllowed: false` in the Keycloak
+  realm. No application env var change is required.
+
+=== UserSettings lazy-seeding
+
+[source,kotlin]
+----
+// ExposedUserSettingsRepository.kt
+suspend fun getOrCreate(userId: Uuid): UserSettings = suspendTransaction {
+    UserSettingsTable.selectAll()
+        .where { UserSettingsTable.userId eq userId }
+        .singleOrNull()
+        ?.toUserSettings()
+        ?: run {
+            val defaults = UserSettings.defaults(userId)
+            UserSettingsTable.insert { it.from(defaults) }
+            defaults
+        }
+}
+----
+
+The first call to `GET /api/v1/users/me` or `PATCH /api/v1/users/me/settings` after registration
+creates the settings row. The user experiences no visible delay because this upsert is a single
+indexed primary-key lookup followed by a conditional insert.
+
+== Consequences
+
+=== Positive
+
+* *No unauthenticated surface area.* kdiab-users no longer exposes an unauthenticated endpoint.
+  All routes require a valid JWT.
+* *Single registration UX.* The Keycloak login / registration page is the canonical entry point.
+  The kdiab team maintains the Keycloak login theme in `config/keycloak-theme/` rather than a
+  custom React form.
+* *Simpler Admin API dependency.* The Admin API is only called for post-authentication operations
+  (settings, doctor-patient relationships). The circuit breaker protects these paths; registration
+  itself cannot be blocked by a transient Admin API failure.
+* *Operator control.* Enabling or disabling self-registration is a Keycloak realm setting, visible
+  in the Keycloak Admin Console and in the exported `keycloak-realm.json`.
+
+=== Negative
+
+* *Keycloak login theme must be maintained.* The registration form is the Keycloak-branded
+  `login-update-profile.ftl` template. Any UX customisation (field labels, validation messages)
+  requires Freemarker template changes rather than React component changes.
+* *No approval workflow.* Keycloak's built-in registration grants the default realm role
+  immediately. An approval step would require a post-registration webhook or a separate admin
+  process. This is accepted: no current deployment requires approval-gated registration.
+* *Lazy settings seeding is implicit.* A user who registers in Keycloak but never calls a
+  kdiab-users endpoint has no settings row. This is correct and expected — the row is created
+  on first use — but it is a non-obvious invariant for developers reading the persistence layer.
+
+=== Neutral
+
+* The `doctor_patient` table is unaffected. Doctor-patient relationships continue to be managed
+  via the invitation flow (see ADR-016) and the admin assignment API.
+* The `UserSettings` defaults table remains unchanged.
+
+== Alternatives Considered
+
+=== Keep the `POST /register` endpoint with a circuit breaker
+
+Add a circuit breaker around the Admin API calls in the registration handler so that transient
+Keycloak failures return a retryable 503 rather than a 500.
+
+*Rejected.* This adds complexity without addressing the duplicated registration UX. The root cause
+(maintaining a custom registration form in parallel with Keycloak's built-in form) remains.
+
+=== Keycloak event listener + `UserSettings` seeding webhook
+
+Register a Keycloak event listener that fires on `REGISTER` events and calls
+`kdiab-users` to seed settings asynchronously.
+
+*Rejected.* Webhook-based seeding introduces an outbound HTTP call from Keycloak to
+`kdiab-users`. If `kdiab-users` is temporarily unavailable at registration time, settings
+are never seeded. The lazy-upsert approach is simpler and self-healing.
+
+=== External registration service with a dedicated UI
+
+Build a standalone registration micro-frontend backed by its own backend, decoupled from both
+Keycloak's UI and `kdiab-users`.
+
+*Rejected.* Disproportionate infrastructure investment for a registration form that is used once
+per user and can be customised adequately through Keycloak's theme system.

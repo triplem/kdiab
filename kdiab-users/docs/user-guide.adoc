@@ -141,27 +141,28 @@ The doctor's `allowed_patients` claim is updated in Keycloak immediately. The ch
 
 Removes the assignment. The change takes effect in the doctor's next JWT.
 
-== Self-Registration (When Enabled)
+== Self-Registration
 
-Self-registration lets new users create their own account without needing an administrator to do it first. It is **disabled by default**.
+Self-registration lets new users create their own account without administrator involvement.
+It is handled by Keycloak — kdiab-users does not expose a registration endpoint.
 
 === Step 1 — Check whether self-registration is enabled
 
-On the login screen at http://localhost:3005, look for a **Register** button below the "Sign in" button. If the button is absent, self-registration is disabled and you must ask an administrator to create an account for you (see <<_admin_creates_account>>).
+Navigate to the kdiab app at http://localhost:3005. If you are not logged in, you are redirected
+to the Keycloak login page. Look for a **Register** link on the login page. If the link is absent,
+self-registration is disabled for this deployment and you must ask an administrator to create an
+account for you (see <<_admin_creates_account>>).
 
-=== Step 2 — Fill in the registration form
+=== Step 2 — Complete the Keycloak registration form
 
 Click **Register** and complete the form:
 
-* **Display name** — your full name, e.g. `Jane Doe`
-* **Email** — your login email
-* **Password** — minimum 8 characters
-* **Confirm password** — repeat the password
+* **First name** and **Last name** — your full name
+* **Email** — your login email (also used as your username)
+* **Password** and **Password confirmation** — minimum 8 characters, at least one digit
 
-Click **Submit**. You will see either:
-
-* A confirmation that your account was created and you can log in immediately.
-* A message that your account is pending admin approval (see <<_approval_flow>>).
+Click **Register**. Keycloak creates your account and redirects you back to the kdiab app,
+logged in.
 
 === Step 3 — Complete your settings on first login
 
@@ -175,22 +176,10 @@ After logging in for the first time, go to **Settings** (top-right menu) and con
 
 See <<_default_settings>> for the values that are pre-populated.
 
-[[_approval_flow]]
-=== Approval flow (when `SELF_REGISTRATION_REQUIRES_APPROVAL: true`)
-
-Your account exists in Keycloak but has no role. You will see a "pending approval" message after registration and will not be able to access patient data until an administrator:
-
-. Goes to the **Admin → Users** panel.
-. Finds your account.
-. Sets your role to `PATIENT` (or `DOCTOR`).
-. Optionally assigns you to a doctor (for PATIENT role) or assigns patients to you (for DOCTOR role).
-
-Once the role is assigned, log out and log back in — the new JWT will include your role.
-
 [[_admin_creates_account]]
 === When self-registration is disabled — admin creates the account
 
-If the **Register** button is absent, ask a platform administrator to:
+If the **Register** link is absent on the login page, ask a platform administrator to:
 
 . Log in as `admin`.
 . Navigate to **Admin → Users → Create User**.
@@ -201,37 +190,18 @@ You can then log in immediately using the credentials the admin provided.
 
 === Enabling self-registration (operators)
 
-To enable the Register button, set the following environment variables before starting the stack:
+Self-registration is controlled entirely by the Keycloak realm setting `registrationAllowed`.
+It is enabled in the default `config/keycloak-realm.json` that ships with kdiab.
 
-.docker-compose.yml (kdiab-users-backend service)
-```yaml
-environment:
-  SELF_REGISTRATION_ENABLED: "true"
-  SELF_REGISTRATION_REQUIRES_APPROVAL: "false"   # set true to require admin review
-```
+To *disable* self-registration on a deployment, set `registrationAllowed: false` in the Keycloak
+realm:
 
-.kdiab-ui environment (Vite / container)
-```
-VITE_SELF_REGISTRATION_ENABLED=true
-```
+. Log in to the Keycloak Admin Console (e.g. http://localhost:8081, user `admin`).
+. Select the **kdiab** realm.
+. Go to **Realm settings → Login**.
+. Toggle **User registration** off and click **Save**.
 
-Restart the `kdiab-users-backend` and `kdiab-ui` containers for the changes to take effect.
-
-=== API (direct call)
-
-If you prefer to register via the API directly:
-
-`POST /api/v1/register`
-
-```json
-{
-  "email": "me@example.com",
-  "displayName": "My Name",
-  "password": "SecurePass123!"
-}
-```
-
-This endpoint returns 404 when self-registration is disabled.
+No application restart is required — the change takes effect immediately.
 
 == Default Settings
 
