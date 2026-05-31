@@ -661,6 +661,24 @@ services:
           memory: 128M
           cpus: '0.25'
 
+  users-expiry-scheduler:
+    container_name: kdiab-users-expiry-scheduler
+    image: curlimages/curl:latest
+    entrypoint:
+      - sh
+      - -c
+      - |
+        while true; do
+          curl -sf -X POST http://users-backend:8088/internal/invitations/expire || true
+          sleep 3600
+        done
+    depends_on:
+      users-backend:
+        condition: service_healthy
+    networks:
+      - shared
+    restart: unless-stopped
+
   kdiab-ui:
     container_name: kdiab-ui
     image: localhost/kdiab-ui:latest

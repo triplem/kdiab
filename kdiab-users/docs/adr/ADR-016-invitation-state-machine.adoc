@@ -53,7 +53,7 @@ Valid transitions and who may trigger them:
 | PENDING → DECLINED | Patient (self) or ADMIN | `POST /api/v1/users/{patientId}/invitations/{id}/respond` `{"action":"DECLINE"}`
 | PENDING → CANCELLED | Doctor (own) or ADMIN | `DELETE /api/v1/users/{doctorId}/invitations/{id}`
 | PENDING → CANCELLED | ADMIN only | `DELETE /api/v1/invitations/{id}` (admin endpoint)
-| PENDING → EXPIRED | `InvitationExpiryJob` | Background, no principal
+| PENDING → EXPIRED | `POST /internal/invitations/expire` | External scheduler, no JWT
 |===
 
 Authorization uses **resource-scoped 404 over 403**: `findById(id)` on an invitation the caller
@@ -63,17 +63,26 @@ does not own returns 404 rather than 403, preventing invitation-ID enumeration.
 
 An invitation expires 7 days after creation (`INVITATION_TTL = 7.days` in `InvitationService`).
 `expiresAt = createdAt + 7 days` is written at creation time and stored in the `doctor_invitations`
-table. The `InvitationExpiryJob` runs on a coroutine loop (default interval: 60 minutes) and
-calls `invitationRepo.expireBefore(now)`, which issues a single bulk `UPDATE` with `status =
-'EXPIRED'` where `status = 'PENDING' AND expires_at < now`. The interval is configurable via
-`INVITATION_EXPIRY_INTERVAL_MINUTES`.
+table. Expiry is triggered by an external scheduler calling a dedicated internal endpoint:
 
-NOTE: The background job runs inside every application instance. At the current single-instance
-deployment scale this is safe. For horizontally scaled deployments, the bulk-expiry `UPDATE`
-is idempotent — running it concurrently on N instances produces the same result as running it
-once — so correctness is preserved, but N-1 redundant DB round-trips are wasted. A future
-improvement would move expiry to an internal HTTP endpoint triggered by a container-external
-scheduler (e.g. a `docker-compose` cron service or a Kubernetes CronJob).
+[source]
+----
+POST /internal/invitations/expire
+Response: 200 { "expired": N }
+----
+
+The endpoint calls `invitationRepo.expireBefore(now)`, which issues a single bulk `UPDATE` with
+`status = 'EXPIRED'` where `status = 'PENDING' AND expires_at < now`. The endpoint requires no
+JWT — it is network-scoped and only reachable from within the Docker/Kubernetes internal network,
+not through the public ingress.
+
+In the root `docker-compose.yml` a `users-expiry-scheduler` sidecar container calls the endpoint
+hourly using `curl`. For Kubernetes deployments, use a `CronJob` with
+`schedule: "0 * * * *"`.
+
+This design avoids the N-1 redundant DB round-trips that occurred when every application
+instance ran its own background loop, and decouples the expiry schedule from the application
+lifecycle.
 
 === Compensating transaction on ACCEPT
 
@@ -122,8 +131,10 @@ the simplest approach that achieves the required consistency guarantee.
 * *No distributed transaction.* If the rollback itself fails (e.g. DB unavailable after Keycloak
   call fails), the `doctor_patient` row and the invitation status may diverge. Manual
   reconciliation is required. This is logged with sufficient detail for an operator to recover.
-* *Redundant expiry on multi-instance deployments.* Each instance runs the expiry job
-  independently. The job is idempotent but wastes resources at scale.
+* *External scheduler dependency.* Expiry now depends on a sidecar container or Kubernetes
+  CronJob being configured and running. If the scheduler fails, PENDING invitations are not
+  expired until it recovers. The internal endpoint itself is idempotent and can be called
+  manually for recovery.
 
 === Neutral
 

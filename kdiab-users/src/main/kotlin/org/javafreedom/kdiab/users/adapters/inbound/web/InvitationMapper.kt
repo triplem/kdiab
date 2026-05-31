@@ -69,6 +69,12 @@ fun DoctorInvitation.toResponse(
 )
 
 /**
+ * Response body for POST /internal/invitations/expire.
+ */
+@Serializable
+data class ExpireResponse(val expired: Int)
+
+/**
  * Paginated response for invitation list endpoints.
  */
 @Serializable

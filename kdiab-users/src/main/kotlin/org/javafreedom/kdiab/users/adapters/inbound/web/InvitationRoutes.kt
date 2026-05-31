@@ -14,6 +14,13 @@ import org.javafreedom.kdiab.users.domain.model.InvitationStatus
 private const val DEFAULT_PAGE_SIZE = 20
 private const val DEFAULT_PAGE_INDEX = 0
 
+fun Route.internalInvitationRoutes(invitationService: InvitationService) {
+    post("/internal/invitations/expire") {
+        val count = invitationService.expireOldInvitations()
+        call.respond(HttpStatusCode.OK, ExpireResponse(expired = count))
+    }
+}
+
 fun Route.invitationRoutes(invitationService: InvitationService) {
     authenticate("auth-jwt") {
         // Admin routes use the literal path segment "admin" and MUST be registered before any
