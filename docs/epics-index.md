@@ -7,6 +7,9 @@
 | [#1005](https://github.com/triplem/kdiab/issues/1005) | E2E & Regression Test Coverage for kdiab-ui | Closed | M3 | #1006, #1007, #1008, #1009, #1010, #1011, #1012, #1013, #1014, #1015, #1028 |
 | [#1016](https://github.com/triplem/kdiab/issues/1016) | UI Bug Fixes — Manual Testing Round 3 | Open (in-progress) | M4 | #1017, #1018, #1019, #1020, #1021 |
 | [#1038](https://github.com/triplem/kdiab/issues/1038) | UX & Platform Enhancements | Closed | M5 | #17, #19, #24, #30 |
+| [#1365](https://github.com/triplem/kdiab/issues/1365) | Gradle Build Infrastructure — buildSrc convention plugins | Open (pending-approval) | M6 | TBD |
+| [#1366](https://github.com/triplem/kdiab/issues/1366) | API Client Distribution — generated Kotlin client JARs per service | Open (pending-approval) | M6 | TBD |
+| [#1367](https://github.com/triplem/kdiab/issues/1367) | Consumer Service Migration to Generated Clients + Server Codegen Completion | Open (pending-approval) | M6 | TBD |
 
 ## Legend
 
