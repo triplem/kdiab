@@ -98,6 +98,35 @@ export interface DoctorPatientResponse {
   createdAt: string
 }
 
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'CANCELLED' | 'EXPIRED'
+
+export interface InvitationResponse {
+  id: string
+  doctorId: string
+  patientId?: string | null
+  patientIdentifier: string
+  status: InvitationStatus
+  message?: string | null
+  createdAt: string
+  expiresAt: string
+  resolvedAt?: string | null
+}
+
+export interface InvitationPage {
+  content: InvitationResponse[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+  doctorDisplayName?: string | null
+  patientDisplayNames: Record<string, string>
+}
+
+export interface SendInvitationRequest {
+  patientIdentifier: string
+  message?: string | null
+}
+
 export const usersApi = {
   getMe: () => axiosInstance.get<UserResponse>(`${BASE}/users/me`),
   patchMyProfile: (body: PatchProfileRequest) =>
@@ -119,4 +148,14 @@ export const usersApi = {
     axiosInstance.post<DoctorPatientResponse>(`${BASE}/users/${doctorId}/patients`, { patientId }),
   removePatient: (doctorId: string, patientId: string) =>
     axiosInstance.delete(`${BASE}/users/${doctorId}/patients/${patientId}`),
+  sendInvitation: (doctorId: string, body: SendInvitationRequest) =>
+    axiosInstance.post<InvitationResponse>(`${BASE}/users/${doctorId}/invitations`, body),
+  listDoctorInvitations: (doctorId: string, params?: { status?: string; page?: number; size?: number }) =>
+    axiosInstance.get<InvitationPage>(`${BASE}/users/${doctorId}/invitations`, { params }),
+  cancelInvitation: (doctorId: string, invitationId: string) =>
+    axiosInstance.delete(`${BASE}/users/${doctorId}/invitations/${invitationId}`),
+  listIncomingInvitations: (patientId: string) =>
+    axiosInstance.get<InvitationResponse[]>(`${BASE}/users/${patientId}/invitations/incoming`),
+  respondToInvitation: (patientId: string, invitationId: string, body: { action: 'ACCEPT' | 'DECLINE' }) =>
+    axiosInstance.patch<InvitationResponse>(`${BASE}/users/${patientId}/invitations/${invitationId}`, body),
 }
