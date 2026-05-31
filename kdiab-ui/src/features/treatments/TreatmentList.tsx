@@ -7,6 +7,7 @@ import type { TreatmentEditMode } from './AddTreatmentModal'
 import { useTimeFormat } from '../../context/TimeFormatContext'
 import { useTranslation } from 'react-i18next'
 import { ConfirmModal } from '../../components/ConfirmModal'
+import type { LucideIcon } from 'lucide-react'
 import {
   Syringe,
   MapPin,
@@ -28,7 +29,7 @@ interface TreatmentListProps {
   canArchive: boolean
 }
 
-const TREATMENT_ICONS: Record<string, React.FC<{ size?: number }>> = {
+const TREATMENT_ICONS: Record<string, LucideIcon> = {
   INSULIN_CHANGE: Syringe,
   SITE_CHANGE: MapPin,
   SENSOR_INSERT: Activity,
@@ -47,7 +48,7 @@ const TREATMENT_ICONS: Record<string, React.FC<{ size?: number }>> = {
   NOTE: FileText,
 }
 
-function getTreatmentIcon(type: string): React.FC<{ size?: number }> | null {
+function getTreatmentIcon(type: string): LucideIcon | null {
   return TREATMENT_ICONS[type] ?? null
 }
 
