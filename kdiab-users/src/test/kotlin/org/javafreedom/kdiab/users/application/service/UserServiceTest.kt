@@ -22,6 +22,7 @@ import org.javafreedom.kdiab.users.domain.model.UserSettings
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
+import org.javafreedom.kdiab.users.domain.repository.UserProfileRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 
 class UserServiceTest {
@@ -29,7 +30,8 @@ class UserServiceTest {
     private val identityProvider = mockk<IdentityProviderPort>()
     private val settingsRepo = mockk<UserSettingsRepository>()
     private val doctorPatientRepo = mockk<DoctorPatientRepository>()
-    private val service = UserService(identityProvider, settingsRepo, doctorPatientRepo)
+    private val userProfileRepo = mockk<UserProfileRepository>()
+    private val service = UserService(identityProvider, settingsRepo, doctorPatientRepo, userProfileRepo)
 
     private val adminId = Uuid.parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
     private val userId = Uuid.parse("11111111-1111-1111-1111-111111111111")
@@ -51,6 +53,7 @@ class UserServiceTest {
     fun `getMe returns user with settings from repo`() = runTest {
         coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         val principal = patientPrincipal()
         val user = service.getMe(principal)
         assertEquals(userId, user.userId)
@@ -62,6 +65,7 @@ class UserServiceTest {
         coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
         coEvery { settingsRepo.findByUserId(userId) } returns null
         coEvery { settingsRepo.save(any()) } answers { firstArg() }
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         service.getMe(patientPrincipal())
         coVerify(exactly = 1) { settingsRepo.save(any()) }
     }
@@ -110,6 +114,7 @@ class UserServiceTest {
         coEvery { identityProvider.listUserProfiles(any(), any(), any()) } returns listOf(identityProfile())
         coEvery { identityProvider.getUserRoles(userId) } returns emptySet()
         coEvery { settingsRepo.findByUserId(any()) } returns null
+        coEvery { userProfileRepo.findBirthdayByUserId(any()) } returns null
         val results = service.listUsers(adminPrincipal(), null, 0, 20)
         assertEquals(1, results.size)
     }
@@ -143,10 +148,12 @@ class UserServiceTest {
     fun `deleteUser removes user from identity provider and DB`() = runTest {
         coEvery { identityProvider.deleteUser(userId) } returns Unit
         coEvery { settingsRepo.delete(userId) } returns Unit
+        coEvery { userProfileRepo.delete(userId) } returns Unit
         coEvery { doctorPatientRepo.deleteByUserId(userId) } returns Unit
         service.deleteUser(adminPrincipal(), userId)
         coVerify(exactly = 1) { identityProvider.deleteUser(userId) }
         coVerify(exactly = 1) { settingsRepo.delete(userId) }
+        coVerify(exactly = 1) { userProfileRepo.delete(userId) }
         coVerify(exactly = 1) { doctorPatientRepo.deleteByUserId(userId) }
     }
 
@@ -155,6 +162,7 @@ class UserServiceTest {
         coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
         coEvery { identityProvider.getUserRoles(userId) } returns setOf(Role.PATIENT)
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         val user = service.getUser(patientPrincipal(), userId)
         assertEquals(userId, user.userId)
     }
@@ -236,21 +244,26 @@ class UserServiceTest {
         }
     }
 
-    // --- birthday and diabetesSince tests (Issue #1116) ---
+    // --- birthday tests (Issue #1169) ---
 
     @Test
-    fun `updateMySettings persists birthday and diabetesSince`() = runTest {
+    fun `updateMyProfile saves birthday via userProfileRepo`() = runTest {
         val principal = patientPrincipal()
-        coEvery { settingsRepo.findByUserId(userId) } returns settings()
-        coEvery { settingsRepo.save(any()) } answers { firstArg() }
-        val patch = SettingsPatch(
-            birthday = LocalDate(1990, 5, 15),
-            diabetesSince = 2010,
-        )
-        val result = service.updateMySettings(principal, patch)
-        assertEquals(LocalDate(1990, 5, 15), result.birthday)
-        assertEquals(2010, result.diabetes.diabetesSince)
+        val birthday = LocalDate(1990, 5, 15)
+        coEvery { userProfileRepo.saveBirthday(userId, birthday) } returns Unit
+        service.updateMyProfile(principal, birthday)
+        coVerify(exactly = 1) { userProfileRepo.saveBirthday(userId, birthday) }
     }
+
+    @Test
+    fun `updateMyProfile clears birthday when null`() = runTest {
+        val principal = patientPrincipal()
+        coEvery { userProfileRepo.saveBirthday(userId, null) } returns Unit
+        service.updateMyProfile(principal, null)
+        coVerify(exactly = 1) { userProfileRepo.saveBirthday(userId, null) }
+    }
+
+    // --- diabetesSince tests (Issue #1116) ---
 
     @Test
     fun `updateMySettings accepts diabetesSince at boundary year 1900`() = runTest {
@@ -298,6 +311,7 @@ class UserServiceTest {
         coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
         coEvery { identityProvider.getUserRoles(userId) } returns setOf(Role.PATIENT)
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         val user = service.updateUser(principal, userId, displayName = null, role = null)
         assertEquals(userId, user.userId)
         coVerify(exactly = 2) { identityProvider.getUserProfile(userId) }
@@ -310,6 +324,7 @@ class UserServiceTest {
         coEvery { identityProvider.updateUser(userId, any()) } returns Unit
         coEvery { identityProvider.getUserRoles(userId) } returns setOf(Role.PATIENT)
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         val user = service.updateUser(principal, userId, displayName = "New Name", role = null)
         assertEquals(userId, user.userId)
         coVerify(exactly = 1) { identityProvider.updateUser(userId, any()) }
@@ -323,6 +338,7 @@ class UserServiceTest {
         coEvery { identityProvider.removeRoles(userId, any()) } returns Unit
         coEvery { identityProvider.assignRoles(userId, any()) } returns Unit
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         service.updateUser(principal, userId, displayName = null, role = Role.DOCTOR)
         coVerify(exactly = 1) { identityProvider.removeRoles(userId, setOf(Role.PATIENT)) }
         coVerify(exactly = 1) { identityProvider.assignRoles(userId, setOf(Role.DOCTOR)) }
@@ -335,6 +351,7 @@ class UserServiceTest {
         coEvery { identityProvider.getUserRoles(userId) } returns emptySet()
         coEvery { identityProvider.assignRoles(userId, any()) } returns Unit
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         service.updateUser(principal, userId, displayName = null, role = Role.PATIENT)
         coVerify(exactly = 0) { identityProvider.removeRoles(any(), any()) }
         coVerify(exactly = 1) { identityProvider.assignRoles(userId, setOf(Role.PATIENT)) }
@@ -349,6 +366,7 @@ class UserServiceTest {
         coEvery { identityProvider.removeRoles(userId, any()) } returns Unit
         coEvery { identityProvider.assignRoles(userId, any()) } returns Unit
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         service.updateUser(principal, userId, displayName = "Dr. House", role = Role.DOCTOR)
         coVerify(exactly = 1) { identityProvider.updateUser(userId, any()) }
         coVerify(exactly = 1) { identityProvider.assignRoles(userId, setOf(Role.DOCTOR)) }
@@ -405,6 +423,7 @@ class UserServiceTest {
         coEvery { identityProvider.listUserProfiles("alice", 0, 10) } returns listOf(identityProfile())
         coEvery { identityProvider.getUserRoles(userId) } returns emptySet()
         coEvery { settingsRepo.findByUserId(any()) } returns null
+        coEvery { userProfileRepo.findBirthdayByUserId(any()) } returns null
         val results = service.listUsers(adminPrincipal(), "alice", 0, 10)
         assertEquals(1, results.size)
         coVerify(exactly = 1) { identityProvider.listUserProfiles("alice", 0, 10) }
@@ -424,6 +443,7 @@ class UserServiceTest {
         )
         coEvery { identityProvider.getUserProfile(userId) } returns profileBlankNames
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         val user = service.getMe(patientPrincipal())
         assertEquals("myusername", user.displayName)
     }
@@ -440,6 +460,7 @@ class UserServiceTest {
         )
         coEvery { identityProvider.getUserProfile(userId) } returns profileAllBlank
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         val user = service.getMe(patientPrincipal())
         assertEquals("fallback@example.com", user.displayName)
     }
@@ -455,6 +476,7 @@ class UserServiceTest {
         )
         coEvery { identityProvider.getUserProfile(userId) } returns profileFirstOnly
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         val user = service.getMe(patientPrincipal())
         assertEquals("OnlyFirst", user.displayName)
     }
@@ -562,6 +584,7 @@ class UserServiceTest {
         coEvery { identityProvider.getUserProfile(userId) } returns identityProfile()
         coEvery { identityProvider.getUserRoles(userId) } returns setOf(Role.PATIENT)
         coEvery { settingsRepo.findByUserId(userId) } returns settings()
+        coEvery { userProfileRepo.findBirthdayByUserId(userId) } returns null
         val user = service.getUser(principal, userId)
         assertEquals(userId, user.userId)
     }

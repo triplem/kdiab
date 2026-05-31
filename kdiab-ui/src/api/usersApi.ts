@@ -28,7 +28,6 @@ export interface DiabetesProfile {
 }
 
 export interface UserSettings {
-  birthday?: string | null
   locale: LocalePreferences
   units: UnitPreferences
   alarms?: AlarmThresholds | null
@@ -42,6 +41,7 @@ export interface UserResponse {
   email: string
   displayName: string
   roles: string[]
+  birthday?: string | null
   settings?: UserSettings
 }
 
@@ -81,8 +81,11 @@ export interface DiabetesProfilePatch {
   carbAbsorptionRateGPerHour?: number | null
 }
 
-export interface PatchSettingsRequest {
+export interface PatchProfileRequest {
   birthday?: string | null
+}
+
+export interface PatchSettingsRequest {
   locale?: LocalePreferencesPatch
   units?: UnitPreferencesPatch
   alarms?: AlarmThresholdsPatch
@@ -97,6 +100,8 @@ export interface DoctorPatientResponse {
 
 export const usersApi = {
   getMe: () => axiosInstance.get<UserResponse>(`${BASE}/users/me`),
+  patchMyProfile: (body: PatchProfileRequest) =>
+    axiosInstance.patch<UserResponse>(`${BASE}/users/me/profile`, body),
   patchMySettings: (body: PatchSettingsRequest) =>
     axiosInstance.patch<UserSettings>(`${BASE}/users/me/settings`, body),
   listUsers: (params?: { search?: string; page?: number; size?: number }) =>

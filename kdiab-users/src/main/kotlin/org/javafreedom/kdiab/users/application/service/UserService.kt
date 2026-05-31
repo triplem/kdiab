@@ -22,6 +22,7 @@ import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
 import org.javafreedom.kdiab.users.domain.repository.IdentityUserProfile
 import org.javafreedom.kdiab.users.domain.repository.PasswordCredential
+import org.javafreedom.kdiab.users.domain.repository.UserProfileRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 
 private val logger = KotlinLogging.logger {}
@@ -42,12 +43,20 @@ class UserService(
     private val identityProvider: IdentityProviderPort,
     private val settingsRepo: UserSettingsRepository,
     private val doctorPatientRepo: DoctorPatientRepository,
+    private val userProfileRepo: UserProfileRepository,
 ) {
     suspend fun getMe(principal: UserPrincipal): User {
         val profile = identityProvider.getUserProfile(principal.userId)
         val settings = settingsRepo.findByUserId(principal.userId)
             ?: defaultSettings(principal.userId).also { settingsRepo.save(it) }
-        return profile.toDomain(settings, principal.roles)
+        val birthday = userProfileRepo.findBirthdayByUserId(principal.userId)
+        return profile.toDomain(settings, principal.roles, birthday)
+    }
+
+    suspend fun updateMyProfile(principal: UserPrincipal, birthday: LocalDate?) {
+        // birthday is PII — log only userId, never birthday value
+        userProfileRepo.saveBirthday(principal.userId, birthday)
+        logger.info { "update_my_profile userId=${principal.userId}" }
     }
 
     suspend fun updateMySettings(
@@ -77,7 +86,6 @@ class UserService(
             ?: defaultSettings(principal.userId)
         val now = Clock.System.now()
         val updated = existing.copy(
-            birthday = patch.birthday ?: existing.birthday,
             locale = existing.locale.copy(
                 timezone = patch.timezone ?: existing.locale.timezone,
                 language = patch.language ?: existing.locale.language,
@@ -113,12 +121,14 @@ class UserService(
                 }
             }
         }
+        // TODO(#1297): batch-load birthdays to avoid N+1 DB round-trips on listUsers
         return coroutineScope {
             validProfiles.map { (userId, profile) ->
                 async {
                     val roles = identityProvider.getUserRoles(userId)
                     val settings = settingsRepo.findByUserId(userId)
-                    profile.toDomain(settings, roles)
+                    val birthday = userProfileRepo.findBirthdayByUserId(userId)
+                    profile.toDomain(settings, roles, birthday)
                 }
             }.awaitAll()
         }
@@ -167,7 +177,8 @@ class UserService(
         val profile = identityProvider.getUserProfile(targetUserId)
         val roles = identityProvider.getUserRoles(targetUserId)
         val settings = settingsRepo.findByUserId(targetUserId)
-        return profile.toDomain(settings, roles)
+        val birthday = userProfileRepo.findBirthdayByUserId(targetUserId)
+        return profile.toDomain(settings, roles, birthday)
     }
 
     suspend fun updateUser(
@@ -193,13 +204,15 @@ class UserService(
         }
         val updated = identityProvider.getUserProfile(targetUserId)
         val settings = settingsRepo.findByUserId(targetUserId)
-        return updated.toDomain(settings, updatedRoles)
+        val birthday = userProfileRepo.findBirthdayByUserId(targetUserId)
+        return updated.toDomain(settings, updatedRoles, birthday)
     }
 
     suspend fun deleteUser(principal: UserPrincipal, targetUserId: Uuid) {
         requireAdmin(principal)
         identityProvider.deleteUser(targetUserId)
         settingsRepo.delete(targetUserId)
+        userProfileRepo.delete(targetUserId)
         doctorPatientRepo.deleteByUserId(targetUserId)
         logger.info { "admin_delete_user admin=${principal.userId} deletedUser=$targetUserId" }
     }
@@ -260,7 +273,6 @@ class UserService(
 }
 
 data class SettingsPatch(
-    val birthday: LocalDate? = null,
     val timezone: String? = null,
     val language: String? = null,
     val timeFormat: Int? = null,
@@ -275,8 +287,20 @@ data class SettingsPatch(
     val carbAbsorptionRateGPerHour: Double? = null,
 )
 
-private fun IdentityUserProfile.toDomain(settings: UserSettings?, roles: Set<Role>): User {
+private fun IdentityUserProfile.toDomain(
+    settings: UserSettings?,
+    roles: Set<Role>,
+    birthday: LocalDate? = null,
+): User {
     val userId = Uuid.parse(requireNotNull(id) { "Identity provider user missing id" })
     val displayName = listOfNotNull(firstName, lastName).joinToString(" ").ifBlank { username ?: email.orEmpty() }
-    return User(userId = userId, email = email.orEmpty(), displayName = displayName, roles = roles, settings = settings)
+    return User(
+        userId = userId,
+        email = email.orEmpty(),
+        displayName = displayName,
+        roles = roles,
+        birthday = birthday,
+        settings = settings,
+    )
 }
+

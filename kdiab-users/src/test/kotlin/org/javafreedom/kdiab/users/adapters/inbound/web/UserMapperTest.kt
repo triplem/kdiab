@@ -3,6 +3,7 @@ package org.javafreedom.kdiab.users.adapters.inbound.web
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.time.Clock
@@ -30,11 +31,12 @@ class UserMapperTest {
         alarms = AlarmThresholds(urgentHigh = 260, high = 200, low = 75, urgentLow = 55),
     )
 
-    private fun user(s: UserSettings? = settings()) = User(
+    private fun user(s: UserSettings? = settings(), birthday: LocalDate? = null) = User(
         userId = userId,
         email = "test@example.com",
         displayName = "Test User",
         roles = setOf(Role.PATIENT),
+        birthday = birthday,
         settings = s,
     )
 
@@ -67,20 +69,30 @@ class UserMapperTest {
         assertEquals(200, alarms.high)
         assertEquals(75, alarms.low)
         assertEquals(55, alarms.urgentLow)
-        assertNull(response.birthday)
         assertNull(response.diabetes.diabetesSince)
         assertNull(response.jwtBackedNote)
     }
 
     @Test
-    fun `UserSettings toResponse maps birthday and diabetesSince when set`() {
-        val settingsWithDates = settings().copy(
-            birthday = LocalDate(1990, 5, 15),
+    fun `UserSettings toResponse maps diabetesSince when set`() {
+        val settingsWithDiabetes = settings().copy(
             diabetes = DiabetesProfile(sensorDurationHours = 240, diabetesSince = 2010),
         )
-        val response = settingsWithDates.toResponse()
-        assertEquals("1990-05-15", response.birthday)
+        val response = settingsWithDiabetes.toResponse()
         assertEquals(2010, response.diabetes.diabetesSince)
+    }
+
+    @Test
+    fun `User toResponse maps birthday to ISO string when set`() {
+        val birthday = LocalDate(1990, 5, 15)
+        val response = user(birthday = birthday).toResponse()
+        assertEquals("1990-05-15", response.birthday)
+    }
+
+    @Test
+    fun `User toResponse has null birthday when not set`() {
+        val response = user(birthday = null).toResponse()
+        assertNull(response.birthday)
     }
 
     @Test
@@ -116,13 +128,11 @@ class UserMapperTest {
     }
 
     @Test
-    fun `PatchSettingsRequest toPatch maps birthday and diabetesSince`() {
+    fun `PatchSettingsRequest toPatch maps diabetesSince`() {
         val req = PatchSettingsRequest(
-            birthday = "1990-05-15",
             diabetes = DiabetesProfilePatch(diabetesSince = 2010),
         )
         val patch = req.toPatch()
-        assertEquals(LocalDate(1990, 5, 15), patch.birthday)
         assertEquals(2010, patch.diabetesSince)
     }
 
@@ -131,7 +141,32 @@ class UserMapperTest {
         val patch = PatchSettingsRequest().toPatch()
         assertNull(patch.timezone)
         assertNull(patch.glucoseUnit)
-        assertNull(patch.birthday)
         assertNull(patch.diabetesSince)
+    }
+
+    // ── PatchProfileRequest.toBirthday() ──────────────────────────────────────
+
+    @Test
+    fun `toBirthday returns LocalDate for valid ISO date string`() {
+        val req = PatchProfileRequest(birthday = "1990-05-15")
+        assertEquals(LocalDate(1990, 5, 15), req.toBirthday())
+    }
+
+    @Test
+    fun `toBirthday returns null when birthday is null`() {
+        val req = PatchProfileRequest(birthday = null)
+        assertNull(req.toBirthday())
+    }
+
+    @Test
+    fun `toBirthday throws IllegalArgumentException for malformed date string`() {
+        val req = PatchProfileRequest(birthday = "not-a-date")
+        assertFailsWith<IllegalArgumentException> { req.toBirthday() }
+    }
+
+    @Test
+    fun `toBirthday throws IllegalArgumentException for out-of-range date`() {
+        val req = PatchProfileRequest(birthday = "2026-13-01")
+        assertFailsWith<IllegalArgumentException> { req.toBirthday() }
     }
 }

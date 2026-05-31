@@ -38,6 +38,31 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
 
+  /users/me/profile:
+    patch:
+      operationId: patchMyProfile
+      summary: Update own profile data
+      description: Partially updates the authenticated user's biographical profile data (e.g. birthday). Birthday is PII and must never appear in logs.
+      tags: [Self]
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchProfileRequest"
+      responses:
+        "200":
+          description: Updated user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
   /users/me/settings:
     patch:
       operationId: patchMySettings
@@ -751,6 +776,12 @@ components:
           items:
             type: string
           example: ["PATIENT"]
+        birthday:
+          type: string
+          format: date
+          nullable: true
+          description: "Birthday in YYYY-MM-DD format (PII — handle with care)"
+          example: "1990-05-15"
         settings:
           $ref: "#/components/schemas/UserSettingsResponse"
 
@@ -833,12 +864,6 @@ components:
       type: object
       required: [locale, units, diabetes, updatedAt]
       properties:
-        birthday:
-          type: string
-          format: date
-          nullable: true
-          description: "Birthday in YYYY-MM-DD format (PII — handle with care)"
-          example: "1990-05-15"
         locale:
           $ref: "#/components/schemas/LocalePreferences"
         units:
@@ -912,7 +937,7 @@ components:
           description: "Carbohydrate absorption rate in grams per hour"
           example: 20.0
 
-    PatchSettingsRequest:
+    PatchProfileRequest:
       type: object
       properties:
         birthday:
@@ -921,6 +946,10 @@ components:
           nullable: true
           description: "Birthday in YYYY-MM-DD format (PII — handle with care)"
           example: "1990-05-15"
+
+    PatchSettingsRequest:
+      type: object
+      properties:
         locale:
           $ref: "#/components/schemas/LocalePreferencesPatch"
         units:

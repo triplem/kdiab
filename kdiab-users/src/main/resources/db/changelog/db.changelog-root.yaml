@@ -8,4 +8,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/changes/004-add-birthday-diabetes-since.yaml
   - include:
+      file: db/changelog/changes/005-birthday-to-user-profile.yaml
+  - include:
       file: db/changelog/changes/006-add-doctor-invitations.yaml

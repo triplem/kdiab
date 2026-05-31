@@ -33,12 +33,14 @@ import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.domain.repository.DoctorInvitationRepository
 import org.javafreedom.kdiab.users.domain.repository.DoctorPatientRepository
 import org.javafreedom.kdiab.users.domain.repository.IdentityProviderPort
+import org.javafreedom.kdiab.users.domain.repository.UserProfileRepository
 import org.javafreedom.kdiab.users.domain.repository.UserSettingsRepository
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakAdminClient
 import org.javafreedom.kdiab.users.infrastructure.keycloak.KeycloakIdentityProviderAdapter
 import org.javafreedom.kdiab.users.infrastructure.persistence.DatabaseFactory
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedDoctorInvitationsRepository
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedDoctorPatientRepository
+import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedUserProfileRepository
 import org.javafreedom.kdiab.users.infrastructure.persistence.ExposedUserSettingsRepository
 
 fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
@@ -82,16 +84,18 @@ fun Application.module() {
         val settingsRepo = ExposedUserSettingsRepository()
         val doctorPatientRepo = ExposedDoctorPatientRepository()
         val invitationRepo = ExposedDoctorInvitationsRepository()
+        val userProfileRepo = ExposedUserProfileRepository()
 
         install(DI) { }
         dependencies {
             provide<KeycloakAdminClient> { keycloak }
             provide<IdentityProviderPort> { identityProvider }
             provide<UserSettingsRepository> { settingsRepo }
+            provide<UserProfileRepository> { userProfileRepo }
             provide<DoctorPatientRepository> { doctorPatientRepo }
             provide<DoctorInvitationRepository> { invitationRepo }
             provide<UserService> {
-                UserService(identityProvider, settingsRepo, doctorPatientRepo)
+                UserService(identityProvider, settingsRepo, doctorPatientRepo, userProfileRepo)
             }
             provide<DoctorPatientService> {
                 DoctorPatientService(doctorPatientRepo, identityProvider)
