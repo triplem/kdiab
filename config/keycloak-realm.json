@@ -18,15 +18,7 @@
   "failureFactor": 5,
   "passwordPolicy": "length(8) and notUsername and notEmail",
   "loginTheme": "kdiab",
-  "smtpServer": {
-    "host": "",
-    "port": "587",
-    "from": "",
-    "fromDisplayName": "kdiab",
-    "ssl": "false",
-    "starttls": "true",
-    "auth": "false"
-  },
+  "smtpServer": {},
   "internationalizationEnabled": true,
   "supportedLocales": [
     "en",
