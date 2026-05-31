@@ -114,6 +114,8 @@ tasks.named("check") {
     dependsOn(testing.suites.named("integrationTest"))
 }
 
+// Kover internally wires koverVerify → koverGenerateArtifact → test tasks, but
+// explicit dependsOn ensures correct ordering when invoked standalone (./gradlew koverVerify).
 tasks.named("koverVerify") {
     dependsOn("test")
     dependsOn(testing.suites.named("integrationTest"))
