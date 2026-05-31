@@ -20,11 +20,11 @@ production Keycloak deployment:
 | `realm`, `enabled`, `sslRequired` | Realm identity and TLS policy |
 | `registrationAllowed`, `registrationEmailAsUsername`, `loginWithEmailAllowed`, `resetPasswordAllowed` | Self-service registration settings |
 | `verifyEmail` | Require email verification before first login |
-| `smtpServer` | Email relay config (empty defaults — operator must fill in before enabling email verification) |
+| `smtpServer` | Email relay config (empty defaults — operator must fill in for email delivery to work; local dev silently skips sending) |
 | `loginTheme` | Custom Keycloak login UI theme |
 | `internationalizationEnabled`, `supportedLocales`, `defaultLocale` | i18n |
 | `roles.realm` | `PATIENT`, `DOCTOR`, `ADMIN` |
-| `requiredActions` | `VERIFY_PROFILE` (enforced on all users) |
+| `requiredActions` | `VERIFY_EMAIL` (enabled, not default) and `VERIFY_PROFILE` (enforced on all users) |
 | `clients` | All frontend and service clients with their protocol mappers and audience mappings |
 
 ### Clients
