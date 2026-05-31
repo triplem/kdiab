@@ -112,7 +112,11 @@ testing {
 
 tasks.named("check") {
     dependsOn(testing.suites.named("integrationTest"))
-    dependsOn("koverVerify")
+}
+
+tasks.named("koverVerify") {
+    dependsOn("test")
+    dependsOn(testing.suites.named("integrationTest"))
 }
 
 tasks.withType<Test> {
