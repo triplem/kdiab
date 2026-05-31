@@ -22,10 +22,9 @@ jobs:
     name: Publish kdiab-common JAR
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Only publish when kdiab-common is part of the release, or when triggered manually
+    # Publish on any versioned release (v-prefixed tag) or manual trigger
     if: >
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.release.body, 'kdiab-common') ||
       startsWith(github.event.release.tag_name, 'v')
 
     steps:
