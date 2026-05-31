@@ -1,36 +1,374 @@
-= kdiab AI Development Prompts & Guidelines
+= kdiab AI-Assisted Development Guide
 :toc: left
+:icons: font
 
-This document provides a set of reusable prompts and guidelines for AI agents working on the KDiab project. These prompts should be used to ensure consistency, quality, and adherence to the project's architectural principles.
+This guide describes how the kdiab platform uses Claude Code (Anthropic's AI development CLI) to manage the full software development lifecycle — from requirements gathering through release. It documents the workflow, the skills invoked at each stage, the artifacts produced, and the points where human review and approval are required.
 
-== 1. Persona-Based Development
+== Development Lifecycle Overview
 
-To achieve the best results, always invoke a specific **AI Agent Persona** before starting a task. 
+The workflow follows six sequential phases. Each phase is triggered by a slash command (skill) in Claude Code.
 
-* **QA Agent**: "Analyze the coverage gaps in the `backend` module and write JUnit 5 tests using Mockk to reach 80% coverage."
-* **Security Agent**: "Perform a security audit of the `MeasuresService` and check for authorization bypasses and SQL injection risks in the `jsonb` queries."
-* **Functional Agent**: "Review the `CreateMeasure` flow against `docs/requirements.adoc` and identify any missing validation logic."
-* **DevOps Agent**: "Optimize the `backend/Dockerfile` for faster build times and smaller image size."
+[cols="1,2,2,2"]
+|===
+| Phase | Skill | Input | Primary output
 
-== 2. Common Development Tasks
+| 1. Requirements
+| `/gather-requirements`
+| Stakeholder conversation
+| `docs/requirements.adoc`
 
-=== 2.1 Refactoring
-When asking an agent to refactor code:
-"Refactor the `MeasuresRepository` to use the new `kotlin.uuid.Uuid` type and ensure all existing integration tests pass. Keep the logic separated from the framework-specific adapters."
+| 2. Epic decomposition
+| `/write-epics`
+| Requirements doc
+| GitHub Epic issue(s) with acceptance criteria
 
-=== 2.2 Adding New Features
-"Add a new `GLYCOSYLATED_HEMOGLOBIN` (HbA1c) measurement type to the `MeasuresService`. Follow the established pattern of using JSONB for data storage and update the OpenAPI specification accordingly."
+| 3. Story decomposition
+| `/write-stories`
+| Epic issue number
+| GitHub Story issues (sub-issues of the epic)
 
-=== 2.3 Debugging
-"Analyze the failing `MeasuresE2ETest.kt` and identify the root cause of the assertion error. Focus on the database state initialization and the Liquibase migrations."
+| 4. Implementation
+| `/implement-epic`
+| Epic issue number
+| Feature branch, code, tests, ADR, PR
 
-== 3. Architectural Adherence
+| 5. PR review
+| `/pr-reviewer`
+| Pull request number
+| Structured review report; optional GitHub comment
 
-* **Hexagonal Architecture**: "Ensure this new service implementation remains in the `domain` layer and does not depend on any Ktor or Exposed classes. Use ports for external dependencies."
-* **ADR Compliance**: "Ensure this change respects ADR-201 (Flexible Measures Model) and does not introduce unnecessary relational tables for specific measurement fields."
-* **Kotlin-Native First**: "Use `kotlinx.datetime` and `kotlinx-serialization` for all data handling. Avoid using Java-specific standard library classes in the domain layer."
+| 6. Release
+| `/release`
+| Merged PR on `main`
+| Semver tag, GitHub Release, SBOM, Docker image
+|===
 
-== 4. Documentation
+Individual stories can also be implemented one at a time with `/implement <issue-number>`.
 
-* **Writing ADRs**: "Draft a new ADR for using Redux Toolkit in the frontend. Use the standard project template and provide a clear rationale based on the complexity of measurements history."
-* **Updating Architecture**: "Update `docs/architecture.adoc` to reflect the newly implemented `Measures` synchronization logic."
+== Phase 1 — Requirements Gathering
+
+=== Skill: `/gather-requirements`
+
+Elicits, challenges, and documents product requirements through a structured conversation. Produces a requirements document in AsciiDoc format that becomes the input for epic creation.
+
+*Human approval required:* The requirements document must be reviewed and approved by the product owner before proceeding to Phase 2.
+
+*Artifact:* `docs/requirements.adoc` (or service-specific `<service>/docs/requirements.adoc`)
+
+== Phase 2 — Epic Decomposition
+
+=== Skill: `/write-epics`
+
+Decomposes a requirements document into GitHub Epic issues. Each epic includes:
+
+- A clear summary and scope
+- A User Stories checklist (including implementation and documentation stories)
+- Acceptance criteria
+- Sub-issues linked via the GitHub native sub-issue API
+
+*Human approval required:* Each epic is reviewed by the tech lead before stories are written. Epics define scope — incorrect scope propagates through all downstream phases.
+
+*Artifact:* GitHub Epic issue(s) with real sub-issue numbers (no `#TBD` placeholders).
+
+=== Documentation stories (mandatory)
+
+Every epic must include documentation stories. See `<<_epic_documentation_checklist>>` in the GitHub Issue Management rules. At minimum, architectural epics require:
+
+- An ADR (`docs/adr/ADR-NNN-slug.adoc` for platform, `ADR-{SVC}-NNN-slug.adoc` for services)
+- A developer reference document
+- An operations guide (new services only)
+- A user/admin guide (user-visible features only)
+
+== Phase 3 — Story Decomposition
+
+=== Skill: `/write-stories`
+
+Decomposes an epic into user stories using the INVEST criteria (Independent, Negotiable, Valuable, Estimable, Small, Testable). Each story:
+
+- Gets its own GitHub issue
+- Is immediately linked as a sub-issue of the epic (via GraphQL `addSubIssue`)
+- Has a size estimate (S = 1 day, M = 3 days, L = 5 days)
+- Has testable acceptance criteria
+
+*Human approval required:* Story list is reviewed before implementation begins — stories define the work units for the sprint.
+
+*Artifact:* GitHub Story issues, all sub-issues of the epic.
+
+== Phase 4 — Implementation
+
+=== Skill: `/implement` (single story) or `/implement-epic` (full epic)
+
+`/implement-epic` discovers all open sub-issues of the epic, groups them into dependency waves, and delegates each story to `/implement` in sequence.
+
+`/implement` for each story:
+
+. Creates or reuses a feature branch (`<type>/<issue>-<slug>`)
+. Assigns the issue to `@me` and adds the "In Progress" label
+. Implements the code, following hexagonal architecture and all rules in `.claude/rules/`
+. Writes unit, integration, and where appropriate E2E tests
+. Runs quality gates: `./gradlew check` (Kotlin) and/or `npm run build` + lint + test (TypeScript)
+. Commits following Conventional Commits convention
+. Opens a pull request
+
+*Human approval required:* PR review (Phase 5). Implementation may proceed autonomously within a story; PR merge always requires human sign-off.
+
+=== Quality gates (automatic, enforced before PR)
+
+- All tests pass (unit, integration, E2E)
+- Unit coverage ≥ 80% (Kover for Kotlin, Vitest for TypeScript)
+- Detekt / ESLint linting passes
+- No unmitigated HIGH/CRITICAL SAST findings
+- OpenAPI spec valid (if API changed)
+- No untracked `TODO`/`FIXME` in changed files
+- Docker build succeeds (if applicable)
+
+== Phase 5 — PR Review
+
+=== Skill: `/pr-reviewer`
+
+Reviews a pull request against all project rules. Classifies findings as BLOCKER, MAJOR, or MINOR. BLOCKERs must be resolved before merge; MAJOR findings require justification; MINOR findings are advisory.
+
+The skill can optionally post a structured review comment directly on the GitHub PR.
+
+*Human approval required:* All PRs require human approval before merge. The agent review supplements but does not replace human judgement.
+
+=== Specialist reviews (on-demand)
+
+For significant features, invoke specialist reviewers before merging:
+
+[cols="1,2"]
+|===
+| Skill | Perspective
+
+| `/security-review`
+| OWASP Top 10, auth, secrets hygiene
+
+| `/doctor-t1d-review`
+| Clinical correctness, T1D safety
+
+| `/patient-t1d-review`
+| Real-world usability from a T1D patient perspective
+
+| `/qa-review`
+| Test coverage, edge cases, regression risk
+
+| `/architect-review`
+| Hexagonal layers, SOLID, API design
+
+| `/devops-review`
+| Container hygiene, CI/CD safety, env config
+
+| `/ux-review`
+| WCAG AA, ease of use, interaction design
+
+| `/challenge-all`
+| All 11 perspectives in one consolidated report
+|===
+
+== Phase 6 — Release
+
+=== Skill: `/release`
+
+Triggered after merge to `main`. Uses semantic-release (Angular preset) to:
+
+. Determine the version bump from Conventional Commits
+. Update `CHANGELOG.md`
+. Tag the commit (`v<major>.<minor>.<patch>`)
+. Create a GitHub Release with the changelog entry
+. Trigger the Docker publish workflow (pushes images to `ghcr.io`)
+. Trigger the docs-pages workflow (publishes to GitHub Pages)
+
+*Human approval required:* Releases to production environments (staging → prod promotion) require explicit human trigger. The CI/CD pipeline publishes to the registry automatically; deployment to production is a manual step.
+
+== Artifacts Reference
+
+[cols="2,2,2"]
+|===
+| Artifact | Location | Created by
+
+| Requirements document
+| `docs/requirements.adoc`
+| `/gather-requirements`
+
+| Epic GitHub issue
+| GitHub Issues
+| `/write-epics`
+
+| Story GitHub issues
+| GitHub Issues (sub-issues of epic)
+| `/write-stories`
+
+| Feature branch
+| git remote
+| `/implement`
+
+| Platform ADR
+| `docs/adr/ADR-NNN-slug.adoc`
+| `/create-adr`
+
+| Service ADR
+| `<service>/docs/adr/ADR-{SVC}-NNN-slug.adoc`
+| `/create-adr`
+
+| Developer reference
+| `<service>/docs/<feature>-reference.adoc`
+| `/implement`
+
+| Operations guide
+| `<service>/docs/operations-guide.adoc`
+| `/implement`
+
+| User/admin guide
+| `<service>/docs/user-guide.adoc`
+| `/implement`
+
+| Pull Request
+| GitHub PRs
+| `/create-pr`
+
+| Semver tag + GitHub Release
+| git tags / GitHub Releases
+| `/release`
+
+| SBOM (CycloneDX)
+| Attached to GitHub Release
+| CI (CycloneDX Gradle plugin)
+
+| Docker images
+| `ghcr.io/triplem/kdiab-*`
+| CI (`docker-publish.yml`)
+
+| Platform docs (HTML)
+| `https://triplem.github.io/kdiab/`
+| CI (`docs-pages.yml`)
+|===
+
+== Human-in-the-Loop Decision Points
+
+The following gates always require explicit human action:
+
+[cols="1,3"]
+|===
+| Gate | What the human decides
+
+| Requirements sign-off
+| Are the requirements complete, correct, and in scope?
+
+| Epic approval
+| Is the scope correct? Are the acceptance criteria testable?
+
+| Story list approval
+| Is the story breakdown correct? Are estimates reasonable?
+
+| PR merge
+| Is the implementation correct and safe to merge?
+
+| Release promotion
+| Should this version be deployed to production?
+|===
+
+No agent may merge a PR or tag a release without human approval. The agent may open PRs, post review comments, and suggest release notes — but the merge and tag actions are gated behind human confirmation.
+
+== Skills Catalogue
+
+=== SDLC Skills
+
+[cols="1,3"]
+|===
+| Skill | Purpose
+
+| `/gather-requirements`
+| Elicit and document product requirements
+
+| `/write-epics`
+| Decompose requirements into GitHub Epic issues
+
+| `/write-stories`
+| Decompose an epic into user story issues
+
+| `/implement`
+| Implement a single story on a feature branch
+
+| `/implement-epic`
+| Implement all stories of an epic in dependency order
+
+| `/write-tests`
+| Add tests for an existing implementation
+
+| `/create-pr`
+| Open a guided pull request
+
+| `/pr-reviewer`
+| Review a PR against all project rules
+
+| `/create-adr`
+| Propose and document an architecture decision
+
+| `/release`
+| Tag, changelog, publish
+
+| `/challenge`
+| Peer-review another agent's output
+|===
+
+=== Specialist Review Skills
+
+[cols="1,3"]
+|===
+| Skill | Specialist perspective
+
+| `/doctor-t1d-review`
+| T1D endocrinologist — clinical correctness, safety
+
+| `/patient-t1d-review`
+| T1D patient — real-world usability, pump/CGM workflow
+
+| `/security-review`
+| Security — OWASP Top 10, auth, secrets
+
+| `/qa-review`
+| QA — test coverage, edge cases, regression risk
+
+| `/architect-review`
+| Architect — SOLID, hexagonal layers, coupling
+
+| `/devops-review`
+| DevSecOps — containers, CI/CD, env config
+
+| `/ux-review`
+| UX/Accessibility — WCAG AA, interaction design
+
+| `/requirements-review`
+| Requirements engineer — completeness, testability
+
+| `/performance-review`
+| Performance — query efficiency, bundle size
+
+| `/operations-review`
+| SRE — observability, runbooks, incident recovery
+
+| `/technical-writer-review`
+| Technical writer — documentation clarity, audience fit
+
+| `/challenge-all`
+| All 11 perspectives in one consolidated report
+|===
+
+=== Meta Skills
+
+[cols="1,3"]
+|===
+| Skill | Purpose
+
+| `/audit`
+| Review and summarise the agent audit log
+
+| `/learn`
+| Extract a reusable rule from a completed story
+
+| `/domain-model`
+| Build or update the project domain model
+
+| `/claude-code-expert`
+| Audit and improve Claude Code configuration
+|===
