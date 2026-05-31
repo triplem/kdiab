@@ -1,6 +1,7 @@
 <#import "template.ftl" as layout>
 <@layout.registrationLayout
-    displayMessage=!messagesPerField.existsError('firstName','lastName','email','username','password','password-confirm'); section>
+    displayMessage=!messagesPerField.existsError('firstName','lastName','email','username','password','password-confirm')
+    displayInfo=true; section>
 
     <#if section = "form">
         <form id="kc-register-form" action="${url.registrationAction}" method="post" class="kc-form">
