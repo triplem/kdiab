@@ -8,19 +8,17 @@ import { measuresApi } from '../../api/measuresApi'
 import { treatmentsApi } from '../../api/treatmentsApi'
 import { calcIOB } from '../dashboard/basalUtils'
 
-/** Maps a prefix of a known backend warning string to its i18n key. */
+// Substring-match map: first hit wins — more-specific prefixes must come before shorter ones.
+// 'Calculated dose is unusually high' must precede 'Calculated dose' or it would never match.
 const WARNING_KEYS: Record<string, string> = {
   'BG is hypoglycemic': 'doseCalc.warning.hypoglycemic',
   'BG is below target': 'doseCalc.warning.belowTarget',
   'IOB covers the full correction': 'doseCalc.warning.iobCoversCorrection',
   'Calculated dose is unusually high': 'doseCalc.warning.unusuallyHighDose',
-  'Calculated dose': 'doseCalc.warning.doseCapped',
+  'Calculated dose': 'doseCalc.warning.doseCapped', // must follow the longer match above
 }
 
-/**
- * Translate a backend warning string to the user's language.
- * Unknown strings fall through to their original English text as a safe default.
- */
+// Unknown strings fall through to their original English text as a safe default.
 function translateWarning(w: string, t: TFunction): string {
   const matchedKey = Object.keys(WARNING_KEYS).find(k => w.toLowerCase().includes(k.toLowerCase()))
   const i18nKey = matchedKey !== undefined ? WARNING_KEYS[matchedKey] : undefined
