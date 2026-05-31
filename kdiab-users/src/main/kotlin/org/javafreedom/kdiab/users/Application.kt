@@ -26,6 +26,7 @@ import org.javafreedom.kdiab.users.adapters.inbound.web.apiKeyRoutes
 import org.javafreedom.kdiab.users.adapters.inbound.web.doctorPatientRoutes
 import org.javafreedom.kdiab.users.adapters.inbound.web.invitationRoutes
 import org.javafreedom.kdiab.users.adapters.inbound.web.userRoutes
+import org.javafreedom.kdiab.users.application.jobs.InvitationExpiryJob
 import org.javafreedom.kdiab.users.application.service.ApiKeyService
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
 import org.javafreedom.kdiab.users.application.service.InvitationService
@@ -150,6 +151,16 @@ fun Application.module() {
     val doctorPatientService: DoctorPatientService by dependencies
     val invitationService: InvitationService by dependencies
     val apiKeyService: ApiKeyService by dependencies
+
+    val expiryIntervalMinutes = environment.config
+        .propertyOrNull("app.invitationExpiryIntervalMinutes")
+        ?.getString()?.toLongOrNull()
+        ?: InvitationExpiryJob.DEFAULT_INTERVAL_MINUTES
+    val expiryJob = InvitationExpiryJob(
+        invitationService = invitationService,
+        intervalMs = expiryIntervalMinutes * 60_000L,
+    )
+    monitor.subscribe(ApplicationStarted) { expiryJob.start(this) }
 
     routing {
         get("/healthz") { call.respond(HttpStatusCode.OK) }
