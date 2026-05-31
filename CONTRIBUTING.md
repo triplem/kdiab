@@ -1,5 +1,7 @@
 # Contributing to kdiab
 
+**[Online Documentation](https://triplem.github.io/kdiab/)** — platform architecture, service guides, Keycloak setup, ADRs, and the T1D glossary.
+
 ## Development Environment
 
 **Prerequisites:** JDK 21, Node.js LTS + npm, Docker or Podman with Compose plugin.
