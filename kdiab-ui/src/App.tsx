@@ -28,6 +28,8 @@ import { DoseCalculator } from './features/calc/DoseCalculator'
 import { UserSettings } from './features/users/UserSettings'
 import { AdminUserList } from './features/users/AdminUserList'
 import { AdminDoctorPatients } from './features/users/AdminDoctorPatients'
+import { DoctorInvitations } from './features/users/DoctorInvitations'
+import { PatientInvitations } from './features/users/PatientInvitations'
 import { measuresApi } from './api/measuresApi'
 import { treatmentsApi } from './api/treatmentsApi'
 import { useQueryClient } from '@tanstack/react-query'
@@ -35,7 +37,7 @@ import type { Profile } from './api/profilesApi'
 import { useProposedProfileCount } from './features/profiles/useProposedProfileCount'
 import { ProposedBadge } from './features/profiles/ProposedBadge'
 
-type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'analytics' | 'report' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors' | 'preferences'
+type Tab = 'dashboard' | 'measures' | 'treatments' | 'profiles' | 'analytics' | 'report' | 'carbs' | 'calc' | 'settings' | 'admin-users' | 'admin-doctors' | 'preferences' | 'doctor-invitations' | 'patient-invitations'
 
 // Default OIDC client_id for the kdiab OIDC configuration (matches nginx proxy and Keycloak realm)
 const DEFAULT_OIDC_CLIENT_ID = 'kdiab-analyze-frontend'
@@ -299,6 +301,8 @@ export default function App() {
     ...(foodDatabaseEnabled ? [{ key: 'carbs' as Tab, label: t('nav.foodDatabase'), roles: ['PATIENT', 'DOCTOR'] }] : []),
     { key: 'calc', label: t('nav.doseCalculator'), roles: ['PATIENT', 'DOCTOR'] },
     { key: 'settings', label: t('nav.settings'), roles: ['PATIENT', 'DOCTOR'] },
+    { key: 'doctor-invitations', label: t('nav.doctorInvitations'), roles: ['DOCTOR'] },
+    { key: 'patient-invitations', label: t('nav.patientInvitations'), roles: ['PATIENT'] },
     { key: 'admin-users', label: t('nav.adminUsers'), roles: ['ADMIN'] },
     { key: 'admin-doctors', label: t('nav.adminDoctors'), roles: ['ADMIN'] },
     { key: 'preferences', label: t('nav.preferences') },
@@ -465,6 +469,12 @@ export default function App() {
 
       case 'settings':
         return <UserSettings />
+
+      case 'doctor-invitations':
+        return isDoctor ? <DoctorInvitations doctorId={ownUserId} /> : null
+
+      case 'patient-invitations':
+        return isPatient ? <PatientInvitations patientId={ownUserId} /> : null
 
       case 'admin-users':
         return isAdmin ? <AdminUserList /> : null
