@@ -12,6 +12,7 @@ on:
       - 'kdiab-profiles/gradle.properties'
       - 'kdiab-common/src/**'
       - '.github/workflows/ci-profiles-backend.yml'
+      - '.github/workflows/backend-ci-reusable.yml'
   pull_request:
     branches: [ "**" ]
     paths:
@@ -23,6 +24,7 @@ on:
       - 'kdiab-profiles/gradle.properties'
       - 'kdiab-common/src/**'
       - '.github/workflows/ci-profiles-backend.yml'
+      - '.github/workflows/backend-ci-reusable.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,99 +37,9 @@ permissions:
 
 jobs:
   build:
-    name: Build and Test
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
+    uses: ./.github/workflows/backend-ci-reusable.yml
+    with:
+      service: kdiab-profiles
+      sonar_project_key: triplem_kdiab-profiles
+    secrets:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v5
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
-
-      - name: Determine Version
-        run: |
-          if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
-            echo "VERSION=latest" >> $GITHUB_ENV
-          else
-            BRANCH_NAME=${GITHUB_REF#refs/heads/}
-            SAFE_BRANCH_NAME=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
-            SHORT_SHA=$(git rev-parse --short HEAD)
-            echo "VERSION=${SAFE_BRANCH_NAME}-${SHORT_SHA}-SNAPSHOT" >> $GITHUB_ENV
-          fi
-
-      - name: Build and Test
-        run: cd kdiab-profiles && ./gradlew :check :koverVerify :buildFatJar :cyclonedxBom -Pversion=${{ env.VERSION }}
-
-      - name: SonarCloud Scan
-        if: ${{ env.SONAR_TOKEN != '' }}
-        uses: SonarSource/sonarcloud-github-action@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          projectBaseDir: kdiab-profiles
-          args: >
-            -Dsonar.projectKey=triplem_kdiab-profiles
-            -Dsonar.organization=triplem
-            -Dsonar.host.url=https://sonarcloud.io
-            -Dsonar.sources=src/main/kotlin
-            -Dsonar.tests=src/test/kotlin,src/e2e-test/kotlin,src/integration-test/kotlin
-            -Dsonar.java.binaries=build/classes/kotlin/main
-            -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/kover/report.xml
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build Docker Image
-        uses: docker/build-push-action@v7
-        with:
-          context: kdiab-profiles
-          file: kdiab-profiles/Dockerfile
-          push: false
-          tags: |
-            kdiab-profiles-backend:latest
-            kdiab-profiles-backend:${{ env.VERSION }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          outputs: type=docker,dest=/tmp/backend-image.tar
-
-      - name: Upload Docker Image
-        uses: actions/upload-artifact@v4
-        with:
-          name: profiles-backend-image
-          path: /tmp/backend-image.tar
-          retention-days: 7
-
-      - name: Scan Docker Image
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          input: /tmp/backend-image.tar
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
-          ignore-unfixed: true
-          trivyignores: .trivyignore
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        if: always()
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: 'trivy-results.sarif'
-
-      - name: Upload SBOM
-        uses: actions/upload-artifact@v4
-        with:
-          name: profiles-backend-bom
-          path: kdiab-profiles/build/reports/cyclonedx/bom.json
-          retention-days: 7
