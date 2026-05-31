@@ -599,6 +599,7 @@ class AnalyticsServiceTest {
         val result = service.getReportSummary(userId, "Test User", from, to, auth, "mg/dL", "")
         assertTrue(result.insulinTypes.isEmpty())
     }
+
 }
 
 private fun assertEquals(expected: Double, actual: Double?, absoluteTolerance: Double) {

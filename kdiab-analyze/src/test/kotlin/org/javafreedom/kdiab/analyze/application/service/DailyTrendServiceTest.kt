@@ -354,6 +354,23 @@ class DailyTrendServiceTest {
         val jan1 = result.days.first { it.date == "2024-01-01" }
         assertEquals(0.0, jan1.hours[10].carbsG, "carbsG must default to 0 when treatments unavailable")
     }
+
+    @Test
+    fun `getDailyTrend continues with empty profiles when profiles port throws`() = runTest {
+        // Profiles failure is caught internally; measures data and days are still returned.
+        coEvery { measuresClient.getMeasures(userId, auth, any(), any(), any()) } returns listOf(
+            cgmAt(120.0, "2024-01-01T10:00:00Z"),
+        )
+        coEvery { profilesClient.getProfiles(userId, auth, any()) } throws
+            UpstreamException("profiles", 503, "Service Unavailable")
+        coEvery { treatmentsClient.getTreatments(userId, auth, any(), any(), any()) } returns emptyList()
+
+        val result = service.getDailyTrend(userId, from, to, auth, "mg/dL", "", TimeZone.UTC)
+
+        assertTrue(result.days.isNotEmpty(), "Days must still be returned when profiles port fails")
+        val jan1 = result.days.first { it.date == "2024-01-01" }
+        assertNull(jan1.hours[10].basalRateIePerH, "basalRate must be null when profiles fail")
+    }
 }
 
 private fun assertEquals(expected: Double, actual: Double?, absoluteTolerance: Double, message: String = "") {
