@@ -633,8 +633,6 @@ services:
       KEYCLOAK_ADMIN_CLIENT_ID: kdiab-users-service
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_USERS_CLIENT_SECRET:-users-service-secret}
       KEYCLOAK_TOKEN_ENDPOINT: http://keycloak:8080/realms/kdiab/protocol/openid-connect/token
-      SELF_REGISTRATION_ENABLED: false
-      SELF_REGISTRATION_REQUIRES_APPROVAL: false
     ports:
       - "8088:8088"
     healthcheck:

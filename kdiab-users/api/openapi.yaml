@@ -19,8 +19,6 @@ tags:
     description: Doctor–patient relationship management
   - name: Invitations
     description: Doctor invitation flow — doctors invite patients, patients accept or decline
-  - name: Registration
-    description: Self-registration (feature-flagged)
 
 paths:
   /users/me:
@@ -621,42 +619,6 @@ paths:
         "429":
           $ref: "#/components/responses/TooManyRequests"
 
-  /register:
-    post:
-      operationId: register
-      summary: Self-register (public, feature-flagged — returns 404 when disabled)
-      description: >
-        Creates a new user account. Returns 404 when SELF_REGISTRATION_ENABLED is false.
-        When SELF_REGISTRATION_REQUIRES_APPROVAL is true, the account is created with no
-        roles and must be approved by an admin before the user can log in.
-
-        Duplicate email addresses are intentionally absorbed: if the email is already
-        registered, the response is identical to a successful registration (201). This
-        prevents user enumeration via differing response codes or bodies.
-      tags: [Registration]
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RegisterRequest"
-      responses:
-        "201":
-          description: Registration accepted
-          headers:
-            Location:
-              schema:
-                type: string
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RegisterResponse"
-        "400":
-          $ref: "#/components/responses/BadRequest"
-        "404":
-          description: Registration is disabled on this server
-
 components:
   securitySchemes:
     bearerAuth:
@@ -969,29 +931,7 @@ components:
           type: string
           enum: [PATIENT, DOCTOR, ADMIN]
 
-    RegisterRequest:
-      type: object
-      required: [email, displayName, password]
-      properties:
-        email:
-          type: string
-          example: "new@example.com"
-        displayName:
-          type: string
-          example: "New Patient"
-        password:
-          type: string
-          example: "SecurePass123!"
 
-    RegisterResponse:
-      type: object
-      required: [userId, message]
-      properties:
-        userId:
-          type: string
-          format: uuid
-        message:
-          type: string
 
     DoctorPatientResponse:
       type: object

@@ -20,7 +20,6 @@ import kotlin.time.Clock
 import kotlin.uuid.Uuid
 import org.javafreedom.kdiab.users.application.service.ApiKeyService
 import org.javafreedom.kdiab.users.application.service.DoctorPatientService
-import org.javafreedom.kdiab.users.application.service.RegistrationService
 import org.javafreedom.kdiab.users.application.service.UserService
 import org.javafreedom.kdiab.users.domain.model.AlarmThresholds
 import org.javafreedom.kdiab.users.domain.model.LocalePreferences
@@ -46,7 +45,6 @@ private fun Application.installMockDi(
         provide<DoctorPatientRepository> { mockDoctorRepo }
         provide<UserService> { UserService(mockIdentityProvider, mockSettingsRepo, mockDoctorRepo) }
         provide<DoctorPatientService> { DoctorPatientService(mockDoctorRepo, mockIdentityProvider) }
-        provide<RegistrationService> { RegistrationService(mockIdentityProvider, mockSettingsRepo, false) }
         provide<ApiKeyService> { mockApiKeyService }
     }
 }
