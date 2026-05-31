@@ -168,8 +168,9 @@ describe('DoseCalculator', () => {
     fireEvent.change(screen.getByLabelText(/current blood glucose/i), { target: { value: '50' } })
     fireEvent.click(screen.getByRole('button', { name: 'Calculate' }))
 
+    // translateWarning maps 'BG is hypoglycemic...' → the i18n key → English translation
     await waitFor(() => {
-      expect(screen.getByText('BG is hypoglycemic — treat hypo first')).toBeInTheDocument()
+      expect(screen.getByText(/BG is hypoglycemic/i)).toBeInTheDocument()
     })
 
     // The warnings container must be announced as an alert by screen readers
@@ -177,6 +178,49 @@ describe('DoseCalculator', () => {
     const warningAlert = alerts.find(el => el.textContent?.includes('BG is hypoglycemic'))
     expect(warningAlert).toBeDefined()
     expect(warningAlert).toHaveAttribute('aria-live', 'assertive')
+  })
+
+  test('translateWarning maps known backend warning to translated string', async () => {
+    const doseResponse = makeDoseResponse({
+      warnings: ['BG is hypoglycemic — no correction dose recommended; treat hypo first'],
+    })
+    mockedCalculateDose.mockResolvedValueOnce({ data: doseResponse } as never)
+
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" />)
+    fireEvent.change(screen.getByLabelText(/current blood glucose/i), { target: { value: '50' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/BG is hypoglycemic/i)).toBeInTheDocument()
+    })
+  })
+
+  test('translateWarning falls through unknown warning strings unchanged', async () => {
+    const unknownWarning = 'Sensor calibration required before dosing'
+    const doseResponse = makeDoseResponse({ warnings: [unknownWarning] })
+    mockedCalculateDose.mockResolvedValueOnce({ data: doseResponse } as never)
+
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" />)
+    fireEvent.change(screen.getByLabelText(/current blood glucose/i), { target: { value: '180' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Calculate' }))
+
+    await waitFor(() => {
+      expect(screen.getByText(unknownWarning)).toBeInTheDocument()
+    })
+  })
+
+  test('renders carbsInMinutes input with default value 0', () => {
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" />)
+    expect(screen.getByLabelText(/carbs in \(minutes\)/i)).toBeInTheDocument()
+    const input = screen.getByLabelText(/carbs in \(minutes\)/i) as HTMLInputElement
+    expect(input.value).toBe('0')
+  })
+
+  test('carbsInMinutes can be changed by user', () => {
+    renderWithQuery(<DoseCalculator userId="user-1" glucoseUnit="mg/dL" />)
+    const input = screen.getByLabelText(/carbs in \(minutes\)/i) as HTMLInputElement
+    fireEvent.change(input, { target: { value: '15' } })
+    expect(input.value).toBe('15')
   })
 
   test('passes carbsGrams to API when carbs field is filled', async () => {

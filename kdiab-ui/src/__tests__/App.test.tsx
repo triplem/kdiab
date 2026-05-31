@@ -813,7 +813,8 @@ describe('App — ADMIN tab visibility', () => {
       : []
 
     expect(tabLabels).toContain('Settings')
-    expect(tabLabels).toContain('Preferences')
+    // Preferences tab is restricted to ADMIN only (fix #1333)
+    expect(tabLabels).not.toContain('Preferences')
     expect(tabLabels).not.toContain('Users')
     expect(tabLabels).not.toContain('Doctors')
   })
@@ -843,29 +844,17 @@ describe('App — ADMIN tab visibility', () => {
     })
   })
 
-  test('Preferences tab renders UserSettings with localeOnly=false for patients', async () => {
+  test('Preferences tab is not shown to patients (ADMIN-only after fix #1333)', async () => {
     mockedParseRoles.mockReturnValue(['PATIENT'])
 
     renderApp()
     await act(async () => { await Promise.resolve() })
 
-    // Navigate to Preferences tab
     const nav = document.querySelector('nav.tab-nav')
     const preferencesBtn = Array.from(nav?.querySelectorAll('button') ?? []).find(
       (b) => b.textContent?.trim() === 'Preferences',
     )
-    expect(preferencesBtn).toBeDefined()
-
-    await act(async () => {
-      fireEvent.click(preferencesBtn!)
-    })
-
-    // UserSettings should be rendered with localeOnly=false
-    await waitFor(() => {
-      const settings = document.querySelector('[data-testid="user-settings"]')
-      expect(settings).not.toBeNull()
-      expect(settings?.getAttribute('data-locale-only')).toBe('false')
-    })
+    expect(preferencesBtn).toBeUndefined()
   })
 })
 
@@ -882,9 +871,11 @@ describe('App — unauthenticated: Keycloak registration link', () => {
     renderApp()
 
     const link = screen.getByTestId('register-link')
-    expect(link.getAttribute('href')).toBe(
+    // URL now includes redirect_uri for post-registration redirect (fix #1336)
+    expect(link.getAttribute('href')).toContain(
       'http://localhost:8081/realms/kdiab/protocol/openid-connect/registrations?client_id=kdiab-analyze-frontend&response_type=code',
     )
+    expect(link.getAttribute('href')).toContain('redirect_uri=')
     expect(link.textContent?.trim()).toBe('Create an account')
   })
 
