@@ -5,7 +5,9 @@ plugins {
 }
 
 group = "org.javafreedom.kdiab"
-version = "0.0.1"
+// Version is set by the CI publish workflow via -PpublishVersion=<semver tag>.
+// Falls back to "0.0.0-SNAPSHOT" for local builds where publishing is not intended.
+version = (project.findProperty("publishVersion") as String?) ?: "0.0.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
