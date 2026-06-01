@@ -91,3 +91,26 @@ asciidoctor = { id = "org.asciidoctor.jvm.convert", version.ref = "asciidoctor" 
 cyclonedx = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
 
 [bundles]
+ktor-server = [
+    "ktor-server-core", "ktor-server-cio", "ktor-server-content-negotiation",
+    "ktor-serialization-kotlinx-json", "ktor-server-resources", "ktor-server-openapi",
+    "ktor-server-swagger", "ktor-server-call-id", "ktor-server-call-logging",
+    "ktor-server-auth", "ktor-server-auth-jwt", "ktor-server-metrics",
+    "ktor-server-compression", "ktor-server-auto-head-response", "ktor-server-cors",
+    "ktor-server-hsts", "ktor-server-default-headers", "ktor-server-status-pages",
+    "ktor-server-di"
+]
+logging = ["kotlin-logging", "logback-classic", "logback-json-classic", "logback-jackson"]
+exposed = ["exposed-core", "exposed-jdbc", "exposed-kotlin-datetime", "exposed-json"]
+database = [
+    "exposed-core", "exposed-jdbc", "exposed-kotlin-datetime", "exposed-json",
+    "postgresql", "hikaricp", "liquibase-core", "kotlinx-datetime", "kotlinx-coroutines-core"
+]
+test-unit = [
+    "ktor-server-test-host", "ktor-client-content-negotiation", "mockk", "h2",
+    "kotlinx-coroutines-test"
+]
+test-e2e = [
+    "kotest-runner-junit5", "kotest-assertions-core",
+    "ktor-client-content-negotiation", "ktor-server-test-host"
+]
