@@ -60,12 +60,15 @@ jobs:
           )
           ALL_PASSED=true
           for wf in "${WORKFLOWS[@]}"; do
+            # Look past any in-progress runs to the latest *completed* run so that
+            # simultaneous backend CI triggers don't cause a race where workflows
+            # still queued/running show as "not found" and block the release.
             CONCLUSION=$(gh run list \
               --workflow="$wf" \
               --branch=main \
-              --limit=1 \
-              --json conclusion \
-              --jq '.[0].conclusion' 2>/dev/null)
+              --limit=10 \
+              --json conclusion,status \
+              --jq '[.[] | select(.status == "completed")] | .[0].conclusion // ""' 2>/dev/null)
             echo "$wf → ${CONCLUSION:-not found}"
             if [ "$CONCLUSION" != "success" ]; then
               ALL_PASSED=false
