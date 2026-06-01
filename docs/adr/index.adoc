@@ -29,6 +29,8 @@ Within each service the three-digit number groups by concern: 1xx = tooling, 2xx
 * link:ADR-017-keycloak-idp.html[ADR-017 Keycloak as Identity Provider]
 * link:ADR-018-jwt-hmac256-test-mode.html[ADR-018 HMAC256 Symmetric JWT for Integration and E2E Tests]
 * link:ADR-019-circuit-breaker.html[ADR-019 Circuit Breaker — Threshold 5 Failures / 30 s Reset]
+* link:ADR-020-buildsrc-convention-plugins.html[ADR-020 buildSrc Convention Plugins for Build Script Consolidation] _(Proposed — epic #1365)_
+* link:ADR-021-openapi-spec-artifact-distribution.html[ADR-021 OpenAPI Spec Artifact Distribution in Gradle Composite Builds] _(Proposed — epic #1366)_
 
 [#kdiab-measures-adrs]
 == kdiab-measures ADRs
