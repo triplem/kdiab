@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongParameterList:AuditRoutes.kt$( call: ApplicationCall, principal: UserPrincipal?, targetUserId: Uuid, ids: List&lt;Uuid>, repository: AuditLogRepository, action: String, )</ID>
+    <ID>MagicNumber:Logging.kt$64</ID>
+    <ID>MagicNumber:RateLimit.kt$1_000L</ID>
+    <ID>MagicNumber:RouteUtils.kt$PaginationParams.Companion$100</ID>
+    <ID>MatchingDeclarationName:AuditRoutes.kt$AuditLogResponse</ID>
+    <ID>TooGenericExceptionCaught:Tracing.kt$e: Exception</ID>
+  </CurrentIssues>
+</SmellBaseline>

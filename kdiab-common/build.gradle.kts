@@ -1,6 +1,5 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.kotlin.serialization)
+    id("kdiab.kotlin-base")
     `maven-publish`
 }
 
@@ -8,10 +7,6 @@ group = "org.javafreedom.kdiab"
 // Version is set by the CI publish workflow via -PpublishVersion=<semver tag>.
 // Falls back to "0.0.0-SNAPSHOT" for local builds where publishing is not intended.
 version = (project.findProperty("publishVersion") as String?) ?: "0.0.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
 
 dependencies {
     implementation(libs.exposed.core)
@@ -40,29 +35,6 @@ dependencies {
     testImplementation(libs.ktor.server.content.negotiation)
 }
 
-testing {
-    suites {
-        val test by getting(JvmTestSuite::class) {
-            useJUnitJupiter()
-        }
-    }
-}
-
-tasks.withType<Test> {
-    testLogging {
-        events("passed", "skipped", "failed")
-        showStandardStreams = true
-        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
-    }
-}
-
-kotlin {
-    jvmToolchain(21)
-    compilerOptions {
-        optIn.add("kotlin.uuid.ExperimentalUuidApi")
-    }
-}
-
 publishing {
     repositories {
         maven {
@@ -85,4 +57,3 @@ publishing {
         }
     }
 }
-
