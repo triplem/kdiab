@@ -30,7 +30,6 @@ dependencies {
     implementation(libs.ktor.server.cors)
     implementation(libs.ktor.server.default.headers)
 
-    testImplementation(kotlin("test-junit5"))
     testImplementation(libs.ktor.server.test.host)
     testImplementation(libs.ktor.server.content.negotiation)
 }

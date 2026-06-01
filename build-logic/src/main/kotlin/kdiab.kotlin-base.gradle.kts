@@ -1,3 +1,5 @@
+import org.gradle.api.artifacts.VersionCatalog
+import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
@@ -8,6 +10,13 @@ plugins {
 
 repositories {
     mavenCentral()
+}
+
+private fun catalog(): VersionCatalog = project.extensions.getByType<VersionCatalogsExtension>().named("libs")
+private fun lib(alias: String) = catalog().findLibrary(alias).get()
+
+dependencies {
+    "testImplementation"(lib("kotlin-test-junit5"))
 }
 
 kotlin {
