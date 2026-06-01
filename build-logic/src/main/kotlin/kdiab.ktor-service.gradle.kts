@@ -1,6 +1,7 @@
 import java.time.LocalDate
 import org.gradle.api.artifacts.VersionCatalog
 import org.gradle.api.artifacts.VersionCatalogsExtension
+import org.gradle.api.attributes.Category
 
 plugins {
     id("kdiab.kotlin-base")
@@ -161,4 +162,17 @@ tasks.asciidoctor {
             "revdate" to LocalDate.now().toString()
         )
     )
+}
+
+// Expose this service's OpenAPI spec as a resolvable Gradle artifact so downstream
+// services can declare a typed dependency instead of using relative filesystem paths.
+val apiSpec by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec"))
+    }
+}
+artifacts {
+    add("apiSpec", layout.projectDirectory.file("api/openapi.yaml"))
 }
