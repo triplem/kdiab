@@ -31,7 +31,7 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
-import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UsersClient
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.exception.UpstreamException
@@ -131,7 +131,7 @@ fun Application.module() {
 
     val nightscoutService: NightscoutService by dependencies
     val nightscoutV3Service: NightscoutV3Service by dependencies
-    val userSettingsClient: UserSettingsClient by dependencies
+    val userSettingsClient: UsersClient by dependencies
 
     routing {
 
@@ -170,14 +170,14 @@ private fun Application.registerDependencies(
                 treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
             )
         }
-        provide<UserSettingsClient> { UserSettingsClient(httpClient.engine, usersUrl) }
+        provide<UsersClient> { UsersClient(httpClient.engine, usersUrl) }
         provide<NightscoutV3Service> {
             NightscoutV3Service(
                 measuresClient = MeasuresClient(httpClient.engine, measuresUrl),
                 treatmentsClient = TreatmentsClient(httpClient.engine, treatmentsUrl),
                 carbsClient = CarbsClient(httpClient.engine, carbsUrl),
                 profilesClient = ProfilesClient(httpClient.engine, profilesUrl),
-                userSettingsClient = UserSettingsClient(httpClient.engine, usersUrl),
+                userSettingsClient = UsersClient(httpClient.engine, usersUrl),
             )
         }
         provide<CarbsClient> { CarbsClient(httpClient.engine, carbsUrl) }

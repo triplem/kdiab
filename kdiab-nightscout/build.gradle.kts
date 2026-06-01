@@ -1,3 +1,4 @@
+import org.gradle.api.attributes.Category
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
@@ -7,9 +8,40 @@ plugins {
 group = "org.javafreedom.kdiab.nightscout"
 version = "0.1.0"
 
+val measuresSpec by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec")) }
+}
+val treatmentsSpec by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec")) }
+}
+val carbsSpec by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec")) }
+}
+val profilesSpec by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec")) }
+}
+val usersSpec by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec")) }
+}
+
 dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)
+    measuresSpec("org.javafreedom.kdiab:kdiab-measures-spec")
+    treatmentsSpec("org.javafreedom.kdiab:kdiab-treatments-spec")
+    carbsSpec("org.javafreedom.kdiab:kdiab-carbs-spec")
+    profilesSpec("org.javafreedom.kdiab:kdiab-profiles-spec")
+    usersSpec("org.javafreedom.kdiab:kdiab-users-spec")
 }
 
 kotlin {
@@ -19,13 +51,14 @@ kotlin {
             kotlin.srcDir(layout.buildDirectory.dir("generated/upstream-treatments/src/main/kotlin"))
             kotlin.srcDir(layout.buildDirectory.dir("generated/upstream-carbs/src/main/kotlin"))
             kotlin.srcDir(layout.buildDirectory.dir("generated/upstream-profiles/src/main/kotlin"))
+            kotlin.srcDir(layout.buildDirectory.dir("generated/upstream-users/src/main/kotlin"))
         }
     }
 }
 
 val generateMeasuresModels by tasks.registering(GenerateTask::class) {
     generatorName.set("kotlin")
-    inputSpec.set(layout.projectDirectory.file("../kdiab-measures/api/openapi.yaml").asFile.absolutePath)
+    inputSpec.set(provider { measuresSpec.singleFile.absolutePath })
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-measures")
     packageName.set("org.javafreedom.kdiab.nightscout.api.upstream.measures")
     modelPackage.set("org.javafreedom.kdiab.nightscout.api.upstream.measures.models")
@@ -44,7 +77,7 @@ val generateMeasuresModels by tasks.registering(GenerateTask::class) {
 
 val generateTreatmentsModels by tasks.registering(GenerateTask::class) {
     generatorName.set("kotlin")
-    inputSpec.set(layout.projectDirectory.file("../kdiab-treatments/api/openapi.yaml").asFile.absolutePath)
+    inputSpec.set(provider { treatmentsSpec.singleFile.absolutePath })
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-treatments")
     packageName.set("org.javafreedom.kdiab.nightscout.api.upstream.treatments")
     modelPackage.set("org.javafreedom.kdiab.nightscout.api.upstream.treatments.models")
@@ -63,7 +96,7 @@ val generateTreatmentsModels by tasks.registering(GenerateTask::class) {
 
 val generateCarbsModels by tasks.registering(GenerateTask::class) {
     generatorName.set("kotlin")
-    inputSpec.set(layout.projectDirectory.file("../kdiab-carbs/api/openapi.yaml").asFile.absolutePath)
+    inputSpec.set(provider { carbsSpec.singleFile.absolutePath })
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-carbs")
     packageName.set("org.javafreedom.kdiab.nightscout.api.upstream.carbs")
     modelPackage.set("org.javafreedom.kdiab.nightscout.api.upstream.carbs.models")
@@ -80,7 +113,7 @@ val generateCarbsModels by tasks.registering(GenerateTask::class) {
 
 val generateProfilesModels by tasks.registering(GenerateTask::class) {
     generatorName.set("kotlin")
-    inputSpec.set(layout.projectDirectory.file("../kdiab-profiles/api/openapi.yaml").asFile.absolutePath)
+    inputSpec.set(provider { profilesSpec.singleFile.absolutePath })
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-profiles")
     packageName.set("org.javafreedom.kdiab.nightscout.api.upstream.profiles")
     modelPackage.set("org.javafreedom.kdiab.nightscout.api.upstream.profiles.models")
@@ -95,8 +128,26 @@ val generateProfilesModels by tasks.registering(GenerateTask::class) {
     typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
 }
 
+val generateUsersModels by tasks.registering(GenerateTask::class) {
+    generatorName.set("kotlin")
+    inputSpec.set(provider { usersSpec.singleFile.absolutePath })
+    outputDir.set("${layout.buildDirectory.get()}/generated/upstream-users")
+    packageName.set("org.javafreedom.kdiab.nightscout.api.upstream.users")
+    modelPackage.set("org.javafreedom.kdiab.nightscout.api.upstream.users.models")
+    apiPackage.set("org.javafreedom.kdiab.nightscout.api.upstream.users")
+    globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
+    configOptions.set(mapOf(
+        "library" to "jvm-ktor",
+        "dateLibrary" to "string",
+        "serializationLibrary" to "kotlinx_serialization",
+        "useCoroutines" to "true",
+    ))
+    typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String", "date" to "kotlin.String"))
+}
+
 tasks.compileKotlin {
-    dependsOn(generateMeasuresModels, generateTreatmentsModels, generateCarbsModels, generateProfilesModels)
+    dependsOn(generateMeasuresModels, generateTreatmentsModels, generateCarbsModels,
+        generateProfilesModels, generateUsersModels)
 }
 
 openApiGenerate {
@@ -122,6 +173,7 @@ kover {
                     "org.javafreedom.kdiab.nightscout.api.upstream.treatments",
                     "org.javafreedom.kdiab.nightscout.api.upstream.carbs",
                     "org.javafreedom.kdiab.nightscout.api.upstream.profiles",
+                    "org.javafreedom.kdiab.nightscout.api.upstream.users",
                     "org.javafreedom.kdiab.nightscout.adapters.inbound.web",
                     "org.javafreedom.kdiab.nightscout.adapters.outbound.http",
                     "org.javafreedom.kdiab.nightscout.plugins",

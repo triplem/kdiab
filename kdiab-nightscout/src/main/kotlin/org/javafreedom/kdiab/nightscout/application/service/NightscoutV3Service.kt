@@ -6,7 +6,7 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
-import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UsersClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateFoodRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toCreateProfileRequest
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.toNs3Profile
@@ -38,7 +38,7 @@ class NightscoutV3Service(
     private val treatmentsClient: TreatmentsClient,
     private val carbsClient: CarbsClient,
     private val profilesClient: ProfilesClient,
-    private val userSettingsClient: UserSettingsClient,
+    private val userSettingsClient: UsersClient,
 ) {
 
     @Suppress("LongParameterList")
