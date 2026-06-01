@@ -112,7 +112,6 @@ configurations.named("e2eTestImplementation") {
     extendsFrom(configurations.testImplementation.get())
 }
 
-// Common OpenAPI generation defaults — replaces gradle/openapi-defaults.properties
 openApiGenerate {
     generatorName.set("kotlin-server")
     typeMappings.set(mapOf(
