@@ -1,3 +1,4 @@
+import org.gradle.api.attributes.Category
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
@@ -7,9 +8,28 @@ plugins {
 group = "org.javafreedom.kdiab.analyze"
 version = "0.1.0"
 
+val measuresSpec by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec")) }
+}
+val treatmentsSpec by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec")) }
+}
+val profilesSpec by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec")) }
+}
+
 dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)
+    measuresSpec("org.javafreedom.kdiab:kdiab-measures-spec")
+    treatmentsSpec("org.javafreedom.kdiab:kdiab-treatments-spec")
+    profilesSpec("org.javafreedom.kdiab:kdiab-profiles-spec")
 }
 
 kotlin {
@@ -24,7 +44,7 @@ kotlin {
 
 val generateMeasuresModels by tasks.registering(GenerateTask::class) {
     generatorName.set("kotlin")
-    inputSpec.set(layout.projectDirectory.file("../kdiab-measures/api/openapi.yaml").asFile.absolutePath)
+    inputSpec.set(provider { measuresSpec.singleFile.absolutePath })
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-measures")
     packageName.set("org.javafreedom.kdiab.analyze.api.upstream.measures")
     modelPackage.set("org.javafreedom.kdiab.analyze.api.upstream.measures.models")
@@ -43,7 +63,7 @@ val generateMeasuresModels by tasks.registering(GenerateTask::class) {
 
 val generateTreatmentsModels by tasks.registering(GenerateTask::class) {
     generatorName.set("kotlin")
-    inputSpec.set(layout.projectDirectory.file("../kdiab-treatments/api/openapi.yaml").asFile.absolutePath)
+    inputSpec.set(provider { treatmentsSpec.singleFile.absolutePath })
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-treatments")
     packageName.set("org.javafreedom.kdiab.analyze.api.upstream.treatments")
     modelPackage.set("org.javafreedom.kdiab.analyze.api.upstream.treatments.models")
@@ -62,7 +82,7 @@ val generateTreatmentsModels by tasks.registering(GenerateTask::class) {
 
 val generateProfilesModels by tasks.registering(GenerateTask::class) {
     generatorName.set("kotlin")
-    inputSpec.set(layout.projectDirectory.file("../kdiab-profiles/api/openapi.yaml").asFile.absolutePath)
+    inputSpec.set(provider { profilesSpec.singleFile.absolutePath })
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-profiles")
     packageName.set("org.javafreedom.kdiab.analyze.api.upstream.profiles")
     modelPackage.set("org.javafreedom.kdiab.analyze.api.upstream.profiles.models")
