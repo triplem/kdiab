@@ -318,12 +318,13 @@ Single PR, all 9 builds migrated together to keep root `./gradlew build` green t
 | S1 | Add version catalog bundles to `libs.versions.toml` | — |
 | S2 | Create `buildSrc/` with `kdiab.kotlin-base` plugin; migrate kdiab-common | S1 |
 | S3 | Create `kdiab.ktor-service` plugin (server codegen defaults, `apiSpec` outgoing config, `processResources` copies spec); migrate kdiab-calc | S2 |
+| S3a | Apply `kdiab.ktor-service` to kdiab-analyze and kdiab-nightscout (server codegen overrides; GenerateTask path migration deferred to S7/S9) | S3 |
 | S4 | Create `kdiab.ktor-db-service` plugin; migrate kdiab-measures, profiles, treatments, carbs | S3 |
 | S5 | ADR: design OpenAPI spec artifact exposure in Gradle composite builds (`apiSpec` outgoing configuration + `dependencySubstitution` in root `settings.gradle.kts`) | S3 |
 | S6 | Add substitution rules to root `settings.gradle.kts` for all 8 `kdiab-*-spec` coordinates; verify spec resolves from composite build | S5 |
 | S7 | Migrate kdiab-analyze `GenerateTask` blocks: replace hard-coded `inputSpec` paths with resolved `kdiab-*-spec` artifact dependencies | S6 |
 | S8 | Add server codegen (service-specific `openApiGenerate` overrides) to kdiab-users and kdiab-nightscout; migrate kdiab-users `GenerateTask` blocks to spec-artifact deps | S4, S6 |
-| S9 | Migrate kdiab-nightscout `GenerateTask` blocks to spec-artifact deps; remove hand-written `UserSettingsClient.kt`; generate replacement client from `kdiab-users-spec`; verify API surface parity | S6, S8 |
+| S9 | Migrate kdiab-nightscout `GenerateTask` blocks to spec-artifact deps; remove hand-written `UserSettingsClient.kt`; generate replacement client from `kdiab-users-spec`; verify API surface parity against spec file | S6 |
 | S10 | Delete `gradle/openapi-defaults.properties`; run full build verification (`./gradlew build --no-parallel`, `check`, `asciidoctor`, `publishToMavenLocal`) | S7, S8, S9 |
 
 **CI validation before merge:**

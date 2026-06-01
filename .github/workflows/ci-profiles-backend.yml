@@ -13,6 +13,8 @@ on:
       - 'kdiab-common/src/**'
       - '.github/workflows/ci-profiles-backend.yml'
       - '.github/workflows/backend-ci-reusable.yml'
+      - 'buildSrc/**'
+      - 'gradle/libs.versions.toml'
   pull_request:
     branches: [ "**" ]
     paths:
@@ -25,6 +27,8 @@ on:
       - 'kdiab-common/src/**'
       - '.github/workflows/ci-profiles-backend.yml'
       - '.github/workflows/backend-ci-reusable.yml'
+      - 'buildSrc/**'
+      - 'gradle/libs.versions.toml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

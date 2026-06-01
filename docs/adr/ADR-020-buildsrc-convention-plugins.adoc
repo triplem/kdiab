@@ -1,0 +1,97 @@
+= ADR-020: buildSrc Convention Plugins for Build Script Consolidation
+:toc: left
+:icons: font
+
+* *Status*: Proposed
+* *Date*: 2026-06-01
+* *Deciders*: triplem
+
+NOTE: This ADR is a stub. Full decision content will be authored during epic #1365 story S2
+(create `buildSrc/` with `kdiab.kotlin-base` plugin).
+
+== Context
+
+Every kdiab backend service has its own `build.gradle.kts` of 200–380 lines. Approximately 80%
+of that content is identical across all 9 services: JVM toolchain configuration, Detekt, Kover,
+test suite registration, Asciidoctor, and OpenAPI code generation defaults. Changing any shared
+convention — for example, bumping the minimum Kover coverage threshold or adding a new Detekt
+rule — requires manual edits to 8–9 separate files.
+
+Gradle provides two mechanisms for sharing build logic: a dedicated `build-logic/` included build,
+or the special `buildSrc/` directory which Gradle auto-includes before any build runs. Both
+support precompiled script plugins (`.gradle.kts` files compiled to Gradle plugins).
+
+== Decision
+
+_To be decided during epic #1365 S2._
+
+The proposed design is a three-plugin hierarchy in `buildSrc/`:
+
+[cols="1,3"]
+|===
+| Plugin | Applies to
+
+| `kdiab.kotlin-base`
+| All Kotlin builds — JVM toolchain (21), Detekt, repositories
+
+| `kdiab.ktor-service`
+| All Ktor HTTP services — extends `kdiab.kotlin-base`, adds Ktor server deps, test suites,
+  Kover, Asciidoctor, OpenAPI server codegen defaults, `apiSpec` outgoing configuration
+
+| `kdiab.ktor-db-service`
+| DB-backed services — extends `kdiab.ktor-service`, adds Exposed + database bundle
+|===
+
+`buildSrc/settings.gradle.kts` explicitly re-declares the root `gradle/libs.versions.toml` version
+catalog (not auto-inherited in buildSrc).
+
+Key open questions for S2:
+
+* Detekt baseline path: `rootDir` in a composite build resolves to the _service_ project directory,
+  not the monorepo root. The convention plugin must reference `rootDir/config/detekt/baseline.xml`
+  and each service must maintain its own baseline file.
+* `templateDir` for OpenAPI generator: uses `rootDir.parent + "/config/openapi-templates"`,
+  which assumes a flat directory layout. This is a fragile assumption that should be validated.
+
+== Consequences
+
+=== Positive
+
+* Shared conventions change in one place — one commit to `buildSrc/` updates all 9 services.
+* Service build files shrink to ≤ 30 lines (≤ 60 for kdiab-common) containing only
+  service-specific overrides.
+* Convention plugins are independently testable.
+
+=== Negative
+
+* `buildSrc/` has no version — changes to plugins apply to all services simultaneously with no
+  gradual rollout path.
+* Developers must understand the two-level build model (buildSrc compiles first, then service
+  builds).
+
+=== Neutral
+
+* `gradle/openapi-defaults.properties` is deleted; its contents move into `kdiab.ktor-service`.
+* `maven-publish` and `publishing {}` stay in `kdiab-common/build.gradle.kts` — they must not
+  be centralised as they are specific to the shared library distribution concern.
+
+== Alternatives Considered
+
+=== Separate `build-logic/` included build
+
+Explicit `includeBuild("build-logic")` in root `settings.gradle.kts`. More flexible than
+`buildSrc/` — can be versioned and published. *Not chosen*: adds complexity without benefit at
+this project's scale; `buildSrc/` is simpler and the auto-include behaviour is exactly what is
+needed.
+
+=== Script sharing via `apply from:`
+
+Import a shared `.gradle.kts` script from a URL or local path in each service build.
+*Rejected*: no type safety, no IDE support, executes at configuration time with no compilation
+step. Harder to maintain than precompiled plugins.
+
+=== Root `subprojects {}` block
+
+Move all services to Gradle subprojects of a root build instead of a composite build.
+*Rejected*: would require restructuring the monorepo and losing independent service builds.
+Each service can already be built in isolation — this property must be preserved.
