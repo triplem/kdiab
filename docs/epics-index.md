@@ -12,6 +12,11 @@
 | [#1367](https://github.com/triplem/kdiab/issues/1367) | Consumer Service Migration to Generated Clients + Server Codegen Completion | Open (pending-approval) | M6 | TBD |
 | [#1390](https://github.com/triplem/kdiab/issues/1390) | Quality Reports on GitHub Pages | Open (pending-approval) | M7 | #1391, #1392, #1393, #1394, #1395, #1396, #1397 |
 | [#1398](https://github.com/triplem/kdiab/issues/1398) | Patient User Guide with Playwright Screenshots | Open (pending-approval) | M8 | #1399, #1400, #1401, #1402, #1403, #1404, #1405 |
+| [#1410](https://github.com/triplem/kdiab/issues/1410) | Upstream Spec DSL — `registerUpstreamSpec` build-logic helper | Open (pending-approval) | M6 | #TBD×5 |
+| [#1406](https://github.com/triplem/kdiab/issues/1406) | Kover — Remove Dead Exclusion Entries Across All Services | Open (pending-approval) | M9 | TBD |
+| [#1407](https://github.com/triplem/kdiab/issues/1407) | Kover — Unlock Persistence Layer Coverage | Open (pending-approval) | M9 | TBD |
+| [#1408](https://github.com/triplem/kdiab/issues/1408) | Kover — Mapper and Parser Unit Tests (7 Classes) | Open (pending-approval) | M9 | TBD |
+| [#1409](https://github.com/triplem/kdiab/issues/1409) | Kover — Nightscout Integration Test Infrastructure (Stretch Goal) | Open (pending-approval) | M9 | TBD |
 
 ## Legend
 

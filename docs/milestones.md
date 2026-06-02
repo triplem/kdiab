@@ -93,13 +93,14 @@
 **Epics:**
 - [#1365 Epic: Gradle Build Infrastructure — build-logic convention plugins](https://github.com/triplem/kdiab/issues/1365)
 - [#1366 Epic: API Client Distribution — generated Kotlin client JARs per service](https://github.com/triplem/kdiab/issues/1366)
+- [#1410 Epic: Upstream Spec DSL — `registerUpstreamSpec` build-logic helper](https://github.com/triplem/kdiab/issues/1410)
 - [#1367 Epic: Consumer Service Migration to Generated Clients + Server Codegen Completion](https://github.com/triplem/kdiab/issues/1367)
 
 **Status:** Open (pending-approval).
 
 **Dependencies:** No functional prerequisites. Can start after M5.
 
-**Delivery order:** #1365 → #1366 → #1367 (each epic unblocks the next).
+**Delivery order:** #1365 → #1366 → #1410 → #1367 (each epic unblocks the next).
 
 ---
 
@@ -130,3 +131,21 @@
 **Dependencies:** None. Can run in parallel with M6 and M7.
 
 **Delivery order:** #1399 (screenshot script) → #1400 + #1401 (parallel, getting started + daily workflow) → #1402 + #1403 (parallel, analytics + report) → #1404 (settings/profiles/integrations) → #1405 (glossary + clinical review gate)
+
+---
+
+## M9 — Test Coverage Improvement
+
+**Goal:** Remove stale Kover exclusion entries across all kdiab backend services — pruning dead entries with zero test work, un-excluding persistence classes already covered by integration tests, and writing unit tests for mapper and parser classes so that coverage numbers reflect real test fidelity.
+
+**Epics:**
+- [#1406 Epic: Kover — Remove Dead Exclusion Entries Across All Services](https://github.com/triplem/kdiab/issues/1406)
+- [#1407 Epic: Kover — Unlock Persistence Layer Coverage (Integration Tests Already Exist)](https://github.com/triplem/kdiab/issues/1407)
+- [#1408 Epic: Kover — Mapper and Parser Unit Tests (7 Classes)](https://github.com/triplem/kdiab/issues/1408)
+- [#1409 Epic: Kover — Nightscout Integration Test Infrastructure (Stretch Goal)](https://github.com/triplem/kdiab/issues/1409)
+
+**Status:** Open (pending-approval).
+
+**Dependencies:** No functional prerequisites. Can run in parallel with M6, M7, M8.
+
+**Delivery order:** #1406 (baseline + dead entries) → #1407 + #1408 (parallel, independent services) → #1409 (stretch goal, after #1408)
