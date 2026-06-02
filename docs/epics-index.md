@@ -10,6 +10,8 @@
 | [#1365](https://github.com/triplem/kdiab/issues/1365) | Gradle Build Infrastructure — build-logic convention plugins | Open (pending-approval) | M6 | TBD |
 | [#1366](https://github.com/triplem/kdiab/issues/1366) | API Client Distribution — generated Kotlin client JARs per service | Open (pending-approval) | M6 | TBD |
 | [#1367](https://github.com/triplem/kdiab/issues/1367) | Consumer Service Migration to Generated Clients + Server Codegen Completion | Open (pending-approval) | M6 | TBD |
+| [#1390](https://github.com/triplem/kdiab/issues/1390) | Quality Reports on GitHub Pages | Open (pending-approval) | M7 | #1391, #1392, #1393, #1394, #1395, #1396, #1397 |
+| [#1398](https://github.com/triplem/kdiab/issues/1398) | Patient User Guide with Playwright Screenshots | Open (pending-approval) | M8 | #1399, #1400, #1401, #1402, #1403, #1404, #1405 |
 
 ## Legend
 

@@ -100,3 +100,33 @@
 **Dependencies:** No functional prerequisites. Can start after M5.
 
 **Delivery order:** #1365 → #1366 → #1367 (each epic unblocks the next).
+
+---
+
+## M7 — Developer Experience & Quality Visibility
+
+**Goal:** Publish Detekt, Kover coverage, Gradle test results, Vitest coverage, ESLint, Trivy container scan reports, and OpenAPI Redoc pages to GitHub Pages on every push to `main`, linked from the existing AsciiDoc documentation.
+
+**Epics:**
+- [#1390 Epic: Quality Reports on GitHub Pages](https://github.com/triplem/kdiab/issues/1390)
+
+**Status:** Open (pending-approval).
+
+**Dependencies:** None. Can run in parallel with M6.
+
+**Delivery order:** #1396 (ADR) → #1391 (S1, workflow foundation) → #1392 + #1393 (parallel) → #1394 (Trivy) → #1395 (AsciiDoc links) → #1397 (reference doc)
+
+---
+
+## M8 — Patient Documentation
+
+**Goal:** Deliver a complete, screenshot-illustrated English patient guide for kdiab covering every patient-facing feature — first login, daily workflow (dashboard, measures, treatments, dose calculator, food DB), analytics, all 11 report sub-pages, settings, profiles, and Nightscout integration — with a clinical safety review gate before publication.
+
+**Epics:**
+- [#1398 Epic: Patient User Guide with Playwright Screenshots](https://github.com/triplem/kdiab/issues/1398)
+
+**Status:** Open (pending-approval).
+
+**Dependencies:** None. Can run in parallel with M6 and M7.
+
+**Delivery order:** #1399 (screenshot script) → #1400 + #1401 (parallel, getting started + daily workflow) → #1402 + #1403 (parallel, analytics + report) → #1404 (settings/profiles/integrations) → #1405 (glossary + clinical review gate)
