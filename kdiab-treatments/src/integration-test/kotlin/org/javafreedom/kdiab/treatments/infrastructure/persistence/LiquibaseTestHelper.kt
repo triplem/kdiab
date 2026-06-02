@@ -63,6 +63,7 @@ object LiquibaseTestHelper {
      */
     fun cleanData(db: Database) {
         transaction(db) {
+            exec("DELETE FROM device_status")
             exec("DELETE FROM treatments")
         }
     }
