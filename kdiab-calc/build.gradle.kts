@@ -1,3 +1,4 @@
+import org.gradle.api.attributes.Category
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 
 plugins {
@@ -7,9 +8,16 @@ plugins {
 group = "org.javafreedom.kdiab.calc"
 version = "0.1.0"
 
+val profilesSpec by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec")) }
+}
+
 dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)
+    profilesSpec("org.javafreedom.kdiab:kdiab-profiles-spec")
 }
 
 kotlin {
@@ -22,7 +30,7 @@ kotlin {
 
 val generateProfilesModels by tasks.registering(GenerateTask::class) {
     generatorName.set("kotlin")
-    inputSpec.set(layout.projectDirectory.file("../kdiab-profiles/api/openapi.yaml").asFile.absolutePath)
+    inputSpec.set(provider { profilesSpec.singleFile.absolutePath })
     outputDir.set("${layout.buildDirectory.get()}/generated/upstream-profiles")
     packageName.set("org.javafreedom.kdiab.calc.api.upstream.profiles")
     modelPackage.set("org.javafreedom.kdiab.calc.api.upstream.profiles.models")
@@ -60,6 +68,7 @@ kover {
                 classes("org.javafreedom.kdiab.calc.ApplicationKt*")
                 packages(
                     "org.javafreedom.kdiab.calc.api",
+                    "org.javafreedom.kdiab.calc.api.upstream.profiles",
                     "org.javafreedom.kdiab.calc.api.upstream.profiles.models",
                     "org.javafreedom.kdiab.calc.adapters.inbound.web",
                     "org.javafreedom.kdiab.calc.adapters.outbound.http",

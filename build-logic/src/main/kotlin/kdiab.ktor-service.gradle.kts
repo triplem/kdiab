@@ -128,8 +128,9 @@ openApiGenerate {
         "dateLibrary" to "java8",
         "serializationLibrary" to "kotlinx_serialization"
     ))
-    // Shared mustache template overrides for all services (#603)
-    templateDir.set(provider { rootDir.parentFile.resolve("config/openapi-templates").absolutePath })
+    // Shared mustache template overrides for all services (#603).
+    // rootDir is the service project dir; ../config/openapi-templates is the composite root sibling.
+    templateDir.set(provider { rootDir.resolve("../config/openapi-templates").canonicalPath })
 }
 
 tasks.compileKotlin {
@@ -162,6 +163,10 @@ tasks.asciidoctor {
         )
     )
 }
+
+// No kover verify rule here by design: each service defines its own minValue and package
+// exclusions via a kover {} block in its own build.gradle.kts. Omitting a default rule is
+// intentional — a generic 80% threshold without exclusions would fail on adapter/plugin packages.
 
 // Expose this service's OpenAPI spec as a resolvable Gradle artifact so downstream
 // services can declare a typed dependency instead of using relative filesystem paths.

@@ -36,6 +36,8 @@ testing {
 }
 
 tasks.withType<Test> {
+    // allowAttachSelf + EnableDynamicAgentLoading suppress HotSpot warnings in Java 21
+    // when the Kotlin compiler or coverage agent self-attaches during tests.
     jvmArgs("-Djdk.attach.allowAttachSelf=true", "-XX:+EnableDynamicAgentLoading")
     testLogging {
         events("passed", "skipped", "failed")
