@@ -40,14 +40,14 @@ Add the following `[bundles]` entries to `gradle/libs.versions.toml`. These repl
 | `test-unit` | kotlin:test-junit5, ktor-server-test-host, ktor-client-content-negotiation, mockk, h2 |
 | `test-e2e` | kotest-runner-junit5, kotest-assertions-core, ktor-client-content-negotiation, ktor-server-test-host |
 
-### 3.2 Create `buildSrc/`
+### 3.2 Create `build-logic/`
 
-`buildSrc/build.gradle.kts`:
+`build-logic/build.gradle.kts`:
 ```kotlin
 plugins { `kotlin-dsl` }
 ```
 
-`buildSrc/settings.gradle.kts` — re-declares the root version catalog (not auto-inherited):
+`build-logic/settings.gradle.kts` — re-declares the root version catalog (not auto-inherited):
 ```kotlin
 dependencyResolutionManagement {
     versionCatalogs {
@@ -60,7 +60,7 @@ dependencyResolutionManagement {
 
 ### 3.3 Convention Plugin: `kdiab.kotlin-base`
 
-File: `buildSrc/src/main/kotlin/kdiab.kotlin-base.gradle.kts`
+File: `build-logic/src/main/kotlin/kdiab.kotlin-base.gradle.kts`
 
 **Contains:**
 - `kotlin("jvm")`
@@ -74,7 +74,7 @@ File: `buildSrc/src/main/kotlin/kdiab.kotlin-base.gradle.kts`
 
 ### 3.4 Convention Plugin: `kdiab.ktor-service`
 
-File: `buildSrc/src/main/kotlin/kdiab.ktor-service.gradle.kts`
+File: `build-logic/src/main/kotlin/kdiab.ktor-service.gradle.kts`
 
 Applies `kdiab.kotlin-base`. Every Ktor-based HTTP service applies this plugin.
 
@@ -185,7 +185,7 @@ compileKotlin.dependsOn(generateMeasuresModels)
 
 ### 3.5 Convention Plugin: `kdiab.ktor-db-service`
 
-File: `buildSrc/src/main/kotlin/kdiab.ktor-db-service.gradle.kts`
+File: `build-logic/src/main/kotlin/kdiab.ktor-db-service.gradle.kts`
 
 Applies `kdiab.ktor-service`. Adds:
 
@@ -254,7 +254,7 @@ Retains: `java-library` plugin, `kotlin.serialization`, `kover`, `maven-publish`
 | NFR-2 | `./gradlew check` passes on all included builds | CI green |
 | NFR-3 | No runtime behaviour changes (classpath additions from bundles are accepted) | Same task names, same artifacts |
 | NFR-4 | No new configuration cache incompatibilities. Asciidoctor incompatibility is pre-existing and re-declared. | Same `--configuration-cache` warnings before and after |
-| NFR-5 | `libs` version catalog accessible in `buildSrc` | Convention plugins compile |
+| NFR-5 | `libs` version catalog accessible in `build-logic` | Convention plugins compile |
 | NFR-6 | Each service build file meets line budgets in §3.6 | `wc -l` check |
 | NFR-7 | `./gradlew :kdiab-common:publishToMavenLocal` succeeds | Publish task passes |
 | NFR-8 | Spec YAMLs resolvable in composite build without `publishToMavenLocal` pre-step | `./gradlew build` from root resolves all `kdiab-*-spec` artifacts from local projects |
@@ -275,8 +275,8 @@ Retains: `java-library` plugin, `kotlin.serialization`, `kover`, `maven-publish`
 ## 6. Constraints
 
 - Composite build structure (`includeBuild(...)`) must remain intact
-- `buildSrc` must explicitly re-declare the version catalog
-- `buildSrc/build.gradle.kts` must apply `kotlin-dsl`
+- `build-logic` must explicitly re-declare the version catalog
+- `build-logic/build.gradle.kts` must apply `kotlin-dsl`
 - `templateDir` uses `rootDir.parent + "/config/openapi-templates"` — assumes flat composite layout
 - `maven-publish` and `publishing {}` stay in `kdiab-common/build.gradle.kts`
 - `./gradlew build --no-parallel` must remain viable for low-RAM machines
@@ -286,8 +286,8 @@ Retains: `java-library` plugin, `kotlin.serialization`, `kover`, `maven-publish`
 
 ## 7. Acceptance Criteria
 
-- [ ] `buildSrc/` exists with three plugins: `kdiab.kotlin-base`, `kdiab.ktor-service`, `kdiab.ktor-db-service`
-- [ ] `buildSrc/settings.gradle.kts` wires the root `libs.versions.toml`
+- [ ] `build-logic/` exists with three plugins: `kdiab.kotlin-base`, `kdiab.ktor-service`, `kdiab.ktor-db-service`
+- [ ] `build-logic/settings.gradle.kts` wires the root `libs.versions.toml`
 - [ ] `gradle/libs.versions.toml` contains the six bundles defined in §3.1
 - [ ] `gradle/openapi-defaults.properties` is deleted
 - [ ] All 9 builds apply the appropriate plugin with no duplicated boilerplate
@@ -316,7 +316,7 @@ Single PR, all 9 builds migrated together to keep root `./gradlew build` green t
 | Story | Description | Depends on |
 |---|---|---|
 | S1 | Add version catalog bundles to `libs.versions.toml` | — |
-| S2 | Create `buildSrc/` with `kdiab.kotlin-base` plugin; migrate kdiab-common | S1 |
+| S2 | Create `build-logic/` with `kdiab.kotlin-base` plugin; migrate kdiab-common | S1 |
 | S3 | Create `kdiab.ktor-service` plugin (server codegen defaults, `apiSpec` outgoing config, `processResources` copies spec); migrate kdiab-calc | S2 |
 | S3a | Apply `kdiab.ktor-service` to kdiab-analyze and kdiab-nightscout (server codegen overrides; GenerateTask path migration deferred to S7/S9) | S3 |
 | S4 | Create `kdiab.ktor-db-service` plugin; migrate kdiab-measures, profiles, treatments, carbs | S3 |
@@ -340,7 +340,7 @@ Single PR, all 9 builds migrated together to keep root `./gradlew build` green t
 | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|
 | Spec artifact composite build resolution (`apiSpec` outgoing config + `dependencySubstitution` variant matching) has no established pattern in the codebase | High | High — blocks S6+ | ADR (S5) must be written and approved before S6 begins |
-| `buildSrc` version catalog wiring wrong — `libs` not accessible | Medium | High | Verify in first compile of S2 |
+| `build-logic` version catalog wiring wrong — `libs` not accessible | Medium | High | Verify in first compile of S2 |
 | kdiab-nightscout `UserSettingsClient.kt` deletion breaks something the generated client doesn't cover | Medium | Medium | Compare hand-written and generated client method signatures before deleting |
 | kdiab-carbs Liquibase classpath change (integrationTest-only → implementation) causes unexpected behaviour | Low | Low | Guarded by `APP_INIT_DATABASE` flag; no production change |
 | `publishToMavenLocal` broken after kdiab-common migration | Low | High | Explicit acceptance criterion in §7 |
