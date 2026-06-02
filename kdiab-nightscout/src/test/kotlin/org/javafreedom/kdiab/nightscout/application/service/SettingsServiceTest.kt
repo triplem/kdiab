@@ -7,7 +7,7 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
-import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UsersClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -18,7 +18,7 @@ class SettingsServiceTest {
     private val treatmentsClient = mockk<TreatmentsClient>()
     private val carbsClient = mockk<CarbsClient>()
     private val profilesClient = mockk<ProfilesClient>()
-    private val userSettingsClient = mockk<UserSettingsClient>()
+    private val userSettingsClient = mockk<UsersClient>()
 
     private val service = NightscoutV3Service(
         measuresClient = measuresClient,

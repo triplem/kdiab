@@ -68,6 +68,7 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 h2 = { module = "com.h2database:h2", version.ref = "h2" }
 kotest-runner-junit5 = { module = "io.kotest:kotest-runner-junit5", version.ref = "kotest" }
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+kotlin-test-junit5 = { module = "org.jetbrains.kotlin:kotlin-test-junit5", version.ref = "kotlin" }
 liquibase-core = { module = "org.liquibase:liquibase-core", version.ref = "liquibase" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
@@ -91,3 +92,26 @@ asciidoctor = { id = "org.asciidoctor.jvm.convert", version.ref = "asciidoctor" 
 cyclonedx = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
 
 [bundles]
+ktor-server = [
+    "ktor-server-core", "ktor-server-cio", "ktor-server-content-negotiation",
+    "ktor-serialization-kotlinx-json", "ktor-server-resources", "ktor-server-openapi",
+    "ktor-server-swagger", "ktor-server-call-id", "ktor-server-call-logging",
+    "ktor-server-auth", "ktor-server-auth-jwt", "ktor-server-metrics",
+    "ktor-server-compression", "ktor-server-auto-head-response", "ktor-server-cors",
+    "ktor-server-hsts", "ktor-server-default-headers", "ktor-server-status-pages",
+    "ktor-server-di"
+]
+logging = ["kotlin-logging", "logback-classic", "logback-json-classic", "logback-jackson"]
+exposed = ["exposed-core", "exposed-jdbc", "exposed-kotlin-datetime", "exposed-json"]
+database = [
+    "exposed-core", "exposed-jdbc", "exposed-kotlin-datetime", "exposed-json",
+    "postgresql", "hikaricp", "liquibase-core", "kotlinx-datetime", "kotlinx-coroutines-core"
+]
+test-unit = [
+    "ktor-server-test-host", "ktor-client-content-negotiation", "mockk", "h2",
+    "kotlinx-coroutines-test"
+]
+test-e2e = [
+    "kotest-runner-junit5", "kotest-assertions-core",
+    "ktor-client-content-negotiation", "ktor-server-test-host"
+]

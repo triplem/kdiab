@@ -88,10 +88,10 @@
 
 ## M6 — Build Infrastructure Modernisation
 
-**Goal:** Eliminate build script duplication across all 9 services via `buildSrc` convention plugins, introduce version catalog bundles, and establish an API-first client distribution model where every service publishes a typed Kotlin client JAR that can be consumed by other services without hand-rolled code generation.
+**Goal:** Eliminate build script duplication across all 9 services via `build-logic` convention plugins, introduce version catalog bundles, and establish an API-first client distribution model where every service publishes a typed Kotlin client JAR that can be consumed by other services without hand-rolled code generation.
 
 **Epics:**
-- [#1365 Epic: Gradle Build Infrastructure — buildSrc convention plugins](https://github.com/triplem/kdiab/issues/1365)
+- [#1365 Epic: Gradle Build Infrastructure — build-logic convention plugins](https://github.com/triplem/kdiab/issues/1365)
 - [#1366 Epic: API Client Distribution — generated Kotlin client JARs per service](https://github.com/triplem/kdiab/issues/1366)
 - [#1367 Epic: Consumer Service Migration to Generated Clients + Server Codegen Completion](https://github.com/triplem/kdiab/issues/1367)
 

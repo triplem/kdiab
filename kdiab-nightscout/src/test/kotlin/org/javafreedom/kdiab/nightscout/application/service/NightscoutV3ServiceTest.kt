@@ -11,7 +11,7 @@ import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.TreatmentsClient
-import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UsersClient
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.FoodEntryResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.FoodEntryStatus
 import org.javafreedom.kdiab.nightscout.api.upstream.carbs.models.PagedFoodResponse
@@ -45,7 +45,7 @@ class NightscoutV3ServiceTest {
     private val treatmentsClient = mockk<TreatmentsClient>()
     private val carbsClient = mockk<CarbsClient>()
     private val profilesClient = mockk<ProfilesClient>()
-    private val userSettingsClient = mockk<UserSettingsClient>()
+    private val userSettingsClient = mockk<UsersClient>()
     private val service = NightscoutV3Service(measuresClient, treatmentsClient, carbsClient, profilesClient, userSettingsClient)
 
     private val defaultParams = Ns3SearchParams(

@@ -8,7 +8,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import org.javafreedom.kdiab.common.plugins.ErrorResponse
 import org.javafreedom.kdiab.common.plugins.UserPrincipal
-import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UsersClient
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3DeviceStatus
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
@@ -25,7 +25,7 @@ import org.javafreedom.kdiab.nightscout.domain.model.Ns3VersionResult
 
 private val SERVER_STARTED_MS = System.currentTimeMillis()
 
-fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int, userSettingsClient: UserSettingsClient) {
+fun Route.nightscoutV3Routes(service: NightscoutV3Service, maxLimit: Int, userSettingsClient: UsersClient) {
     // NS3 protocol requires version and status to be publicly accessible before auth
     get("/api/v3/version") {
         call.respond(
@@ -186,7 +186,7 @@ private fun Route.nightscoutV3ProfileRoutes(service: NightscoutV3Service, maxLim
     }
 }
 
-private fun Route.settingsRoutes(service: NightscoutV3Service, userSettingsClient: UserSettingsClient) {
+private fun Route.settingsRoutes(service: NightscoutV3Service, userSettingsClient: UsersClient) {
     route("/api/v3/settings") {
         get {
             val principal = call.principal<UserPrincipal>()!!
@@ -301,7 +301,7 @@ private fun Route.nightscoutV3DeviceStatusRoutes(service: NightscoutV3Service, m
 private fun Route.nightscoutV3EntriesRoutes(
     service: NightscoutV3Service,
     maxLimit: Int,
-    userSettingsClient: UserSettingsClient,
+    userSettingsClient: UsersClient,
 ) {
     route("/api/v3/entries") {
         get {

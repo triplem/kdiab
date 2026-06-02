@@ -15,7 +15,7 @@ import io.mockk.coJustRun
 import io.mockk.mockk
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UserSettingsClient
+import org.javafreedom.kdiab.nightscout.adapters.outbound.http.UsersClient
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutService
 import org.javafreedom.kdiab.nightscout.application.service.NightscoutV3Service
 import org.javafreedom.kdiab.nightscout.domain.model.Ns3Entry
@@ -31,13 +31,13 @@ import kotlin.test.assertEquals
 private fun Application.installMockDi(
     nightscoutService: NightscoutService,
     v3Service: NightscoutV3Service,
-    userSettingsClient: UserSettingsClient,
+    userSettingsClient: UsersClient,
 ) {
     install(DI) { }
     dependencies {
         provide<NightscoutService> { nightscoutService }
         provide<NightscoutV3Service> { v3Service }
-        provide<UserSettingsClient> { userSettingsClient }
+        provide<UsersClient> { userSettingsClient }
     }
 }
 
@@ -68,10 +68,10 @@ class NightscoutV3RoutesTest {
     }
 
     private fun v3RouteTest(
-        block: suspend ApplicationTestBuilder.(NightscoutV3Service, UserSettingsClient) -> Unit,
+        block: suspend ApplicationTestBuilder.(NightscoutV3Service, UsersClient) -> Unit,
     ) {
         val mockV3Service = mockk<NightscoutV3Service>()
-        val mockUserSettingsClient = mockk<UserSettingsClient>()
+        val mockUsersClient = mockk<UsersClient>()
         testApplication {
             environment {
                 config = MapApplicationConfig(
@@ -86,10 +86,10 @@ class NightscoutV3RoutesTest {
                 )
             }
             application {
-                installMockDi(mockk(relaxed = true), mockV3Service, mockUserSettingsClient)
+                installMockDi(mockk(relaxed = true), mockV3Service, mockUsersClient)
                 module()
             }
-            block(mockV3Service, mockUserSettingsClient)
+            block(mockV3Service, mockUsersClient)
         }
     }
 

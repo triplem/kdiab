@@ -1,12 +1,8 @@
-pluginManagement {
-    includeBuild("../build-logic")
+dependencyResolutionManagement {
     repositories {
         gradlePluginPortal()
         mavenCentral()
     }
-}
-
-dependencyResolutionManagement {
     versionCatalogs {
         create("libs") {
             from(files("../gradle/libs.versions.toml"))
@@ -14,6 +10,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "kdiab-carbs"
-
-includeBuild("../kdiab-common")
+rootProject.name = "build-logic"

@@ -13,7 +13,7 @@ on:
       - 'kdiab-common/src/**'
       - '.github/workflows/ci-analyze-backend.yml'
       - '.github/workflows/backend-ci-reusable.yml'
-      - 'buildSrc/**'
+      - 'build-logic/**'
       - 'gradle/libs.versions.toml'
   pull_request:
     branches: [ "**" ]
@@ -27,7 +27,7 @@ on:
       - 'kdiab-common/src/**'
       - '.github/workflows/ci-analyze-backend.yml'
       - '.github/workflows/backend-ci-reusable.yml'
-      - 'buildSrc/**'
+      - 'build-logic/**'
       - 'gradle/libs.versions.toml'
 
 concurrency:
