@@ -36,9 +36,8 @@ kover {
                 packages(
                     "org.javafreedom.kdiab.users.api",
                     "org.javafreedom.kdiab.users.adapters.inbound.web",
+                    "org.javafreedom.kdiab.users.infrastructure.persistence",
                     "org.javafreedom.kdiab.users.infrastructure.keycloak",
-                    "org.javafreedom.kdiab.users.plugins",
-                    "org.javafreedom.kdiab.users.domain.exception"
                 )
             }
         }

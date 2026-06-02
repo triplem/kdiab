@@ -29,12 +29,6 @@ kover {
                 classes(
                     "org.javafreedom.kdiab.carbs.ApplicationKt*",
                     "org.javafreedom.kdiab.carbs.infrastructure.persistence.DatabaseFactory*",
-                    "org.javafreedom.kdiab.carbs.plugins.StatusPagesKt*",
-                    "org.javafreedom.kdiab.carbs.plugins.SecurityKt*",
-                    "org.javafreedom.kdiab.carbs.plugins.UserPrincipal*",
-                    "org.javafreedom.kdiab.carbs.plugins.ErrorResponse*",
-                    "org.javafreedom.kdiab.carbs.domain.exception.*",
-                    "org.javafreedom.kdiab.carbs.domain.model.Role*"
                 )
                 packages("org.javafreedom.kdiab.carbs.api")
             }

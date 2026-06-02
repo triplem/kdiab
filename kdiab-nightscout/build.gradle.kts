@@ -51,7 +51,6 @@ kover {
                     "org.javafreedom.kdiab.nightscout.api.upstream.users",
                     "org.javafreedom.kdiab.nightscout.adapters.inbound.web",
                     "org.javafreedom.kdiab.nightscout.adapters.outbound.http",
-                    "org.javafreedom.kdiab.nightscout.plugins",
                     "org.javafreedom.kdiab.nightscout.domain.exception"
                 )
                 classes(
