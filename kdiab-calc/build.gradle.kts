@@ -1,6 +1,3 @@
-import org.gradle.api.attributes.Category
-import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
-
 plugins {
     id("kdiab.ktor-service")
 }
@@ -8,45 +5,11 @@ plugins {
 group = "org.javafreedom.kdiab.calc"
 version = "0.1.0"
 
-val profilesSpec by configurations.creating {
-    isCanBeConsumed = false
-    isCanBeResolved = true
-    attributes { attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec")) }
-}
+registerUpstreamSpec("profiles", "org.javafreedom.kdiab:kdiab-profiles-spec")
 
 dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)
-    profilesSpec("org.javafreedom.kdiab:kdiab-profiles-spec")
-}
-
-kotlin {
-    sourceSets {
-        main {
-            kotlin.srcDir(layout.buildDirectory.dir("generated/upstream-profiles/src/main/kotlin"))
-        }
-    }
-}
-
-val generateProfilesModels by tasks.registering(GenerateTask::class) {
-    generatorName.set("kotlin")
-    inputSpec.set(provider { profilesSpec.singleFile.absolutePath })
-    outputDir.set("${layout.buildDirectory.get()}/generated/upstream-profiles")
-    packageName.set("org.javafreedom.kdiab.calc.api.upstream.profiles")
-    modelPackage.set("org.javafreedom.kdiab.calc.api.upstream.profiles.models")
-    apiPackage.set("org.javafreedom.kdiab.calc.api.upstream.profiles")
-    globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
-    configOptions.set(mapOf(
-        "library" to "jvm-ktor",
-        "dateLibrary" to "string",
-        "serializationLibrary" to "kotlinx_serialization",
-        "useCoroutines" to "true",
-    ))
-    typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
-}
-
-tasks.compileKotlin {
-    dependsOn(generateProfilesModels)
 }
 
 openApiGenerate {
