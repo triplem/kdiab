@@ -28,7 +28,7 @@ Add an `includeBuild` block for the upstream service in **both**:
 * The **consumer service's own** `settings.gradle.kts` (required for standalone CI builds).
 
 [source,kotlin]
-.kdiab-analyze/settings.gradle.kts (and mirrored in root settings.gradle.kts)
+.kdiab-analyze/settings.gradle.kts (consumer service — path is relative to the service directory)
 ----
 includeBuild("../kdiab-measures") {
     dependencySubstitution {
@@ -38,8 +38,16 @@ includeBuild("../kdiab-measures") {
 }
 ----
 
-NOTE: The root `settings.gradle.kts` uses the path `"kdiab-measures"` (relative to the repo
-root); the consumer's own file uses `"../kdiab-measures"` (relative to the service directory).
+[source,kotlin]
+.settings.gradle.kts (monorepo root — path is relative to the repo root)
+----
+includeBuild("kdiab-measures") {
+    dependencySubstitution {
+        substitute(module("org.javafreedom.kdiab:kdiab-measures")).using(project(":"))
+        substitute(module("org.javafreedom.kdiab:kdiab-measures-spec")).using(project(":"))
+    }
+}
+----
 
 === Step 2 — Declare a resolvable configuration
 
@@ -210,5 +218,5 @@ convention plugin creates exactly one — additional hand-written declarations i
 | Append `.value` — the generated enum has a `value: String` property. Example: `glucoseUnit.value`.
 
 | `Unresolved reference` in generated API classes
-| Add `"apis" to ""` to `globalProperties` to disable API class generation; keep only `"models" to ""`.
+| Remove the `"apis"` key from `globalProperties`; keep only `"models" to ""` and `"supportingFiles" to ""`. Including `"apis" to ""` *enables* API class generation — omitting the key suppresses it.
 |===

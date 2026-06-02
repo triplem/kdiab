@@ -39,7 +39,7 @@ Kotlin models from the resolved spec file.
 
 === Step 1 — Wire the Gradle spec dependency
 
-Follow the four setup steps in
+Follow the seven setup steps in
 link:openapi-spec-consumer-reference.html[OpenAPI Spec Consumer Reference]:
 
 . Add `includeBuild` + `dependencySubstitution` to both `settings.gradle.kts` files.
@@ -91,7 +91,9 @@ Wire the client in the Ktor `Application` extension function alongside the other
 
 [source,kotlin]
 ----
-fun Application.configureRouting(measuresClient: MeasuresClient = MeasuresClient(...)) {
+fun Application.configureRouting(
+    measuresClient: MeasuresClient = MeasuresClient(/* httpEngine, baseUrl */),
+) {
     routing {
         timelineRoutes(measuresClient)
     }
