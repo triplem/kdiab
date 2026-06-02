@@ -50,6 +50,7 @@
 
 * link:openapi-spec-consumer-reference.html[OpenAPI Spec Consumer Reference] — how to consume an upstream service's `api/openapi.yaml` as a typed Gradle artifact (spec artifact distribution pattern)
 * link:inter-service-client-reference.html[Inter-Service Client Reference] — end-to-end guide for adding a generated Kotlin HTTP client to a downstream service (spec resolution → code generation → outbound adapter → circuit breaker)
+* link:quality-reports-reference.html[Quality Reports Reference] — report URL structure, pipeline design, and how to add a new service
 
 == Contributing
 
