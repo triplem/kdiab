@@ -23,3 +23,12 @@ link:../root/adr/index.html#kdiab-users-adrs[kdiab-users ADRs].
 * link:adr/ADR-USR-002-self-registration-workflow.html[ADR-USR-002 Feature-Flagged Self-Registration Workflow]
 * link:adr/ADR-USR-003-registration-keycloak.html[ADR-USR-003 Registration via Keycloak Admin API]
 * link:adr/ADR-USR-016-invitation-state-machine.html[ADR-USR-016 Invitation State Machine]
+
+== Quality Reports
+
+* link:openapi.html[OpenAPI Specification (Redoc)]
+* link:reports/detekt/detekt.html[Detekt Static Analysis]
+* link:reports/coverage/index.html[Kover Code Coverage]
+* link:reports/tests/unit/index.html[Unit Test Results]
+* link:reports/tests/integration/index.html[Integration Test Results]
+* link:reports/trivy.html[Trivy Container Vulnerability Scan]

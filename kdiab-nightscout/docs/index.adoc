@@ -34,3 +34,11 @@ ADRs for this service are consolidated in the platform ADR index under
 link:../root/adr/index.html#kdiab-nightscout-adrs[kdiab-nightscout ADRs].
 
 * link:adr/ADR-NSC-001-nightscout-v3-api-adoption.html[ADR-NSC-001 Adopt Nightscout API v3 as the Primary External Interface]
+
+== Quality Reports
+
+* link:openapi.html[OpenAPI Specification (Redoc)]
+* link:reports/detekt/detekt.html[Detekt Static Analysis]
+* link:reports/coverage/index.html[Kover Code Coverage]
+* link:reports/tests/unit/index.html[Unit Test Results]
+* link:reports/trivy.html[Trivy Container Vulnerability Scan]

@@ -51,6 +51,106 @@
 * link:openapi-spec-consumer-reference.html[OpenAPI Spec Consumer Reference] — how to consume an upstream service's `api/openapi.yaml` as a typed Gradle artifact (spec artifact distribution pattern)
 * link:inter-service-client-reference.html[Inter-Service Client Reference] — end-to-end guide for adding a generated Kotlin HTTP client to a downstream service (spec resolution → code generation → outbound adapter → circuit breaker)
 
+== Quality Reports
+
+Reports are published to GitHub Pages on every push to `main`.
+
+[cols="2,1,1,1,1,1,1,1",options="header"]
+|===
+| Module | OpenAPI | Detekt | Coverage | Unit Tests | Integ. Tests | Trivy | ESLint
+
+| link:../measures/index.html[kdiab-measures]
+| link:../measures/openapi.html[Redoc]
+| link:../measures/reports/detekt/detekt.html[Detekt]
+| link:../measures/reports/coverage/index.html[Kover]
+| link:../measures/reports/tests/unit/index.html[Unit]
+| link:../measures/reports/tests/integration/index.html[Integration]
+| link:../measures/reports/trivy.html[Trivy]
+| —
+
+| link:../profiles/index.html[kdiab-profiles]
+| link:../profiles/openapi.html[Redoc]
+| link:../profiles/reports/detekt/detekt.html[Detekt]
+| link:../profiles/reports/coverage/index.html[Kover]
+| link:../profiles/reports/tests/unit/index.html[Unit]
+| link:../profiles/reports/tests/integration/index.html[Integration]
+| link:../profiles/reports/trivy.html[Trivy]
+| —
+
+| link:../treatments/index.html[kdiab-treatments]
+| link:../treatments/openapi.html[Redoc]
+| link:../treatments/reports/detekt/detekt.html[Detekt]
+| link:../treatments/reports/coverage/index.html[Kover]
+| link:../treatments/reports/tests/unit/index.html[Unit]
+| link:../treatments/reports/tests/integration/index.html[Integration]
+| link:../treatments/reports/trivy.html[Trivy]
+| —
+
+| link:../analyze/index.html[kdiab-analyze]
+| link:../analyze/openapi.html[Redoc]
+| link:../analyze/reports/detekt/detekt.html[Detekt]
+| link:../analyze/reports/coverage/index.html[Kover]
+| link:../analyze/reports/tests/unit/index.html[Unit]
+| —
+| link:../analyze/reports/trivy.html[Trivy]
+| —
+
+| link:../users/index.html[kdiab-users]
+| link:../users/openapi.html[Redoc]
+| link:../users/reports/detekt/detekt.html[Detekt]
+| link:../users/reports/coverage/index.html[Kover]
+| link:../users/reports/tests/unit/index.html[Unit]
+| link:../users/reports/tests/integration/index.html[Integration]
+| link:../users/reports/trivy.html[Trivy]
+| —
+
+| link:../carbs/index.html[kdiab-carbs]
+| link:../carbs/openapi.html[Redoc]
+| link:../carbs/reports/detekt/detekt.html[Detekt]
+| link:../carbs/reports/coverage/index.html[Kover]
+| link:../carbs/reports/tests/unit/index.html[Unit]
+| link:../carbs/reports/tests/integration/index.html[Integration]
+| link:../carbs/reports/trivy.html[Trivy]
+| —
+
+| link:../calc/index.html[kdiab-calc]
+| link:../calc/openapi.html[Redoc]
+| link:../calc/reports/detekt/detekt.html[Detekt]
+| link:../calc/reports/coverage/index.html[Kover]
+| link:../calc/reports/tests/unit/index.html[Unit]
+| —
+| link:../calc/reports/trivy.html[Trivy]
+| —
+
+| link:../nightscout/index.html[kdiab-nightscout]
+| link:../nightscout/openapi.html[Redoc]
+| link:../nightscout/reports/detekt/detekt.html[Detekt]
+| link:../nightscout/reports/coverage/index.html[Kover]
+| link:../nightscout/reports/tests/unit/index.html[Unit]
+| —
+| link:../nightscout/reports/trivy.html[Trivy]
+| —
+
+| kdiab-common
+| —
+| link:../common/reports/detekt/detekt.html[Detekt]
+| link:../common/reports/coverage/index.html[Kover]
+| link:../common/reports/tests/unit/index.html[Unit]
+| —
+| —
+| —
+
+| kdiab-ui
+| —
+| —
+| link:../ui/reports/coverage/index.html[Vitest]
+| —
+| —
+| —
+| link:../ui/reports/eslint.html[ESLint]
+
+|===
+
 == Contributing
 
 Contributions are welcome. See the link:https://github.com/triplem/kdiab/blob/main/CONTRIBUTING.md[Contributing Guide] for the development workflow, branching strategy, and quality gate requirements.

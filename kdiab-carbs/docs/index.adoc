@@ -23,3 +23,12 @@ to support carbohydrate tracking and dose calculation.
 == Platform ADRs
 
 * link:../root/adr/ADR-010-kdiab-carbs-service.html[ADR-010 kdiab-carbs Dedicated Food and Carbohydrate Service]
+
+== Quality Reports
+
+* link:openapi.html[OpenAPI Specification (Redoc)]
+* link:reports/detekt/detekt.html[Detekt Static Analysis]
+* link:reports/coverage/index.html[Kover Code Coverage]
+* link:reports/tests/unit/index.html[Unit Test Results]
+* link:reports/tests/integration/index.html[Integration Test Results]
+* link:reports/trivy.html[Trivy Container Vulnerability Scan]
