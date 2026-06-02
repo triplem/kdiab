@@ -1,0 +1,214 @@
+= Developer Reference: Consuming an Upstream OpenAPI Spec
+:toc: left
+:icons: font
+
+How to declare a typed Gradle dependency on an upstream service's `api/openapi.yaml` and use it
+as the input to an OpenAPI generator task.
+See link:adr/ADR-021-openapi-spec-artifact-distribution.html[ADR-021] for the architectural rationale.
+
+== Overview
+
+Every Ktor service in this monorepo exposes its `api/openapi.yaml` as a Gradle artifact via an
+outgoing `apiSpec` configuration (wired automatically by the `kdiab.ktor-service` convention
+plugin).
+A downstream service resolves the spec file as a typed Gradle dependency and feeds it directly
+to an OpenAPI `GenerateTask` — without any hardcoded filesystem path.
+
+The mechanism uses Gradle's outgoing variant system combined with composite-build
+`dependencySubstitution` rules.
+The spec coordinate convention is `org.javafreedom.kdiab:kdiab-{service}-spec`.
+
+== Consuming an Upstream Spec
+
+=== Step 1 — Add the upstream service to `settings.gradle.kts`
+
+Add an `includeBuild` block for the upstream service in **both**:
+
+* `settings.gradle.kts` at the **monorepo root**, and
+* The **consumer service's own** `settings.gradle.kts` (required for standalone CI builds).
+
+[source,kotlin]
+.kdiab-analyze/settings.gradle.kts (and mirrored in root settings.gradle.kts)
+----
+includeBuild("../kdiab-measures") {
+    dependencySubstitution {
+        substitute(module("org.javafreedom.kdiab:kdiab-measures")).using(project(":"))
+        substitute(module("org.javafreedom.kdiab:kdiab-measures-spec")).using(project(":"))
+    }
+}
+----
+
+NOTE: The root `settings.gradle.kts` uses the path `"kdiab-measures"` (relative to the repo
+root); the consumer's own file uses `"../kdiab-measures"` (relative to the service directory).
+
+=== Step 2 — Declare a resolvable configuration
+
+In the consumer's `build.gradle.kts`, add an import and create a named configuration with the
+`openapi-spec` category attribute:
+
+[source,kotlin]
+----
+import org.gradle.api.attributes.Category
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
+val measuresSpec by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+    attributes {
+        attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec"))
+    }
+}
+----
+
+Name the configuration after the upstream service: `measuresSpec`, `profilesSpec`, etc.
+
+=== Step 3 — Declare the spec dependency
+
+[source,kotlin]
+----
+dependencies {
+    measuresSpec("org.javafreedom.kdiab:kdiab-measures-spec")
+}
+----
+
+The coordinate follows the pattern `org.javafreedom.kdiab:kdiab-{service}-spec`.
+No version is required — composite-build substitution matches regardless of the version component.
+
+=== Step 4 — Register a `GenerateTask`
+
+[source,kotlin]
+----
+val generateMeasuresModels by tasks.registering(GenerateTask::class) {
+    generatorName.set("kotlin")
+    inputSpec.set(provider { measuresSpec.singleFile.absolutePath })   // <1>
+    outputDir.set("${layout.buildDirectory.get()}/generated/upstream-measures")
+    packageName.set("org.javafreedom.kdiab.myservice.api.upstream.measures")
+    modelPackage.set("org.javafreedom.kdiab.myservice.api.upstream.measures.models")
+    apiPackage.set("org.javafreedom.kdiab.myservice.api.upstream.measures")
+    globalProperties.set(mapOf("models" to "", "apis" to "", "supportingFiles" to ""))
+    configOptions.set(mapOf(
+        "library" to "jvm-ktor",
+        "dateLibrary" to "string",
+        "serializationLibrary" to "kotlinx_serialization",
+        "useCoroutines" to "true",
+    ))
+    typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String"))
+}
+----
+<1> Always wrap in `provider { }`. Calling `measuresSpec.singleFile.absolutePath` eagerly at
+    configuration time fails because the configuration has not been resolved yet.
+
+Adjust `packageName`, `modelPackage`, and `apiPackage` to match the consumer's own package
+structure.
+
+=== Step 5 — Wire generated sources into the source set
+
+[source,kotlin]
+----
+kotlin {
+    sourceSets {
+        main {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/upstream-measures/src/main/kotlin"))
+        }
+    }
+}
+----
+
+=== Step 6 — Make `compileKotlin` depend on the generate task
+
+[source,kotlin]
+----
+tasks.compileKotlin {
+    dependsOn(generateMeasuresModels)
+}
+----
+
+If the service generates from multiple upstream specs, list all generate tasks here:
+
+[source,kotlin]
+----
+tasks.compileKotlin {
+    dependsOn(generateMeasuresModels, generateTreatmentsModels, generateProfilesModels)
+}
+----
+
+=== Step 7 — Exclude generated packages from Kover
+
+Generated model classes cannot be meaningfully unit-tested. Exclude their packages from coverage:
+
+[source,kotlin]
+----
+kover {
+    reports {
+        filters {
+            excludes {
+                packages("org.javafreedom.kdiab.myservice.api.upstream.measures.models")
+            }
+        }
+    }
+}
+----
+
+== Exposing a New Service's Spec
+
+Every service that applies the `kdiab.ktor-service` convention plugin already exposes its spec
+automatically — no per-service configuration is required in the upstream service.
+
+To make a *new* service's spec available to consumers:
+
+. Ensure the new service's `build.gradle.kts` applies `id("kdiab.ktor-service")` or
+  `id("kdiab.ktor-db-service")`.
+. Add the new service's `includeBuild` + `dependencySubstitution` block to `settings.gradle.kts`
+  at the monorepo root (using the coordinate `org.javafreedom.kdiab:kdiab-{service}-spec`).
+. Add the same block to every consumer service's `settings.gradle.kts`.
+
+== Troubleshooting
+
+=== `Could not find org.javafreedom.kdiab:kdiab-*-spec`
+
+The substitution rule is missing or incomplete.
+
+*Most common cause*: the consumer's own `settings.gradle.kts` does not include the `includeBuild`
+block for the upstream service. The root `settings.gradle.kts` handles monorepo-wide builds; the
+per-service file is required for standalone CI builds (`cd kdiab-analyze && ./gradlew :check`).
+
+*Fix*: add the `includeBuild("../kdiab-{service}")` block with both substitution rules to the
+consumer's `settings.gradle.kts`.
+
+=== `singleFile` throws `IllegalStateException`
+
+The configuration resolved to zero or more than one file instead of exactly one.
+
+*Cause*: either the dependency is missing from the `dependencies {}` block, or the spec artifact
+was not registered by the upstream service's `kdiab.ktor-service` plugin.
+
+*Fix*: verify the upstream service applies `id("kdiab.ktor-service")` and that `api/openapi.yaml`
+exists in the upstream service directory.
+
+=== Ambiguous variant selection
+
+Gradle reports multiple candidates matching the `openapi-spec` category.
+
+*Cause*: two or more configurations in the upstream project expose the `openapi-spec` attribute.
+
+*Fix*: check the upstream service for duplicate `apiSpec` configuration declarations. The
+convention plugin creates exactly one — additional hand-written declarations in the service's own
+`build.gradle.kts` will cause conflicts.
+
+=== Generated models fail to compile
+
+*Common causes and fixes*:
+
+[cols="2,3"]
+|===
+| Symptom | Fix
+
+| `Unresolved reference: LocalDate` — generated field uses `java.time.LocalDate`
+| Add `"date" to "kotlin.String"` to `typeMappings` in the `GenerateTask` block.
+
+| Generated enum used where `String` expected
+| Append `.value` — the generated enum has a `value: String` property. Example: `glucoseUnit.value`.
+
+| `Unresolved reference` in generated API classes
+| Add `"apis" to ""` to `globalProperties` to disable API class generation; keep only `"models" to ""`.
+|===

@@ -46,6 +46,11 @@
 * link:testing/manual-test-plan.html[Manual Test Plan]
 * link:ai-development.html[AI Development Prompts]
 
+== Developer References
+
+* link:openapi-spec-consumer-reference.html[OpenAPI Spec Consumer Reference] — how to consume an upstream service's `api/openapi.yaml` as a typed Gradle artifact (spec artifact distribution pattern)
+* link:inter-service-client-reference.html[Inter-Service Client Reference] — end-to-end guide for adding a generated Kotlin HTTP client to a downstream service (spec resolution → code generation → outbound adapter → circuit breaker)
+
 == Contributing
 
 Contributions are welcome. See the link:https://github.com/triplem/kdiab/blob/main/CONTRIBUTING.md[Contributing Guide] for the development workflow, branching strategy, and quality gate requirements.
