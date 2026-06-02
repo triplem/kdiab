@@ -2,12 +2,9 @@
 :toc: left
 :icons: font
 
-* *Status*: Proposed
-* *Date*: 2026-06-01
+* *Status*: Accepted
+* *Date*: 2026-06-02
 * *Deciders*: triplem
-
-NOTE: This ADR is a stub. Full decision content — including the exact `dependencySubstitution`
-or outgoing-variant mechanism — will be authored during epic #1366 story S5 (the ADR story).
 
 == Context
 
@@ -23,33 +20,40 @@ Three kdiab services consume upstream OpenAPI specs to generate typed Kotlin cli
 | kdiab-nightscout
 | kdiab-measures, kdiab-treatments, kdiab-carbs, kdiab-profiles, kdiab-users
 
-| kdiab-users
-| kdiab-measures, kdiab-treatments, kdiab-carbs
+| kdiab-calc
+| kdiab-profiles
 |===
 
-Currently each consumer references upstream specs by hard-coded relative filesystem path:
+Before this ADR, each consumer referenced upstream specs with a hard-coded relative path:
 
 [source,kotlin]
 ----
 inputSpec.set(layout.projectDirectory.file("../kdiab-measures/api/openapi.yaml").asFile.absolutePath)
 ----
 
-This is fragile: the path breaks if the directory layout changes, is invisible to Gradle's
-dependency graph (no up-to-date checking), and must be manually replicated when a new consumer
-is added.
+This approach has three problems:
 
-ADR-005 established the API-first contract (each service owns `api/openapi.yaml`). This ADR
-decides _how_ that file is made available to downstream services in the composite build.
+. *Invisible to Gradle's dependency graph* — Gradle does not track the file as an input, so
+  changes to the upstream spec do not invalidate the consumer's `GenerateTask`. Developers must
+  run clean builds manually.
+. *Fragile to directory changes* — the path breaks silently if the monorepo layout is restructured.
+. *Does not work for standalone service builds* — the CI runs each service independently
+  (`cd kdiab-analyze && ./gradlew :check`). Per-service `settings.gradle.kts` files do not
+  include the upstream services, so relative paths resolve against the wrong base.
+
+ADR-005 established that `api/openapi.yaml` in each service directory is the single source of truth.
+This ADR decides how that file is made available to downstream services as a proper Gradle artifact.
 
 == Decision
 
-_To be decided during epic #1366 S5._
+Use Gradle's outgoing variant mechanism combined with composite-build `dependencySubstitution`
+to expose each service's `api/openapi.yaml` as a resolvable artifact under a typed coordinate.
 
-The proposed design:
+=== 1. Outgoing configuration in `kdiab.ktor-service`
 
-1. `kdiab.ktor-service` (from ADR-020) registers an outgoing `apiSpec` consumable Gradle
-   configuration on every service:
-+
+The convention plugin (`build-logic/src/main/kotlin/kdiab.ktor-service.gradle.kts`) registers
+an outgoing `apiSpec` configuration on every Ktor service:
+
 [source,kotlin]
 ----
 val apiSpec by configurations.creating {
@@ -59,31 +63,51 @@ val apiSpec by configurations.creating {
         attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec"))
     }
 }
-artifacts { add("apiSpec", layout.projectDirectory.file("api/openapi.yaml")) }
+artifacts {
+    add("apiSpec", layout.projectDirectory.file("api/openapi.yaml"))
+}
 ----
 
-2. Root `settings.gradle.kts` adds `dependencySubstitution` rules mapping
-   `org.javafreedom.kdiab:kdiab-{service}-spec` to the local project's `apiSpec` configuration:
-+
+The `org.gradle.category = openapi-spec` attribute uniquely distinguishes this variant from the
+default JAR variant. No `capability` declaration is needed — the attribute alone resolves
+ambiguity when the consumer declares a matching attribute on its resolvable configuration.
+
+=== 2. Dependency substitution in `settings.gradle.kts`
+
+Both the root `settings.gradle.kts` and each consumer service's own `settings.gradle.kts` include
+the upstream service builds and declare substitution rules:
+
 [source,kotlin]
 ----
-// root settings.gradle.kts (conceptual — exact API TBD in S5)
-gradle.allprojects {
-    configurations.all {
-        resolutionStrategy.dependencySubstitution {
-            substitute(module("org.javafreedom.kdiab:kdiab-measures-spec"))
-                .using(project(":kdiab-measures"))
-                .withClassifier("apiSpec")
-        }
+// root settings.gradle.kts  (root path: "kdiab-measures"; per-service path: "../kdiab-measures")
+includeBuild("../kdiab-measures") {
+    dependencySubstitution {
+        substitute(module("org.javafreedom.kdiab:kdiab-measures")).using(project(":"))
+        substitute(module("org.javafreedom.kdiab:kdiab-measures-spec")).using(project(":"))
     }
 }
 ----
 
-3. Downstream consumers declare a custom resolvable configuration and reference the spec by
-   coordinate:
-+
+Two substitution rules are declared per service: one for the JAR coordinate (pre-existing) and
+one for the spec coordinate (added by this ADR). Both map to the same project root (`":"`).
+Gradle selects the correct variant based on the consumer configuration's `Category` attribute.
+
+The spec coordinate convention is `org.javafreedom.kdiab:kdiab-{service}-spec`.
+No version is required in composite builds — substitution matches regardless of the version component.
+
+Per-service `settings.gradle.kts` files for consumer services repeat the relevant `includeBuild`
+blocks so that standalone builds (`cd kdiab-analyze && ./gradlew :check`) also resolve spec
+artifacts from local sources without a `publishToMavenLocal` pre-step.
+
+=== 3. Consumer pattern
+
+A downstream service declares a dedicated resolvable configuration per upstream spec:
+
 [source,kotlin]
 ----
+import org.gradle.api.attributes.Category
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
 val measuresSpec by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
@@ -91,64 +115,94 @@ val measuresSpec by configurations.creating {
         attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category::class, "openapi-spec"))
     }
 }
-dependencies { measuresSpec("org.javafreedom.kdiab:kdiab-measures-spec") }
+
+dependencies {
+    measuresSpec("org.javafreedom.kdiab:kdiab-measures-spec")
+}
 
 val generateMeasuresModels by tasks.registering(GenerateTask::class) {
-    inputSpec.set(provider { measuresSpec.singleFile.absolutePath })
-    // ...
+    generatorName.set("kotlin")
+    inputSpec.set(provider { measuresSpec.singleFile.absolutePath })   // <1>
+    outputDir.set("${layout.buildDirectory.get()}/generated/upstream-measures")
+    // further generator options ...
+}
+
+tasks.compileKotlin {
+    dependsOn(generateMeasuresModels)
+}
+
+kotlin {
+    sourceSets {
+        main {
+            kotlin.srcDir(layout.buildDirectory.dir("generated/upstream-measures/src/main/kotlin"))
+        }
+    }
 }
 ----
-
-Key open questions for S5:
-
-* The exact `dependencySubstitution` API for outgoing variant matching in a composite build —
-  this requires a working proof-of-concept before the decision is finalised.
-* Whether Gradle's composite build project substitution supports variant attributes, or whether
-  a capability-based approach (`requestedCapabilities`) is needed instead.
-* Whether a single substitution rule per service (in root `settings.gradle.kts`) or per-consumer
-  configuration declarations is cleaner at scale.
+<1> The `provider { }` wrapper is required. Calling `measuresSpec.singleFile.absolutePath`
+    eagerly at configuration time would fail because the configuration has not yet been resolved.
 
 == Consequences
 
 === Positive
 
-* `inputSpec` in downstream `GenerateTask` blocks is resolved by Gradle's dependency graph,
-  giving proper up-to-date tracking and build caching.
-* Adding a new consumer requires only a dependency declaration — no path to maintain.
-* `kdiab.ktor-service` makes every service a spec provider automatically, with zero per-service
-  configuration.
-* No `publishToMavenLocal` step required — all resolution happens within the composite build.
+* Upstream spec changes are tracked by Gradle's input hashing — the consumer's `GenerateTask`
+  is invalidated automatically when `api/openapi.yaml` changes upstream.
+* No hardcoded filesystem paths remain in consumer build scripts.
+* Every service that applies `kdiab.ktor-service` is automatically a spec provider with zero
+  extra per-service configuration.
+* Standalone per-service CI builds resolve specs from local included builds without any
+  `publishToMavenLocal` pre-step.
+* Adding a new consumer requires only a configuration declaration, a `GenerateTask` block, and
+  an `includeBuild` entry in `settings.gradle.kts`; no changes are needed in the upstream service.
 
 === Negative
 
-* Gradle outgoing variant matching in composite builds is a relatively advanced pattern;
-  the implementation requires a working proof-of-concept (hence the ADR story S5).
-* Downstream services gain a compile-time dependency on upstream `api/openapi.yaml` — a spec
-  change in kdiab-measures triggers recompilation in kdiab-analyze.
+* The `dependencySubstitution` blocks must appear in both the root `settings.gradle.kts` and
+  each consumer service's own `settings.gradle.kts`. A new consumer that omits the latter will
+  fail its standalone CI build with:
+  `Could not find org.javafreedom.kdiab:kdiab-*-spec`.
+* Generating models from multiple upstream specs (kdiab-nightscout uses 5) adds multiple
+  `includeBuild` blocks and `GenerateTask` registrations to the service's build files.
+* Generated packages must be excluded from Kover coverage to prevent false failures on code
+  that cannot be meaningfully unit-tested.
 
 === Neutral
 
-* Client code is generated _in_ the downstream service, not published by the upstream.
-  Upstream services remain unaware of their consumers.
-* `UserSettingsClient.kt` in kdiab-nightscout is the only hand-written client in the codebase
-  and will be deleted once kdiab-users exposes its spec (epic #1367 S9).
+* Client code is generated inside the downstream service; upstream services remain unaware of
+  their consumers (no coupling inversion).
+* A single `dependencySubstitution` rule per project (mapping both `kdiab-measures` and
+  `kdiab-measures-spec` to `project(":")`) works because Gradle's variant-aware resolution
+  selects the correct artifact based on the consumer's attributes — not the coordinate suffix.
 
 == Alternatives Considered
 
 === Hard-coded relative paths (status quo)
 
-Keep `../kdiab-*/api/openapi.yaml` references. *Rejected*: invisible to Gradle dependency
-graph, breaks on directory restructure, and scales poorly as new consumers are added.
+Keep `../kdiab-*/api/openapi.yaml` references.
+*Rejected*: invisible to Gradle's input tracking (no automatic task invalidation); breaks on
+directory restructure; and fails for standalone CI builds that run from inside the service directory.
+
+=== `publishToMavenLocal` pre-step
+
+Each upstream service publishes its spec to the local Maven repository before consumers build.
+*Rejected*: requires a manual or CI pre-step; breaks clean build semantics; the published
+artifact may lag behind uncommitted local spec changes.
+
+=== Direct `files(...)` dependency
+
+Reference the file directly: `dependencies { measuresSpec(files("../kdiab-measures/api/openapi.yaml")) }`.
+*Rejected*: preserves the fragile relative path and still does not integrate with Gradle's
+versioned artifact dependency graph.
 
 === Publish client JARs from upstream services
 
-Each upstream service generates and publishes a Kotlin HTTP client JAR. Downstream services
-declare a normal compile dependency. *Rejected*: forces upstream services to know about
-client generation concerns; adds a publish step to the critical path; duplicates generated
-code in version control.
+Each upstream service generates and publishes a typed Kotlin HTTP client JAR.
+*Rejected*: forces upstream services to know about client generation concerns; requires a
+publish step on every upstream spec change; couples upstream and downstream versioning.
 
-=== Copy specs to a shared `api-specs/` directory
+=== Separate spec repository / Git submodules
 
-Commit all `api/openapi.yaml` files to a central `api-specs/` directory. Downstream services
-reference this directory. *Rejected*: duplicates the spec (source of truth becomes ambiguous),
-and changes to `api/openapi.yaml` must be manually synced to two locations.
+Store all `api/openapi.yaml` files in a shared repository.
+*Rejected*: out of scope for a monorepo; moves spec ownership away from the service that owns
+the API contract; adds submodule management overhead.

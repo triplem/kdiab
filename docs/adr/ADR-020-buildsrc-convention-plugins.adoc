@@ -98,6 +98,23 @@ exactly these reasons.
 * Each service still defines its own `kover { reports { verify { rule { bound { minValue = 80 } } } } }`
   block with service-specific package exclusions. A global rule in the convention plugin would
   fail on adapter/plugin packages not covered by unit tests.
+* New services must apply the correct plugin tier:
+  - `kdiab.kotlin-base` — pure Kotlin libraries (currently only `kdiab-common`)
+  - `kdiab.ktor-service` — stateless HTTP services without a database (`kdiab-calc`, `kdiab-analyze`, `kdiab-nightscout`)
+  - `kdiab.ktor-db-service` — HTTP services backed by PostgreSQL (`kdiab-measures`, `kdiab-profiles`, `kdiab-treatments`, `kdiab-carbs`, `kdiab-users`)
+* `rootDir` inside a precompiled script plugin resolves to the *service project directory*, not
+  the monorepo root. Shared config files (Detekt rules, OpenAPI templates) must be referenced
+  with `rootDir.resolve("../config/...")` or `rootDir.parentFile.resolve("config/...")`.
+
+== Asciidoctor Build Verification
+
+Verified 2026-06-02 after migrating all 9 services to the convention plugin hierarchy.
+`./gradlew :kdiab-measures:asciidoctor :kdiab-profiles:asciidoctor :kdiab-treatments:asciidoctor :kdiab-carbs:asciidoctor :kdiab-calc:asciidoctor :kdiab-analyze:asciidoctor :kdiab-nightscout:asciidoctor :kdiab-users:asciidoctor`
+produces HTML in each service's `build/docs/asciidoc/` with the correct `toc=left` attribute,
+shared-footer docinfo, and `revnumber` set to the service version string.
+`kdiab-common` does not apply `kdiab.ktor-service` and has no asciidoctor task — this is by design.
+The `notCompatibleWithConfigurationCache` warning from the Asciidoctor plugin is a pre-existing
+upstream limitation unrelated to this migration.
 
 == Alternatives Considered
 

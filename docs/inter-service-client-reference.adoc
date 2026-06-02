@@ -1,0 +1,197 @@
+= Developer Reference: Inter-Service Client Dependency Convention
+:toc: left
+:icons: font
+
+End-to-end guide for adding a generated Kotlin HTTP client to a downstream service.
+Covers the full pipeline: upstream spec exposure → Gradle spec resolution → code generation →
+outbound HTTP adapter implementation.
+See link:openapi-spec-consumer-reference.html[OpenAPI Spec Consumer Reference] for the
+Gradle-level spec resolution steps in detail, and
+link:adr/ADR-021-openapi-spec-artifact-distribution.html[ADR-021] for the architectural rationale.
+
+== Overview
+
+The pipeline for calling an upstream kdiab service looks like this:
+
+----
+upstream service                    downstream service
+─────────────────────────────────   ─────────────────────────────────────────────────────
+api/openapi.yaml                    settings.gradle.kts
+  │                                   includeBuild("../kdiab-measures") { ... }
+  │  kdiab.ktor-service plugin            │
+  ▼  registers apiSpec config             │
+apiSpec configuration               build.gradle.kts
+  (org.gradle.category=openapi-spec)   measuresSpec configuration (resolvable)
+                                        GenerateTask ──► generated models in build/generated/
+                                        compileKotlin depends on GenerateTask
+                                        kotlin.srcDirs includes generated dir
+                                          │
+                                          ▼
+                                     adapters/outbound/http/MeasuresClient.kt
+                                       uses generated model classes
+                                       wraps calls in CircuitBreaker
+----
+
+No client JAR is published by the upstream service; the downstream service generates its own
+Kotlin models from the resolved spec file.
+
+== Adding a New Upstream Client
+
+=== Step 1 — Wire the Gradle spec dependency
+
+Follow the seven setup steps in
+link:openapi-spec-consumer-reference.html[OpenAPI Spec Consumer Reference]:
+
+. Add `includeBuild` + `dependencySubstitution` to both `settings.gradle.kts` files.
+. Declare a resolvable `xxxSpec` configuration.
+. Add the spec to `dependencies`.
+. Register a `GenerateTask` block.
+. Add generated sources to `kotlin.sourceSets.main`.
+. Wire `compileKotlin.dependsOn(generateXxxModels)`.
+. Exclude generated packages from Kover.
+
+=== Step 2 — Implement the outbound HTTP adapter
+
+Create a class under `adapters/outbound/http/` in the consumer service:
+
+[source,kotlin]
+.kdiab-analyze/src/main/kotlin/org/javafreedom/kdiab/analyze/adapters/outbound/http/MeasuresClient.kt
+----
+class MeasuresClient(
+    httpClientEngine: HttpClientEngine,
+    private val baseUrl: String,
+    private val circuitBreaker: CircuitBreaker = CircuitBreaker(name = "measures"),
+) {
+    private val client = HttpClient(httpClientEngine) {
+        install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+    }
+
+    suspend fun getMeasures(userId: String, from: String, to: String, authorization: String): List<MeasureResponse> {
+        val response = circuitBreaker.execute {             // <1>
+            client.get("$baseUrl/api/v1/users/$userId/measures") {
+                header(HttpHeaders.Authorization, authorization)
+                parameter("from", from)
+                parameter("to", to)
+            }
+        }
+        if (!response.status.isSuccess()) {
+            throw UpstreamException("measures", response.status.value, response.bodyAsText())
+        }
+        return response.body()
+    }
+}
+----
+<1> Every outbound call must be wrapped in a `CircuitBreaker`. See <<circuit-breaker>>.
+
+Use the generated model types from the `api.upstream.{service}.models` package as return types.
+
+=== Step 3 — Register the client in the service's DI wiring
+
+Wire the client in the Ktor `Application` extension function alongside the other outbound adapters:
+
+[source,kotlin]
+----
+fun Application.configureRouting(
+    measuresClient: MeasuresClient = MeasuresClient(/* httpEngine, baseUrl */),
+) {
+    routing {
+        timelineRoutes(measuresClient)
+    }
+}
+----
+
+[#circuit-breaker]
+== Circuit Breaker Pattern
+
+Every outbound HTTP call to an upstream kdiab service must be wrapped in a `CircuitBreaker`
+from `kdiab-common`. The generated client classes do **not** include circuit-breaking logic.
+
+[source,kotlin]
+----
+import org.javafreedom.kdiab.common.CircuitBreaker
+
+class MeasuresClient(
+    httpClientEngine: HttpClientEngine,
+    private val baseUrl: String,
+    private val circuitBreaker: CircuitBreaker = CircuitBreaker(name = "measures"),   // <1>
+) {
+    suspend fun callUpstream(): SomeResponse {
+        val response = circuitBreaker.execute { client.get(url) }   // <2>
+        if (!response.status.isSuccess()) {
+            throw UpstreamException("measures", response.status.value, response.bodyAsText())
+        }
+        return response.body()
+    }
+}
+----
+<1> Use one `CircuitBreaker` instance per upstream service (not per request). The default
+    threshold is 5 consecutive failures; reset after 30 s.
+<2> Wrap every `client.get/post/put/delete` call. Do not catch the exception thrown by
+    `CircuitBreaker` when the circuit is open — let it propagate to `StatusPages` which maps
+    it to a `502 Bad Gateway`.
+
+Failing to wrap a call means a slow or down upstream will cause thread pile-up in the consumer
+service rather than fast-failing with a circuit-open response.
+
+== Replacing a Hand-Written Client
+
+When a hand-written client already exists and an upstream spec becomes available, the generated
+models can replace hand-written data classes with no change to the business logic.
+
+*Example*: `kdiab-nightscout/UserSettingsClient.kt` was hand-written before `kdiab-users`
+exposed its spec. After wiring `usersSpec` (see step 1), the generated `UserResponse` and
+`UnitPreferences` models replaced the hand-written private data classes. The client itself was
+renamed to `UsersClient.kt` and slimmed to ~30 lines.
+
+Key points when migrating:
+
+* The generated models are in `api.upstream.{service}.models`; update all import references.
+* Enum fields are generated as typed enums, not raw strings. Use `.value` to extract the string
+  representation: `body.settings?.units?.glucoseUnit?.value`.
+* Fields typed as `java.time.LocalDate` in generated models require adding
+  `"date" to "kotlin.String"` to the `GenerateTask`'s `typeMappings` (the default `dateLibrary`
+  does not produce kotlinx-compatible serializers for `LocalDate`).
+* Delete the hand-written data classes only after confirming the generated replacements compile
+  and all tests pass.
+
+== Troubleshooting
+
+=== Missing `includeBuild` in the consumer's `settings.gradle.kts`
+
+*Symptom*: CI passes for the monorepo-wide build (`./gradlew buildBackends`) but fails for the
+per-service job (`cd kdiab-analyze && ./gradlew :check`) with:
+
+----
+Could not find org.javafreedom.kdiab:kdiab-measures-spec.
+----
+
+*Fix*: Add the `includeBuild("../kdiab-{service}")` block with both substitution rules to the
+consumer service's own `settings.gradle.kts`. See
+link:openapi-spec-consumer-reference.html#_step_1_add_the_upstream_service_to_settings_gradle_kts[Step 1].
+
+=== `provider { singleFile.absolutePath }` throws at configuration time
+
+*Symptom*: `IllegalStateException: Cannot query the value of this provider because it has no value`.
+
+*Fix*: The `provider { }` wrapper is mandatory. Do not call `measuresSpec.singleFile.absolutePath`
+outside a provider lambda.
+
+=== Generated enum type mismatch
+
+*Symptom*: Compiler error `Type mismatch: inferred type is UnitPreferences.GlucoseUnit but String was expected`.
+
+*Fix*: Append `.value` to the enum access: `body.settings?.units?.glucoseUnit?.value`.
+
+=== `LocalDate` serialisation failure at runtime
+
+*Symptom*: `kotlinx.serialization.SerializationException: Serializer for class 'LocalDate' is not found`.
+
+*Fix*: Add `"date" to "kotlin.String"` to the `GenerateTask`'s `typeMappings` map so that
+`format: date` fields are generated as `kotlin.String` instead of `java.time.LocalDate`.
+
+=== Circuit breaker fires unexpectedly in tests
+
+*Symptom*: E2E tests fail intermittently with `CircuitBreakerOpenException`.
+
+*Fix*: In test wiring, use `CircuitBreaker(name = "...", threshold = Int.MAX_VALUE)` or provide
+a mock `HttpClientEngine` that always returns 200 so the breaker never opens during tests.
