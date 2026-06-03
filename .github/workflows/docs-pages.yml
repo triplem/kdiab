@@ -3,6 +3,16 @@ name: Deploy Documentation
 on:
   push:
     branches: ["main"]
+    # Trigger when service source, docs, build logic, or this workflow changes.
+    # Quality reports must be regenerated on every code change to stay accurate.
+    paths:
+      - 'docs/**'
+      - 'kdiab-*/docs/**'
+      - 'kdiab-*/src/**'
+      - 'kdiab-*/build.gradle.kts'
+      - 'build-logic/**'
+      - 'gradle/**'
+      - '.github/workflows/docs-pages.yml'
   release:
     types: [published]
   workflow_dispatch:
@@ -161,7 +171,7 @@ jobs:
           if-no-files-found: ignore
 
   assemble:
-    if: github.repository == 'triplem/kdiab'
+    if: always() && github.repository == 'triplem/kdiab'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [build-root, build-service]
