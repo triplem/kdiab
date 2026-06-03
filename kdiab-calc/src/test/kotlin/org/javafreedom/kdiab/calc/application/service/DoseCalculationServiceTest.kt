@@ -484,7 +484,7 @@ class DoseCalculationServiceTest {
     }
 
     @Test
-    fun `calculateDose throws BusinessValidationException when ICR segment value is zero and carbs entered`() = runTest {
+    fun `calculateDose throws BusinessValidationException when ICR is zero and carbs entered`() = runTest {
         val zeroIcrProfile = testProfile.copy(
             icr = listOf(IcrRatio(startTime ="00:00", value =0.0)),
         )
