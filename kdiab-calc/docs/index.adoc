@@ -23,3 +23,11 @@ an active insulin pump profile, current CGM reading, and carbohydrate intake.
 == Platform ADRs
 
 * link:../root/adr/ADR-009-kdiab-calc-service.html[ADR-009 kdiab-calc Stateless Dose Calculator Service]
+
+== Quality Reports
+
+* link:openapi.html[OpenAPI Specification (Redoc)]
+* link:reports/detekt/detekt.html[Detekt Static Analysis]
+* link:reports/coverage/index.html[Kover Code Coverage]
+* link:reports/tests/unit/index.html[Unit Test Results]
+* link:reports/trivy.html[Trivy Container Vulnerability Scan]

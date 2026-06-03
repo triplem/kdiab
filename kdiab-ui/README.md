@@ -49,3 +49,12 @@ docker compose up --build
 ```
 
 Frontend is then available at **http://localhost:3005**.
+
+## Quality Reports
+
+Published to GitHub Pages on every push to `main` under `pages/ui/`:
+
+| Report | Path |
+|---|---|
+| Vitest Coverage | `pages/ui/reports/coverage/index.html` |
+| ESLint | `pages/ui/reports/eslint.html` |
