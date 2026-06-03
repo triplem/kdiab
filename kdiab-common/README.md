@@ -25,7 +25,7 @@ dependencies {
 
 ```bash
 ./gradlew build      # Build and test
-./gradlew check      # Build + tests + detekt + kover
+./gradlew check      # Build + tests + detekt (no Kover — library; coverage comes from consumer services)
 ```
 
 No Docker image — this is a library, not a deployable service.

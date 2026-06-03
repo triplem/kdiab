@@ -117,11 +117,12 @@ jobs:
         run: cd ${{ matrix.service }} && npx @redocly/cli@2 build-docs api/openapi.yaml --output openapi.html
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        continue-on-error: true
+        uses: docker/setup-buildx-action@v4
 
       - name: Build ${{ matrix.service }} Docker image
         continue-on-error: true
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: ${{ matrix.service }}
           load: true
@@ -188,9 +189,12 @@ jobs:
             cp ${SVC}/openapi.html staging/${PAGE}/openapi.html
           fi
 
-          # Trivy HTML report
+          # Trivy HTML report (placeholder when Docker image build failed)
           if [ -f "${SVC}/trivy-report.html" ]; then
             cp ${SVC}/trivy-report.html staging/${PAGE}/reports/trivy.html
+          else
+            echo '<html><body><h1>Trivy scan could not run</h1><p>Docker image build failed — see workflow logs for details.</p></body></html>' \
+              > staging/${PAGE}/reports/trivy.html
           fi
 
       - name: Upload ${{ matrix.service }} reports artifact
@@ -221,21 +225,16 @@ jobs:
 
       - name: Build kdiab-common quality reports
         continue-on-error: true
-        run: cd kdiab-common && ./gradlew check koverHtmlReport
+        run: cd kdiab-common && ./gradlew check
 
       - name: Stage kdiab-common reports
         if: always()
         run: |
           mkdir -p staging/common/reports/detekt
-          mkdir -p staging/common/reports/coverage
           mkdir -p staging/common/reports/tests/unit
 
           if [ -d "kdiab-common/build/reports/detekt" ]; then
             cp -r kdiab-common/build/reports/detekt/. staging/common/reports/detekt/
-          fi
-
-          if [ -d "kdiab-common/build/reports/kover/html" ]; then
-            cp -r kdiab-common/build/reports/kover/html/. staging/common/reports/coverage/
           fi
 
           if [ -d "kdiab-common/build/reports/tests/test" ]; then
@@ -259,7 +258,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
@@ -278,11 +277,12 @@ jobs:
         run: cd kdiab-ui && npx eslint . --format html --output-file eslint-report.html || true
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        continue-on-error: true
+        uses: docker/setup-buildx-action@v4
 
       - name: Build kdiab-ui Docker image
         continue-on-error: true
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: kdiab-ui
           load: true
@@ -317,6 +317,9 @@ jobs:
 
           if [ -f "kdiab-ui/trivy-report.html" ]; then
             cp kdiab-ui/trivy-report.html staging/ui/reports/trivy.html
+          else
+            echo '<html><body><h1>Trivy scan could not run</h1><p>Docker image build failed — see workflow logs for details.</p></body></html>' \
+              > staging/ui/reports/trivy.html
           fi
 
       - name: Upload kdiab-ui reports artifact
