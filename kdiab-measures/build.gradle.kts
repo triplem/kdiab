@@ -26,11 +26,7 @@ kover {
                 classes(
                     "org.javafreedom.kdiab.measures.ApplicationKt*",
                     "org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository*",
-                    "org.javafreedom.kdiab.measures.infrastructure.persistence.MeasuresTable*",
-                    "org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedAuditLogRepository*",
-                    "org.javafreedom.kdiab.measures.infrastructure.persistence.AuditLogsTable*",
-                    "org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedHbA1cEntryRepository*",
-                    "org.javafreedom.kdiab.measures.infrastructure.persistence.HbA1cEntriesTable*"
+                    "org.javafreedom.kdiab.measures.infrastructure.persistence.MeasuresTable*"
                 )
                 packages("org.javafreedom.kdiab.measures.api")
             }
