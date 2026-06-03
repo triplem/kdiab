@@ -13,7 +13,7 @@
  * project in playwright.config.ts. It is a manual capture script only.
  */
 
-import { test, expect } from '@playwright/test'
+import { test } from '@playwright/test'
 import path from 'path'
 
 const OUT = path.resolve(__dirname, '../../docs/images/patient-guide')
