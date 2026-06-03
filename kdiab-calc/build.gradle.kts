@@ -34,7 +34,6 @@ kover {
                     "org.javafreedom.kdiab.calc.api.upstream.profiles",
                     "org.javafreedom.kdiab.calc.api.upstream.profiles.models",
                     "org.javafreedom.kdiab.calc.adapters.outbound.http",
-                    "org.javafreedom.kdiab.calc.plugins",
                     "org.javafreedom.kdiab.calc.domain.exception"
                 )
                 // CalcRoutes.kt requires a running Ktor application; tested at integration/e2e level

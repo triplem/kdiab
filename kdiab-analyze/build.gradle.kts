@@ -54,7 +54,6 @@ kover {
                     "org.javafreedom.kdiab.analyze.api.upstream.treatments.models",
                     "org.javafreedom.kdiab.analyze.api.upstream.profiles.models",
                     "org.javafreedom.kdiab.analyze.adapters.outbound.http",
-                    "org.javafreedom.kdiab.analyze.plugins",
                     "org.javafreedom.kdiab.analyze.domain.exception"
                 )
                 classes(
