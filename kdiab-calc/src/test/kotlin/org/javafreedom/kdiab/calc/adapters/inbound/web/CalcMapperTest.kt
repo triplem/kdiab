@@ -127,6 +127,14 @@ class CalcMapperTest {
         assertFailsWith<IllegalArgumentException> { dto.toDomain() }
     }
 
+    @Test
+    fun `toDomain maps every CgmTrend entry by name — exhaustive round-trip`() {
+        for (trend in CgmTrend.entries) {
+            val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = trend.name)
+            assertEquals(trend, dto.toDomain().trend, "Expected trend $trend for name '${trend.name}'")
+        }
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // DoseResult.toDto()
     // ──────────────────────────────────────────────────────────────────────────
@@ -262,6 +270,13 @@ class CalcMapperTest {
             carbsGrams = 0.0,
         )
         assertEquals(0.0, breakdown.toDto().carbsGrams)
+    }
+
+    @Test
+    fun `breakdown toDto serialises every CgmTrend entry as its name — exhaustive`() {
+        for (trend in CgmTrend.entries) {
+            assertEquals(trend.name, buildBreakdown(trend = trend).toDto().trend)
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
