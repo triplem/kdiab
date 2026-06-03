@@ -25,7 +25,6 @@ kover {
             excludes {
                 classes(
                     "org.javafreedom.kdiab.measures.ApplicationKt*",
-                    "org.javafreedom.kdiab.measures.infrastructure.persistence.ExposedMeasureRepository*",
                     "org.javafreedom.kdiab.measures.infrastructure.persistence.MeasuresTable*"
                 )
                 packages("org.javafreedom.kdiab.measures.api")
