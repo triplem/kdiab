@@ -3,16 +3,15 @@ name: Deploy Documentation
 on:
   push:
     branches: ["main"]
+    # Trigger when service source, docs, build logic, or this workflow changes.
+    # Quality reports must be regenerated on every code change to stay accurate.
     paths:
       - 'docs/**'
-      - 'kdiab-measures/docs/**'
-      - 'kdiab-profiles/docs/**'
-      - 'kdiab-treatments/docs/**'
-      - 'kdiab-analyze/docs/**'
-      - 'kdiab-carbs/docs/**'
-      - 'kdiab-calc/docs/**'
-      - 'kdiab-nightscout/docs/**'
-      - 'kdiab-users/docs/**'
+      - 'kdiab-*/docs/**'
+      - 'kdiab-*/src/**'
+      - 'kdiab-*/build.gradle.kts'
+      - 'build-logic/**'
+      - 'gradle/**'
       - '.github/workflows/docs-pages.yml'
   release:
     types: [published]
@@ -75,7 +74,7 @@ jobs:
     if: github.repository == 'triplem/kdiab'
     needs: resolve-version
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -109,17 +108,70 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Build ${{ matrix.service }} docs
-        run: cd ${{ matrix.service }} && ./gradlew asciidoctor -Pversion=${{ needs.resolve-version.outputs.version }}
+      - name: Build ${{ matrix.service }} quality reports and docs
+        continue-on-error: true
+        run: cd ${{ matrix.service }} && ./gradlew check koverHtmlReport asciidoctor -Pversion=${{ needs.resolve-version.outputs.version }}
 
-      - name: Upload ${{ matrix.service }} docs artifact
+      - name: Generate ${{ matrix.service }} OpenAPI HTML
+        continue-on-error: true
+        run: cd ${{ matrix.service }} && npx @redocly/cli@2 build-docs api/openapi.yaml --output openapi.html
+
+      - name: Stage ${{ matrix.service }} reports
+        if: always()
+        run: |
+          PAGE=${{ matrix.page }}
+          SVC=${{ matrix.service }}
+          mkdir -p staging/${PAGE}/reports/detekt
+          mkdir -p staging/${PAGE}/reports/coverage
+          mkdir -p staging/${PAGE}/reports/tests/unit
+          mkdir -p staging/${PAGE}/reports/tests/integration
+          mkdir -p staging/${PAGE}/reports/tests/e2e
+
+          # AsciiDoc HTML → page root
+          if [ -d "${SVC}/build/docs/asciidoc" ]; then
+            cp -r ${SVC}/build/docs/asciidoc/. staging/${PAGE}/
+          fi
+
+          # Detekt HTML report
+          if [ -d "${SVC}/build/reports/detekt" ]; then
+            cp -r ${SVC}/build/reports/detekt/. staging/${PAGE}/reports/detekt/
+          fi
+
+          # Kover HTML coverage report
+          if [ -d "${SVC}/build/reports/kover/html" ]; then
+            cp -r ${SVC}/build/reports/kover/html/. staging/${PAGE}/reports/coverage/
+          fi
+
+          # Gradle unit test report
+          if [ -d "${SVC}/build/reports/tests/test" ]; then
+            cp -r ${SVC}/build/reports/tests/test/. staging/${PAGE}/reports/tests/unit/
+          fi
+
+          # Gradle integration test report
+          if [ -d "${SVC}/build/reports/tests/integrationTest" ]; then
+            cp -r ${SVC}/build/reports/tests/integrationTest/. staging/${PAGE}/reports/tests/integration/
+          fi
+
+          # Gradle e2e test report
+          if [ -d "${SVC}/build/reports/tests/e2eTest" ]; then
+            cp -r ${SVC}/build/reports/tests/e2eTest/. staging/${PAGE}/reports/tests/e2e/
+          fi
+
+          # OpenAPI HTML
+          if [ -f "${SVC}/openapi.html" ]; then
+            cp ${SVC}/openapi.html staging/${PAGE}/openapi.html
+          fi
+
+      - name: Upload ${{ matrix.service }} reports artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: docs-${{ matrix.page }}
-          path: ${{ matrix.service }}/build/docs/asciidoc/
+          path: staging/${{ matrix.page }}/
+          if-no-files-found: ignore
 
   assemble:
-    if: github.repository == 'triplem/kdiab'
+    if: always() && github.repository == 'triplem/kdiab'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [build-root, build-service]
@@ -131,48 +183,64 @@ jobs:
           path: pages/root/
 
       - name: Download measures docs
+        if: always()
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: docs-measures
           path: pages/measures/
 
       - name: Download profiles docs
+        if: always()
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: docs-profiles
           path: pages/profiles/
 
       - name: Download treatments docs
+        if: always()
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: docs-treatments
           path: pages/treatments/
 
       - name: Download analyze docs
+        if: always()
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: docs-analyze
           path: pages/analyze/
 
       - name: Download users docs
+        if: always()
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: docs-users
           path: pages/users/
 
       - name: Download carbs docs
+        if: always()
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: docs-carbs
           path: pages/carbs/
 
       - name: Download calc docs
+        if: always()
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: docs-calc
           path: pages/calc/
 
       - name: Download nightscout docs
+        if: always()
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: docs-nightscout
