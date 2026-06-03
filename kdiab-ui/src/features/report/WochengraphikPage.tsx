@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts'
-import type { DailyTrendResponse } from '../../api/analyzeApi'
+import type { DailyTrendResponse, DailyTrendDay } from '../../api/analyzeApi'
 import { OKABE_ITO, isoWeekdayIndex, groupByIsoWeek } from './weekUtils'
 
 // ---------------------------------------------------------------------------
