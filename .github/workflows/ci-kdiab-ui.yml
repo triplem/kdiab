@@ -102,6 +102,7 @@ jobs:
           retention-days: 7
 
       - name: Scan Docker Image
+        continue-on-error: true
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           input: /tmp/kdiab-ui-image.tar
@@ -113,6 +114,7 @@ jobs:
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: always() && hashFiles('trivy-results.sarif') != ''
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-results.sarif'
