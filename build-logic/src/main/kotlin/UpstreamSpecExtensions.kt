@@ -38,6 +38,9 @@ fun Project.registerUpstreamSpec(
     val generateTask = tasks.register("generate${serviceNameCap}Models", GenerateTask::class.java) {
         generatorName.set("kotlin")
         inputSpec.set(provider { specConfig.singleFile.absolutePath })
+        // Track spec file content so Gradle invalidates the build cache when the spec changes.
+        // Without this, inputSpec is a @Input String (path only) and stale cache entries survive spec updates.
+        inputs.files(specConfig)
         outputDir.set(outputDirPath)
         packageName.set(basePackage)
         modelPackage.set("${basePackage}.models")
