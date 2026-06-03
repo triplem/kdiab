@@ -1,0 +1,134 @@
+= ADR-022: Report Publishing Strategy — Trivy Dual-Scan and Docs-Workflow Docker Build
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-06-02
+* *Deciders*: triplem
+
+== Context
+
+The kdiab CI pipeline runs a Trivy vulnerability scan for every pull request as a mandatory
+security gate. That scan is defined in `backend-ci-reusable.yml` and uses
+`exit-code: 1` on CRITICAL and HIGH findings, which blocks the merge. Its output format is
+SARIF, which is uploaded to the GitHub Security tab via `github/codeql-action/upload-sarif`.
+
+The M7 epic (#1390) introduced a GitHub Pages documentation site that publishes HTML reports
+after every push to `main`. The site includes Detekt static analysis output, Kover code-coverage
+reports, test results, and OpenAPI Redoc pages for all eight backend services. Extending this
+site with HTML-format Trivy vulnerability reports was a natural next step to give developers
+persistent, human-readable visibility into the security posture of every Docker image.
+
+Two constraints shaped the design:
+
+. **A Docker image must be available at scan time.** Trivy's container-image scan mode, which
+  discovers OS-level package vulnerabilities in addition to application dependencies, requires a
+  built image. A filesystem-only scan (`trivy fs .`) would miss the full set of vulnerabilities
+  present in the deployed container.
+
+. **The CI run and the docs workflow run are independent jobs.** GitHub Actions does not provide
+  a mechanism to pass a full Docker image (which may be several hundred megabytes after
+  compression) between workflow runs as an artifact without significant coordination overhead.
+  Specifically, downloading an artifact from a *different* workflow run requires a GitHub API call
+  to discover the correct run ID for the current commit SHA — an approach that adds API
+  rate-limit risk and is fragile when multiple runs exist for the same commit (re-runs, parallel
+  pushes to the same branch).
+
+== Decision
+
+Adopt a **dual-scan pattern**:
+
+[cols="1,2,2"]
+|===
+| Scan | Workflow | Purpose
+
+| Gate scan
+| `backend-ci-reusable.yml`
+| Blocks merge on CRITICAL/HIGH. Produces SARIF for GitHub Security tab.
+  `exit-code: 1`. Runs on every PR and on `main`.
+
+| Visibility scan
+| `docs-pages.yml`
+| Produces HTML report published to GitHub Pages. `exit-code: 0` (non-blocking).
+  Runs only on push to `main`.
+|===
+
+To supply the Docker image required by the visibility scan, `docs-pages.yml` builds each Docker
+image itself using `docker/build-push-action` with the GitHub Actions layer cache
+(`cache-from: type=gha, scope=<service>` / `cache-to: type=gha, scope=<service>, mode=max`).
+The built image is loaded into the local daemon (`push: false, load: true`) and scanned
+immediately. No image is pushed to a registry as part of the docs workflow.
+
+The gate scan in `backend-ci-reusable.yml` remains unchanged. It is the authoritative security
+control and its SARIF output continues to populate the GitHub Security tab regardless of the
+docs scan outcome.
+
+== Consequences
+
+=== Positive
+
+* The docs site provides persistent, human-readable Trivy HTML reports per service, accessible
+  without navigating the GitHub Security tab.
+* The docs workflow is self-contained — no cross-workflow artifact coordination is needed.
+* The GHA layer cache (`type=gha`) is populated by the CI workflow and reused by the docs
+  workflow, keeping rebuild times low for unchanged base images.
+* The visibility scan is non-blocking (`exit-code: 0`), so a newly discovered vulnerability
+  does not prevent the docs site from publishing other reports.
+* Developers can distinguish between the gate result (SARIF, Security tab) and the visibility
+  result (HTML, Pages) by their separate locations.
+
+=== Negative
+
+* Each Docker image is built twice per push to `main`: once by the CI security gate workflow
+  and once by the docs workflow. This doubles the per-service Docker build time on `main`
+  compared to building once.
+* The first run after a base image update (e.g. a new `eclipse-temurin:21-jre` digest) will
+  be slow because the GHA layer cache for the first few layers will be cold. Subsequent runs
+  regain warm-cache speed.
+* The HTML Trivy report reflects the image state at docs-deploy time, which is always `main`.
+  A vulnerability introduced on a PR branch will not appear in the HTML report until the branch
+  is merged; only the SARIF gate scan covers PR branches.
+
+=== Neutral
+
+* The dual-scan approach produces two separate Trivy invocations per service on `main`. The
+  results may differ slightly if a CVE database update is released between the gate scan and
+  the docs scan; the SARIF result in the Security tab and the HTML report on Pages are not
+  guaranteed to be identical snapshots.
+* Adding a new backend service to the docs workflow requires adding one Docker build step and
+  one Trivy HTML scan step to `docs-pages.yml`, consistent with the pattern already used for
+  the existing eight services.
+* The docs workflow does not replace the need for developers to consult the GitHub Security tab
+  for precise, per-commit vulnerability tracking.
+
+== Alternatives Considered
+
+=== Cross-workflow artifact download
+
+Download the Docker image tarball produced by the CI workflow and re-use it in `docs-pages.yml`.
+
+*Rejected*: GitHub Actions does not associate workflow artifacts with a specific commit SHA in a
+queryable way. Locating the correct CI run for the current commit requires a call to the
+`/repos/{owner}/{repo}/actions/runs` REST endpoint with a `head_sha` filter, adding API
+rate-limit risk and conditional logic to handle multiple matching runs (re-runs, concurrent
+branches). Docker image layer caches produced by `docker/build-push-action` are also not
+transferable as GitHub artifacts — only the final tarball can be uploaded, and the tarball for
+a single service may exceed the GitHub artifact size limit for large images.
+
+=== Trivy filesystem scan (`trivy fs .`)
+
+Run Trivy against the source tree or the extracted JAR rather than against a built Docker image.
+
+*Rejected*: a filesystem scan does not reflect the full vulnerability surface of the deployed
+container. OS-level packages installed by the base image (e.g. `glibc`, `libssl`, `zlib`)
+are invisible to a filesystem scan. These packages are the most common source of CRITICAL CVEs
+in JVM containers and would produce a misleadingly clean HTML report.
+
+=== Single combined scan (no docs-workflow Docker build)
+
+Reuse the SARIF output from the CI gate scan and convert it to HTML for the docs site.
+
+*Rejected*: the SARIF-to-HTML conversion tooling (e.g. `sarif-tools`) does not produce the
+same structured, per-vulnerability detail as a native Trivy HTML template. More importantly,
+SARIF artifacts expire after 90 days on GitHub; a docs workflow triggered weeks after a CI run
+would find the artifact unavailable. The dual-build approach avoids this expiry dependency entirely.
