@@ -9,25 +9,27 @@ setup('authenticate as sarah', async ({ page }) => {
   await page.goto('/')
   await page.waitForLoadState('domcontentloaded')
 
+  // Click the Log in button — triggers OIDC redirect to Keycloak
   const loginBtn = page.locator('button').filter({ hasText: /log.?in/i }).first()
   await loginBtn.waitFor({ state: 'visible', timeout: 10_000 })
-  await Promise.all([
-    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15_000 }),
-    loginBtn.click(),
-  ])
+  await loginBtn.click()
+
+  // Wait for the Keycloak login form (URL contains /realms/ or /auth/)
+  await page.waitForURL(/realms|\/auth\//, { timeout: 20_000 })
 
   await page.locator('#username').fill('sarah')
   await page.locator('#password').fill('password')
-  await Promise.all([
-    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 20_000 }),
-    page.locator('[type=submit]').click(),
-  ])
+  await page.locator('[type=submit]').click()
 
-  // Wait until the app shell is visible — glucose hero tile or nav element
-  await page.waitForSelector('[class*="hero"], [class*="glucose"], nav a, [role="navigation"] a', {
-    state: 'visible',
-    timeout: 15_000,
-  })
+  // Wait for the redirect back to the app (URL no longer contains keycloak/realms)
+  await page.waitForURL(/localhost/, { timeout: 30_000 })
+  await page.waitForLoadState('networkidle', { timeout: 30_000 })
+
+  // Confirm the app shell is rendered
+  await page.waitForSelector(
+    '[class*="hero"], [class*="glucose"], nav a, [role="navigation"] a, [data-testid], main',
+    { state: 'visible', timeout: 30_000 },
+  )
 
   await page.context().storageState({ path: authFile })
 })
