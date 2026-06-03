@@ -1,6 +1,8 @@
 import { test as setup } from '@playwright/test'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const authFile = path.join(__dirname, '.auth/sarah.json')
 
 setup('authenticate as sarah', async ({ page }) => {

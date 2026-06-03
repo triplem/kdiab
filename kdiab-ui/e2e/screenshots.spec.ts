@@ -15,7 +15,9 @@
 
 import { test } from '@playwright/test'
 import path from 'path'
+import { fileURLToPath } from 'url'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const OUT = path.resolve(__dirname, '../../docs/images/patient-guide')
 
 function shot(name: string) {
