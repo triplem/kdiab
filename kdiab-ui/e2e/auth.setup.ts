@@ -21,8 +21,8 @@ setup('authenticate as sarah', async ({ page }) => {
   await page.locator('#password').fill('password')
   await page.locator('[type=submit]').click()
 
-  // Wait for the redirect back to the app (URL no longer contains keycloak/realms)
-  await page.waitForURL(/localhost/, { timeout: 30_000 })
+  // Wait for the redirect back to the app on port 3005
+  await page.waitForURL(/localhost:3005/, { timeout: 30_000 })
   await page.waitForLoadState('networkidle', { timeout: 30_000 })
 
   // Confirm the app shell is rendered
