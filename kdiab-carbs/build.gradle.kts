@@ -29,10 +29,6 @@ kover {
                 classes(
                     "org.javafreedom.kdiab.carbs.ApplicationKt*",
                     "org.javafreedom.kdiab.carbs.infrastructure.persistence.DatabaseFactory*",
-                    "org.javafreedom.kdiab.carbs.infrastructure.persistence.ExposedFoodEntryRepository*",
-                    "org.javafreedom.kdiab.carbs.infrastructure.persistence.FoodEntriesTable*",
-                    "org.javafreedom.kdiab.carbs.adapters.inbound.web.FoodEntryRoutesKt*",
-                    "org.javafreedom.kdiab.carbs.adapters.inbound.web.PagedFoodResponseDto*",
                     "org.javafreedom.kdiab.carbs.plugins.StatusPagesKt*",
                     "org.javafreedom.kdiab.carbs.plugins.SecurityKt*",
                     "org.javafreedom.kdiab.carbs.plugins.UserPrincipal*",
