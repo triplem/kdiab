@@ -1,7 +1,7 @@
 openapi: "3.1.0"
 info:
   title: kdiab-treatments API
-  version: 0.0.1
+  version: 0.1.0
   description: |
     API for managing Type 1 Diabetes treatment records.
     Treatments cover all clinically relevant events including insulin boluses,

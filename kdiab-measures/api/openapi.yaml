@@ -1,7 +1,7 @@
 openapi: "3.1.0"
 info:
   title: kdiab-measures API
-  version: 0.0.1
+  version: 0.1.0
   description: API for managing Type 1 Diabetes health measurements
 
 servers:

@@ -1,7 +1,7 @@
 openapi: "3.1.0"
 info:
   title: kdiab-carbs API
-  version: 0.0.1
+  version: 0.1.0
   description: Personal food database for carb tracking
 
 servers:
