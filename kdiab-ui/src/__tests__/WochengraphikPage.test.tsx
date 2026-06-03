@@ -3,13 +3,13 @@ import { describe, test, expect, vi } from 'vitest'
 import React from 'react'
 import '../i18n'
 import type { DailyTrendDay } from '../api/analyzeApi'
+import { WochengraphikPage } from '../features/report/WochengraphikPage'
 import {
   groupByIsoWeek,
   isoWeekdayIndex,
   isoWeekNumber,
   OKABE_ITO,
-  WochengraphikPage,
-} from '../features/report/WochengraphikPage'
+} from '../features/report/weekUtils'
 
 // ---------------------------------------------------------------------------
 // Mock recharts — avoid SVG rendering issues in jsdom

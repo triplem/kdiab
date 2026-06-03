@@ -20,7 +20,8 @@ vi.mock('recharts', () => ({
   ReferenceArea: () => null,
 }))
 
-import { DailyChartPage, groupByDay } from '../features/report/DailyChartPage'
+import { DailyChartPage } from '../features/report/DailyChartPage'
+import { groupByDay } from '../features/report/dailyChartUtils'
 import type { TimelineResponse } from '../api/analyzeApi'
 
 // ---- Factories ----------------------------------------------------------------
