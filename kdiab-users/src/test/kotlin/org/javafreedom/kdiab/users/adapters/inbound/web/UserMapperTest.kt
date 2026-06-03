@@ -12,6 +12,7 @@ import kotlinx.datetime.LocalDate
 import org.javafreedom.kdiab.common.domain.model.Role
 import org.javafreedom.kdiab.users.domain.model.AlarmThresholds
 import org.javafreedom.kdiab.users.domain.model.DiabetesProfile
+import org.javafreedom.kdiab.users.domain.model.DoctorPatientRelation
 import org.javafreedom.kdiab.users.domain.model.LocalePreferences
 import org.javafreedom.kdiab.users.domain.model.UnitPreferences
 import org.javafreedom.kdiab.users.domain.model.User
@@ -168,5 +169,22 @@ class UserMapperTest {
     fun `toBirthday throws IllegalArgumentException for out-of-range date`() {
         val req = PatchProfileRequest(birthday = "2026-13-01")
         assertFailsWith<IllegalArgumentException> { req.toBirthday() }
+    }
+
+    // ── DoctorPatientRelation.toResponse() ───────────────────────────────────
+
+    @Test
+    fun `DoctorPatientRelation toResponse maps all fields`() {
+        val doctorId = Uuid.parse("22222222-2222-2222-2222-222222222222")
+        val patientId = Uuid.parse("33333333-3333-3333-3333-333333333333")
+        val relation = DoctorPatientRelation(
+            doctorId = doctorId,
+            patientId = patientId,
+            createdAt = now,
+        )
+        val response = relation.toResponse()
+        assertEquals(doctorId.toString(), response.doctorId)
+        assertEquals(patientId.toString(), response.patientId)
+        assertEquals(now.toString(), response.createdAt)
     }
 }

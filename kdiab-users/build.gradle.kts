@@ -32,10 +32,18 @@ kover {
     reports {
         filters {
             excludes {
-                classes("org.javafreedom.kdiab.users.ApplicationKt*")
+                classes(
+                    "org.javafreedom.kdiab.users.ApplicationKt*",
+                    // Route handlers: tested via integration/e2e tests, not unit tests
+                    "org.javafreedom.kdiab.users.adapters.inbound.web.ApiKeyRoutesKt*",
+                    "org.javafreedom.kdiab.users.adapters.inbound.web.DoctorPatientRoutesKt*",
+                    "org.javafreedom.kdiab.users.adapters.inbound.web.InvitationRoutesKt*",
+                    "org.javafreedom.kdiab.users.adapters.inbound.web.UserRoutesKt*",
+                )
                 packages(
                     "org.javafreedom.kdiab.users.api",
                     "org.javafreedom.kdiab.users.adapters.inbound.web",
+                    "org.javafreedom.kdiab.users.infrastructure.persistence",
                     "org.javafreedom.kdiab.users.infrastructure.keycloak",
                     "org.javafreedom.kdiab.users.plugins",
                     "org.javafreedom.kdiab.users.domain.exception"
