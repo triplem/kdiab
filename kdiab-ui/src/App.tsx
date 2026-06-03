@@ -121,7 +121,7 @@ export default function App() {
     } else {
       setAccessToken(null)
     }
-  }, [auth.user])
+  }, [auth.user, i18n])
 
   const isPatient = roles.includes('PATIENT')
   const isDoctor = roles.includes('DOCTOR')
