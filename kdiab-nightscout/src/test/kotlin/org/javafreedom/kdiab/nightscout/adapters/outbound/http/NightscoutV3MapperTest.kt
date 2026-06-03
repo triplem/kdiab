@@ -1,6 +1,8 @@
 package org.javafreedom.kdiab.nightscout.adapters.outbound.http
 
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureResponse
 import org.javafreedom.kdiab.nightscout.api.upstream.measures.models.MeasureSource
@@ -209,7 +211,7 @@ class NightscoutV3MapperTest {
         )
         val request = entry.toCreateMeasureRequest("mmol/L")
         assertNotNull(request)
-        assertNotNull(request.data["sgv"])
+        assertEquals(120, request.data["sgv"]?.jsonPrimitive?.int)
     }
 
     @Test
@@ -267,7 +269,7 @@ class NightscoutV3MapperTest {
         )
         val request = entry.toUpdateMeasureRequest("mmol/L")
         // 7.8 * 18 = 140.4 → stored as int 140
-        assertNotNull(request.data["sgv"])
+        assertEquals(140, request.data["sgv"]?.jsonPrimitive?.int)
     }
 
     @Test
