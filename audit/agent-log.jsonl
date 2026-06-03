@@ -143,3 +143,5 @@
 {"ts":"2026-05-31T18:38:37Z","agent":"Claude","action":"fix","pr":1355,"detail":"fixed shell injection: SERVICE env var, GITHUB_REF builtin"}
 {"ts":"2026-05-31T18:38:37Z","agent":"Claude","action":"fix","pr":1354,"detail":"X-Internal-Token guard, pin curlimages/curl:8.12.1, scheduler failure logging, remove ExpireResponse docstring, 3 new auth tests"}
 {"ts":"2026-05-31T19:00:00Z","agent":"PrReviewerAgent","action":"pr_review","pr":1364,"verdict":"REQUEST_CHANGES","blockers":0,"majors":1,"minors":1,"nits":0}
+{"ts":"2026-06-03T18:43:04Z","agent":"DoctorT1DReviewer","action":"review","target":"docs/patient-guide.adoc","verdict":"REVISE","reason":"three clinical corrections required: hypoglycaemia treatment priority in dose calculator, profile editing healthcare team advisory, alarm threshold units clarification"}
+{"ts":"2026-06-03T18:43:04Z","agent":"DoctorT1DReviewer","action":"review","target":"docs/patient-guide.adoc","verdict":"ACCEPT","reason":"all three REVISE items applied: hypoglycaemia IMPORTANT admonition added to dose calculator, profile editing IMPORTANT warning added, alarm threshold units specified"}

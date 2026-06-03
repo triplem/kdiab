@@ -15,7 +15,15 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/sarah.json' },
       dependencies: ['setup'],
-      testIgnore: /auth\.setup\.ts/,
+      testIgnore: /auth\.setup\.ts|screenshots\.spec\.ts/,
+    },
+    {
+      // Manual screenshot capture for the patient guide — not run in CI.
+      // Usage: npx playwright test e2e/screenshots.spec.ts --project=screenshots
+      name: 'screenshots',
+      use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/sarah.json' },
+      dependencies: ['setup'],
+      testMatch: /screenshots\.spec\.ts/,
     },
   ],
 });

@@ -35,6 +35,10 @@
 | Nightscout API v3 compatibility layer for AAPS, xDrip+, Juggluco — v1 retained for backward compatibility (optional service)
 |===
 
+== Patient Documentation
+
+* link:patient-guide.html[Patient User Guide] — complete illustrated guide for patients: login, daily workflow, analytics, reports, profiles, and device integrations.
+
 == Platform Documents
 
 * link:how-to-run.html[How to Build and Run]

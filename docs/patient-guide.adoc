@@ -1,0 +1,841 @@
+= kdiab Patient User Guide
+:toc: left
+:toc-title: Contents
+:toclevels: 3
+:icons: font
+:imagesdir: images/patient-guide
+:experimental:
+:sectnums:
+
+A complete guide for patients using the kdiab platform to manage Type 1 Diabetes — from first login through daily monitoring, analytics, reports, profiles, and device integrations.
+
+[NOTE]
+====
+*Before you begin:* Self-registration is not available. You need an invitation from your doctor or a system administrator to create an account. Contact your healthcare provider if you have not received your login credentials.
+====
+
+// ============================================================
+== Part 1: Getting Started
+// ============================================================
+
+=== Logging In
+
+. Open your browser and navigate to the kdiab application URL provided by your clinic.
+. Click the *Log in* button on the welcome screen.
++
+image::login-page.png[kdiab login screen, 800, title="kdiab welcome screen — click Log in to continue"]
++
+. You are redirected to the secure Keycloak login form. Enter the username and password provided by your clinic.
++
+image::keycloak-login-form.png[Keycloak credentials form, 800, title="Keycloak login form"]
++
+. Click *Sign In*. On successful login you are returned to the kdiab Dashboard.
+
+[NOTE]
+====
+If you have forgotten your password, use the *Forgot Password* link on the Keycloak login form or contact your clinic administrator.
+====
+
+=== The Navigation Bar
+
+The navigation bar at the top of every page gives you access to all kdiab features.
+
+image::nav-bar.png[Navigation bar with all tabs labelled, 800, title="kdiab navigation bar"]
+
+[cols="1,3",options="header"]
+|===
+| Tab | Purpose
+
+| *Dashboard*
+| Your real-time glucose overview — CGM trend chart, IOB/COB summary, basal rate, and device status.
+
+| *Measures*
+| Browse and log all glucose measurements (CGM, BGM), blood pressure, weight, and pulse readings.
+
+| *Treatments*
+| Record and review all treatment events: bolus doses, carbs, basal changes, sensor inserts, site changes, and more.
+
+| *Profiles*
+| View, activate, and manage your insulin pump basal profiles. Accept or reject doctor-proposed profile changes.
+
+| *Timeline*
+| A combined scrollable timeline showing CGM readings, treatments, and events in chronological order.
+
+| *Analytics*
+| Estimated HbA1c, Time in Range chart, AGP (Ambulatory Glucose Profile), and basal/bolus hourly averages.
+
+| *Report*
+| Generate and download a multi-page PDF patient report for any date range.
+
+| *Food DB*
+| Your personal food database — save portion sizes and carbohydrate values for frequently eaten foods.
+
+| *Dose Calc*
+| Insulin dose calculator — computes a suggested bolus from your current glucose, CGM trend, and carb intake using your active profile.
+
+| *Settings*
+| Personal preferences: timezone, language, glucose unit, weight unit, sensor lifespan, and alarm thresholds.
+|===
+
+=== Patient Banner (Doctor View)
+
+[NOTE]
+====
+This section is relevant to *doctors*, not patients.
+When a doctor logs in and selects a patient to view, a blue banner appears at the top of every page:
+
+_"You are viewing patient data"_
+
+followed by a *Return to my own data* button. Patients viewing their own data never see this banner.
+====
+
+// ============================================================
+== Part 2: Daily Workflow
+// ============================================================
+
+=== Dashboard
+
+The Dashboard is your home screen. It provides a real-time overview of your glucose status and recent insulin activity.
+
+image::dashboard-overview.png[Full dashboard view, 800, title="kdiab Dashboard"]
+
+==== Glucose Hero Tile
+
+image::dashboard-hero-tile.png[Glucose hero tile showing current value trend arrow and delta, 800, title="Glucose hero tile"]
+
+The glucose hero tile at the top of the Dashboard displays:
+
+[cols="1,3",options="header"]
+|===
+| Field | Meaning
+
+| *Glucose value*
+| The most recent CGM reading in your configured unit (mg/dL or mmol/L).
+
+| *Δ (delta)*
+| Change from the previous reading (positive = rising, negative = falling).
+
+| *Δ15*
+| 15-minute rate of change, to show acceleration or deceleration.
+
+| *min ago*
+| How many minutes have elapsed since the last CGM reading was received.
+
+| *Trend arrow*
+| Direction and rate of glucose change: ↑↑ rising rapidly, ↑ rising, → stable, ↓ falling, ↓↓ falling rapidly.
+|===
+
+Below the glucose value you see:
+
+* *IOB* (Insulin on Board) — estimated active insulin remaining from recent boluses.
+* *COB* (Carbs on Board) — estimated active carbohydrates still being absorbed.
+* *DIA* — Duration of Insulin Action from your active profile (used to compute IOB).
+* *Current Rate* — the current basal rate from your active profile.
+
+==== CGM Chart
+
+image::dashboard-cgm-chart.png[CGM trend chart with target zone, 800, title="CGM trend chart"]
+
+The CGM chart shows your glucose readings over the selected time window (2h, 4h, 6h, 12h, 24h). The shaded green band is your target glucose zone from your active profile.
+
+Use the *Earlier* / *Later* buttons to scroll backwards or forwards in time. The chart also overlays bolus events, carb entries, site changes, and sensor inserts from your treatment log.
+
+==== Basal Chart
+
+image::dashboard-basal-chart.png[Basal insulin delivery chart, 800, title="Basal insulin delivery chart"]
+
+Below the CGM chart is the basal rate chart. It shows the scheduled basal rate (from your active profile) against any temporary basal rates logged by AAPS or xDrip+. Suspended basal periods are shown in red.
+
+==== Quick Log Buttons
+
+image::dashboard-quick-log.png[Quick log pump event buttons, 800, title="Quick log pump event buttons"]
+
+[cols="1,1,3",options="header"]
+|===
+| Button | Icon | Effect
+
+| *Insulin Change*
+| Syringe / cartridge
+| Logs a reservoir/insulin cartridge change at the current time.
+
+| *Site Change*
+| Adhesive / cannula
+| Logs an infusion set site change at the current time.
+
+| *Sensor Insert*
+| Sensor chip
+| Logs a CGM sensor insertion at the current time.
+|===
+
+==== Device Status Widget
+
+The device status widget (visible when AAPS/Nightscout data is available) shows the average wear duration for your pump reservoir, infusion site (catheter), and CGM sensor over the last few days.
+
+=== Logging a Measure
+
+image::add-measure-modal.png[Add measure modal, 800, title="Add Measure modal"]
+
+. Click *Measures* in the navigation bar.
+. Click *Add* (or the `+` button).
+. Select the measure type: *CGM*, *BGM*, *Blood Pressure*, *Weight*, or *Pulse*.
+. Enter the value and timestamp (defaults to now).
+. Click *Save*.
+
+image::measure-list.png[Measure list showing recent readings, 800, title="Measures list"]
+
+The Measures list shows all readings with type, value, unit, and timestamp. Use the date filters to narrow the view.
+
+=== Logging a Treatment
+
+image::add-treatment-modal.png[Add treatment modal with type selector, 800, title="Add Treatment modal"]
+
+. Click *Treatments* in the navigation bar.
+. Click *Add*.
+. Select the *Type* from the dropdown. Common types:
+
+[cols="1,2",options="header"]
+|===
+| Type | Use for
+
+| *Meal* (bolus + carbs)
+| Logging a combined meal bolus and carbohydrate intake in one step.
+
+| *Bolus*
+| A standalone bolus dose (e.g. correction not tied to a meal).
+
+| *Correction bolus*
+| A correction dose without associated carbohydrates.
+
+| *Combo bolus*
+| An immediate portion plus an extended portion over a set duration.
+
+| *Carbohydrates*
+| Carb intake without an insulin dose.
+
+| *Temporary basal rate*
+| A temporary basal rate set on the pump (absolute U/h or percentage).
+
+| *Site change*
+| Infusion set replacement.
+
+| *Sensor insert*
+| CGM sensor insertion.
+
+| *Insulin change*
+| Reservoir / cartridge replacement.
+
+| *Note*
+| Free-text annotation on the timeline.
+|===
+
+. Fill in the required fields (units, carbs, timestamp) and click *Save*.
+
+image::treatment-list.png[Treatment list showing recent events, 800, title="Treatments list"]
+
+[NOTE]
+====
+Deleting a treatment requires the *DOCTOR* or *ADMIN* role. Patients can add treatments but cannot delete them. Contact your healthcare provider to remove an incorrectly entered treatment.
+====
+
+=== Dose Calculator
+
+[WARNING]
+====
+*This is a suggested dose — always verify with your healthcare team before injecting.*
+====
+
+[IMPORTANT]
+====
+*If your blood glucose is below 70 mg/dL (3.9 mmol/L), you are hypoglycaemic.* Do not use the dose calculator. Treat the hypoglycaemia with fast-acting carbohydrates (e.g. glucose tablets, juice) first. Only use the calculator after your glucose has recovered above 70 mg/dL.
+====
+
+The dose calculator computes a suggested bolus dose from your current blood glucose, CGM trend, and planned carbohydrate intake using your active insulin profile (ISF, ICR, target range, DIA).
+
+image::dose-calculator.png[Dose calculator form, 800, title="Dose Calculator — input form"]
+
+==== Step-by-Step Procedure
+
+. Click *Dose Calc* in the navigation bar.
+. *Current Blood Glucose* — enter your current BG value. If a recent CGM reading is available (≤ 15 minutes old) it is pre-filled automatically.
+. *CGM Trend* — select the trend arrow that matches your CGM display (↑↑ Rising rapidly, ↑ Rising, → Stable, ↓ Falling, ↓↓ Falling rapidly). The trend adjusts the dose to account for the direction your glucose is moving.
+. *Carbs to cover (g)* — enter the grams of carbohydrate you plan to eat. Leave at 0 for a correction-only dose.
+. *Carbs in (minutes)* — enter how many minutes until you plan to eat (0 = eating now). This influences the SEA recommendation.
+. Click *Calculate*.
+
+image::dose-calculator-result.png[Dose calculator result with breakdown and SEA, 800, title="Dose Calculator — result breakdown"]
+
+The result shows:
+
+[cols="1,3",options="header"]
+|===
+| Field | Meaning
+
+| *Carbs dose*
+| Insulin required to cover the planned carbohydrate intake (ICR).
+
+| *Correction dose*
+| Insulin required to bring glucose to target (ISF). Negative if glucose is below target.
+
+| *Active IOB*
+| Insulin already on board, subtracted from the correction dose.
+
+| *Trend adjustment*
+| Extra or reduced dose based on CGM trend direction.
+
+| *Total / Final dose*
+| The recommended dose after all adjustments. Rounded to the precision of your pump.
+
+| *SEA (Spritz-Ess-Abstand)*
+| The recommended wait time in minutes between injecting insulin and eating, based on your profile's SEA segments and current glucose level.
+|===
+
+You may enter a manual correction in the *Your adjustment* field (positive to add, negative to reduce). When ready, click *Accept & Log* to record the dose as a bolus treatment.
+
+[NOTE]
+====
+*Warnings* — the calculator displays coloured warnings in situations such as: glucose below target (correction suppressed), calculated dose is unusually high (double-check inputs), or active IOB already covers the correction. Always read warnings before accepting.
+====
+
+=== Food Database
+
+image::food-db-search.png[Food database with search bar and food list, 800, title="My Food Database"]
+
+The Food Database stores carbohydrate values for your frequently eaten foods so you can quickly fill the carb field in the treatment modal.
+
+. Click *Food DB* in the navigation bar.
+. To add a new food: click *+ Add Food*, enter the food name, portion size (grams), and carbs per 100 g. The carbs per portion is calculated automatically.
+. To use a saved food when logging a treatment: open the *Add Treatment* modal, click *Quick-fill from food database*, and type the food name. Select the matching entry to populate the carb field.
+
+// ============================================================
+== Part 3a: Analytics
+// ============================================================
+
+=== Date-Range Selector
+
+The timeframe selector at the top of the Analytics tab controls the period shown across all charts.
+
+image::analytics-timeframe.png[Date-range / timeframe selector, 800, title="Analytics timeframe selector"]
+
+Available presets:
+
+[cols="1,3",options="header"]
+|===
+| Preset | Period
+
+| *Last 7 days*
+| The most recent 7 days.
+
+| *Last 14 days*
+| The most recent 14 days (minimum for reliable AGP percentile bands).
+
+| *Last 30 days*
+| The most recent 30 days.
+
+| *Last 90 days*
+| The most recent 90 days.
+|===
+
+You can also enter a custom *From* / *To* date. The selected timeframe applies to all analytics sections on the page.
+
+=== Estimated HbA1c
+
+image::analytics-hba1c.png[Estimated HbA1c card showing value and colour band, 800, title="Estimated HbA1c"]
+
+[IMPORTANT]
+====
+This is an *estimated* HbA1c calculated from your CGM readings using the DCCT formula. It is *not* a replacement for a laboratory HbA1c test ordered by your doctor. Laboratory tests measure glycated haemoglobin directly and are more accurate.
+====
+
+The estimated HbA1c is computed from your mean CGM glucose over the selected period using the DCCT (Diabetes Control and Complications Trial) formula:
+
+`eHbA1c = (meanGlucose_mgdL + 46.7) / 28.7`
+
+Colour bands used by kdiab:
+
+[cols="1,1,2",options="header"]
+|===
+| Band | eHbA1c | Interpretation
+
+| *Excellent control*
+| < 7%
+| ADA target for most adults with T1D. Meets clinical guideline.
+
+| *Good control*
+| 7–8%
+| Manageable — discuss with your care team whether tighter control is appropriate.
+
+| *Room for improvement*
+| 8–9%
+| Elevated — review with your healthcare provider.
+
+| *High risk*
+| > 9%
+| Significantly elevated — prompt review recommended.
+|===
+
+The ADA (American Diabetes Association) target for most adults with T1D is < 7%. Individual targets may differ; always follow your care team's advice.
+
+=== Time In Range (TIR)
+
+image::analytics-tir.png[Time In Range stacked bar chart, 800, title="Time In Range"]
+
+Time in Range is the percentage of CGM readings that fall within the target glucose band (70–180 mg/dL / 3.9–10.0 mmol/L) over the selected period.
+
+[cols="1,1,1,2",options="header"]
+|===
+| Zone | mg/dL | mmol/L | Interpretation
+
+| *Very Low*
+| < 54
+| < 3.0
+| Severe hypoglycaemia — dangerous. Keep below 1% of time (< 15 min/day).
+
+| *Low*
+| 54–70
+| 3.0–3.9
+| Hypoglycaemia. Keep below 4% of time (< 58 min/day).
+
+| *Target (In Range)*
+| 70–180
+| 3.9–10.0
+| Clinical target: *≥ 70%* of time in range (ADA/ATTD consensus).
+
+| *High*
+| 180–250
+| 10.0–13.9
+| Hyperglycaemia. Keep below 25% of time.
+
+| *Very High*
+| > 250
+| > 13.9
+| Severe hyperglycaemia. Keep below 5% of time.
+|===
+
+The clinical target of *≥ 70% Time in Range* is based on the international ADA/ATTD consensus guidelines for adults with T1D.
+
+=== Ambulatory Glucose Profile (AGP)
+
+image::analytics-agp.png[AGP chart showing percentile bands and median line, 800, title="Ambulatory Glucose Profile"]
+
+The AGP overlays all your CGM readings by hour of day over the selected period, regardless of the calendar date. This reveals recurring patterns in your glucose control throughout the day.
+
+[NOTE]
+====
+At least *14 days of data* are recommended for the percentile bands to be statistically meaningful. With fewer days the bands may not reliably represent your typical glucose patterns.
+====
+
+[cols="1,2",options="header"]
+|===
+| Element | Meaning
+
+| *Median line*
+| The middle value — half of your readings at that hour were above, half below.
+
+| *25th–75th percentile band* (inner, darker)
+| Your *typical* glucose range at each hour. Narrower = more consistent glucose control.
+
+| *10th–90th percentile band* (outer, lighter)
+| Your *wider* glucose range, including more unusual days. Large outer band = high variability.
+
+| *Target zone* (green shading)
+| Your target glucose range from your active profile (or 70–180 mg/dL if no profile is set).
+|===
+
+[NOTE]
+====
+Review AGP patterns with your treating physician before making any therapy changes. Patterns such as consistent 3 AM lows or post-meal spikes indicate areas your care team may wish to address.
+====
+
+=== Basal Rate Average (Hourly)
+
+image::analytics-basal-avg.png[Hourly basal rate average chart, 800, title="Hourly Basal Rate Average"]
+
+This chart shows the *average temporary basal rate* delivered per hour of the day over the selected period, based on TEMP_BASAL treatment events. It helps identify hours where your APS system consistently increases or decreases the basal rate relative to your profile, which may signal that a profile adjustment is needed.
+
+Hours with no temporary basal data are omitted.
+
+=== Bolus Average (Hourly)
+
+image::analytics-bolus-avg.png[Hourly bolus average chart, 800, title="Hourly Bolus Average"]
+
+This chart shows the *average bolus dose* (U) per hour of the day over the selected period, including both meal boluses and correction boluses. It can reveal patterns such as consistently higher carb coverage at certain meals, or correction boluses recurring at the same time each day.
+
+=== Timeline
+
+image::timeline.png[Combined timeline view, 800, title="Combined Timeline"]
+
+The Timeline tab shows all CGM readings, treatments, and events on a single scrollable chronological view. Use it to review how glucose responded to a meal bolus, a site change, or an exercise session on a specific day.
+
+// ============================================================
+== Part 3b: Report
+// ============================================================
+
+=== Overview
+
+The Report tab lets you generate a printable PDF patient report for any date range. The report is rendered directly in the browser and can be downloaded as a PDF using your browser's print function.
+
+=== Setting the Date Range
+
+image::report-date-range.png[Report date range controls, 800, title="Report date range controls"]
+
+Choose a preset or enter a custom range:
+
+[cols="1,3",options="header"]
+|===
+| Preset | Period
+
+| *Last 7 days* | 7-day report (good for weekly review with your care team).
+| *Last 14 days* | 14-day report (minimum for AGP).
+| *Last 30 days* | 30-day report (standard clinical review).
+| *Last 90 days* | 90-day report (quarterly review).
+|===
+
+For a custom range, enter *From* and *To* dates manually. The maximum range is 365 days.
+
+[NOTE]
+====
+The AGP Percentile Chart requires at least 14 days of data to be clinically meaningful. A note is displayed if the selected range is shorter.
+====
+
+[WARNING]
+====
+Very large date ranges (> 90 days) may take longer to generate and produce a large PDF.
+====
+
+=== Selecting Report Pages
+
+image::report-page-selection.png[Report page selection panel showing toggleable pages, 800, title="Report page selection panel"]
+
+The *Report Pages* panel lists all available sub-pages. You can select or deselect each page to customise the report.
+
+*Always included* (cannot be deselected):
+
+* *Summary Report* (AUSWERTUNG) — a high-level narrative cover page.
+* *Summary* — key statistics: CGM reading count, daily averages, TIR, mean glucose.
+
+*Toggleable pages* (select any combination):
+
+[cols="1,2",options="header"]
+|===
+| Page | Description
+
+| *AGP Percentile Chart*
+| Hourly glucose percentile chart (10/25/50/75/90th) — the clinical standard for pattern analysis.
+
+| *Daily Statistics*
+| Day-by-day table: min, max, median, P25, P75, estimated HbA1c, and TIR per day.
+
+| *Daily Trend*
+| Hourly mean glucose heatmap — each cell is the average glucose at that hour across all selected days.
+
+| *Weekly Overlay Chart* (Wochengraphik)
+| Up to 7 glucose curves overlaid on a 24-hour axis, grouped by ISO calendar week. Colour-coded by day of week using the Okabe-Ito colour-blind-safe palette.
+
+| *Daily Charts* (Tagesgrafik)
+| One CGM chart per day with treatment markers (boluses, carbs, site changes, sensor inserts). Up to 14 days shown; select a shorter range for full detail.
+
+| *Glucose Distribution*
+| Histogram of CGM reading frequency by glucose band (Very Low / Low / In Range / High / Very High).
+
+| *Basal Profile*
+| Your active basal profile for the selected period: basal rate schedule, ISF, ICR, and glucose targets.
+
+| *Comprehensive Glucose Pentagon (CGP)*
+| A radar chart scoring five metabolic axes — see <<_comprehensive_glucose_pentagon_cgp>>.
+
+| *Basal Rate Chart*
+| A 24-hour chart and table of your scheduled basal rate.
+|===
+
+Use *Select all* / *Deselect all* to quickly toggle all toggleable pages.
+
+=== Generating and Downloading the Report
+
+. Set your desired *date range*.
+. Select the *report pages* you want to include.
+. Click *Generate Report*.
+. Wait for the report to render — a loading indicator is shown.
+. When the report appears, click *Download PDF* to open the browser's print dialog. Choose *Save as PDF* as the destination.
+
+[NOTE]
+====
+The report reflects data at the time of generation. Re-generate the report to include any treatments or measures added after the initial generation.
+====
+
+=== Sub-Page Reference
+
+==== Summary Report (AUSWERTUNG)
+
+The cover page of the report. Includes patient name, report date range, and a high-level summary of glucose statistics and device usage (reservoir changes, site changes, sensor inserts).
+
+==== Summary
+
+A statistics page showing:
+* Days analysed and total CGM readings
+* Mean glucose, standard deviation, minimum, maximum
+* Time in Range breakdown (standard 54/70/180/250 thresholds and profile thresholds)
+* Daily averages: total insulin, basal, bolus, carbs
+
+==== AGP Percentile Chart
+
+The Ambulatory Glucose Profile — the clinical gold standard for glucose pattern analysis. See <<_ambulatory_glucose_profile_agp>> for interpretation.
+
+==== Daily Statistics
+
+A table with one row per day showing: date, readings, median glucose, P25, P75, minimum, maximum, estimated HbA1c, and TIR percentages per zone.
+
+==== Daily Trend
+
+A heatmap showing the mean glucose per hour (columns) per day (rows). Colour intensity reflects glucose level. Use it to identify recurring overnight lows, dawn phenomenon, or post-meal patterns.
+
+==== Weekly Overlay Chart (Wochengraphik)
+
+Each ISO calendar week is shown as a separate chart. All days in the week are overlaid on a 24-hour x-axis, with each day assigned a distinct colour from the Okabe-Ito colour-blind-safe palette (Monday = orange, Tuesday = sky blue, Wednesday = bluish green, Thursday = yellow, Friday = blue, Saturday = vermillion, Sunday = reddish purple). A green shaded band marks the target glucose zone.
+
+==== Daily Charts (Tagesgrafik)
+
+One chart per day showing the CGM trace with overlaid treatment markers: bolus events (dose in units), carbohydrate entries (grams), site changes, and sensor inserts. Useful for reviewing specific days with your care team. Up to the most recent 14 days are shown.
+
+==== Glucose Distribution
+
+A histogram showing how frequently your CGM readings fell in each glucose zone during the selected period. Compare to the TIR targets in <<_time_in_range_tir>>.
+
+==== Basal Profile
+
+A snapshot of your active basal profile during the selected period, including:
+* Basal rate schedule (start time, rate U/h, duration)
+* Insulin Sensitivity Factor (ISF) by time segment
+* Insulin-to-Carb Ratio (ICR) by time segment
+* Glucose target range by time segment
+* Duration of Insulin Action (DIA)
+* SEA (Spritz-Ess-Abstand) segments
+
+[[_comprehensive_glucose_pentagon_cgp]]
+==== Comprehensive Glucose Pentagon (CGP)
+
+The CGP is a radar chart representing five metabolic control axes:
+
+[cols="1,3",options="header"]
+|===
+| Axis | Meaning
+
+| *ToR* (Time on Range, min/day)
+| Time spent in the target glucose range.
+
+| *VarK* (%)
+| Coefficient of variation — a measure of glucose variability. Lower is more stable.
+
+| *Hypo Intensity*
+| Severity and frequency of hypoglycaemic episodes.
+
+| *Hyper Intensity*
+| Severity and frequency of hyperglycaemic episodes.
+
+| *Mean Glucose*
+| Average glucose level over the period.
+|===
+
+A *PGR (Personal Glycaemic Risk) score* is derived from all five axes. The closer the patient pentagon is to the reference pentagon, the closer the patient is to optimal metabolic control.
+
+[NOTE]
+====
+The CGP was introduced by Vigersky et al. (2018). _Journal of Diabetes Science and Technology_, 12(1), 114–123. Discuss the CGP with your physician before interpreting it — the chart is a clinical summary tool and not a self-management decision aid.
+====
+
+==== Basal Rate Chart
+
+A 24-hour bar chart and accompanying table showing the scheduled basal insulin delivery rate (U/h) at each hour of the day from your active profile.
+
+// ============================================================
+== Part 4: Settings, Profiles & Integrations
+// ============================================================
+
+=== Settings
+
+image::settings-form.png[Settings form showing all preference fields, 800, title="Settings form"]
+
+Click *Settings* in the navigation bar to access your personal preferences.
+
+[cols="1,2,2",options="header"]
+|===
+| Field | Values | Notes
+
+| *Timezone*
+| IANA timezone (e.g. `Europe/Berlin`, `UTC`)
+| Used to align CGM timestamps with your local time. *Re-login required after change.*
+
+| *Language*
+| English, Deutsch
+| Changes the interface language immediately.
+
+| *Time format*
+| 12-hour / 24-hour
+| Controls how times are displayed throughout the app.
+
+| *Glucose unit*
+| mg/dL, mmol/L
+| Changes the unit for all glucose values. *Re-login required after change.*
+
+| *Weight unit*
+| kg, lbs
+| Changes the unit for weight measurements.
+
+| *Sensor lifespan (hours)*
+| 1–8760 h
+| Used to calculate sensor age on the Dashboard device widget. Typical values: Libre 3 / G7 = 336 h, G6 / Guardian 4 = 168 h, default = 240 h.
+
+| *Alarm thresholds*
+| Four values: Urgent Low, Low, High, Urgent High
+| Glucose levels (in your configured glucose unit: mg/dL or mmol/L) at which your APS/CGM device alerts you. See validation rule below.
+|===
+
+[IMPORTANT]
+====
+*Glucose unit and timezone changes take effect on your next login.* After saving, log out and log back in to see values displayed in the new unit or timezone.
+====
+
+==== Alarm Threshold Ordering
+
+Alarm thresholds must satisfy the ordering rule:
+
+`Urgent Low < Low < High < Urgent High`
+
+If you enter values that violate this rule, a validation error is shown and the form will not save.
+
+image::settings-alarm-error.png[Alarm threshold validation error message, 800, title="Alarm threshold ordering error"]
+
+=== Profiles
+
+Profiles define the parameters your insulin pump and dose calculator use:
+
+* *Basal rate segments* — scheduled basal rate (U/h) by time of day.
+* *ISF segments* — Insulin Sensitivity Factor: how much 1 U of insulin lowers your glucose.
+* *ICR segments* — Insulin-to-Carb Ratio: grams of carbs covered by 1 U of insulin.
+* *Target range segments* — your goal glucose range (pre-meal ADA recommendation: 80–130 mg/dL).
+* *DIA* — Duration of Insulin Action: how long a bolus remains active (used for IOB).
+* *SEA segments* — Spritz-Ess-Abstand: recommended wait time between injecting and eating.
+
+image::profile-list.png[Profile list showing active and archived profiles, 800, title="Profile list"]
+
+==== Activating a Profile
+
+. Click *Profiles* in the navigation bar. Your profiles are listed with their status (Active, Archived).
+. Click *Activate* next to the profile you want to use.
+. Confirm the activation dialog — your current active profile is archived automatically.
+
+[NOTE]
+====
+*Copy-on-write model:* kdiab never overwrites an existing profile. Clicking *Edit* on a profile creates a new archived draft. Activating that draft archives the previous active profile. This preserves a full history of every profile version you have used, so your care team can review past settings at any time.
+====
+
+==== Editing a Profile
+
+[IMPORTANT]
+====
+Profile parameters (basal rates, ISF, ICR, glucose targets, DIA) directly control your insulin dosing. *Only change these values in consultation with your diabetes care team.* Incorrect values can lead to significant under- or over-dosing of insulin.
+====
+
+. Click *Edit* on any profile to open the profile editor.
+. Modify the basal, ISF, ICR, target, DIA, or SEA segments as needed.
+. Click *Save*. The edited profile is saved as a new archived version.
+. Activate it from the profile list when you are ready to use it.
+
+image::profile-editor.png[Profile editor with basal ISF ICR segments, 800, title="Profile editor"]
+
+==== Profile History
+
+image::profile-history.png[Profile history list showing all archived versions, 800, title="Profile history"]
+
+Click *Profile History* in the navigation to see all previous versions of your profiles in reverse chronological order. Each entry shows the profile name, creation date, and status.
+
+==== Doctor-Proposed Profile Changes
+
+If your doctor has proposed a profile change, a *Pending Doctor Recommendations* section appears at the top of your Profiles page. Click *Review* to open the side-by-side diff view.
+
+image::profile-diff.png[Profile diff view comparing current and proposed profile, 800, title="Profile diff — review proposed changes"]
+
+The diff highlights every changed segment in basal, ISF, ICR, and targets. Your doctor may include a *clinical rationale* explaining the reason for the proposed change.
+
+* Click *Accept* to activate the proposed profile (your current active profile is archived).
+* Click *Reject* to decline the proposal (you may add an optional reason).
+
+=== Nightscout Integration (AAPS / xDrip+ / Juggluco)
+
+kdiab provides a Nightscout API v1-compatible endpoint, allowing AAPS, xDrip+, and Juggluco to upload CGM readings and pump events directly to kdiab.
+
+[NOTE]
+====
+The Nightscout integration is *optional* and must be enabled by a system administrator. Contact your clinic's technical administrator if you wish to use this feature.
+====
+
+==== Compatible Devices
+
+* **AAPS** (Android APS) — insulin pump closed-loop system.
+* **xDrip+** — CGM receiver and uploader for Dexcom, Libre, and other sensors.
+* **Juggluco** — Libre CGM reader and uploader.
+
+==== Configuration
+
+Configure your device to upload to the following Nightscout endpoint:
+
+[source]
+----
+Base URL: http(s)://<kdiab-host>/api/v1
+API Token:  your personal API token (obtain from your administrator)
+----
+
+In AAPS: *Config Builder → Nightscout Client → Nightscout URL + API Secret*.
+In xDrip+: *Settings → Cloud Upload → Nightscout Sync → Base URL + API Secret*.
+In Juggluco: *Connection → Nightscout → URL + Token*.
+
+Once connected, CGM readings, bolus events, carbs, and pump status are automatically synced to kdiab. They appear on the Dashboard and in the treatment log within a few minutes of upload.
+
+// ============================================================
+[appendix]
+== Glossary
+// ============================================================
+
+=== AGP — Ambulatory Glucose Profile
+A standardised chart overlaying CGM readings by hour of day over a selected period. Shows the 10th, 25th, 50th (median), 75th, and 90th glucose percentiles at each hour, revealing recurring patterns in glucose control independent of the calendar date.
+
+=== Basal
+A low, continuous background dose of insulin delivered over 24 hours by an insulin pump (or a long-acting insulin injection). The basal rate varies by time of day according to the segments in your basal profile.
+
+=== BGM — Blood Glucose Monitor
+A traditional fingerstick meter that measures blood glucose from a capillary blood sample. More accurate than CGM at a single point in time, but does not provide continuous readings.
+
+=== Bolus
+A rapid-acting insulin dose given to cover a meal (meal bolus) or to correct a high glucose level (correction bolus). Boluses are logged in the Treatments tab and recorded by AAPS/pump systems.
+
+=== CGM — Continuous Glucose Monitor
+A sensor worn on the body (typically on the abdomen or upper arm) that measures interstitial glucose every 1–5 minutes and transmits readings wirelessly to a receiver, smartphone, or APS system.
+
+=== CGP — Comprehensive Glucose Pentagon
+A radar chart scoring five axes of metabolic glucose control: Time on Range (ToR), Variability coefficient (VarK), Hypo Intensity, Hyper Intensity, and Mean Glucose. Derives a PGR (Personal Glycaemic Risk) score. Based on Vigersky et al. (2018).
+
+=== COB — Carbs on Board
+The estimated mass of carbohydrates (in grams) still being absorbed from a recent meal, calculated using the carb absorption model in your APS system. Displayed on the Dashboard.
+
+=== DIA — Duration of Insulin Action
+The total time (in hours) that a rapid-acting insulin bolus remains active in the body. Used to compute IOB (Insulin on Board). Typical values: 3–6 hours depending on insulin type.
+
+=== HbA1c
+Glycated haemoglobin — a blood test measuring average glucose over approximately 3 months. The ADA target for most adults with T1D is < 7%. kdiab displays an *estimated* HbA1c from CGM readings (eHbA1c) using the DCCT formula; this is not a substitute for a laboratory test.
+
+=== ICR — Insulin-to-Carb Ratio
+The grams of carbohydrate covered by 1 unit of insulin. For example, ICR 1:10 means 1 U covers 10 g of carbs. Set per time segment in your basal profile.
+
+=== IOB — Insulin on Board
+The estimated active insulin still working from recent bolus doses, calculated by decaying each bolus over the DIA period. Displayed on the Dashboard. The dose calculator subtracts active IOB from the correction dose to avoid stacking.
+
+=== ISF — Insulin Sensitivity Factor
+How much 1 unit of rapid-acting insulin lowers your blood glucose (in mg/dL or mmol/L). For example, ISF 50 mg/dL per U means 1 U should reduce glucose by approximately 50 mg/dL. Set per time segment in your basal profile.
+
+=== PGR — Personal Glycaemic Risk
+A composite score derived from the five CGP axes, measuring overall metabolic control relative to a reference population. Lower PGR = closer to optimal control. Shown on the CGP report sub-page.
+
+=== SEA — Spritz-Ess-Abstand
+German for "Injection-to-Meal Interval." The recommended wait time (in minutes) between injecting a meal bolus and beginning to eat. A positive SEA gives the insulin time to start working before glucose rises. The dose calculator uses your profile's SEA segments to recommend a wait time based on current glucose level and trend.
+
+=== TIR — Time In Range
+The percentage of CGM readings within the target glucose range (70–180 mg/dL / 3.9–10.0 mmol/L). The international ADA/ATTD consensus target for adults with T1D is *≥ 70%* TIR.
