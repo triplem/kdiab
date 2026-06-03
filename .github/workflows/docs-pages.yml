@@ -116,6 +116,31 @@ jobs:
         continue-on-error: true
         run: cd ${{ matrix.service }} && npx @redocly/cli@2 build-docs api/openapi.yaml --output openapi.html
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ${{ matrix.service }} Docker image
+        continue-on-error: true
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service }}
+          load: true
+          tags: kdiab/${{ matrix.page }}:scan
+          cache-from: type=gha,scope=${{ matrix.page }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.page }}
+
+      - name: Trivy vulnerability scan — ${{ matrix.service }}
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: kdiab/${{ matrix.page }}:scan
+          format: template
+          template: '@/contrib/html.tpl'
+          output: ${{ matrix.service }}/trivy-report.html
+          exit-code: 0
+          severity: CRITICAL,HIGH,MEDIUM
+          ignore-unfixed: true
+
       - name: Stage ${{ matrix.service }} reports
         if: always()
         run: |
@@ -126,6 +151,7 @@ jobs:
           mkdir -p staging/${PAGE}/reports/tests/unit
           mkdir -p staging/${PAGE}/reports/tests/integration
           mkdir -p staging/${PAGE}/reports/tests/e2e
+          mkdir -p staging/${PAGE}/reports
 
           # AsciiDoc HTML → page root
           if [ -d "${SVC}/build/docs/asciidoc" ]; then
@@ -160,6 +186,11 @@ jobs:
           # OpenAPI HTML
           if [ -f "${SVC}/openapi.html" ]; then
             cp ${SVC}/openapi.html staging/${PAGE}/openapi.html
+          fi
+
+          # Trivy HTML report
+          if [ -f "${SVC}/trivy-report.html" ]; then
+            cp ${SVC}/trivy-report.html staging/${PAGE}/reports/trivy.html
           fi
 
       - name: Upload ${{ matrix.service }} reports artifact
@@ -219,11 +250,88 @@ jobs:
           path: staging/common/
           if-no-files-found: ignore
 
+  build-ui-reports:
+    if: github.repository == 'triplem/kdiab'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: cd kdiab-ui && npm ci
+
+      - name: Generate API clients
+        run: cd kdiab-ui && npm run api:generate
+
+      - name: Run Vitest coverage
+        continue-on-error: true
+        run: cd kdiab-ui && npm run test:coverage
+
+      - name: Run ESLint HTML report
+        continue-on-error: true
+        run: cd kdiab-ui && npx eslint . --format html --output-file eslint-report.html || true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build kdiab-ui Docker image
+        continue-on-error: true
+        uses: docker/build-push-action@v6
+        with:
+          context: kdiab-ui
+          load: true
+          tags: kdiab/ui:scan
+          cache-from: type=gha,scope=ui
+          cache-to: type=gha,mode=max,scope=ui
+
+      - name: Trivy vulnerability scan — kdiab-ui
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: kdiab/ui:scan
+          format: template
+          template: '@/contrib/html.tpl'
+          output: kdiab-ui/trivy-report.html
+          exit-code: 0
+          severity: CRITICAL,HIGH,MEDIUM
+          ignore-unfixed: true
+
+      - name: Stage kdiab-ui reports
+        if: always()
+        run: |
+          mkdir -p staging/ui/reports/coverage
+
+          if [ -d "kdiab-ui/coverage" ]; then
+            cp -r kdiab-ui/coverage/. staging/ui/reports/coverage/
+          fi
+
+          if [ -f "kdiab-ui/eslint-report.html" ]; then
+            cp kdiab-ui/eslint-report.html staging/ui/reports/eslint.html
+          fi
+
+          if [ -f "kdiab-ui/trivy-report.html" ]; then
+            cp kdiab-ui/trivy-report.html staging/ui/reports/trivy.html
+          fi
+
+      - name: Upload kdiab-ui reports artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-ui
+          path: staging/ui/
+          if-no-files-found: ignore
+
   assemble:
     if: always() && github.repository == 'triplem/kdiab'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: [build-root, build-service, build-common]
+    needs: [build-root, build-service, build-common, build-ui-reports]
     steps:
       - name: Download root docs
         uses: actions/download-artifact@v4
@@ -302,6 +410,14 @@ jobs:
         with:
           name: docs-common
           path: pages/common/
+
+      - name: Download ui reports
+        if: always()
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-ui
+          path: pages/ui/
 
       - name: Create index page
         run: |
