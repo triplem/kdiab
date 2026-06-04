@@ -1,2 +1,5 @@
-paths-ignore:
-  - '**/build/generated/**'
+paths:
+  - '**/src/main/kotlin/**'
+  - '**/src/test/kotlin/**'
+  - '**/src/integration-test/kotlin/**'
+  - '**/src/e2e-test/kotlin/**'
