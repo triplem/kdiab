@@ -13,8 +13,6 @@ on:
       - 'build-logic/**'
       - 'gradle/**'
       - '.github/workflows/docs-pages.yml'
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:
