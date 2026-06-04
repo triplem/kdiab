@@ -1,6 +1,6 @@
 package org.javafreedom.kdiab.nightscout.adapters.inbound.web
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
@@ -40,11 +40,11 @@ fun MeasureResponse.toNightscoutEntry(): NightscoutEntry? {
     if (typeValue !in CGM_TYPES) return null
     val millis = runCatching { Instant.parse(measuredAt).toEpochMilliseconds() }.getOrNull() ?: return null
     val entryType = if (typeValue == "CGM") "sgv" else "mbg"
-    val data = this.data as? JsonObject
-    val sgv = data?.get("sgv")?.jsonPrimitive?.runCatching { int }?.getOrNull()
-        ?: data?.get("value")?.jsonPrimitive?.runCatching { int }?.getOrNull()
-    val trend = data?.get("trend")?.jsonPrimitive?.runCatching { int }?.getOrNull()
-    val direction = data?.get("direction")?.jsonPrimitive?.content
+    val data = this.data
+    val sgv = data["sgv"]?.jsonPrimitive?.runCatching { int }?.getOrNull()
+        ?: data["value"]?.jsonPrimitive?.runCatching { int }?.getOrNull()
+    val trend = data["trend"]?.jsonPrimitive?.runCatching { int }?.getOrNull()
+    val direction = data["direction"]?.jsonPrimitive?.content
 
     return NightscoutEntry(
         type = entryType,
@@ -61,11 +61,11 @@ fun MeasureResponse.toNightscoutEntry(): NightscoutEntry? {
 fun TreatmentResponse.toNightscoutTreatment(): NightscoutTreatment? {
     val millis = runCatching { Instant.parse(treatedAt).toEpochMilliseconds() }.getOrNull() ?: return null
     val nsEventType = TREATMENT_TYPE_MAP[type.value] ?: return null
-    val data = this.data as? JsonObject
+    val data = this.data
 
-    val insulin = data?.get("insulin")?.jsonPrimitive?.runCatching { double }?.getOrNull()
-        ?: data?.get("units")?.jsonPrimitive?.runCatching { double }?.getOrNull()
-    val carbs = data?.get("carbs")?.jsonPrimitive?.runCatching { double }?.getOrNull()
+    val insulin = data["insulin"]?.jsonPrimitive?.runCatching { double }?.getOrNull()
+        ?: data["units"]?.jsonPrimitive?.runCatching { double }?.getOrNull()
+    val carbs = data["carbs"]?.jsonPrimitive?.runCatching { double }?.getOrNull()
 
     return NightscoutTreatment(
         id = id,

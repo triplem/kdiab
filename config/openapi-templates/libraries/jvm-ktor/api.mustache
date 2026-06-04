@@ -1,0 +1,168 @@
+{{! Forked from upstream jvm-ktor/api.mustache. Delta: required query params use direct
+    assignment instead of paramName?.apply{} to avoid unnecessary safe-call warnings on
+    non-null String receivers. Re-apply this change when upgrading openapi-generator. }}
+{{>licenseInfo}}
+package {{apiPackage}}
+
+{{#imports}}import {{import}}
+{{/imports}}
+
+import {{packageName}}.infrastructure.*
+import io.ktor.client.HttpClientConfig
+import io.ktor.client.request.forms.formData
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.http.ParametersBuilder
+{{#gson}}
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import java.text.DateFormat
+{{/gson}}
+{{#jackson}}
+import com.fasterxml.jackson.databind.ObjectMapper
+{{/jackson}}
+
+{{#operations}}
+    {{#nonPublicApi}}internal {{/nonPublicApi}}{{^nonPublicApi}}{{#explicitApi}}public {{/explicitApi}}{{/nonPublicApi}}open class {{classname}}(
+    baseUrl: String = ApiClient.BASE_URL,
+    httpClientEngine: HttpClientEngine? = null,
+    httpClientConfig: ((HttpClientConfig<*>) -> Unit)? = null,
+    {{#gson}}
+    jsonBlock: GsonBuilder.() -> Unit = ApiClient.JSON_DEFAULT,
+    {{/gson}}
+    {{#jackson}}
+    jsonBlock: ObjectMapper.() -> Unit = ApiClient.JSON_DEFAULT,
+    {{/jackson}}
+    ) : ApiClient(
+        baseUrl,
+        httpClientEngine,
+        httpClientConfig,
+        {{#gson}}
+        jsonBlock,
+        {{/gson}}
+        {{#jackson}}
+        jsonBlock,
+        {{/jackson}}
+    ) {
+
+    {{#operation}}
+        /**
+        * {{{httpMethod}}} {{#sanitizePathComment}}{{{path}}}{{/sanitizePathComment}}
+        * {{summary}}
+        * {{notes}}
+        {{#allParams}} * @param {{{paramName}}} {{description}} {{^required}}(optional{{#defaultValue}}, default to {{{.}}}{{/defaultValue}}){{/required}}
+        {{/allParams}} * @return {{{returnType}}}{{^returnType}}void{{/returnType}}
+        */
+        {{#returnType}}
+            @Suppress("UNCHECKED_CAST")
+        {{/returnType}}
+        {{^nonPublicApi}}{{#explicitApi}}public {{/explicitApi}}{{/nonPublicApi}}open suspend fun {{operationId}}({{#allParams}}{{{paramName}}}: {{{dataType}}}{{^required}}?{{/required}}{{^-last}}, {{/-last}}{{/allParams}}): HttpResponse<{{{returnType}}}{{^returnType}}Unit{{/returnType}}> {
+
+            val localVariableAuthNames = listOf<String>({{#authMethods}}"{{name}}"{{^-last}}, {{/-last}}{{/authMethods}})
+
+            val localVariableBody = {{#hasBodyParam}}{{#bodyParam}}{{{paramName}}}{{/bodyParam}}{{/hasBodyParam}}
+        {{^hasBodyParam}}
+            {{#hasFormParams}}
+                {{#isMultipart}}
+                        formData {
+                    {{#formParams}}
+                        {{#isFile}}
+                        {{#isArray}}
+                        for (x in {{{paramName}}} ?: listOf()) {
+                            append(x)
+                        }
+                        {{/isArray}}
+                        {{^isArray}}
+                        {{{paramName}}}?.apply { append({{{paramName}}}) }
+                        {{/isArray}}
+                        {{/isFile}}
+                        {{^isFile}}
+                        {{^isArray}}
+                        {{^isString}}
+                        {{^isNumber}}
+                        {{{paramName}}}?.apply { append("{{{baseName}}}", {{{paramName}}}.toString()) }
+                        {{/isNumber}}
+                        {{#isNumber}}
+                        {{{paramName}}}?.apply { append("{{{baseName}}}", {{{paramName}}}.toString()) }
+                        {{/isNumber}}
+                        {{/isString}}
+                        {{#isString}}
+                        {{{paramName}}}?.apply { append("{{{baseName}}}", {{{paramName}}}) }
+                        {{/isString}}
+                        {{/isArray}}
+                        {{#isArray}}
+                        for (x in {{paramName}} ?: listOf()) {
+                            {{#isFile}}append(it){{/isFile}}{{^isFile}}append("{{{baseName}}}", x.toString()){{/isFile}}
+                        }
+                        {{/isArray}}
+                        {{/isFile}}
+                    {{/formParams}}
+                        }
+                {{/isMultipart}}
+                {{^isMultipart}}
+                        ParametersBuilder().also {
+                    {{#formParams}}
+                        {{#isFile}}
+                        {{{paramName}}}?.apply { it.append("{{{baseName}}}", {{{paramName}}}) }
+                        {{/isFile}}
+                        {{^isFile}}
+                        {{^isArray}}
+                        {{^isString}}
+                        {{^isNumber}}
+                        {{{paramName}}}?.apply { it.append("{{{baseName}}}", {{{paramName}}}.toString()) }
+                        {{/isNumber}}
+                        {{#isNumber}}
+                        {{{paramName}}}?.apply { it.append("{{{baseName}}}", {{{paramName}}}.toString()) }
+                        {{/isNumber}}
+                        {{/isString}}
+                        {{#isString}}
+                        {{{paramName}}}?.apply { it.append("{{{baseName}}}", {{{paramName}}}) }
+                        {{/isString}}
+                        {{/isArray}}
+                        {{#isArray}}
+                        for (x in {{paramName}} ?: listOf()) {
+                            append("{{{baseName}}}", x.toString())
+                        }
+                        {{/isArray}}
+                        {{/isFile}}
+                    {{/formParams}}
+                        }.build()
+                {{/isMultipart}}
+            {{/hasFormParams}}
+            {{^hasFormParams}}
+                    io.ktor.client.utils.EmptyContent
+            {{/hasFormParams}}
+        {{/hasBodyParam}}
+
+            val localVariableQuery = mutableMapOf<String, List<String>>()
+        {{#queryParams}}
+        {{#required}}
+            localVariableQuery["{{baseName}}"] = {{#isContainer}}toMultiValue({{{paramName}}}, "{{collectionFormat}}"){{/isContainer}}{{^isContainer}}listOf("${{{paramName}}}"){{/isContainer}}
+        {{/required}}
+        {{^required}}
+            {{{paramName}}}?.apply { localVariableQuery["{{baseName}}"] = {{#isContainer}}toMultiValue(this, "{{collectionFormat}}"){{/isContainer}}{{^isContainer}}listOf("${{{paramName}}}"){{/isContainer}} }
+        {{/required}}
+        {{/queryParams}}
+
+            val localVariableHeaders = mutableMapOf<String, String>()
+        {{#headerParams}}
+            {{{paramName}}}?.apply { localVariableHeaders["{{baseName}}"] = {{#isContainer}}this.joinToString(separator = collectionDelimiter("{{collectionFormat}}")){{/isContainer}}{{^isContainer}}this.toString(){{/isContainer}} }
+        {{/headerParams}}
+
+            val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.{{httpMethod}},
+            "{{{path}}}"{{#pathParams}}.replace("{" + "{{baseName}}" + "}", "${{{paramName}}}"){{/pathParams}},
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = {{#hasAuthMethods}}true{{/hasAuthMethods}}{{^hasAuthMethods}}false{{/hasAuthMethods}},
+            )
+
+            return {{#hasBodyParam}}jsonRequest{{/hasBodyParam}}{{^hasBodyParam}}{{#hasFormParams}}{{#isMultipart}}multipartFormRequest{{/isMultipart}}{{^isMultipart}}urlEncodedFormRequest{{/isMultipart}}{{/hasFormParams}}{{^hasFormParams}}request{{/hasFormParams}}{{/hasBodyParam}}(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+            ).wrap()
+            }
+
+    {{/operation}}
+        }
+{{/operations}}

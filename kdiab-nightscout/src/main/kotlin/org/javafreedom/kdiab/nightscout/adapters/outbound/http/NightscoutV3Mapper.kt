@@ -1,6 +1,6 @@
 package org.javafreedom.kdiab.nightscout.adapters.outbound.http
 
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int

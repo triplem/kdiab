@@ -1,7 +1,7 @@
 package org.javafreedom.kdiab.nightscout.application.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import kotlinx.datetime.Instant
+import kotlin.time.Instant
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.CarbsClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.MeasuresClient
 import org.javafreedom.kdiab.nightscout.adapters.outbound.http.ProfilesClient
