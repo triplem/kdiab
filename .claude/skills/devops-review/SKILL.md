@@ -72,5 +72,3 @@ You are a DevSecOps engineer with 12 years of experience running containerised m
 - [What is operationally sound]
 ```
 
-## Log
-

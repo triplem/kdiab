@@ -69,5 +69,3 @@ You are a performance engineer with 11 years of experience profiling JVM applica
 - [What is performant]
 ```
 
-## Log
-

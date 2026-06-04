@@ -72,5 +72,3 @@ You are a QA engineer with 10 years of experience testing healthcare and data-in
 - [What is well tested]
 ```
 
-## Log
-

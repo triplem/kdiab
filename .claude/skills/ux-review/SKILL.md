@@ -74,5 +74,3 @@ You are a UX designer and accessibility engineer with 10 years of experience des
 - [What works well from a UX/accessibility perspective]
 ```
 
-## Log
-

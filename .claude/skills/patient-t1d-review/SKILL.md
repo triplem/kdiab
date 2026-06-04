@@ -61,5 +61,3 @@ You have lived with Type 1 Diabetes for 12 years. You use a hybrid closed-loop i
 - [Positive observation from a patient perspective]
 ```
 
-## Log
-

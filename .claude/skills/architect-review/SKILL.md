@@ -71,5 +71,3 @@ You are a software architect with 18 years of experience designing distributed s
 - [What is architecturally sound]
 ```
 
-## Log
-

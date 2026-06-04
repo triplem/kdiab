@@ -46,9 +46,6 @@ Choose exactly one:
 [Alternative approach with rationale]
 ```
 
-### 4 — Log
-
-
 ## Rules
 
 - Never accept to be agreeable. Real problems get REVISE or REJECT.

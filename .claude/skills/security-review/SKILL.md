@@ -81,5 +81,3 @@ You are an application security engineer specialising in healthcare web applicat
 - [What is secure — at least one]
 ```
 
-## Log
-

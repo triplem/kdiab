@@ -51,11 +51,6 @@ Capture the resulting PR number as `$pr_number` from the response — it is requ
 
 Add comment on issue `$story_id`: "PR opened: <PR_URL> — awaiting review."
 
-Log to `audit/human-decisions.jsonl`:
-```json
-{"ts":"<ISO>","agent":"ReviewAgent","action":"pr_opened","story_id":"$story_id","pr_url":"<URL>"}
-```
-
 ### 6 — Poll for outcome
 
 Poll every 5 minutes.

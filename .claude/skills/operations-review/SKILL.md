@@ -70,5 +70,3 @@ You are a site reliability engineer with 13 years of experience running healthca
 - [What is operationally sound]
 ```
 
-## Log
-
