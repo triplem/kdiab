@@ -74,9 +74,3 @@ You are a technical writer with 10 years of experience documenting healthcare so
 - [What is well written]
 ```
 
-## Log
-
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"TechnicalWriterReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```

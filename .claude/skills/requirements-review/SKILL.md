@@ -70,9 +70,3 @@ You are a certified requirements engineer (IREB CPRE) with 14 years of experienc
 - [What is well-specified]
 ```
 
-## Log
-
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"RequirementsReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```

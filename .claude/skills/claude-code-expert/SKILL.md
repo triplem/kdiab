@@ -99,10 +99,10 @@ allowed-tools: Read Bash(ls *) Bash(find *) Bash(cat *) Bash(grep -r *) Bash(wc 
 |---|---|---|
 | `SessionStart` | Session begins | Load context, git pull, print reminders |
 | `PreToolUse` | Before any tool | Safety checks, commit message validation, deny dangerous commands |
-| `PostToolUse` | After tool succeeds | Audit log, lint changed files, scan for secrets, validate OpenAPI |
+| `PostToolUse` | After tool succeeds | Lint changed files, scan for secrets, validate OpenAPI |
 | `PostToolUseFailure` | After tool fails | Alert, log failure context |
 | `FileChanged` | File pattern match | `.env` change guard, OpenAPI auto-lint |
-| `Stop` | Session ends | Session summary, audit entry, cleanup |
+| `Stop` | Session ends | Session summary, cleanup |
 | `PreCompact` | Before compaction | Prompt for what to preserve |
 
 **Hook output protocol (JSON on stdout):**
@@ -119,21 +119,6 @@ allowed-tools: Read Bash(ls *) Bash(find *) Bash(cat *) Bash(grep -r *) Bash(wc 
   }
 }
 ```
-
-**Critical audit logging pattern — use PostToolUse, not Stop:**
-```json
-{
-  "PostToolUse": [{
-    "matcher": "Bash|Write|Edit",
-    "hooks": [{
-      "type": "command",
-      "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/post-tool-audit.sh",
-      "async": true
-    }]
-  }]
-}
-```
-The Stop hook receives a session transcript where `tool_use` entries are nested in `content` arrays — parsing is fragile and always produces empty results. PostToolUse fires immediately with structured `tool_input`.
 
 **Skill-level hook overrides:** Skills can declare their own hooks in frontmatter that add to (not replace) the global hooks:
 ```yaml
@@ -183,7 +168,6 @@ $arg_name is substituted from arguments.
 - Examples (written in actual skill SKILL.md files, on their own lines):
   - `!` + backtick + `git status --short` + backtick
   - `!` + backtick + `gh issue view $issue_id` + backtick
-  - `!` + backtick + `cat audit/agent-log.jsonl | tail -5` + backtick
 
 **Skill composition patterns:**
 - Skills can reference other skills: `After implementation → /write-tests $story_id`
@@ -399,18 +383,15 @@ Load and read:
 - [ ] `permissions.deny` includes `rm -rf /*` and force push to main/master
 - [ ] MCP servers declared for all external systems in use (GitHub, issue tracker)
 - [ ] `env` block declares project-level constants agents need
-- [ ] PostToolUse hook on `Bash|Write|Edit` for audit logging
 - [ ] PreToolUse hook for safety / commit guard
 - [ ] Stop hook for session summary
 - [ ] FileChanged hook if `.env` files exist in the repo
 
 #### Hooks
-- [ ] `post-tool-audit.sh` — async, writes JSONL, skips read-only commands
 - [ ] `safety-bash.sh` — blocks dangerous patterns (`rm -rf`, eval, curl|bash)
 - [ ] `commit-guard.sh` — validates Conventional Commits format
 - [ ] `post-edit-secrets.sh` — runs gitleaks or similar on changed files
 - [ ] `session-start.sh` — injects project context (branch, story, recent log)
-- [ ] `stop-audit.sh` — writes session_stop summary to audit log
 - [ ] All hook scripts are executable (`chmod +x`)
 
 #### Skills

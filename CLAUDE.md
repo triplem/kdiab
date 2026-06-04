@@ -396,7 +396,6 @@ All skills live in `.claude/skills/`. Invoke with `/skill-name`.
 - `/challenge-all` — Run all 11 specialist perspectives against a single target; consolidated ACCEPT/REVISE/REJECT verdict
 
 ### Meta Skills
-- `/audit` — review and summarise the audit log
 - `/learn` — extract a reusable rule from a completed story
 - `/domain-model` — build/update the project domain model
 - `/claude-code-expert` — senior Claude Code advisor: audit and improve CLAUDE.md, settings.json, hooks, MCP servers, skills, and multi-agent orchestration against official docs and best practices; accepts optional focus area (`settings | hooks | mcp | skills | claude-md | agents | security`) or runs a full audit

@@ -70,9 +70,3 @@ You are a site reliability engineer with 13 years of experience running healthca
 - [What is operationally sound]
 ```
 
-## Log
-
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"OperationsReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```

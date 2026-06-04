@@ -74,9 +74,3 @@ You are a UX designer and accessibility engineer with 10 years of experience des
 - [What works well from a UX/accessibility perspective]
 ```
 
-## Log
-
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"UXReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```

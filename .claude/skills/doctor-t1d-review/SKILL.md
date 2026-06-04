@@ -55,9 +55,3 @@ You are a diabetes specialist with 15 years of clinical experience in Type 1 Dia
 - [What is clinically sound]
 ```
 
-## Log
-
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"DoctorT1DReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```
