@@ -201,8 +201,8 @@ class ProfileMapperTest {
                 val api = domain.toApi()
 
                 assertNotNull(api.analysisRange)
-                assertEquals(70.0, api.analysisRange!!.low)
-                assertEquals(180.0, api.analysisRange!!.high)
+                assertEquals(70.0, api.analysisRange.low)
+                assertEquals(180.0, api.analysisRange.high)
                 // Legacy flat fields
                 assertEquals(70.0, api.analysisLow)
                 assertEquals(180.0, api.analysisHigh)
@@ -221,7 +221,7 @@ class ProfileMapperTest {
                 val api = domain.toApi()
 
                 assertNotNull(api.collaboration)
-                assertEquals("Doctor suggested change", api.collaboration!!.proposalReason)
+                assertEquals("Doctor suggested change", api.collaboration.proposalReason)
                 // Legacy flat field
                 assertEquals("Doctor suggested change", api.proposalReason)
         }

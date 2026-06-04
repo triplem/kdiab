@@ -24,6 +24,7 @@ fun Project.registerUpstreamSpec(
     val serviceNameCap = serviceName.replaceFirstChar { it.titlecase() }
     val outputDirPath = "${layout.buildDirectory.get()}/generated/upstream-${serviceName}"
     val basePackage = "${project.group}.api.upstream.${serviceName}"
+    val templateDirPath = rootDir.resolve("../config/openapi-templates").canonicalPath
 
     extensions.configure(KotlinJvmProjectExtension::class.java) {
         sourceSets.named("main").configure {
@@ -57,6 +58,9 @@ fun Project.registerUpstreamSpec(
             )
         )
         typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String") + extraTypeMappings)
+        // Custom template overrides fix deprecated encodeBase64(), unnecessary safe calls on
+        // non-null Map<String, Authentication>, and unnecessary safe calls on required query params.
+        templateDir.set(templateDirPath)
     }
 
     tasks.named("compileKotlin") {
