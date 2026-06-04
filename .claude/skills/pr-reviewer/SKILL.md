@@ -1,9 +1,9 @@
 ---
 name: pr-reviewer
-description: Review a GitHub pull request against all project rules and quality gates. Produces a structured report with severity-classified findings and posts an optional review comment on the PR. Use after a feature branch is ready for merge.
+description: Review a GitHub pull request against all project rules, post findings as a PR comment, then fix every finding (BLOCKER → MAJOR → MINOR → NIT) on the PR branch and push.
 argument-hint: <pr-number>
 arguments: pr_number
-allowed-tools: Read Bash(gh *) Bash(git *) Bash(cat .claude/rules/*) Bash(grep -r *)
+allowed-tools: Read Write Edit Bash(gh *) Bash(git *) Bash(cat .claude/rules/*) Bash(grep -r *) Bash(./gradlew *) Bash(npm *) Bash(find *) Bash(ls *)
 ---
 
 ## Pull Request to review: $pr_number
@@ -101,6 +101,9 @@ Use this severity scale:
 #### MINOR
 - [ ] `<file>:<line>` — <description>
 
+#### NIT
+- [ ] `<file>:<line>` — <description>
+
 #### Positives
 - <what was done well — always include at least one>
 ```
@@ -109,9 +112,9 @@ If there are zero BLOCKER and zero MAJOR findings → **APPROVE**.
 If there are any BLOCKER findings → **REQUEST CHANGES**.
 If there are only MAJOR findings → reviewer's call; default **REQUEST CHANGES**.
 
-### 5 — Post review (optional)
+### 5 — Post review comment
 
-If the user confirms, post the review as a GitHub PR comment:
+Always post the formatted report as a PR comment — do not wait for confirmation:
 
 ```bash
 gh pr comment $pr_number --body "$(cat <<'REVIEW'
@@ -120,10 +123,81 @@ REVIEW
 )"
 ```
 
-### 6 — Log
+### 6 — Fix all findings
+
+Fix every finding from step 3 in severity order: BLOCKER → MAJOR → MINOR → NIT.
+
+#### 6a — Check out the PR branch
+
+```bash
+gh pr checkout $pr_number
+```
+
+#### 6b — Apply fixes
+
+Work through each finding. For each one:
+1. Edit the file at the indicated location
+2. Apply the minimal change that resolves the finding
+3. If a finding requires a new file (e.g. missing test), create it
+
+After completing all fixes for a severity group, run the relevant quality gates before moving to the next group:
+
+```bash
+# After BLOCKER + MAJOR fixes — run full check
+./gradlew check --no-daemon          # Kotlin services
+npm run build && npm test            # kdiab-ui
+
+# After MINOR + NIT fixes — linter only
+./gradlew detektMain --no-daemon     # Kotlin
+npm run lint                         # TypeScript
+```
+
+If a gate fails, fix the regression before continuing.
+
+#### 6c — Commit the fixes
+
+```bash
+git add -p   # stage only relevant changes
+git commit -m "fix(<scope>): address PR #$pr_number review findings"
+```
+
+Group all fixes into one commit per severity group (e.g. one commit for BLOCKERs+MAJORs, one for MINORs+NITs) or a single commit if the total change is small.
+
+#### 6d — Push and post follow-up comment
+
+```bash
+git push
+```
+
+Then post a follow-up comment listing each finding as resolved:
+
+```bash
+gh pr comment $pr_number --body "$(cat <<'FIXED'
+## Review findings addressed
+
+All findings from the review have been fixed:
+
+#### BLOCKER
+- [x] `<file>:<line>` — <description> — fixed in <commit-sha>
+
+#### MAJOR
+- [x] `<file>:<line>` — <description> — fixed in <commit-sha>
+
+#### MINOR
+- [x] `<file>:<line>` — <description> — fixed in <commit-sha>
+
+#### NIT
+- [x] `<file>:<line>` — <description> — fixed in <commit-sha>
+FIXED
+)"
+```
+
+If there were zero findings, skip step 6 entirely.
+
+### 7 — Log
 
 ```json
-{"ts":"<ISO>","agent":"PrReviewerAgent","action":"pr_review","pr":$pr_number,"verdict":"<APPROVE|REQUEST_CHANGES>","blockers":<count>,"majors":<count>,"minors":<count>}
+{"ts":"<ISO>","agent":"PrReviewerAgent","action":"pr_review","pr":$pr_number,"verdict":"<APPROVE|REQUEST_CHANGES>","blockers":<count>,"majors":<count>,"minors":<count>,"nits":<count>,"fixed":true}
 ```
 
 Append to `audit/agent-log.jsonl`.
@@ -134,3 +208,6 @@ Append to `audit/agent-log.jsonl`.
 - Cite the specific rule file and section for each finding (e.g. `security.md:A03`)
 - At least one positive finding per review — acknowledge what was done well
 - If the diff is > 500 lines, focus on the highest-risk areas first
+- Always post the review comment — never skip step 5
+- Always attempt to fix every finding — never skip step 6 when findings exist
+- If a fix would require understanding beyond the diff (e.g. missing business context), make a best-effort attempt and note the assumption in the commit message

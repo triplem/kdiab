@@ -44,7 +44,11 @@ git checkout -b <branch-name>
 git worktree add ../worktree-$story_id-impl <branch-name>
 ```
 
-### 3 — Implementation loop (Ralph Principle)
+### 3 — Detect story type
+
+Check the story's labels. If any of `docs`, `documentation`, or `adr` are present, follow **§ 3-D (Documentation)**. Otherwise follow **§ 3-C (Code)**.
+
+### 3-C — Code implementation loop (Ralph Principle)
 
 For each acceptance criterion:
 1. Write the code
@@ -56,6 +60,16 @@ For each acceptance criterion:
    - Re-attempt
    - `/challenge ArchitectAgent "Blocked on <issue>, tried <approach>"`
    - After 3 retries → label story `BLOCKED`, notify human with problem + 2–3 options
+
+### 3-D — Documentation implementation
+
+For ADRs, developer references, operations guides, and user guides:
+
+1. Determine the output path from `github-issue-management.md` (ADR naming, service vs. platform path)
+2. Write the AsciiDoc file(s) — no code changes
+3. Commit immediately with `docs(<scope>): <summary>`
+
+Skip steps 4 (API contract), 6 (TestAgent), and all linter/test quality gates — documentation stories only require the file to exist and be committed.
 
 ### 4 — API contract (if API changes)
 
@@ -81,9 +95,13 @@ After implementation complete on worktree, invoke:
 
 TestAgent works in a parallel worktree and commits tests to the same branch.
 
+**Skip this step for documentation stories.**
+
 ### 7 — Quality gate
 
 See `quality-checklist.md` for the full gate list. All gates must pass before opening a PR.
+
+**For documentation stories**: only verify the file exists at the correct path and the build is not broken. Skip coverage, linter, and SAST gates.
 
 ### 8 — Create PR
 

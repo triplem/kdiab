@@ -47,7 +47,7 @@ Filter the sub-issues list to the **implementable set**:
 - **Include**: open issues (`state: OPEN`) with label `story`
 - **Skip** (log each skip):
   - Closed/merged issues → `"#NNN already closed — skipping"`
-  - Issues labelled `epic`, `adr`, `docs`, `documentation`, `pending-approval` → `"#NNN is not an implementation story — skipping"`
+  - Issues labelled `epic` or `pending-approval` → `"#NNN is not an implementation story — skipping"`
   - Issues labelled `BLOCKED` → `"#NNN is externally blocked — skipping"`
 
 If the implementable set is empty → exit: "No open story issues found under epic #$epic_id."
