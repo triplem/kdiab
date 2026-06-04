@@ -35,8 +35,9 @@ cd "$PROJECT_DIR" 2>/dev/null || true
 
 FAILURES=""
 
-# --- Kotlin / Gradle ---
-if [ -f "gradlew" ]; then
+# --- Kotlin / Gradle --- (only when Kotlin source files changed)
+CHANGED_KT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E '\.kt$' | grep -v 'build/generated' | head -1)
+if [ -f "gradlew" ] && [ -n "$CHANGED_KT" ]; then
   if ! ./gradlew test -q 2>/dev/null; then
     FAILURES+="- Tests failed (./gradlew test)\n"
   fi
@@ -51,8 +52,9 @@ if [ -f "gradlew" ]; then
   fi
 fi
 
-# --- Node.js / TypeScript ---
-if [ -f "package.json" ]; then
+# --- Node.js / TypeScript --- (only when TS/JS source files changed)
+CHANGED_TS=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E '\.(ts|tsx|js|jsx)$' | grep -v 'node_modules' | head -1)
+if [ -f "package.json" ] && [ -n "$CHANGED_TS" ]; then
   if ! npm test --silent 2>/dev/null; then
     FAILURES+="- Tests failed (npm test)\n"
   fi
