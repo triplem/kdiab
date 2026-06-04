@@ -60,4 +60,3 @@ Append rule to the appropriate file, or create a new file with an entry added to
 ## Output
 
 - Updated rule or skill file
-- Entry in `audit/agent-log.jsonl`

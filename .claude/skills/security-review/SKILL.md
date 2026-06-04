@@ -83,7 +83,3 @@ You are an application security engineer specialising in healthcare web applicat
 
 ## Log
 
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"SecurityReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```

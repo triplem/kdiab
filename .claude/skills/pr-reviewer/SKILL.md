@@ -194,14 +194,6 @@ FIXED
 
 If there were zero findings, skip step 6 entirely.
 
-### 7 — Log
-
-```json
-{"ts":"<ISO>","agent":"PrReviewerAgent","action":"pr_review","pr":$pr_number,"verdict":"<APPROVE|REQUEST_CHANGES>","blockers":<count>,"majors":<count>,"minors":<count>,"nits":<count>,"fixed":<true if any findings existed, false if zero findings>}
-```
-
-Append to `audit/agent-log.jsonl`.
-
 ## Rules
 
 - Never approve a PR with an unmitigated BLOCKER

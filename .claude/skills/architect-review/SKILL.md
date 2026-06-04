@@ -73,7 +73,3 @@ You are a software architect with 18 years of experience designing distributed s
 
 ## Log
 
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"ArchitectReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```

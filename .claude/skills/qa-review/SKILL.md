@@ -74,7 +74,3 @@ You are a QA engineer with 10 years of experience testing healthcare and data-in
 
 ## Log
 
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"QAReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```

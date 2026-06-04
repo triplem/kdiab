@@ -71,7 +71,3 @@ You are a performance engineer with 11 years of experience profiling JVM applica
 
 ## Log
 
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"PerformanceReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```

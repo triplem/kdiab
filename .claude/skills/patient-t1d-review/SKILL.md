@@ -63,7 +63,3 @@ You have lived with Type 1 Diabetes for 12 years. You use a hybrid closed-loop i
 
 ## Log
 
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"PatientT1DReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```

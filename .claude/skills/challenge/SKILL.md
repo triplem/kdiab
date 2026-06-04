@@ -48,10 +48,6 @@ Choose exactly one:
 
 ### 4 — Log
 
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"$agent_role","action":"challenge","input":"$question","verdict":"<VERDICT>","reason":"<short reason>"}
-```
 
 ## Rules
 

@@ -85,11 +85,6 @@ mcp__github__create_release(tag_name:"vX.Y.Z", name:"Release vX.Y.Z", body:"<cha
 mcp__github__update_issue(state:"closed", labels:["released","vX.Y.Z"])
 ```
 
-Log to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"ReleaseAgent","action":"release","version":"vX.Y.Z","pr_id":"$pr_id","artefact":"<url>"}
-```
-
 ## Output
 
 - Squash commit on `main` + git tag

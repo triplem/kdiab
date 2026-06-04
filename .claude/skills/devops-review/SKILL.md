@@ -74,7 +74,3 @@ You are a DevSecOps engineer with 12 years of experience running containerised m
 
 ## Log
 
-Append to `audit/agent-log.jsonl`:
-```json
-{"ts":"<ISO>","agent":"DevOpsReviewer","action":"review","target":"$target","verdict":"<VERDICT>"}
-```

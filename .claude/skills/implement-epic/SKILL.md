@@ -81,10 +81,6 @@ If stories remain after the algorithm completes (their count never reached zero)
 On cycle detected:
 - Report: "Circular dependency detected among stories: #A → #B → #A. Cannot proceed."
 - Label each story in the cycle with `BLOCKED`.
-- Append to `audit/agent-log.jsonl`:
-  ```json
-  {"ts":"<ISO>","agent":"ImplementEpicAgent","action":"cycle_detected","epic":$epic_id,"cycle":[<story numbers>]}
-  ```
 - Exit without implementing anything.
 
 ### 5 — Build execution waves
@@ -107,13 +103,7 @@ Wave 3: [#13]          ← depends on #11 and #12 (completed in wave 2)
 
 For each wave **in order**:
 
-#### 6a — Log wave start
-
-```json
-{"ts":"<ISO>","agent":"ImplementEpicAgent","action":"wave_start","epic":$epic_id,"wave":<N>,"stories":[<numbers>]}
-```
-
-#### 6b — Dispatch stories in the wave
+#### 6a — Dispatch stories in the wave
 
 Stories within a wave have no mutual dependencies and **must be run in parallel** via separate worktrees.
 
@@ -140,17 +130,7 @@ gh pr list --state open --search "Closes #NNN"
 
 If a story's `/implement` failed (no PR created, branch still dirty):
 - Label the story `BLOCKED`
-- Log:
-  ```json
-  {"ts":"<ISO>","agent":"ImplementEpicAgent","action":"story_failed","epic":$epic_id,"story":NNN,"wave":<N>}
-  ```
 - **Do not cancel the remaining waves** — continue with unblocked stories. Only skip stories that depend on the failed one.
-
-#### 6d — Log wave complete
-
-```json
-{"ts":"<ISO>","agent":"ImplementEpicAgent","action":"wave_complete","epic":$epic_id,"wave":<N>,"completed":[<numbers>],"failed":[<numbers>]}
-```
 
 ### 7 — Final summary
 
@@ -166,14 +146,6 @@ After all waves have run, output a summary table:
 | #12 | ... | 2 | ✗ failed | — |
 | #13 | ... | 3 | ⏭ skipped (depends on failed #12) | — |
 ```
-
-### 8 — Log session end
-
-```json
-{"ts":"<ISO>","agent":"ImplementEpicAgent","action":"epic_complete","epic":$epic_id,"waves":<total>,"implemented":<count>,"failed":<count>,"skipped":<count>}
-```
-
-Append to `audit/agent-log.jsonl`.
 
 ## Rules
 

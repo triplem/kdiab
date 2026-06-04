@@ -182,10 +182,3 @@ Any REVISE from a persona = overall REVISE (at minimum).
 - [What multiple personas agreed is well done]
 ```
 
-## Log
-
-```json
-{"ts":"<ISO>","agent":"ChallengeAllReviewer","action":"challenge_all","target":"$target","verdict":"<OVERALL_VERDICT>","personas_rejected":<count>,"personas_revised":<count>}
-```
-
-Append to `audit/agent-log.jsonl`.
