@@ -1,5 +1,6 @@
 paths:
-  - '**/src/main/kotlin/**'
-  - '**/src/test/kotlin/**'
-  - '**/src/integration-test/kotlin/**'
-  - '**/src/e2e-test/kotlin/**'
+  - 'kdiab-*/src/main/kotlin/**'
+  - 'kdiab-*/src/test/kotlin/**'
+  - 'kdiab-*/src/integration-test/kotlin/**'
+  - 'kdiab-*/src/e2e-test/kotlin/**'
+  - 'build-logic/src/main/kotlin/**'
