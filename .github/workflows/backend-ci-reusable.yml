@@ -59,7 +59,7 @@ jobs:
         continue-on-error: true
         uses: github/codeql-action/upload-sarif@v4
         with:
-          sarif_file: ${{ inputs.service }}/build/reports/detekt/detektMain.sarif
+          sarif_file: ${{ inputs.service }}/build/reports/detekt/detekt.sarif
           category: detekt-${{ inputs.service }}
 
       - name: SonarCloud Scan
