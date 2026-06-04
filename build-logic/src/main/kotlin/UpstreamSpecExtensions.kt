@@ -58,9 +58,7 @@ fun Project.registerUpstreamSpec(
             )
         )
         typeMappings.set(mapOf("UUID" to "kotlin.String", "date-time" to "kotlin.String") + extraTypeMappings)
-        // Custom template overrides fix deprecated encodeBase64(), unnecessary safe calls on
-        // non-null Map<String, Authentication>, and unnecessary safe calls on required query params.
-        templateDir.set(templateDirPath)
+        templateDir.set(templateDirPath) // custom overrides fix warnings in generated code
     }
 
     tasks.named("compileKotlin") {

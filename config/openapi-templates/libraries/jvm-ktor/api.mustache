@@ -1,3 +1,6 @@
+{{! Forked from upstream jvm-ktor/api.mustache. Delta: required query params use direct
+    assignment instead of paramName?.apply{} to avoid unnecessary safe-call warnings on
+    non-null String receivers. Re-apply this change when upgrading openapi-generator. }}
 {{>licenseInfo}}
 package {{apiPackage}}
 
