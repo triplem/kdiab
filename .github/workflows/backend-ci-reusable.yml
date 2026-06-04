@@ -54,6 +54,14 @@ jobs:
           SERVICE: ${{ inputs.service }}
         run: cd "$SERVICE" && ./gradlew :check :koverVerify :buildFatJar :cyclonedxBom -Pversion="$VERSION"
 
+      - name: Upload Detekt results to GitHub Security tab
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ inputs.service }}/build/reports/detekt/detekt.sarif
+          category: detekt-${{ inputs.service }}
+
       - name: SonarCloud Scan
         if: ${{ env.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarcloud-github-action@v5
