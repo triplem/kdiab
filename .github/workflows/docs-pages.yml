@@ -65,7 +65,7 @@ jobs:
         run: ./gradlew asciidoctor -Pversion=${{ needs.resolve-version.outputs.version }}
 
       - name: Upload root docs artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docs-root
           path: build/docs/asciidoc/
@@ -199,7 +199,7 @@ jobs:
 
       - name: Upload ${{ matrix.service }} reports artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docs-${{ matrix.page }}
           path: staging/${{ matrix.page }}/
@@ -243,7 +243,7 @@ jobs:
 
       - name: Upload kdiab-common reports artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docs-common
           path: staging/common/
@@ -324,7 +324,7 @@ jobs:
 
       - name: Upload kdiab-ui reports artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: docs-ui
           path: staging/ui/
@@ -337,7 +337,7 @@ jobs:
     needs: [build-root, build-service, build-common, build-ui-reports]
     steps:
       - name: Download root docs
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-root
           path: pages/root/
@@ -345,7 +345,7 @@ jobs:
       - name: Download measures docs
         if: always()
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-measures
           path: pages/measures/
@@ -353,7 +353,7 @@ jobs:
       - name: Download profiles docs
         if: always()
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-profiles
           path: pages/profiles/
@@ -361,7 +361,7 @@ jobs:
       - name: Download treatments docs
         if: always()
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-treatments
           path: pages/treatments/
@@ -369,7 +369,7 @@ jobs:
       - name: Download analyze docs
         if: always()
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-analyze
           path: pages/analyze/
@@ -377,7 +377,7 @@ jobs:
       - name: Download users docs
         if: always()
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-users
           path: pages/users/
@@ -385,7 +385,7 @@ jobs:
       - name: Download carbs docs
         if: always()
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-carbs
           path: pages/carbs/
@@ -393,7 +393,7 @@ jobs:
       - name: Download calc docs
         if: always()
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-calc
           path: pages/calc/
@@ -401,7 +401,7 @@ jobs:
       - name: Download nightscout docs
         if: always()
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-nightscout
           path: pages/nightscout/
@@ -409,7 +409,7 @@ jobs:
       - name: Download common docs
         if: always()
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-common
           path: pages/common/
@@ -417,7 +417,7 @@ jobs:
       - name: Download ui reports
         if: always()
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: docs-ui
           path: pages/ui/
