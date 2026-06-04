@@ -57,7 +57,7 @@ jobs:
           config-file: .github/codeql/codeql-config.yml
 
       - name: Build for CodeQL analysis
-        run: ./gradlew buildBackends --no-daemon
+        run: ./gradlew buildBackends --no-daemon --no-build-cache
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
