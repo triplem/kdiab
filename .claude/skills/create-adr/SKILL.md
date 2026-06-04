@@ -54,8 +54,6 @@ File: `docs/adr/${ADR_NUM}-<slug>.md` using `templates/adr.md`.
 
 Create a PR for the ADR file. Block dependent epics/stories until the PR has comment `APPROVED`.
 
-Log approval to `audit/human-decisions.jsonl`.
-
 ## Output
 
 - `docs/adr/NNNN-<slug>.md`

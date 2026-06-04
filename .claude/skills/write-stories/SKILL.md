@@ -5,7 +5,7 @@ argument-hint: <epic-id>
 arguments: epic_id
 disable-model-invocation: true
 effort: max
-allowed-tools: Read Write Bash(cat docs/*) Bash(cat audit/*)
+allowed-tools: Read Write Bash(cat docs/*)
 ---
 
 ultrathink

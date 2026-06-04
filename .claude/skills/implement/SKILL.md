@@ -18,8 +18,6 @@ hooks:
 
 ## Story to implement: $story_id
 
-!`cat audit/human-decisions.jsonl | grep "$story_id" | tail -1`
-
 ## Git status
 
 !`git status --short`
@@ -56,7 +54,7 @@ For each acceptance criterion:
 3. Run existing tests — must not regress
 4. Self-review against SOLID + language rules
 5. If blocked:
-   - Search codebase + `audit/` for prior solutions
+   - Search codebase for prior solutions
    - Re-attempt
    - `/challenge ArchitectAgent "Blocked on <issue>, tried <approach>"`
    - After 3 retries → label story `BLOCKED`, notify human with problem + 2–3 options

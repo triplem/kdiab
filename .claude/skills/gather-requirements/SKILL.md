@@ -4,7 +4,7 @@ description: Elicit, challenge, and document project requirements through struct
 when_to_use: Trigger on phrases like "I want to build", "I need a system", "new project", "help me define requirements".
 disable-model-invocation: true
 effort: high
-allowed-tools: Read Write Bash(find *) Bash(cat audit/*)
+allowed-tools: Read Write Bash(find *)
 ---
 
 ## Your role
@@ -36,8 +36,7 @@ Apply to each stated requirement:
 
 Before asking the human any clarifying question:
 1. Check existing codebase (if brownfield) for prior decisions
-2. Check `audit/human-decisions.jsonl` for prior decisions on similar topics
-3. Propose a default resolution with reasoning
+2. Propose a default resolution with reasoning
 4. `/challenge ArchitectAgent` to verify the proposal
 5. Only escalate if unresolved after 3 iterations — then present options, not open questions
 
@@ -53,11 +52,6 @@ Present the doc with:
 - Top 3 risks
 - Key assumptions made
 - Any remaining open questions
-
-Log approval to `audit/human-decisions.jsonl`:
-```json
-{"ts":"<ISO>","actor":"human","action":"approve","artefact":"docs/requirements.md","version":"1.0"}
-```
 
 ## Output
 

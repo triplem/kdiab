@@ -3,7 +3,7 @@ name: write-epics
 description: Decompose an approved requirements document into epics with acceptance criteria and push them to the issue tracker. Use after requirements.md is approved.
 disable-model-invocation: true
 effort: high
-allowed-tools: Read Write Bash(cat docs/requirements.md) Bash(cat audit/*)
+allowed-tools: Read Write Bash(cat docs/requirements.md)
 ---
 
 ## Current requirements
@@ -52,7 +52,7 @@ Write `docs/milestones.md`.
 ### 6 — Poll for approval
 
 Poll the tracker every 5 minutes for `approved` label on all epics.
-On approval → log to `audit/human-decisions.jsonl` → invoke `/write-stories <epic-id>` for each.
+On approval → invoke `/write-stories <epic-id>` for each.
 
 ## Output
 
