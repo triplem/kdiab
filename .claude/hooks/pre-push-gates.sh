@@ -26,6 +26,11 @@ print(json.dumps({
   exit 0
 }
 
+# Only run for git push commands — the 'if' field in skill hooks may not filter correctly
+if ! echo "$COMMAND" | grep -qE '^\s*git push'; then
+  exit 0
+fi
+
 cd "$PROJECT_DIR" 2>/dev/null || true
 
 FAILURES=""
@@ -35,8 +40,8 @@ if [ -f "gradlew" ]; then
   if ! ./gradlew test -q 2>/dev/null; then
     FAILURES+="- Tests failed (./gradlew test)\n"
   fi
-  if ! ./gradlew jacocoTestCoverageVerification -q 2>/dev/null; then
-    FAILURES+="- Coverage below 80% threshold (./gradlew jacocoTestCoverageVerification)\n"
+  if ! ./gradlew koverVerify -q 2>/dev/null; then
+    FAILURES+="- Coverage below 80% threshold (./gradlew koverVerify)\n"
   fi
   if ! ./gradlew detekt -q 2>/dev/null; then
     FAILURES+="- Detekt violations found (./gradlew detekt)\n"
