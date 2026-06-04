@@ -43,6 +43,13 @@ val buildBackends by tasks.registering {
     dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":build") })
 }
 
+// -- Compile-only aggregate (used by CodeQL — skips tests so no DB/Keycloak needed) ---
+val compileBackends by tasks.registering {
+    group = "build"
+    description = "Compiles all eight service backends without running tests (CodeQL use)."
+    dependsOn(serviceBuilds.map { gradle.includedBuild(it).task(":classes") })
+}
+
 // -- Full build (backends + frontend) ------------------------------------------
 // Use named() instead of register() because the asciidoctor plugin already
 // creates a 'build' lifecycle task via the base plugin it applies.
