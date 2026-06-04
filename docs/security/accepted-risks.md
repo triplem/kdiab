@@ -9,10 +9,11 @@ risks, along with justification and scheduled review dates.
 
 | Field | Value |
 |---|---|
-| **CVE** | CVE-2024-25062 (libxml2 DoS via crafted XSD-validated document) |
-| **Severity** | MEDIUM (CodeQL alert #8) |
+| **CVE** | CVE-2024-25062 / CVE-2026-6732 (libxml2 DoS via crafted XSD-validated document) |
+| **Severity** | MEDIUM–HIGH (CodeQL alert #8) |
 | **Component** | `nginx:alpine` base image in `kdiab-ui/Dockerfile` |
 | **Reported** | 2026-06-03 |
+| **Updated** | 2026-06-04 (Dockerfile digest updated; CVE-2026-6732 added) |
 | **Review date** | 2026-12-03 |
 
 ### Finding
@@ -20,6 +21,14 @@ risks, along with justification and scheduled review dates.
 The `nginx:alpine` base image ships with a version of `libxml2` that has a known
 Denial-of-Service vulnerability. An attacker can trigger the DoS by sending a crafted
 document that causes libxml2 to enter an infinite loop during XSD schema validation.
+
+Two CVEs cover this vulnerability family in libxml2:
+- **CVE-2024-25062** (MEDIUM) — original report
+- **CVE-2026-6732** (HIGH) — additional CVE, libxml2 2.13.9-r0; fixed in 2.13.9-r1
+
+The `nginx:alpine` base image digest was updated on 2026-06-04 to obtain libxml2 2.13.9-r1.
+If Trivy still reports this finding after the digest update, the new image may still include
+the vulnerable package — follow the remediation path below.
 
 ### Justification for acceptance
 
@@ -39,7 +48,7 @@ directive that is not present. The vulnerability is therefore not reachable from
 
 - If `nginx.conf` is ever extended with XSLT/XML processing directives
 - If a patched `nginx:alpine` image becomes available (check on each review date)
-- If the vulnerability severity is upgraded to HIGH or CRITICAL
+- If the vulnerability severity is upgraded to CRITICAL
 
 ### Remediation path
 

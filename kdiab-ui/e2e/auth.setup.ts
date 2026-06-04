@@ -25,11 +25,20 @@ setup('authenticate as sarah', async ({ page }) => {
   await page.waitForURL(/localhost:3005/, { timeout: 30_000 })
   await page.waitForLoadState('networkidle', { timeout: 30_000 })
 
-  // Confirm the app shell is rendered
-  await page.waitForSelector(
-    '[class*="hero"], [class*="glucose"], nav a, [role="navigation"] a, [data-testid], main',
-    { state: 'visible', timeout: 30_000 },
-  )
+  // Confirm the authenticated dashboard is rendered (nav buttons only appear when logged in)
+  await page.waitForSelector('nav.tab-nav button', { state: 'visible', timeout: 30_000 })
+
+  // react-oidc-context stores the OIDC user in sessionStorage, which Playwright's
+  // storageState() does not capture. Copy it to localStorage so the screenshot tests
+  // can inject it back via addInitScript before each page load.
+  await page.evaluate(() => {
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i)
+      if (key?.startsWith('oidc.user:')) {
+        localStorage.setItem(key, sessionStorage.getItem(key) ?? '')
+      }
+    }
+  })
 
   await page.context().storageState({ path: authFile })
 })
