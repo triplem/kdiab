@@ -54,6 +54,7 @@ jobs:
           languages: java-kotlin
           build-mode: manual
           queries: security-and-quality
+          config-file: .github/codeql/codeql-config.yml
 
       - name: Build for CodeQL analysis
         run: ./gradlew buildBackends --no-daemon
