@@ -1,0 +1,71 @@
+name: CodeQL / Frontend (javascript-typescript + actions)
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'kdiab-ui/**'
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.github/workflows/codeql-frontend.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'kdiab-ui/**'
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.github/workflows/codeql-frontend.yml'
+  schedule:
+    - cron: '0 6 * * 1'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze-typescript:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          build-mode: none
+          queries: security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:javascript-typescript
+
+  analyze-actions:
+    name: Analyze (actions)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: actions
+          build-mode: none
+          queries: security-and-quality
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:actions
