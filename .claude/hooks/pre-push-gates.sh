@@ -36,8 +36,9 @@ cd "$PROJECT_DIR" 2>/dev/null || true
 FAILURES=""
 
 # --- Kotlin / Gradle --- (only when Kotlin source files changed)
-CHANGED_KT=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E '\.kt$' | grep -v 'build/generated' | head -1)
-if [ -f "gradlew" ] && [ -n "$CHANGED_KT" ]; then
+DIFF_BASE=$(git merge-base HEAD "origin/${DEFAULT_BRANCH:-main}" 2>/dev/null || echo "HEAD~1")
+HAS_KT_CHANGES=$(git diff --name-only "$DIFF_BASE" HEAD 2>/dev/null | grep -E '\.kt$' | grep -v 'build/generated' | head -1)
+if [ -f "gradlew" ] && [ -n "$HAS_KT_CHANGES" ]; then
   if ! ./gradlew test -q 2>/dev/null; then
     FAILURES+="- Tests failed (./gradlew test)\n"
   fi
@@ -53,8 +54,8 @@ if [ -f "gradlew" ] && [ -n "$CHANGED_KT" ]; then
 fi
 
 # --- Node.js / TypeScript --- (only when TS/JS source files changed)
-CHANGED_TS=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep -E '\.(ts|tsx|js|jsx)$' | grep -v 'node_modules' | head -1)
-if [ -f "package.json" ] && [ -n "$CHANGED_TS" ]; then
+HAS_TS_CHANGES=$(git diff --name-only "$DIFF_BASE" HEAD 2>/dev/null | grep -E '\.(ts|tsx|js|jsx)$' | grep -v 'node_modules' | head -1)
+if [ -f "package.json" ] && [ -n "$HAS_TS_CHANGES" ]; then
   if ! npm test --silent 2>/dev/null; then
     FAILURES+="- Tests failed (npm test)\n"
   fi
@@ -66,8 +67,9 @@ if [ -f "package.json" ] && [ -n "$CHANGED_TS" ]; then
   fi
 fi
 
-# --- .NET ---
-if ls *.sln 2>/dev/null | grep -q '\.sln$'; then
+# --- .NET --- (only when C# source files changed)
+HAS_CS_CHANGES=$(git diff --name-only "$DIFF_BASE" HEAD 2>/dev/null | grep -E '\.cs$' | head -1)
+if ls *.sln 2>/dev/null | grep -q '\.sln$' && [ -n "$HAS_CS_CHANGES" ]; then
   if ! dotnet build -c Release -q 2>/dev/null; then
     FAILURES+="- Build failed (dotnet build)\n"
   fi
