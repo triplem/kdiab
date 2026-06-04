@@ -45,6 +45,8 @@ Use `templates/pr-description.md`. Fill in:
 
 PR title format: `<type>(<scope>): <story title> (#$story_id)`
 
+Capture the resulting PR number as `$pr_number` from the response — it is required by step 7.
+
 ### 5 — Comment on story
 
 Add comment on issue `$story_id`: "PR opened: <PR_URL> — awaiting review."

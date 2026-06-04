@@ -157,7 +157,7 @@ If a gate fails, fix the regression before continuing.
 #### 6c — Commit the fixes
 
 ```bash
-git add -p   # stage only relevant changes
+git add <file1> <file2> ...   # stage only the files changed in step 6b
 git commit -m "fix(<scope>): address PR #$pr_number review findings"
 ```
 
@@ -197,7 +197,7 @@ If there were zero findings, skip step 6 entirely.
 ### 7 — Log
 
 ```json
-{"ts":"<ISO>","agent":"PrReviewerAgent","action":"pr_review","pr":$pr_number,"verdict":"<APPROVE|REQUEST_CHANGES>","blockers":<count>,"majors":<count>,"minors":<count>,"nits":<count>,"fixed":true}
+{"ts":"<ISO>","agent":"PrReviewerAgent","action":"pr_review","pr":$pr_number,"verdict":"<APPROVE|REQUEST_CHANGES>","blockers":<count>,"majors":<count>,"minors":<count>,"nits":<count>,"fixed":<true if any findings existed, false if zero findings>}
 ```
 
 Append to `audit/agent-log.jsonl`.

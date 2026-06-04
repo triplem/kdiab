@@ -78,6 +78,8 @@ Run `spectral lint openapi/openapi.yaml`. Verify no breaking changes (`oasdiff`)
 
 ### 5 — Commit each logical unit
 
+**Skip this step for documentation stories** — step 3-D handles the commit directly.
+
 ```
 <type>(<scope>): <summary>
 
