@@ -14,7 +14,7 @@ RUN npm run build
 
 # nginx:alpine (linux/amd64) — update digest after nginx patch releases
 # Updated 2026-06-04: libxml2 2.13.9-r1 fixes CVE-2026-6732 (HIGH, DoS)
-FROM nginx:alpine@sha256:31db9045b34376493fd4fb695d8a8d03bbfffaf6297fcde82d0f925ce2dd329a
+FROM nginx:alpine@sha256:8b1e78743a03dbb2c95171cc58639fef29abc8816598e27fb910ed2e621e589a
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY error.html /usr/share/nginx/html/error.html
