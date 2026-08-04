@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Resolve publish version
         id: version
@@ -48,7 +48,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.2.0
 
       - name: Publish kdiab-common JAR
         run: cd kdiab-common && ./gradlew publish -PpublishVersion=${{ steps.version.outputs.version }}

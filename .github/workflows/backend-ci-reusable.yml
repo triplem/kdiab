@@ -25,7 +25,7 @@ jobs:
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -36,7 +36,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.2.0
 
       - name: Determine Version
         run: |
@@ -57,7 +57,7 @@ jobs:
       - name: Upload Detekt results to GitHub Security tab
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.37.4
         with:
           sarif_file: ${{ inputs.service }}/build/reports/detekt/detekt.sarif
           category: detekt-${{ inputs.service }}
@@ -116,7 +116,7 @@ jobs:
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@v4.37.4
         with:
           sarif_file: 'trivy-results.sarif'
 
