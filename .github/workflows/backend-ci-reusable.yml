@@ -105,10 +105,15 @@ jobs:
       - name: Scan Docker Image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
+          version: 'v0.74.0'
           input: /tmp/backend-image.tar
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
+          # Apply the severity filter to the SARIF output too. Without this the
+          # SARIF (and thus exit-code) includes LOW/MEDIUM findings, so the gate
+          # fails on sub-threshold CVEs despite severity being CRITICAL,HIGH.
+          limit-severities-for-sarif: true
           exit-code: '1'
           ignore-unfixed: true
           trivyignores: .trivyignore
