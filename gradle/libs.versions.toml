@@ -30,6 +30,8 @@ opentelemetry-instrumentation = "2.27.0-alpha"
 # Transitive dependency pinned to a patched version to resolve HIGH Trivy findings
 # CVE-2026-54512 / CVE-2026-54513 (jackson-core / jackson-databind). See kdiab.kotlin-base constraints.
 jackson = "2.21.4"
+# Transitive dep pinned to patched version — CVE-2026-55760 (HIGH). See kdiab.kotlin-base constraints.
+handlebars = "4.5.2"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
@@ -60,6 +62,7 @@ logback-json-classic = { module = "ch.qos.logback.contrib:logback-json-classic",
 logback-jackson = { module = "ch.qos.logback.contrib:logback-jackson", version.ref = "logback-contrib" }
 jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
 exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }

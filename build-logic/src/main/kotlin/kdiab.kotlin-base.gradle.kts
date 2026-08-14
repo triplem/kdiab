@@ -25,6 +25,7 @@ dependencies {
     constraints {
         "implementation"(lib("jackson-core")) { because("CVE-2026-54512/54513: jackson 2.21.3 -> 2.21.4") }
         "implementation"(lib("jackson-databind")) { because("CVE-2026-54512/54513: jackson 2.21.3 -> 2.21.4") }
+        "implementation"(lib("handlebars")) { because("CVE-2026-55760: handlebars 4.3.1 -> 4.5.2") }
     }
 }
 
