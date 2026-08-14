@@ -1,16 +1,10 @@
 {
-  "mcpServers": {
-    "github": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
-      }
-    },
-    "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${PROJECT_ROOT}"]
-    }
+  "env": {
+    "ISSUE_TRACKER": "github",
+    "APPROVAL_LABEL": "approved",
+    "COVERAGE_THRESHOLD": "80",
+    "DEFAULT_BRANCH": "main",
+    "SESSION_LOG_DIR": "~/.claude/kdiab-sessions"
   },
   "permissions": {
     "allow": [
@@ -164,11 +158,27 @@
     ]
   },
   "alwaysThinkingEnabled": true,
-  "env": {
-    "ISSUE_TRACKER": "github",
-    "APPROVAL_LABEL": "approved",
-    "COVERAGE_THRESHOLD": "80",
-    "DEFAULT_BRANCH": "main",
-    "SESSION_LOG_DIR": "~/.claude/kdiab-sessions"
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${PROJECT_ROOT}"
+      ]
+    }
+  },
+  "enabledPlugins": {
+    "ai-dlc@ai-dlc": true
   }
 }
