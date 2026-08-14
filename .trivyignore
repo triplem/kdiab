@@ -5,7 +5,6 @@
 # Reference: https://nvd.nist.gov/vuln/detail/CVE-2025-48924
 CVE-2025-48924
 
-# CVE-2026-40930: libpng vulnerability in eclipse-temurin:21-jre-alpine base image
-# Interim suppression until eclipse-temurin publishes an image with Alpine libpng >= 1.6.58-r1
-# Remove this entry once the base image is updated. Tracked in #825.
-CVE-2026-40930
+# Base-image OS-package CVEs (libpng, libxml2, libexpat, p11-kit, …) are
+# actively patched by `RUN apk upgrade --no-cache` in each service Dockerfile,
+# so no OS-package suppressions are needed here.
