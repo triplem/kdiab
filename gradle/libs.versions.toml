@@ -27,6 +27,11 @@ opentelemetry = "1.51.0"
 # No stable GA release exists for opentelemetry-ktor-*; this is an upstream policy decision,
 # not a sign the library is unsuitable for production. Do not remove the -alpha suffix.
 opentelemetry-instrumentation = "2.27.0-alpha"
+# Transitive dependency pinned to a patched version to resolve HIGH Trivy findings
+# CVE-2026-54512 / CVE-2026-54513 (jackson-core / jackson-databind). See kdiab.kotlin-base constraints.
+jackson = "2.21.4"
+# Transitive dep pinned to patched version — CVE-2026-55760 (HIGH). See kdiab.kotlin-base constraints.
+handlebars = "4.5.2"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
@@ -55,6 +60,9 @@ kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = 
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 logback-json-classic = { module = "ch.qos.logback.contrib:logback-json-classic", version.ref = "logback-contrib" }
 logback-jackson = { module = "ch.qos.logback.contrib:logback-jackson", version.ref = "logback-contrib" }
+jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
 exposed-core = { module = "org.jetbrains.exposed:exposed-core", version.ref = "exposed" }
 exposed-jdbc = { module = "org.jetbrains.exposed:exposed-jdbc", version.ref = "exposed" }
 exposed-kotlin-datetime = { module = "org.jetbrains.exposed:exposed-kotlin-datetime", version.ref = "exposed" }
