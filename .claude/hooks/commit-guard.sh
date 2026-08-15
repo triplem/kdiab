@@ -6,8 +6,10 @@ INPUT=$(cat)
 
 COMMAND=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('command',''))" 2>/dev/null || echo "")
 
-# Only apply to git commit commands
-if ! echo "$COMMAND" | grep -qE '^\s*git commit'; then
+# Only apply to git commit commands. Match `git commit` anywhere in the command
+# so `cd <dir> && git commit ...` one-liners are still guarded (not just commands
+# that start with `git commit`).
+if ! echo "$COMMAND" | grep -qE 'git[[:space:]]+commit'; then
   exit 0
 fi
 
@@ -40,11 +42,27 @@ print(json.dumps({
   exit 0
 }
 
+# Resolve the branch of the directory the commit will actually run in. Honor a
+# leading `cd <dir> &&` so commits inside git worktrees are checked against the
+# worktree's branch, not the root checkout (which is usually main).
+COMMIT_DIR="."
+if echo "$COMMAND" | grep -qE '^[[:space:]]*cd[[:space:]]'; then
+  CD_TARGET=$(echo "$COMMAND" | sed -nE "s/^[[:space:]]*cd[[:space:]]+([^&;|]+).*/\1/p" | head -1 | sed "s/[[:space:]]*$//; s/^['\"]//; s/['\"]$//")
+  [ -n "$CD_TARGET" ] && [ -d "$CD_TARGET" ] && COMMIT_DIR="$CD_TARGET"
+fi
+CURRENT_BRANCH=$(git -C "$COMMIT_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+
 # Block: committing directly to main or master
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "master" ]; then
   deny "Direct commit to '${CURRENT_BRANCH}' is blocked. Create a feature branch first: ./.claude/scripts/create-branch.sh <type> <issue-id> <description>"
 fi
+
+# The ai-dlc plugin manages its own commit conventions on its worktree branches
+# (e.g. ai-dlc/<slug>/main, ai-dlc/<slug>/<unit>). Allow those commits without
+# enforcing Conventional Commits — the main/master block above still applies.
+case "$CURRENT_BRANCH" in
+  ai-dlc/*) exit 0 ;;
+esac
 
 # Extract commit message from -m flag
 MSG=""
