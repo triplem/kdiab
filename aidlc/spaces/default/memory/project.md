@@ -42,10 +42,21 @@
 
 <!-- Technology choices locked for this project. -->
 
+- **Models**: runs on Anthropic's default models via the standard Claude
+  Code provider (`opus[1m]`). This project does NOT use AWS Bedrock or any
+  Amazon-hosted models; `.claude/settings.json` pins
+  `CLAUDE_CODE_USE_BEDROCK=0` to force the default Anthropic provider.
+
 ## Decided
 
 <!-- Decisions made in earlier stages that should not be re-asked. -->
 <!-- Format: DECIDED: [decision] (Stage [slug], [date]) -->
+
+DECIDED: No AWS Bedrock and no Amazon-hosted models — use the default
+Anthropic provider only. The framework's shipped Bedrock model IDs
+(`ANTHROPIC_DEFAULT_*_MODEL` = `global.anthropic.*`), `AWS_REGION`, and the
+four AWS MCP servers (`aws-mcp`, `aws-pricing`, `aws-iac`, `aws-serverless`)
+were stripped from this project's config (PR #1546, 2026-08-15).
 
 ## Scope Overrides
 
@@ -56,6 +67,12 @@
 <!-- Populated by practices-discovery affirmation gate. -->
 <!-- Format: NEVER [behavior] (affirmed [date]) -->
 <!-- Example: NEVER throw exceptions across service layer boundaries (affirmed 2026-05-17) -->
+
+NEVER re-introduce AWS Bedrock, Amazon-hosted model IDs
+(`ANTHROPIC_DEFAULT_*_MODEL` / `global.anthropic.*`), `AWS_REGION`, or the
+AWS MCP servers when updating the AI-DLC framework. The `/aidlc-v2:aidlc`
+installer re-adds them (merges into `settings.json`, creates `.mcp.json`);
+strip them after any framework update (learned 2026-08-15).
 
 ## Mandated
 
