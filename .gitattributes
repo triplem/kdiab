@@ -1,2 +1,8 @@
 # audit log is append-only — union merge prevents conflicts on stash pop / branch merge
 audit/agent-log.jsonl merge=union
+
+# Gradle wrapper scripts have fixed line endings regardless of core.autocrlf.
+# Without these, CRLF-committed *.bat files show as perpetually modified when
+# core.autocrlf=input normalizes them to LF for comparison.
+*.bat   text eol=crlf
+gradlew text eol=lf

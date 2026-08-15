@@ -59,7 +59,11 @@ jobs:
           config-file: .github/codeql/codeql-config.yml
 
       - name: Build for CodeQL analysis
-        run: ./gradlew compileBackends --no-daemon --no-build-cache
+        # Serialize the composite build: included builds' :classes tasks otherwise
+        # run in parallel and a service's compileKotlin can race ahead of its
+        # openApiGenerate, causing intermittent "Cannot infer type for T" failures.
+        # Compile-only, so single-worker throughput is a non-issue.
+        run: ./gradlew compileBackends --no-daemon --no-build-cache --no-parallel --max-workers=1
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
