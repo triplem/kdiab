@@ -30,9 +30,7 @@ elif [ -f "pom.xml" ]; then
   fi
   BUILD_TOOLS="Maven"
 elif [ -f "package.json" ]; then
-  if find . -name "angular.json" -not -path "*/node_modules/*" 2>/dev/null | grep -q .; then
-    STACK="Angular/TypeScript"
-  elif grep -q '"react"' package.json 2>/dev/null; then
+  if grep -q '"react"' package.json 2>/dev/null; then
     STACK="React/TypeScript"
   else
     STACK="Node.js/TypeScript"
