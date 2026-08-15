@@ -78,6 +78,10 @@ aidlc/.aidlc-clone-id
 aidlc/.aidlc-sessions/
 aidlc/spaces/*/intents/*/runtime-graph.json
 aidlc/spaces/*/intents/*/.aidlc-*
+# Space-level runtime scratch that hooks write directly under intents/ (e.g.
+# .aidlc-hooks-health/) — machine-local, one level shallower than the per-intent
+# rule above, so it needs its own glob.
+aidlc/spaces/*/intents/.aidlc-*
 #
 # COMMITTED (NOT ignored, listed here for the record — do NOT add ignore rules
 # for these): aidlc/spaces/*/memory/** · aidlc/spaces/*/codekb/** ·
