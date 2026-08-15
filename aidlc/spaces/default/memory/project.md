@@ -62,6 +62,15 @@ were stripped from this project's config (PR #1546, 2026-08-15).
 
 <!-- Custom scope rules for this project. -->
 
+- **Default scope: `enterprise`** — new intents default to `enterprise`
+  (all 32 stages, comprehensive depth, full audit trail). The deterministic
+  lever is `AWS_AIDLC_DEFAULT_SCOPE=enterprise` in `.claude/settings.json`
+  env, which the `/aidlc` orchestrator reads at intent birth (resolution
+  order: existing state → `--scope` flag → this env var → hard default).
+  Override per-intent with `/aidlc --scope <name>`. Note:
+  `AWS_AIDLC_DEFAULT_SCOPE` is framework config (awslabs naming), unrelated
+  to AWS Bedrock/models.
+
 ## Forbidden
 
 <!-- Populated by practices-discovery affirmation gate. -->

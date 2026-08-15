@@ -5,7 +5,8 @@
     "COVERAGE_THRESHOLD": "80",
     "DEFAULT_BRANCH": "main",
     "SESSION_LOG_DIR": "~/.claude/kdiab-sessions",
-    "CLAUDE_CODE_USE_BEDROCK": "0"
+    "CLAUDE_CODE_USE_BEDROCK": "0",
+    "AWS_AIDLC_DEFAULT_SCOPE": "enterprise"
   },
   "permissions": {
     "allow": [
