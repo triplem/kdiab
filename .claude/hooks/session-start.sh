@@ -12,23 +12,11 @@ cd "$PROJECT_DIR" 2>/dev/null || true
 STACK=""
 BUILD_TOOLS=""
 
+# kdiab is a fixed Kotlin/JVM (Gradle Kotlin DSL) backend monorepo with a
+# React/TypeScript frontend (kdiab-ui). Only those two stacks are detected.
 if [ -f "build.gradle.kts" ] || [ -f "settings.gradle.kts" ]; then
   STACK="Kotlin/JVM"
   BUILD_TOOLS="Gradle (Kotlin DSL)"
-elif [ -f "build.gradle" ] || [ -f "settings.gradle" ]; then
-  if find . -name "*.kt" -not -path "*/build/*" 2>/dev/null | grep -q .; then
-    STACK="Kotlin/JVM"
-  else
-    STACK="Java/JVM"
-  fi
-  BUILD_TOOLS="Gradle (Groovy DSL)"
-elif [ -f "pom.xml" ]; then
-  if find . -name "*.kt" -not -path "*/target/*" 2>/dev/null | grep -q .; then
-    STACK="Kotlin/JVM"
-  else
-    STACK="Java/JVM"
-  fi
-  BUILD_TOOLS="Maven"
 elif [ -f "package.json" ]; then
   if grep -q '"react"' package.json 2>/dev/null; then
     STACK="React/TypeScript"
@@ -36,12 +24,6 @@ elif [ -f "package.json" ]; then
     STACK="Node.js/TypeScript"
   fi
   BUILD_TOOLS="npm"
-elif find . -name "*.csproj" -not -path "*/bin/*" -not -path "*/obj/*" 2>/dev/null | grep -q .; then
-  STACK=".NET/C#"
-  BUILD_TOOLS="dotnet CLI"
-elif find . -name "*.sln" 2>/dev/null | grep -q .; then
-  STACK=".NET/C#"
-  BUILD_TOOLS="dotnet CLI"
 fi
 
 # --- Git state ---
