@@ -339,13 +339,8 @@ All rules live in `.claude/rules/`. They are automatically applied.
 - `solid-principles.md` — SOLID + Clean Code
 - `api-design.md` — OpenAPI / REST best practices
 - `security.md` — SAST, OWASP, secret hygiene
-- `kotlin-style.md` — Kotlin idioms, detekt rules, Gradle & Maven
-- `java-style.md` — Java 21+ idioms, Checkstyle/SpotBugs/PMD, Gradle & Maven
+- `kotlin-style.md` — Kotlin idioms, detekt rules, Gradle
 - `typescript-style.md` — TypeScript strict mode, ESLint
-- `spring-boot.md` — Spring Boot patterns
-- `react.md` — React patterns & hooks discipline
-- `angular.md` — Angular patterns
-- `dotnet.md` — .NET / C# patterns
 - `logging.md` — Structured logging across all stacks
 - `openapi.md` — OpenAPI spec discipline
 - `agent-context.md` — Single root CLAUDE.md convention; PostToolUse hook audit logging pattern
@@ -355,47 +350,19 @@ All rules live in `.claude/rules/`. They are automatically applied.
 
 All skills live in `.claude/skills/`. Invoke with `/skill-name`.
 
-### SDLC Workflow Skills
-- `/gather-requirements` — elicit, challenge, and document requirements
-- `/write-epics` — decompose requirements doc into epics
-- `/write-stories` — decompose epic into user stories (assigns all issues to `@me`)
-- `/implement` — implement a story on a feature branch/worktree
-- `/implement-epic` — implement all stories under an epic in dependency order; discovers sub-issues, builds execution waves, delegates each story to `/implement`
-- `/write-tests` — write tests for an implementation
-- `/create-pr` — open a guided PR
-- `/pr-reviewer` — review a GitHub PR against all project rules; classifies findings by BLOCKER/MAJOR/MINOR and optionally posts review comment
-- `/release` — tag, changelog, publish
-- `/create-adr` — propose and document an architecture decision
-- `/challenge` — peer-review another agent's output
+> SDLC workflow (requirements → epics → stories → implement → review → release) and the
+> generic specialist-review perspectives are provided by the **ai-dlc plugin**
+> (`/ai-dlc:elaborate`, `/ai-dlc:execute`, `/ai-dlc:review`, `/ai-dlc:reflect`, …). Only
+> project-specific and stack-specific skills are kept here.
+
+### Domain Review Skills (T1D)
+- `/doctor-t1d-review` — T1D specialist endocrinologist: clinical correctness, safety, medical workflow
+- `/patient-t1d-review` — T1D patient with pump + CGM: usability, real-world fit, trust
 
 ### Code Pattern Skills
 - `/kotlin-patterns` — Kotlin idioms, coroutines, data classes
-- `/java-patterns` — Java 21+ records, sealed classes, pattern matching, virtual threads
 - `/typescript-patterns` — TS strict patterns, generics, utility types
-- `/spring-boot-patterns` — controllers, services, repositories, configuration (Kotlin & Java)
 - `/react-patterns` — hooks, context, component design
-- `/angular-patterns` — modules, services, RxJS / signals
-- `/dotnet-patterns` — C# patterns, DI, middleware
 - `/openapi-patterns` — spec-first API design
 - `/logging-kotlin` — structured logging with kotlin-logging / logback
-- `/logging-java` — structured logging with SLF4J / @Slf4j / logback
 - `/logging-typescript` — structured logging with pino / winston
-
-### Specialist Review Skills
-- `/doctor-t1d-review` — T1D specialist endocrinologist: clinical correctness, safety, medical workflow
-- `/patient-t1d-review` — T1D patient with pump + CGM: usability, real-world fit, trust
-- `/security-review` — Security specialist: OWASP Top 10, auth, secrets, injection
-- `/qa-review` — QA/QS engineer: test coverage, acceptance criteria, edge cases, regression risk
-- `/architect-review` — Software architect: hexagonal layers, SOLID, coupling, API design
-- `/devops-review` — DevSecOps engineer: container hygiene, env config, CI/CD, supply chain
-- `/ux-review` — UI/UX + accessibility: WCAG AA, ease of use, interaction design
-- `/requirements-review` — Requirements engineer: completeness, testability, consistency, NFRs
-- `/performance-review` — Performance engineer: query efficiency, bundle size, response times
-- `/operations-review` — SRE/operations: observability, graceful degradation, runbooks
-- `/technical-writer-review` — Technical writer: documentation clarity, in-app help text, audience fit
-- `/challenge-all` — Run all 11 specialist perspectives against a single target; consolidated ACCEPT/REVISE/REJECT verdict
-
-### Meta Skills
-- `/learn` — extract a reusable rule from a completed story
-- `/domain-model` — build/update the project domain model
-- `/claude-code-expert` — senior Claude Code advisor: audit and improve CLAUDE.md, settings.json, hooks, MCP servers, skills, and multi-agent orchestration against official docs and best practices; accepts optional focus area (`settings | hooks | mcp | skills | claude-md | agents | security`) or runs a full audit
