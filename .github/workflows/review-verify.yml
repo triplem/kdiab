@@ -1,0 +1,33 @@
+name: Review Docs Verify
+
+# Deliverable-integrity gate for the Technology & Domain Review (docs/review/).
+# Runs the build-and-test verification suite (schema, ID contiguity, finding->deliverable
+# traceability, phase-authority consistency, dead-links, README numbers, no-secrets) so the
+# review stays internally consistent as findings evolve or are materialized.
+# Authored by the AI-DLC ci-pipeline stage (3.7) for the tech-domain-review intent.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/review/**'
+      - '.github/workflows/review-verify.yml'
+  pull_request:
+    paths:
+      - 'docs/review/**'
+      - '.github/workflows/review-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify review deliverable integrity
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # ubuntu-latest ships Python 3 pre-installed — no setup-python step needed.
+      - name: Verify docs/review integrity
+        run: python3 docs/review/verify.py
