@@ -1,8 +1,9 @@
-# Team-Level Rules
+# Team Practices — kdiab
 
-> This team's affirmed practices and corrections. Overrides aidlc-org.md.
-> Populated by practices-discovery affirmation gate. Edit at the gate,
-> not directly.
+Descriptive, team-voice synthesis of how this team works, discovered from codebase
+evidence (RE codekb + committed `.claude/rules/*` + org/team/project memory + git
+history) and confirmed at the practices-discovery interview. Five sections matching
+the `aidlc-team.md` headings; promoted to the team rule layer on affirmation.
 
 ## Way of Working
 
@@ -52,14 +53,3 @@ subtypes, segregated interfaces, dependency inversion — inject abstractions) a
 **DRY** (extract duplicated logic into the shared library and Gradle convention
 plugins rather than per-service copies). Use structured logging (kotlin-logging +
 Logback JSON; Pino for TS) with `X-Correlation-ID` tracing; never log secrets or PII.
-## Forbidden
-
-<!-- Team-specific forbidden patterns -->
-
-## Mandated
-
-<!-- Team-specific mandates -->
-
-## Corrections
-
-<!-- Self-learning loop appends here. -->
