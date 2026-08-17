@@ -34,7 +34,7 @@
 | 16 | FIND-SEC-002 | security | Med | M | Mid | Doctor→patient access is JWT-embedded; revocation lags by token lifetime |
 | 17 | FIND-SEC-005 | security | Med | M | Mid | GDPR erasure (Art 17) vs MDR 7-yr no-purge retention unreconciled |
 | 18 | FIND-SEC-006 | security | Med | M | Mid | GDPR Art-9 safeguards to verify (encryption-at-rest, lawful basis, IP-log retention) |
-| 19 | FIND-DEBT-008 | tech-debt | Med | S | Mid | `kdiab-analyze` suppresses all compiler warnings |
+| 19 | FIND-DEBT-008 | tech-debt | Med | S | Near | `kdiab-analyze` suppresses all compiler warnings (quick-win) |
 | 20 | FIND-DEBT-007 | tech-debt | Med | M | Mid | v3 HISTORY stubbed + stale `#894-#898` reference (untracked) |
 | 21 | FIND-DEBT-001 | tech-debt | Med | M | Mid | `kdiab-nightscout` ships 0 e2e tests (interop-critical) |
 | 22 | FIND-DEBT-004 | tech-debt | Med | M | Mid | nightscout Detekt baseline: 19 UnreachableCode false positives |

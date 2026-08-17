@@ -1,6 +1,6 @@
 # kdiab — Technology & Domain Review
 
-> **Version:** v1.1.1 — the deliverable is semantically versioned; see
+> **Version:** v2.0.0 — the deliverable is semantically versioned; see
 > [CONVENTIONS.md](./CONVENTIONS.md) § Versioning for the bump rules and
 > [Version history](#version-history) below.
 
@@ -57,6 +57,7 @@ The deliverable follows [semver](https://semver.org/) (rules in [CONVENTIONS.md]
 **MINOR** = a finding added, **MAJOR** = a finding superseded/removed or a severity/phase re-scope,
 **PATCH** = wording/evidence/link fix with no finding-set change.
 
+- **v2.0.0** (2026-08-17) — roadmap re-scope: **FIND-DEBT-008** (a `quick-win`-tagged item) moved from the **Mid** band to **Near** so the roadmap opens with the complete top-5 quick-wins set. Finding set unchanged (still 31 actionable); severity/effort/evidence unchanged; the already-filed GitHub issue keeps its `quick-win` label (phase is not projected onto issues). *(MAJOR — roadmap-phase authority change)*
 - **v1.1.1** (2026-08-17) — materialized the backlog as GitHub epic #1562 (+ 31 sub-issues #1563–#1593); status/mapping update only, no finding-set change. *(PATCH)*
 - **v1.1.0** (2026-08-17) — added FIND-DEBT-009 (no performance/load-testing tier); 30 → 31 actionable findings. *(MINOR)*
 - **v1.0.0** (2026-08-17) — initial published deliverable; 30 actionable findings.
