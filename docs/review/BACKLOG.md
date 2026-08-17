@@ -96,7 +96,8 @@ safety item.
 
 ### Epic
 
-- **Title:** `Tech & Domain Review — prioritized improvement backlog`
+- **Title:** `Tech & Domain Review v1.1.0 — prioritized improvement backlog` (deliverable semver version
+  at materialization time; see CONVENTIONS § Versioning).
 - **Body:** links to this backlog + the five theme docs; lists the 31 sub-issues grouped by area.
 - **Labels:** `review`, `epic`.
 
@@ -108,9 +109,10 @@ create the rest. (In practice the `area:*` labels will not pre-exist and will be
 
 ### Sub-issues (one per actionable backlog row — 31)
 
-Each sub-issue: title = the finding summary; body = the theme-doc finding block (evidence link,
-recommendation, incremental alternative); labels = `area:<area>` + `severity:<sev>` (+ `quick-win` for the
-five top quick-wins); linked to the epic via `addSubIssue`. Mapping:
+Each sub-issue: title = `[FIND-<AREA>-NNN] <summary>` (finding-ID prefix, per CONVENTIONS § Materialized
+GitHub issue titles); body = the theme-doc finding block (evidence link, recommendation, incremental
+alternative); labels = `area:<area>` + `severity:<sev>` (+ `quick-win` for the five top quick-wins);
+linked to the epic via `addSubIssue`. Mapping:
 
 | Backlog # | Sub-issue title (from finding) | Labels |
 |---|---|---|
