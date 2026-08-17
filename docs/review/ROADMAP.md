@@ -44,6 +44,7 @@ Do after Near. Grouped by value-density within the band.
 | FIND-DEBT-007 | tech-debt | Med | M | v3 HISTORY: new tracking issue + decide implement vs 404 |
 | FIND-DEBT-004 | tech-debt | Med | M | Burn down the nightscout Detekt baseline |
 | FIND-DEBT-003 | tech-debt | Med | M | Narrow coverage exclusions (users/nightscout first) |
+| FIND-DEBT-009 | tech-debt | Med | M | Add a performance/load-testing tier (start: calc dose, analyze BFF) |
 | FIND-CLIN-006 | clinical-safety | Low | S | Reject implausible `currentBg` |
 | FIND-CLIN-005 | clinical-safety | Low | S | Round to pump increment |
 | FIND-SEC-007 | security | Low | S | CSP hardening |

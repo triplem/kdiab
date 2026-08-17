@@ -20,12 +20,12 @@ evidence and pairs any rewrite with an incremental alternative; no code or tests
 | Clinical safety | [clinical-safety.md](./clinical-safety.md) | FIND-CLIN-001…014 | Dose math is sound; IOB stacking is unguarded (the top item) |
 | Data model | [data-model.md](./data-model.md) | FIND-DATA-001…005 | Schemas are flexible (JSONB) but carb-absorption / calibration gaps remain |
 | Security & compliance | [security.md](./security.md) | FIND-SEC-001…007 | Clean ABAC; flag the test-JWT guard and the MDR/SaMD question |
-| Tech debt | [tech-debt.md](./tech-debt.md) | FIND-DEBT-001…008 | High-discipline codebase; residual debt, with resolved items correctly excluded |
+| Tech debt | [tech-debt.md](./tech-debt.md) | FIND-DEBT-001…009 | High-discipline codebase; residual debt (incl. a missing performance-testing tier), with resolved items correctly excluded |
 | Modernization | [modernization.md](./modernization.md) | FIND-MOD-001…005 | Modern stack; the real question is nine-service shape + observability |
 
 ## At a glance
 
-- **30 actionable findings**, **0 Critical** (no confirmed patient-harm-certain dose bug), **5 High**
+- **31 actionable findings**, **0 Critical** (no confirmed patient-harm-certain dose bug), **5 High**
   (2 clinical-safety, 2 security, 1 tech-debt), the rest Medium/Low.
 - **9 positive verdicts** — items investigated and found sound (recorded so trust is earned, not assumed).
 - **100% evidence-linked** (NFR-1): every finding cites a `path/File.kt#symbol`, a config line, or a

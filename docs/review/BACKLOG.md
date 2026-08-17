@@ -12,7 +12,7 @@
 > intentionally reassuring result; the review earns trust by ruling concerns out with evidence as well
 > as raising them).
 
-## Ordered backlog (30 actionable findings)
+## Ordered backlog (31 actionable findings)
 
 | # | ID | Area | Sev | Eff | Phase | Summary |
 |---|---|---|---|---|---|---|
@@ -39,13 +39,14 @@
 | 21 | FIND-DEBT-001 | tech-debt | Med | M | Mid | `kdiab-nightscout` ships 0 e2e tests (interop-critical) |
 | 22 | FIND-DEBT-004 | tech-debt | Med | M | Mid | nightscout Detekt baseline: 19 UnreachableCode false positives |
 | 23 | FIND-DEBT-003 | tech-debt | Med | M | Mid | Coverage-exclusion breadth overstates real coverage (users/nightscout) |
-| 24 | FIND-MOD-004 | modernization | Med | M | Long | Observability is trace-centric — no metrics/alerting/log-aggregation |
-| 25 | FIND-DATA-004 | data-model | Med | M | Long | Profiles model no temporary illness/exercise override |
-| 26 | FIND-DATA-005 | data-model | Med | L | Long | JSONB payloads schema-unenforced across stores |
-| 27 | FIND-MOD-002 | modernization | Med | L | Long | Nine services over-decomposed for solo/self-hosted (rewrite + incremental alt) |
-| 28 | FIND-SEC-007 | security | Low | S | Mid | CSP hardening (add frame-ancestors/base-uri/form-action) |
-| 29 | FIND-MOD-003 | modernization | Low | S | Mid | No unified platform version; module versions drift |
-| 30 | FIND-DEBT-006 | tech-debt | Low | M | Long | Cross-service duplication incl. glucose-conversion constant in 3 services |
+| 24 | FIND-DEBT-009 | tech-debt | Med | M | Mid | No performance/load-testing tier across the services (calc dose, analyze BFF) |
+| 25 | FIND-MOD-004 | modernization | Med | M | Long | Observability is trace-centric — no metrics/alerting/log-aggregation |
+| 26 | FIND-DATA-004 | data-model | Med | M | Long | Profiles model no temporary illness/exercise override |
+| 27 | FIND-DATA-005 | data-model | Med | L | Long | JSONB payloads schema-unenforced across stores |
+| 28 | FIND-MOD-002 | modernization | Med | L | Long | Nine services over-decomposed for solo/self-hosted (rewrite + incremental alt) |
+| 29 | FIND-SEC-007 | security | Low | S | Mid | CSP hardening (add frame-ancestors/base-uri/form-action) |
+| 30 | FIND-MOD-003 | modernization | Low | S | Mid | No unified platform version; module versions drift |
+| 31 | FIND-DEBT-006 | tech-debt | Low | M | Long | Cross-service duplication incl. glucose-conversion constant in 3 services |
 
 ## Positive verdicts (no action — recorded for trust)
 
@@ -65,10 +66,10 @@ These were investigated and found sound; they are **not** debt:
    then effort ascending. FIND-CLIN-001 (IOB) leads: highest safety value at small-to-medium effort.
 2. **Then cross-theme High severity (rows 10–12)** by value-density: SEC-001 (small-effort auth fix) >
    DEBT-005 (spec drift on calc/users) > SEC-004 (large-effort regulatory flag).
-3. **Then Medium (rows 13–27)** grouped by value-density: domain data-model gaps and the security/GDPR
-   flags (incl. FIND-SEC-002 doctor-access revocation latency) ahead of internal tech-debt and
-   architecture, effort ascending within ties.
-4. **Then Low (rows 28–30).**
+3. **Then Medium (rows 13–28)** grouped by value-density: domain data-model gaps and the security/GDPR
+   flags (incl. FIND-SEC-002 doctor-access revocation latency) ahead of internal tech-debt (incl.
+   FIND-DEBT-009 missing performance tier) and architecture, effort ascending within ties.
+4. **Then Low (rows 29–31).**
 
 Effort is shown per item but never overrides value-density — a cheap Low item never jumps a costly
 safety item.
@@ -96,7 +97,7 @@ safety item.
 ### Epic
 
 - **Title:** `Tech & Domain Review — prioritized improvement backlog`
-- **Body:** links to this backlog + the five theme docs; lists the 30 sub-issues grouped by area.
+- **Body:** links to this backlog + the five theme docs; lists the 31 sub-issues grouped by area.
 - **Labels:** `review`, `epic`.
 
 ### Labels to reconcile (reuse-first, create-missing)
@@ -105,7 +106,7 @@ safety item.
 `severity:high`, `severity:medium`, `severity:low`; `quick-win`; `review`. Reuse any that already exist;
 create the rest. (In practice the `area:*` labels will not pre-exist and will be created.)
 
-### Sub-issues (one per actionable backlog row — 30)
+### Sub-issues (one per actionable backlog row — 31)
 
 Each sub-issue: title = the finding summary; body = the theme-doc finding block (evidence link,
 recommendation, incremental alternative); labels = `area:<area>` + `severity:<sev>` (+ `quick-win` for the
@@ -136,13 +137,14 @@ five top quick-wins); linked to the epic via `addSubIssue`. Mapping:
 | 21 | FIND-DEBT-001 nightscout 0 e2e | `area:tech-debt` `severity:medium` |
 | 22 | FIND-DEBT-004 nightscout Detekt baseline | `area:tech-debt` `severity:medium` |
 | 23 | FIND-DEBT-003 coverage-exclusion breadth | `area:tech-debt` `severity:medium` |
-| 24 | FIND-MOD-004 observability trace-centric | `area:modernization` `severity:medium` |
-| 25 | FIND-DATA-004 no context override | `area:data-model` `severity:medium` |
-| 26 | FIND-DATA-005 JSONB unvalidated | `area:data-model` `severity:medium` |
-| 27 | FIND-MOD-002 nine-service consolidation | `area:modernization` `severity:medium` |
-| 28 | FIND-SEC-007 CSP hardening | `area:security` `severity:low` |
-| 29 | FIND-MOD-003 unified platform version | `area:modernization` `severity:low` |
-| 30 | FIND-DEBT-006 duplication / glucose constant | `area:tech-debt` `severity:low` |
+| 24 | FIND-DEBT-009 no performance/load-testing tier | `area:tech-debt` `severity:medium` |
+| 25 | FIND-MOD-004 observability trace-centric | `area:modernization` `severity:medium` |
+| 26 | FIND-DATA-004 no context override | `area:data-model` `severity:medium` |
+| 27 | FIND-DATA-005 JSONB unvalidated | `area:data-model` `severity:medium` |
+| 28 | FIND-MOD-002 nine-service consolidation | `area:modernization` `severity:medium` |
+| 29 | FIND-SEC-007 CSP hardening | `area:security` `severity:low` |
+| 30 | FIND-MOD-003 unified platform version | `area:modernization` `severity:low` |
+| 31 | FIND-DEBT-006 duplication / glucose constant | `area:tech-debt` `severity:low` |
 
 ### Dedup / cross-reference (FR-D.5 — do NOT re-file)
 

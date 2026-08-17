@@ -77,6 +77,13 @@ No resolved gap is reported as open. This guard directly caught two stale codekb
 - Recommendation: remove `suppressWarnings.set(true)`, fix or `@Suppress` the genuine warnings individually.
 - Incremental alternative: flip it off, triage the surfaced warnings, and address them over a few PRs.
 
+#### FIND-DEBT-009 — No performance/load-testing tier across the nine services
+- Severity: Medium · Effort: M · Confidence: High · Phase: Mid · Area: tech-debt · Patient-safety impact: indirect (an undetected latency/throughput regression on the dose path could delay a bolus recommendation)
+- Evidence: service test source sets are `test` / `integration-test` / `e2e-test` only (root `CLAUDE.md#Test-Suites-Backend`) — no `performance-test` source set or load harness in any of the nine services; `.claude/rules/test-pyramid.md` defines a performance tier the suite omits; the latency-sensitive paths `kdiab-calc/.../application/service/DoseCalculationService.kt#calculateDose` and the `kdiab-analyze` fan-out BFF (aggregates every backend) have no load coverage
+- Finding: the platform has a mature unit/integration/e2e pyramid but **no performance or load-testing tier at all**. For a nine-service system whose BFF (`kdiab-analyze`) fans out to every backend and whose dose calculator sits on the clinical hot path, a latency or throughput regression (a slow query, an N+1 fan-out, connection-pool exhaustion) would reach production uncaught — there is no baseline, no budget, and no gate for response time under concurrent load.
+- Recommendation: add a performance/load-testing tier — establish latency/throughput budgets for the hot paths and a load harness in CI (nightly or pre-release), starting with the dose endpoint (`kdiab-calc`) and the aggregation BFF (`kdiab-analyze`).
+- Incremental alternative: begin with a lightweight k6/Gatling smoke (p95-latency assertion) against `kdiab-calc` and `kdiab-analyze` only, wired to the existing OTEL observability so budgets are measured, before extending to all services.
+
 ## Positive context
 
 The codekb rates kdiab a "mature, high-discipline brownfield codebase," and the live review agrees:
@@ -87,7 +94,7 @@ Most debt is small, contained, and (where it was tracked) already resolved. The 
 
 ## Section coverage (FR-3.1 / FR-3.2)
 
-- **FR-3.1** test pyramid (FIND-DEBT-001, FIND-DEBT-003), real Kover picture (FIND-DEBT-002 — UI resolved,
-  80% enforced). ✓
+- **FR-3.1** test pyramid (FIND-DEBT-001, FIND-DEBT-003, FIND-DEBT-009 — missing performance tier), real
+  Kover picture (FIND-DEBT-002 — UI resolved, 80% enforced). ✓
 - **FR-3.2** Detekt baseline (FIND-DEBT-004), duplication (FIND-DEBT-006); plus DEBT-005/007/008. ✓
 - **US-5 currency guard** applied to every codekb anchor; two stale claims caught. ✓

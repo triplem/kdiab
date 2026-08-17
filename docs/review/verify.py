@@ -27,7 +27,7 @@ AREAS = {
     "CLIN": ("clinical-safety", 14),
     "DATA": ("data-model", 5),
     "SEC": ("security", 7),
-    "DEBT": ("tech-debt", 8),
+    "DEBT": ("tech-debt", 9),
     "MOD": ("modernization", 5),
 }
 THEME_FILES = [v[0] for v in AREAS.values()]
@@ -164,8 +164,8 @@ def check_readme_numbers(fail):
             m = re.search(r"Severity:\s*(Critical|High|Medium|Med|Low)", body)
             if m:
                 sev[m.group(1).replace("Med", "Medium")] += 1
-    if total != 39:
-        fail(f"readme-numbers: expected 39 total findings, got {total}")
+    if total != 40:
+        fail(f"readme-numbers: expected 40 total findings, got {total}")
     if sev["Critical"] != 0:
         fail(f"readme-numbers: expected 0 Critical, got {sev['Critical']}")
     if sev["High"] != 5:
