@@ -179,6 +179,12 @@ def check_no_secrets(fail):
             fail(f"secret: pattern '{pat}' found in review docs")
 
 
+def check_version(fail):
+    # The deliverable is semver-versioned (CONVENTIONS § Versioning); README must stamp it.
+    if not re.search(r"\*\*Version:\*\*\s*v\d+\.\d+\.\d+", _read("README")):
+        fail("version: README missing a `**Version:** vX.Y.Z` semver stamp")
+
+
 CHECKS = [
     ("presence", check_presence),
     ("schema", check_schema),
@@ -190,6 +196,7 @@ CHECKS = [
     ("dead-links", check_dead_links),
     ("readme-numbers", check_readme_numbers),
     ("no-secrets", check_no_secrets),
+    ("version", check_version),
 ]
 
 

@@ -153,6 +153,34 @@ and cuttable:
 | `ROADMAP.md` | U9 | Near / Mid / Long value-density bands |
 | `README.md` | U7 | navigation index + one-line reading guide (solo maintainer, NFR-4) |
 
+## Versioning (semver)
+
+The deliverable (the `docs/review/` set as a whole) is **semantically versioned** ([semver.org](https://semver.org/)).
+The version is stamped in `README.md` and asserted by `verify.py` (the `version` check). The current
+version is **v1.1.0**.
+
+| Bump | When | Example |
+|---|---|---|
+| **MAJOR** (`x`.0.0) | A backward-incompatible change to the finding set: a finding is **superseded/removed**, or its severity/roadmap-phase authority is re-scoped in a way that changes the backlog contract consumers track. | Superseding a finding after it's implemented/withdrawn |
+| **MINOR** (1.`y`.0) | A backward-compatible **addition**: a new finding is added (IDs are only appended, never renumbered). | Adding FIND-DEBT-009 → v1.0.0 → v1.1.0 |
+| **PATCH** (1.1.`z`) | Editorial only: wording, an evidence-anchor correction, a link fix — **no** change to the finding set or its counts. | Fixing a broken `./doc.md` link |
+
+Record every bump in the `README.md` § Version history. Because finding IDs are append-only and
+contiguity is gated (`verify.py`), a MINOR bump never disturbs existing IDs.
+
+## Materialized GitHub issue titles
+
+When the backlog is materialized (deferred, ADR-RVW-005), issue titles carry the **AI-DLC finding ID** so
+every issue is traceable to its theme-doc block, backlog row, and roadmap band, and the **epic** carries
+the deliverable's semver version:
+
+- **Epic title:** `Tech & Domain Review v<X.Y.Z> — prioritized improvement backlog` (the deliverable
+  version at materialization time — e.g. `v1.1.0`).
+- **Sub-issue title:** `[FIND-<AREA>-NNN] <summary>` — e.g. `[FIND-DEBT-009] No performance/load-testing tier across the services`.
+
+The version lives once on the epic (not repeated on every sub-issue); the finding ID lives on every
+sub-issue. This resolves the title/versioning convention (issue #1558).
+
 ## Practice conformance (NFR-5)
 
 Every recommendation, when later implemented, MUST be expressible under `team-practices.md`: one feature

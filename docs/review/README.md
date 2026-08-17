@@ -1,5 +1,9 @@
 # kdiab — Technology & Domain Review
 
+> **Version:** v1.1.0 — the deliverable is semantically versioned; see
+> [CONVENTIONS.md](./CONVENTIONS.md) § Versioning for the bump rules and
+> [Version history](#version-history) below.
+
 A prioritized, evidence-linked "where do I invest next" review of the kdiab T1D platform, produced for
 the solo maintainer. **Recommendations only** — every finding flags a concern with concrete code
 evidence and pairs any rewrite with an incremental alternative; no code or tests were changed.
@@ -45,3 +49,12 @@ before merge. No recommendation requires a coordinated multi-item release.
 Produced during Construction on the enterprise-scope AI-DLC workflow for the "technology & domain
 review" intent. GitHub-issue materialization is **deferred** (ADR-RVW-005, `gh`-gated); the ready-to-open
 queued issue set is recorded in [BACKLOG.md](./BACKLOG.md).
+
+## Version history
+
+The deliverable follows [semver](https://semver.org/) (rules in [CONVENTIONS.md](./CONVENTIONS.md) § Versioning):
+**MINOR** = a finding added, **MAJOR** = a finding superseded/removed or a severity/phase re-scope,
+**PATCH** = wording/evidence/link fix with no finding-set change.
+
+- **v1.1.0** (2026-08-17) — added FIND-DEBT-009 (no performance/load-testing tier); 30 → 31 actionable findings. *(MINOR)*
+- **v1.0.0** (2026-08-17) — initial published deliverable; 30 actionable findings.
