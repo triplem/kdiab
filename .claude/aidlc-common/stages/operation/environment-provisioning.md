@@ -2,8 +2,8 @@
 slug: environment-provisioning
 phase: operation
 execution: CONDITIONAL
-condition: Execute when AWS environments need provisioning or validation
-lead_agent: aidlc-aws-platform-agent
+condition: Execute when deployment environments need provisioning or validation
+lead_agent: aidlc-operations-agent
 support_agents:
   - aidlc-devsecops-agent
   - aidlc-compliance-agent
@@ -42,7 +42,7 @@ MANDATORY: Follow stage-protocol.md for approval gates, question format, and com
 
 ### Step 1: Load Agent Personas
 
-Load aidlc-aws-platform-agent persona from `agents/aidlc-aws-platform-agent.md` and knowledge from `.claude/knowledge/aidlc-aws-platform-agent/`.
+Load aidlc-operations-agent persona from `agents/aidlc-operations-agent.md` and knowledge from `.claude/knowledge/aidlc-operations-agent/`. Load aidlc-devsecops-agent and aidlc-compliance-agent perspectives for environment security and regulatory validation.
 
 ### Step 2: Load Prior Context
 

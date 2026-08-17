@@ -5,7 +5,6 @@ execution: CONDITIONAL
 condition: Execute when new components or services are needed, or service layer design is required. Skip when changes are modifications to existing components only.
 lead_agent: aidlc-architect-agent
 support_agents:
-  - aidlc-aws-platform-agent
   - aidlc-design-agent
 mode: inline
 reviewer: aidlc-architecture-reviewer-agent
@@ -53,7 +52,6 @@ MANDATORY: Follow stage-protocol.md for approval gates, question format, and com
 ### Step 1: Load Agent Personas
 
 Load aidlc-architect-agent persona from `agents/aidlc-architect-agent.md` and knowledge from `.claude/knowledge/aidlc-architect-agent/`.
-Load aidlc-aws-platform-agent persona from `agents/aidlc-aws-platform-agent.md` and knowledge from `.claude/knowledge/aidlc-aws-platform-agent/` for AWS service mapping.
 Load aidlc-design-agent persona from `agents/aidlc-design-agent.md` and knowledge from `.claude/knowledge/aidlc-design-agent/` for UI component specifications and UX-informed design constraints.
 
 ### Step 2: Load Prior Context

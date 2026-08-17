@@ -269,7 +269,6 @@
     "condition": "Execute when there are integration constraints, regulatory requirements, or significant technical uncertainty. Skip for trivial changes with no technical risk.",
     "lead_agent": "aidlc-architect-agent",
     "support_agents": [
-      "aidlc-aws-platform-agent",
       "aidlc-compliance-agent"
     ],
     "mode": "inline",
@@ -1125,7 +1124,6 @@
     "condition": "Execute when new components or services are needed, or service layer design is required. Skip when changes are modifications to existing components only.",
     "lead_agent": "aidlc-architect-agent",
     "support_agents": [
-      "aidlc-aws-platform-agent",
       "aidlc-design-agent"
     ],
     "mode": "inline",
@@ -1621,9 +1619,7 @@
     "execution": "CONDITIONAL",
     "condition": "NFR Requirements was executed and NFR patterns need design. Skip if NFR Requirements was skipped.",
     "lead_agent": "aidlc-architect-agent",
-    "support_agents": [
-      "aidlc-aws-platform-agent"
-    ],
+    "support_agents": [],
     "mode": "inline",
     "for_each": "unit-of-work",
     "produces": [
@@ -1727,8 +1723,8 @@
     "name": "Infrastructure Design",
     "phase": "construction",
     "execution": "CONDITIONAL",
-    "condition": "Infrastructure services need mapping, deployment architecture required, or cloud resources needed. Skip if no infrastructure changes and infrastructure already defined.",
-    "lead_agent": "aidlc-aws-platform-agent",
+    "condition": "Infrastructure services need mapping, deployment architecture required, or platform resources needed. Skip if no infrastructure changes and infrastructure already defined.",
+    "lead_agent": "aidlc-architect-agent",
     "support_agents": [
       "aidlc-devsecops-agent",
       "aidlc-compliance-agent"
@@ -2207,8 +2203,8 @@
     "name": "Environment Provisioning",
     "phase": "operation",
     "execution": "CONDITIONAL",
-    "condition": "Execute when AWS environments need provisioning or validation",
-    "lead_agent": "aidlc-aws-platform-agent",
+    "condition": "Execute when deployment environments need provisioning or validation",
+    "lead_agent": "aidlc-operations-agent",
     "support_agents": [
       "aidlc-devsecops-agent",
       "aidlc-compliance-agent"
@@ -2629,9 +2625,7 @@
     "execution": "CONDITIONAL",
     "condition": "Execute when ongoing operational monitoring and optimization are needed",
     "lead_agent": "aidlc-operations-agent",
-    "support_agents": [
-      "aidlc-aws-platform-agent"
-    ],
+    "support_agents": [],
     "mode": "inline",
     "produces": [
       "slo-report",

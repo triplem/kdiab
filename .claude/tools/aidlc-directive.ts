@@ -537,7 +537,7 @@ if (import.meta.main) {
       stage: "application-design",
       phase: "inception",
       lead_agent: "aidlc-architect-agent",
-      support_agents: ["aidlc-aws-platform-agent", "aidlc-design-agent"],
+      support_agents: ["aidlc-design-agent"],
       mode: "inline",
       gate: true,
       memory_path: "aidlc-docs/inception/application-design/memory.md",
