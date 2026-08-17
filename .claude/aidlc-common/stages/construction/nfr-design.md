@@ -4,8 +4,7 @@ phase: construction
 execution: CONDITIONAL
 condition: NFR Requirements was executed and NFR patterns need design. Skip if NFR Requirements was skipped.
 lead_agent: aidlc-architect-agent
-support_agents:
-  - aidlc-aws-platform-agent
+support_agents: []
 mode: inline
 reviewer: aidlc-architecture-reviewer-agent
 reviewer_max_iterations: 2
@@ -71,7 +70,7 @@ Execute all steps sequentially as written.
 
 ### Step 1: Load Personas
 
-Load aidlc-architect-agent (lead) persona from `agents/aidlc-architect-agent.md` and knowledge from `.claude/knowledge/aidlc-architect-agent/`. Load aidlc-aws-platform-agent persona from `agents/aidlc-aws-platform-agent.md` and knowledge from `.claude/knowledge/aidlc-aws-platform-agent/` for infrastructure and platform input. Apply aidlc-architect-agent as the primary perspective with aidlc-aws-platform-agent providing domain-specific input.
+Load aidlc-architect-agent (lead) persona from `agents/aidlc-architect-agent.md` and knowledge from `.claude/knowledge/aidlc-architect-agent/`. The architect covers infrastructure and platform NFR design directly (this project has no cloud-platform agent).
 
 ### Step 2: Read Prior Artifacts
 

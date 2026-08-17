@@ -2,8 +2,8 @@
 slug: infrastructure-design
 phase: construction
 execution: CONDITIONAL
-condition: Infrastructure services need mapping, deployment architecture required, or cloud resources needed. Skip if no infrastructure changes and infrastructure already defined.
-lead_agent: aidlc-aws-platform-agent
+condition: Infrastructure services need mapping, deployment architecture required, or platform resources needed. Skip if no infrastructure changes and infrastructure already defined.
+lead_agent: aidlc-architect-agent
 support_agents:
   - aidlc-devsecops-agent
   - aidlc-compliance-agent
@@ -76,7 +76,7 @@ Execute all steps sequentially as written.
 
 ### Step 1: Load Personas
 
-Load aidlc-aws-platform-agent (lead) persona from `agents/aidlc-aws-platform-agent.md` and knowledge from `.claude/knowledge/aidlc-aws-platform-agent/`. Load aidlc-devsecops-agent persona from `agents/aidlc-devsecops-agent.md` and knowledge from `.claude/knowledge/aidlc-devsecops-agent/` for infrastructure security. Load aidlc-compliance-agent persona from `agents/aidlc-compliance-agent.md` and knowledge from `.claude/knowledge/aidlc-compliance-agent/` for data residency and regulatory compliance validation. Apply aidlc-aws-platform-agent as the primary perspective with aidlc-devsecops-agent ensuring infrastructure security and aidlc-compliance-agent ensuring regulatory alignment.
+Load aidlc-architect-agent (lead) persona from `agents/aidlc-architect-agent.md` and knowledge from `.claude/knowledge/aidlc-architect-agent/`. Load aidlc-devsecops-agent persona from `agents/aidlc-devsecops-agent.md` and knowledge from `.claude/knowledge/aidlc-devsecops-agent/` for infrastructure security. Load aidlc-compliance-agent persona from `agents/aidlc-compliance-agent.md` and knowledge from `.claude/knowledge/aidlc-compliance-agent/` for data residency and regulatory compliance validation. Apply aidlc-architect-agent as the primary perspective (this project has no cloud-platform agent) with aidlc-devsecops-agent ensuring infrastructure security and aidlc-compliance-agent ensuring regulatory alignment.
 
 ### Step 2: Read Prior Artifacts
 

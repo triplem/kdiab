@@ -4,8 +4,7 @@ phase: operation
 execution: CONDITIONAL
 condition: Execute when ongoing operational monitoring and optimization are needed
 lead_agent: aidlc-operations-agent
-support_agents:
-  - aidlc-aws-platform-agent
+support_agents: []
 mode: inline
 produces:
   - slo-report

@@ -25,7 +25,6 @@ Files placed in these directories are loaded by agents during every stage (after
 | `aidlc-devsecops-agent/` | Security policies | security-baseline.md, compliance-rules.md |
 | `aidlc-operations-agent/` | Ops runbooks | monitoring.md, incident-response.md |
 | `aidlc-compliance-agent/` | Compliance standards | data-governance.md, audit-requirements.md |
-| `aidlc-aws-platform-agent/` | Cloud infrastructure | account-structure.md, service-limits.md |
 | `aidlc-pipeline-deploy-agent/` | CI/CD configuration | pipeline-standards.md, deployment-gates.md |
 | `aidlc-delivery-agent/` | Project management | sprint-cadence.md, definition-of-done.md |
 

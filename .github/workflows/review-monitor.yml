@@ -1,0 +1,50 @@
+name: Review Monitor
+
+# Advisory observability for the Technology & Domain Review deliverable (docs/review/).
+# Complements review-verify.yml (the blocking integrity gate) with CURRENCY + PROGRESS:
+#   * currency  - which finding evidence anchors changed/deleted since the codekb baseline (US-5)
+#   * progress  - backlog headline + open/closed review-issue burn-down (the epic)
+# Scheduled + manual only; never blocks a PR. On currency drift it upserts a SINGLE tracking
+# issue (idempotent - one issue, updated) so the maintainer is nudged without noise.
+# Authored by the AI-DLC observability-setup stage (4.4) for the tech-domain-review intent.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'   # weekly, Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  monitor:
+    name: Review deliverable currency + progress
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0   # full history: monitor.py compares cited files against the baseline commit
+
+      # ubuntu-latest ships Python 3 and gh pre-installed.
+      - name: Run review monitor
+        id: monitor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 docs/review/monitor.py | tee monitor-report.md
+
+      - name: Upsert currency-drift issue
+        if: steps.monitor.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Review currency drift — evidence anchors changed since baseline"
+          existing=$(gh issue list --label review --state open \
+            --search "in:title Review currency drift" \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file monitor-report.md
+          else
+            gh issue create --title "$title" --label review --body-file monitor-report.md
+          fi

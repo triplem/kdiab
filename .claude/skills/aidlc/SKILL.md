@@ -144,7 +144,7 @@ The engine reads the compiled `data/stage-graph.json` directly for all routing; 
 | state-init | 0.3 | State Initialization | Initialization | ALWAYS | (orchestrator) | — | inline |
 | intent-capture | 1.1 | Intent Capture & Framing | Ideation | ALWAYS | aidlc-product-agent | aidlc-architect-agent | inline |
 | market-research | 1.2 | Market Research | Ideation | CONDITIONAL | aidlc-product-agent | — | inline |
-| feasibility | 1.3 | Feasibility & Constraints | Ideation | CONDITIONAL | aidlc-architect-agent | aidlc-aws-platform-agent, aidlc-compliance-agent | inline |
+| feasibility | 1.3 | Feasibility & Constraints | Ideation | CONDITIONAL | aidlc-architect-agent | aidlc-compliance-agent | inline |
 | scope-definition | 1.4 | Scope Definition | Ideation | ALWAYS | aidlc-product-agent | aidlc-delivery-agent | inline |
 | team-formation | 1.5 | Team Formation | Ideation | CONDITIONAL | aidlc-delivery-agent | — | inline |
 | rough-mockups | 1.6 | Rough Mockups | Ideation | CONDITIONAL | aidlc-design-agent | aidlc-product-agent | inline |
@@ -154,23 +154,23 @@ The engine reads the compiled `data/stage-graph.json` directly for all routing; 
 | requirements-analysis | 2.3 | Requirements Analysis | Inception | ALWAYS | aidlc-product-agent | — | inline |
 | user-stories | 2.4 | User Stories | Inception | CONDITIONAL | aidlc-product-agent | aidlc-design-agent | inline |
 | refined-mockups | 2.5 | Refined Mockups | Inception | CONDITIONAL | aidlc-design-agent | aidlc-product-agent | inline |
-| application-design | 2.6 | Application Design | Inception | CONDITIONAL | aidlc-architect-agent | aidlc-aws-platform-agent, aidlc-design-agent | inline |
+| application-design | 2.6 | Application Design | Inception | CONDITIONAL | aidlc-architect-agent | aidlc-design-agent | inline |
 | units-generation | 2.7 | Units Generation | Inception | ALWAYS | aidlc-architect-agent | aidlc-delivery-agent | inline |
 | delivery-planning | 2.8 | Delivery Planning | Inception | ALWAYS | aidlc-delivery-agent | aidlc-architect-agent | inline |
 | functional-design | 3.1 | Functional Design | Construction | CONDITIONAL | aidlc-architect-agent | aidlc-developer-agent | inline |
 | nfr-requirements | 3.2 | NFR Requirements | Construction | CONDITIONAL | aidlc-architect-agent | aidlc-devsecops-agent, aidlc-compliance-agent, aidlc-quality-agent | inline |
-| nfr-design | 3.3 | NFR Design | Construction | CONDITIONAL | aidlc-architect-agent | aidlc-aws-platform-agent | inline |
-| infrastructure-design | 3.4 | Infrastructure Design | Construction | CONDITIONAL | aidlc-aws-platform-agent | aidlc-devsecops-agent, aidlc-compliance-agent | inline |
+| nfr-design | 3.3 | NFR Design | Construction | CONDITIONAL | aidlc-architect-agent | — | inline |
+| infrastructure-design | 3.4 | Infrastructure Design | Construction | CONDITIONAL | aidlc-architect-agent | aidlc-devsecops-agent, aidlc-compliance-agent | inline |
 | code-generation | 3.5 | Code Generation | Construction | ALWAYS | aidlc-developer-agent | — | subagent (aidlc-developer-agent) |
 | build-and-test | 3.6 | Build and Test | Construction | ALWAYS | aidlc-quality-agent | aidlc-devsecops-agent | inline |
 | ci-pipeline | 3.7 | CI Pipeline | Construction | CONDITIONAL | aidlc-pipeline-deploy-agent | — | inline |
 | deployment-pipeline | 4.1 | Deployment Pipeline | Operation | CONDITIONAL | aidlc-pipeline-deploy-agent | — | inline |
-| environment-provisioning | 4.2 | Environment Provisioning | Operation | CONDITIONAL | aidlc-aws-platform-agent | aidlc-devsecops-agent, aidlc-compliance-agent | inline |
+| environment-provisioning | 4.2 | Environment Provisioning | Operation | CONDITIONAL | aidlc-operations-agent | aidlc-devsecops-agent, aidlc-compliance-agent | inline |
 | deployment-execution | 4.3 | Deployment Execution | Operation | CONDITIONAL | aidlc-pipeline-deploy-agent | aidlc-developer-agent | inline |
 | observability-setup | 4.4 | Observability Setup | Operation | CONDITIONAL | aidlc-operations-agent | — | inline |
 | incident-response | 4.5 | Incident Response | Operation | CONDITIONAL | aidlc-operations-agent | — | inline |
 | performance-validation | 4.6 | Performance Validation | Operation | CONDITIONAL | aidlc-quality-agent | — | inline |
-| feedback-optimization | 4.7 | Feedback & Optimization | Operation | CONDITIONAL | aidlc-operations-agent | aidlc-aws-platform-agent | inline |
+| feedback-optimization | 4.7 | Feedback & Optimization | Operation | CONDITIONAL | aidlc-operations-agent | — | inline |
 
 ---
 
@@ -180,7 +180,7 @@ The engine reads the compiled `data/stage-graph.json` directly for all routing; 
 - **STAGE RITUAL IS ATOMIC**: Once a stage starts, EVERY step fires: questions → artifact → reviewer (§12a, if declared) → learnings (§13) → gate. No step is skippable. "Skip to stage X" skips INTERMEDIATE stages, NOT the target stage's ritual. Complete the current stage fully (including learnings) before jumping.
 - **AUTONOMY IS NEVER INFERRED**: A user saying "go with recommended" for one stage is a one-time instruction for THAT stage. The next stage starts fresh. NEVER carry forward autonomy. NEVER self-answer questions without explicit permission for THIS specific stage.
 - **User control**: The user can override any stage decision at any approval gate.
-- **11 domain experts**: Each stage leverages the appropriate agent persona (product, design, delivery, architect, aws-platform, compliance, devsecops, developer, quality, pipeline-deploy, operations).
+- **10 domain experts**: Each stage leverages the appropriate agent persona (product, design, delivery, architect, compliance, devsecops, developer, quality, pipeline-deploy, operations).
 - **Approval gates**: Every stage except the bootstrap initialization stages presents an approval gate (the engine signals this via `run-stage`'s `gate` field).
 - **Questions in markdown files**: All questions go in markdown files using `[Answer]:` tags with A-E + X (Other) options — the file is always the source of truth.
 - **Tri-mode interaction**: The user chooses guided, self-guided, or chat mode for answering questions.
