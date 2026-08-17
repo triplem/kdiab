@@ -1,6 +1,6 @@
 # kdiab — Technology & Domain Review
 
-> **Version:** v1.1.0 — the deliverable is semantically versioned; see
+> **Version:** v1.1.1 — the deliverable is semantically versioned; see
 > [CONVENTIONS.md](./CONVENTIONS.md) § Versioning for the bump rules and
 > [Version history](#version-history) below.
 
@@ -47,8 +47,9 @@ before merge. No recommendation requires a coordinated multi-item release.
 ## Status
 
 Produced during Construction on the enterprise-scope AI-DLC workflow for the "technology & domain
-review" intent. GitHub-issue materialization is **deferred** (ADR-RVW-005, `gh`-gated); the ready-to-open
-queued issue set is recorded in [BACKLOG.md](./BACKLOG.md).
+review" intent. GitHub-issue materialization is **complete** (2026-08-17): filed as **epic #1562** with
+**31 sub-issues (#1563–#1593)**, labelled and linked via `addSubIssue`, no assignees. The as-filed
+mapping is recorded in [BACKLOG.md](./BACKLOG.md) § GitHub issues.
 
 ## Version history
 
@@ -56,5 +57,6 @@ The deliverable follows [semver](https://semver.org/) (rules in [CONVENTIONS.md]
 **MINOR** = a finding added, **MAJOR** = a finding superseded/removed or a severity/phase re-scope,
 **PATCH** = wording/evidence/link fix with no finding-set change.
 
+- **v1.1.1** (2026-08-17) — materialized the backlog as GitHub epic #1562 (+ 31 sub-issues #1563–#1593); status/mapping update only, no finding-set change. *(PATCH)*
 - **v1.1.0** (2026-08-17) — added FIND-DEBT-009 (no performance/load-testing tier); 30 → 31 actionable findings. *(MINOR)*
 - **v1.0.0** (2026-08-17) — initial published deliverable; 30 actionable findings.

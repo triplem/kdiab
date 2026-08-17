@@ -77,24 +77,25 @@ safety item.
 ## Materialization
 
 - **Docs** (this file + theme docs) are the value-bearing deliverable and ship now (FR-D.1).
-- **GitHub issues** are a deferred projection — one epic + one native sub-issue per row, labelled
-  `area:*`+`severity:*`, reuse-first, already-tracked items cross-referenced not re-filed (ADR-RVW-005).
-  Execution is parked at end of Inception (RA-Q3=A) and `gh`-gated (A-2). The ready-to-open queued issue
-  set is appended by unit U10 (see the "Queued GitHub issues (deferred)" section below once generated).
+- **GitHub issues** are now **materialized** (2026-08-17) — one epic + one native sub-issue per row,
+  labelled `review`+`area:*`+`severity:*` (+`quick-win`), reuse-first, already-tracked items
+  cross-referenced not re-filed (ADR-RVW-005). Originally a deferred projection parked at end of Inception
+  (RA-Q3=A) and `gh`-gated (A-2); un-parked and filed as **epic #1562** with **31 sub-issues
+  (#1563–#1593)**, each linked via `addSubIssue`, no assignee at creation. See the "GitHub issues
+  (materialized)" section below for the mapping.
 - The near-term subset is in [QUICK-WINS.md](./QUICK-WINS.md); the phased sequence is in
   [ROADMAP.md](./ROADMAP.md).
 
 ---
 
-## Queued GitHub issues (deferred — unit U10)
+## GitHub issues (materialized — unit U10)
 
-> **Not executed this run.** Per ADR-RVW-005 and RA-Q3=A the workflow parks at end of Inception and issue
-> creation is `gh`-gated (A-2, OQ-1). This section is the **ready-to-open queued issue set** (the
-> `fallbackQueue` projection) — the exact issues to file when the maintainer un-parks. Nothing was written
-> to GitHub. Follows the repo's `github-issue-management.md`: one epic + native sub-issues (`addSubIssue`),
-> **no assignee at creation**, reuse-first labels, dedup against already-tracked items.
+> **Materialized 2026-08-17.** Originally deferred per ADR-RVW-005 / RA-Q3=A and `gh`-gated (A-2, OQ-1);
+> un-parked and filed on `triplem/kdiab`. Follows the repo's `github-issue-management.md`: one epic +
+> native sub-issues (`addSubIssue`), **no assignee at creation**, reuse-first labels, dedup against
+> already-tracked items. The mapping below is the as-filed record.
 
-### Epic
+### Epic — #1562
 
 - **Title:** `Tech & Domain Review v1.1.0 — prioritized improvement backlog` (deliverable semver version
   at materialization time; see CONVENTIONS § Versioning).
@@ -107,12 +108,12 @@ safety item.
 `severity:high`, `severity:medium`, `severity:low`; `quick-win`; `review`. Reuse any that already exist;
 create the rest. (In practice the `area:*` labels will not pre-exist and will be created.)
 
-### Sub-issues (one per actionable backlog row — 31)
+### Sub-issues (one per actionable backlog row — 31, filed as #1563–#1593)
 
 Each sub-issue: title = `[FIND-<AREA>-NNN] <summary>` (finding-ID prefix, per CONVENTIONS § Materialized
 GitHub issue titles); body = the theme-doc finding block (evidence link, recommendation, incremental
-alternative); labels = `area:<area>` + `severity:<sev>` (+ `quick-win` for the five top quick-wins);
-linked to the epic via `addSubIssue`. Mapping:
+alternative); labels = `review` + `area:<area>` + `severity:<sev>` (+ `quick-win` for the five top
+quick-wins); linked to the epic #1562 via `addSubIssue`; no assignee at creation. Mapping:
 
 | Backlog # | Sub-issue title (from finding) | Labels |
 |---|---|---|
@@ -157,5 +158,5 @@ linked to the epic via `addSubIssue`. Mapping:
 - **#894–#898** (v3 collections) — **CLOSED**. The v3 HISTORY debt (FIND-DEBT-007) gets a **new** issue;
   it must **not** be attached to these closed CRUD issues.
 
-**Gating:** file only after the end-of-Inception continue decision (OQ-1) and only if `gh` is
-available/authorized. Assign no one at creation; add assignees + the `In Progress` label when work starts.
+**Status:** filed 2026-08-17 (OQ-1 un-parked) as epic #1562 + sub-issues #1563–#1593, no assignees. When
+starting work on an item, add the assignee + the `In Progress` label per `github-issue-management.md`.
