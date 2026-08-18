@@ -6,7 +6,6 @@ sonarqube = "7.2.3.7755"
 detekt = "1.23.8"
 kover = "0.9.8"
 logback = "1.5.32"
-logback-contrib = "0.1.5"
 kotlin-logging = "8.0.01"
 exposed = "1.2.0"
 kotlinx-serialization = "1.10.0"
@@ -58,8 +57,6 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-client-mock = { module = "io.ktor:ktor-client-mock-jvm", version.ref = "ktor" }
 kotlin-logging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
-logback-json-classic = { module = "ch.qos.logback.contrib:logback-json-classic", version.ref = "logback-contrib" }
-logback-jackson = { module = "ch.qos.logback.contrib:logback-jackson", version.ref = "logback-contrib" }
 jackson-core = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 handlebars = { module = "com.github.jknack:handlebars", version.ref = "handlebars" }
@@ -109,7 +106,7 @@ ktor-server = [
     "ktor-server-hsts", "ktor-server-default-headers", "ktor-server-status-pages",
     "ktor-server-di"
 ]
-logging = ["kotlin-logging", "logback-classic", "logback-json-classic", "logback-jackson"]
+logging = ["kotlin-logging", "logback-classic"]
 exposed = ["exposed-core", "exposed-jdbc", "exposed-kotlin-datetime", "exposed-json"]
 database = [
     "exposed-core", "exposed-jdbc", "exposed-kotlin-datetime", "exposed-json",
