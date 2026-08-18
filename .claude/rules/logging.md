@@ -18,6 +18,26 @@ Every log entry in production must include:
 
 Add contextual fields per event (e.g., `userId`, `orderId`, `durationMs`).
 
+> **JVM backends (Logback `JsonEncoder`).** The eight Kotlin/Ktor backends serialize logs with
+> Logback's built-in `ch.qos.logback.classic.encoder.JsonEncoder` (issue #1605 — removed the
+> `logback-contrib` formatter). That encoder emits a **fixed** schema whose keys cannot be renamed,
+> so on the JVM services the canonical fields above map as follows:
+>
+> | Canonical | JVM `JsonEncoder` key | Note |
+> |---|---|---|
+> | `timestamp` (ISO-8601) | `timestamp` | **epoch millis**, not ISO-8601 (encoder does not support ISO-8601) |
+> | `message` | `formattedMessage` | |
+> | `logger` | `loggerName` | |
+> | `thread` | `threadName` | |
+> | `level` | `level` | unchanged |
+> | `traceId` / `spanId` / `Correlation-ID` | under `mdc` | MDC object; `Correlation-ID` from `X-Correlation-ID` |
+>
+> The ISO-8601 UTC + canonical-name form remains the target for the **non-JVM** services (the Pino/TS
+> frontend logging). The in-repo OTEL→Loki pipeline ingests backend logs via **OTLP**, not by parsing
+> the stdout JSON field names, so this JVM schema change does not affect Loki labels/parsers (#1023).
+> Note: this change removes only the `logback-contrib` log formatter; jackson remains on the runtime
+> classpath (JWT auth + Swagger) and stays force-pinned — full jackson removal is tracked by epic #1603.
+
 ## Log Level Policy
 
 | Level | When | Examples |
