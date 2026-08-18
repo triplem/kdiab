@@ -38,7 +38,13 @@ date against which the other eight artifacts were synthesized. When the reposito
 materially past commit `d6c8866b`, re-run reverse engineering and update this marker so
 downstream stages can tell whether the code knowledge base is current or stale.
 
-## Artifacts Produced (this pass)
+## Currency Re-verification (subsequent intents)
+
+| Date | Intent | Commit | Verdict |
+|---|---|---|---|
+| 2026-08-18 | logback-jsonencoder (refactor, #1556) | a3acc571 | **Current — reused, no re-scan.** `git diff d6c8866b..a3acc571` for `kdiab-*/src/**`, `**/logback.xml`, `build-logic/**`, `gradle/libs.versions.toml` is empty; intervening commits are docs/review, aidlc records, and kdiab-ui dep bumps only. The codekb (esp. dependencies.md, technology-stack.md) remains authoritative for the backend logging subsystem this intent targets. |
+
+## Artifacts Produced (original pass)
 
 1. business-overview.md
 2. architecture.md
