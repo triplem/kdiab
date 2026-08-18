@@ -5,5 +5,12 @@
     "dirName": "260815-tech-domain-review",
     "scope": "enterprise",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0160c-fcd5-7637-ad8d-e50a75249dbb",
+    "slug": "logback-jsonencoder",
+    "dirName": "260818-logback-jsonencoder",
+    "scope": "refactor",
+    "status": "in-flight"
   }
 ]
