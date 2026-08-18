@@ -71,7 +71,7 @@ No resolved gap is reported as open. This guard directly caught two stale codekb
 - Incremental alternative: if no client needs HISTORY, replace the stub with an explicit documented `404/not-supported` and close the debt as won't-do rather than implement.
 
 #### FIND-DEBT-008 — `kdiab-analyze` suppresses all compiler warnings
-- Severity: Medium · Effort: S · Confidence: High · Phase: Mid · Area: tech-debt · Patient-safety impact: n/a
+- Severity: Medium · Effort: S · Confidence: High · Phase: Near · Area: tech-debt · Patient-safety impact: n/a
 - Evidence: `kdiab-analyze/build.gradle.kts#L25` (`suppressWarnings.set(true)`)
 - Finding: the platform's largest/most-complex service globally suppresses Kotlin compiler warnings, masking genuine ones (deprecations, unchecked casts) in exactly the code that computes clinical metrics.
 - Recommendation: remove `suppressWarnings.set(true)`, fix or `@Suppress` the genuine warnings individually.

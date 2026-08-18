@@ -157,7 +157,7 @@ and cuttable:
 
 The deliverable (the `docs/review/` set as a whole) is **semantically versioned** ([semver.org](https://semver.org/)).
 The version is stamped in `README.md` and asserted by `verify.py` (the `version` check). The current
-version is **v1.1.0**.
+version is **v2.0.0**.
 
 | Bump | When | Example |
 |---|---|---|

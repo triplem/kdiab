@@ -4,12 +4,19 @@
 > bands (FR-D.3, ADR-RVW-006). The band is the single source of truth for each finding's `roadmap-phase`
 > — the backlog stamps the same value, so tag and band cannot drift. Every item is independently
 > shippable in one maintainer burst (NFR-2); phases are for *ordering*, not coordinated releases.
-> Band rule: **Near** = quick-wins + Must clinical-safety · **Mid** = Should security + tech-debt ·
-> **Long** = Could modernization + structural data-model.
+> Band rule: **Near** = quick-wins (any area) + Must clinical-safety · **Mid** = Should security +
+> tech-debt · **Long** = Could modernization + structural data-model. The `quick-win` tag takes
+> precedence over area: a small, high-value item leads in Near even when its area would otherwise place
+> it in Mid (e.g. FIND-DEBT-008, tech-debt).
 
 ## Near — safety + highest value-per-effort (target: ~1–2 weeks of bursts)
 
-Start here. These are the highest-value items, weighted to clinical safety, mostly small effort.
+Start here. The roadmap **opens with the [quick wins](./QUICK-WINS.md)** — every effort=S, high-value,
+`quick-win`-tagged item — so the very first thing worked is the "do this week" set (five independent PRs,
+no coordination). The two remaining Near items are higher-effort but safety-/drift-critical; clinical
+safety is strictly first (NFR-3), so they stay in the first band right behind the quick wins.
+
+### Quick wins — do these first (each ≤ 1-day burst, one PR)
 
 | ID | Area | Sev | Eff | One-liner |
 |---|---|---|---|---|
@@ -17,11 +24,17 @@ Start here. These are the highest-value items, weighted to clinical safety, most
 | FIND-CLIN-002 | clinical-safety | Med | S | Validate `glucoseUnit`; reject unknown units |
 | FIND-CLIN-013 | clinical-safety | Med | S | Soft implausible-dose guard at the treatments boundary |
 | FIND-CLIN-010 | clinical-safety | Med | S | Switch estimate to GMI + relabel |
+| FIND-DEBT-008 | tech-debt | Med | S | Remove analyze `suppressWarnings`, triage warnings |
+
+### Then, still first-burst (higher effort, safety-/drift-critical)
+
+| ID | Area | Sev | Eff | One-liner |
+|---|---|---|---|---|
 | FIND-CLIN-001 | clinical-safety | High | M | Make `activeIob` required (close the stacking default) |
 | FIND-DEBT-005 | tech-debt | High | M | Wire calc + users specs into `api:generate` first (drift-critical) |
 
-**Rough effort:** ~4×S + 2×M ≈ 8–10 maintainer-days. **Rationale:** clears four of the five quick-wins
-plus the two highest-impact medium-effort items (IOB default, spec drift on the dose/identity services).
+**Rough effort:** ~5×S + 2×M ≈ 9–11 maintainer-days. **Rationale:** clears **all five quick-wins first**,
+then the two highest-impact medium-effort items (IOB default, spec drift on the dose/identity services).
 
 ## Mid — the bulk of correctness, domain, security & debt (target: ~1–2 months of bursts)
 
@@ -39,7 +52,6 @@ Do after Near. Grouped by value-density within the band.
 | FIND-SEC-002 | security | Med | M | Keep access-token TTL short (≤15 min) + document doctor-access revocation-latency window |
 | FIND-SEC-005 | security | Med | M | Reconcile GDPR erasure vs MDR retention (documented lawful basis) |
 | FIND-SEC-006 | security | Med | M | Verify Art-9 safeguards (encryption-at-rest, DPA, IP-log retention) |
-| FIND-DEBT-008 | tech-debt | Med | S | Remove analyze `suppressWarnings`, triage warnings |
 | FIND-DEBT-001 | tech-debt | Med | M | Nightscout e2e/contract tests |
 | FIND-DEBT-007 | tech-debt | Med | M | v3 HISTORY: new tracking issue + decide implement vs 404 |
 | FIND-DEBT-004 | tech-debt | Med | M | Burn down the nightscout Detekt baseline |
