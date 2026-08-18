@@ -38,7 +38,6 @@ ktor-server-cio = { module = "io.ktor:ktor-server-cio-jvm", version.ref = "ktor"
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation-jvm", version.ref = "ktor" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json-jvm", version.ref = "ktor" }
 ktor-server-resources = { module = "io.ktor:ktor-server-resources-jvm", version.ref = "ktor" }
-ktor-server-openapi = { module = "io.ktor:ktor-server-openapi", version.ref = "ktor" }
 ktor-server-swagger = { module = "io.ktor:ktor-server-swagger-jvm", version.ref = "ktor" }
 ktor-server-call-id = { module = "io.ktor:ktor-server-call-id-jvm", version.ref = "ktor" }
 ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
@@ -99,7 +98,7 @@ cyclonedx = { id = "org.cyclonedx.bom", version.ref = "cyclonedx" }
 [bundles]
 ktor-server = [
     "ktor-server-core", "ktor-server-cio", "ktor-server-content-negotiation",
-    "ktor-serialization-kotlinx-json", "ktor-server-resources", "ktor-server-openapi",
+    "ktor-serialization-kotlinx-json", "ktor-server-resources",
     "ktor-server-swagger", "ktor-server-call-id", "ktor-server-call-logging",
     "ktor-server-auth", "ktor-server-auth-jwt", "ktor-server-metrics",
     "ktor-server-compression", "ktor-server-auto-head-response", "ktor-server-cors",
