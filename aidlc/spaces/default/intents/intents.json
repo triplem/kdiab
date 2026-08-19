@@ -11,6 +11,6 @@
     "slug": "logback-jsonencoder",
     "dirName": "260818-logback-jsonencoder",
     "scope": "refactor",
-    "status": "in-flight"
+    "status": "complete"
   }
 ]
