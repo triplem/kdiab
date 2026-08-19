@@ -1,6 +1,32 @@
 # Build & Test Results — logback-jsonencoder
 
-## Verdict: ❌ FAIL — AC-1/AC-4/AC-6 not met; #1556's premise is invalid
+## Verdict: ✅ RESOLVED — finding actioned; corrected deliverable shipped CI-green
+
+> **Resolution (2026-08-18, on resume).** The FAIL below is the historical finding against the
+> **original over-broad #1556 scope** and is preserved verbatim for the audit trail. Since this stage
+> was parked, the human decision it surfaced has been executed and the value has shipped:
+>
+> - **#1605** (merged, PR #1611, CI-green) — the corrected encoder-swap deliverable: all 8 backends
+>   swapped to `ch.qos.logback.classic.encoder.JsonEncoder`; `logback-contrib`
+>   (`logback-json-classic` + `logback-jackson`) removed from the catalog; **the jackson force-pin at
+>   the patched 2.21.4 was correctly RETAINED** (jackson stays load-bearing via jwt + swagger). This is
+>   exactly the "Corrected scope" recommended below. Verified on disk now: `JsonEncoder` present ×8,
+>   no `logback-contrib` in `gradle/libs.versions.toml`, `jackson = "2.21.4"` pin + CVE comment intact.
+> - **#1607** (merged) — dropped the unused `ktor-server-openapi`, removing the swagger-codegen →
+>   jackson runtime path (one of the two remaining jackson consumers this stage identified).
+> - **#1603** (open epic) — full jackson removal; **#1606** (open) — replace `com.auth0:java-jwt`
+>   with a jackson-free JWT verification, the last remaining runtime jackson path.
+> - **#1556** closed as superseded.
+>
+> Local build proof on the current (post-merge) tree: `kdiab-calc :compileKotlin` → **EXIT 0**. The
+> corrected deliverable itself passed the full GitHub Actions gate on merge of #1611/#1607 (tests,
+> Kover, Detekt, SonarCloud, CodeQL, Trivy) — the authoritative build-and-test signal for a merged
+> change. Nothing over-broad remains in the working tree (the 11-file change was reverted, never
+> committed).
+
+---
+
+## Historical finding (original #1556 scope): ❌ FAIL — AC-1/AC-4/AC-6 not met; #1556's premise is invalid
 
 The build-and-test verification revealed that a core assumption of issue #1556 is **factually
 wrong**, and that the change as implemented would introduce a **security regression**.

@@ -4,6 +4,7 @@
 ## Interpretations
 <!-- example: 2026-05-29T10:14:32Z — chose REST over GraphQL; the consuming team only needs CRUD, revisit if subscriptions land -->
 - 2026-08-18T07:20:00Z — build-and-test caught that #1556's premise was false: the AC-1 runtimeClasspath check found jackson still present via com.auth0:java-jwt (JWT auth) and io.swagger (ktor-server-openapi), not just logback-jackson. This is exactly the failure this stage exists to catch — the earlier build-file grep (declared deps only) missed the transitive runtime consumers.
+- 2026-08-18T19:00:00Z — on resume, verified the parked finding was actioned and shipped: #1605 (PR #1611, merged CI-green) delivered the corrected encoder swap (JsonEncoder ×8, logback-contrib dropped, jackson 2.21.4 pin RETAINED — confirmed on disk); #1607 removed the swagger→jackson path; #1606 (open, under epic #1603) carries the last jwt→jackson path. Local build proof on post-merge tree: kdiab-calc :compileKotlin EXIT 0. Transitioned the stage verdict HALTED→RESOLVED and closed the stage at its gate rather than re-attempting the reverted over-broad change.
 
 ## Deviations
 <!-- example: 2026-05-29T10:14:32Z — skipped the optional caching layer the stage prose suggested; the dataset is small enough that it adds risk -->

@@ -1,6 +1,21 @@
 # Build & Test Summary — logback-jsonencoder
 
-## Outcome: HALTED at build-and-test — intent superseded by epic #1603
+## Outcome: RESOLVED — the finding was actioned; the corrected deliverable shipped CI-green
+
+The build-and-test stage did its job: it caught a false premise before it reached `main`, surfaced the
+decision to the human, and the corrected value shipped through normal CI. Closing the stage on resume.
+
+- **Corrected deliverable merged (#1605, PR #1611, CI-green):** native `JsonEncoder` across all 8
+  backends + `logback-contrib` removed, **keeping the jackson 2.21.4 CVE force-pin** (verified on disk).
+- **Swagger→jackson path removed (#1607, merged).** The last jackson path — `com.auth0:java-jwt` — is
+  tracked as **#1606** under epic **#1603** (full jackson removal). **#1556** closed as superseded.
+- **Local proof (post-merge tree):** `kdiab-calc :compileKotlin` → EXIT 0.
+
+The section below is the original parked-point disposition, preserved for the audit trail.
+
+---
+
+## Outcome (at park): HALTED at build-and-test — intent superseded by epic #1603
 
 Build & Test ran the #1556-specific acceptance check (AC-1: jackson off the runtimeClasspath) and it
 **failed**, revealing that the intent's premise was invalid. See
