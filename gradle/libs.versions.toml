@@ -31,6 +31,9 @@ opentelemetry-instrumentation = "2.27.0-alpha"
 jackson = "2.21.4"
 # Transitive dep pinned to patched version — CVE-2026-55760 (HIGH). See kdiab.kotlin-base constraints.
 handlebars = "4.5.2"
+# Jackson-free JOSE/JWT library (#1606) — replaces com.auth0:java-jwt + com.auth0.jwk:jwks-rsa.
+# API verified against 10.0.1 (DefaultJWTClaimsVerifier ctor + maxClockSkew, JWKSourceBuilder).
+nimbus-jose-jwt = "10.0.1"
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor" }
@@ -43,6 +46,7 @@ ktor-server-call-id = { module = "io.ktor:ktor-server-call-id-jvm", version.ref 
 ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
 ktor-server-auth = { module = "io.ktor:ktor-server-auth-jvm", version.ref = "ktor" }
 ktor-server-auth-jwt = { module = "io.ktor:ktor-server-auth-jwt-jvm", version.ref = "ktor" }
+nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus-jose-jwt" }
 ktor-server-metrics = { module = "io.ktor:ktor-server-metrics", version.ref = "ktor" }
 ktor-server-compression = { module = "io.ktor:ktor-server-compression", version.ref = "ktor" }
 ktor-server-auto-head-response = { module = "io.ktor:ktor-server-auto-head-response", version.ref = "ktor" }

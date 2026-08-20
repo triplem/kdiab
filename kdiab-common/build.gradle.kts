@@ -14,7 +14,7 @@ dependencies {
     implementation(libs.exposed.kotlin.datetime)
     implementation(libs.ktor.server.core)
     implementation(libs.ktor.server.auth)
-    implementation(libs.ktor.server.auth.jwt)
+    implementation(libs.nimbus.jose.jwt)
     implementation(libs.ktor.server.status.pages)
     implementation(libs.ktor.server.call.id)
     implementation(libs.ktor.server.call.logging)
