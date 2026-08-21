@@ -1,8 +1,11 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.analyze.adapters.inbound.web
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.ktor.client.request.*
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
@@ -56,7 +59,7 @@ class AnalyzeRoutesTest {
     // ── JWT helpers ───────────────────────────────────────────────────────────
 
     private companion object {
-        const val JWT_SECRET = "test-secret-for-analyze-tests"
+        const val JWT_SECRET = "test-secret-for-analyze-tests-hs256"
         const val AUDIENCE   = "analyze"
         const val ISSUER     = "http://localhost:8085/realms/kdiab-analyze"
 
@@ -72,13 +75,13 @@ class AnalyzeRoutesTest {
             userId: String,
             roles: List<String>,
             allowedPatients: List<String> = emptyList(),
-        ): String = JWT.create()
-            .withSubject(userId)
-            .withAudience(AUDIENCE, "measure", "profile", "treatment")
-            .withIssuer(ISSUER)
-            .withClaim("roles", roles)
-            .apply { if (allowedPatients.isNotEmpty()) withClaim("allowed_patients", allowedPatients) }
-            .sign(Algorithm.HMAC256(JWT_SECRET))
+        ): String = SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+            .subject(userId)
+            .audience(listOf(AUDIENCE, "measure", "profile", "treatment"))
+            .issuer(ISSUER)
+            .claim("roles", roles)
+            .apply { if (allowedPatients.isNotEmpty()) claim("allowed_patients", allowedPatients) }
+            .build()).apply { sign(MACSigner(JWT_SECRET.toByteArray())) }.serialize()
 
         val sarahToken  get() = token(SARAH_ID,  listOf("PATIENT"))
         val mikeToken   get() = token(MIKE_ID,   listOf("PATIENT"))
@@ -367,12 +370,12 @@ class AnalyzeRoutesTest {
 
     @Test
     fun `timeline - 403 when JWT lacks upstream audiences`() = routeTest { _, _, _, _ ->
-        val tokenWithoutUpstreamAudiences = JWT.create()
-            .withSubject(SARAH_ID)
-            .withAudience(AUDIENCE)
-            .withIssuer(ISSUER)
-            .withClaim("roles", listOf("PATIENT"))
-            .sign(Algorithm.HMAC256(JWT_SECRET))
+        val tokenWithoutUpstreamAudiences = SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+            .subject(SARAH_ID)
+            .audience(AUDIENCE)
+            .issuer(ISSUER)
+            .claim("roles", listOf("PATIENT"))
+            .build()).apply { sign(MACSigner(JWT_SECRET.toByteArray())) }.serialize()
         val resp = client.get(timelineUrl(SARAH_ID)) { bearerAuth(tokenWithoutUpstreamAudiences) }
         assertEquals(HttpStatusCode.Forbidden, resp.status)
     }

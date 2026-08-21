@@ -1,7 +1,10 @@
 package org.javafreedom.kdiab.analyze.adapters.inbound.web
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.bearerAuth
@@ -56,19 +59,19 @@ private fun Application.installMockDi(
 class AnalyzeTimelineIntegrationTest {
 
     private companion object {
-        const val JWT_SECRET = "test-secret-for-analyze-tests"
+        const val JWT_SECRET = "test-secret-for-analyze-tests-hs256"
         const val AUDIENCE = "analyze"
         const val ISSUER = "http://localhost:8085/realms/kdiab-analyze"
         const val SARAH_ID = "11111111-1111-1111-1111-111111111111"
         const val FROM = "2024-01-01T00:00:00Z"
         const val TO = "2024-01-31T23:59:59Z"
 
-        fun token(userId: String, roles: List<String>): String = JWT.create()
-            .withSubject(userId)
-            .withAudience(AUDIENCE, "measure", "profile", "treatment")
-            .withIssuer(ISSUER)
-            .withClaim("roles", roles)
-            .sign(Algorithm.HMAC256(JWT_SECRET))
+        fun token(userId: String, roles: List<String>): String = SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+            .subject(userId)
+            .audience(listOf(AUDIENCE, "measure", "profile", "treatment"))
+            .issuer(ISSUER)
+            .claim("roles", roles)
+            .build()).apply { sign(MACSigner(JWT_SECRET.toByteArray())) }.serialize()
 
         val sarahToken get() = token(SARAH_ID, listOf("PATIENT"))
 

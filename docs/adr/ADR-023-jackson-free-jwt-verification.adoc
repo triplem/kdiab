@@ -1,0 +1,118 @@
+= ADR-023: Jackson-Free JWT Verification via a Nimbus Custom Ktor Provider
+:toc: left
+:icons: font
+
+* *Status*: Accepted
+* *Date*: 2026-08-20
+* *Deciders*: triplem
+* *Issue*: #1606 (epic #1603 — remove Jackson from the runtime classpath)
+* *Supersedes (partially)*: ADR-018 (JWT HMAC256 test mode) — the HMAC test path is retained, but the signing/verification library changes from `com.auth0:java-jwt` to Nimbus.
+
+== Context
+
+Epic #1603 tracks the removal of the `jackson-databind` / `jackson-core` stack from the
+runtime classpath of all eight backends. Jackson is a recurring source of HIGH Trivy findings
+(most recently CVE-2026-54512 / CVE-2026-54513), and the platform's own JSON serialization is
+`kotlinx.serialization` — Jackson is present only as a transitive dependency of libraries the
+services never exercise directly.
+
+Two Jackson entry points were identified and closed in sequence:
+
+. **`ktor-server-openapi` → swagger-parser → Jackson** — removed in #1607.
+. **`ktor-server-auth-jwt` → `com.auth0:java-jwt` (+ `com.auth0.jwk:jwks-rsa`) → Jackson** — the
+  subject of this ADR (#1606).
+
+`ktor-server-auth-jwt` provided the `jwt { }` authentication provider used by every service via
+`configureSecurity()` in `kdiab-common`. It transitively pulls `java-jwt`, the last remaining
+runtime Jackson consumer once the Swagger path was closed. The change must preserve JWT
+authentication behaviour *exactly*: the same accept/reject decision across the full negative-path
+matrix, the same `UserPrincipal` extraction (`sub`, `roles`, `allowed_patients`, `timezone`), the
+same JWKS validation, and the same `authenticate("auth-jwt")` route wiring.
+
+A verification finding during construction refined the epic's premise (see *Consequences*): after
+removing `java-jwt`, Jackson was **still** on the runtime classpath — the Jackson version
+*force-pin constraint itself* was materialising it. Removing that constraint was the final step
+that made the classpath Jackson-free.
+
+== Decision
+
+=== ADR-023 — Nimbus custom Ktor authentication provider (`kdiab-common`)
+
+Replace the `ktor-server-auth-jwt` `jwt { }` provider with a hand-wired custom
+`AuthenticationProvider` in `kdiab-common/plugins/Security.kt` built on
+`com.nimbusds:nimbus-jose-jwt` (pinned to `10.0.1`):
+
+* **RS256 (production)** — a cached, rate-limited `JWKSource` built with `JWKSourceBuilder`.
+* **HS256 (`jwt.test = true`)** — a symmetric `MACVerifier` over a `SingleKeyJWSKeySelector`.
+* **One shared `DefaultJWTClaimsVerifier`** enforces issuer + audience + `exp` (+ `sub` presence)
+  with a 3-second clock skew for *both* paths. This fixes-by-construction the FR-3 risk that a bare
+  `MACVerifier` would skip issuer/audience checks on the test path.
+* `ClaimsToPrincipalMapper` **exception-guards every typed claim accessor** (`runCatching { … }
+  .getOrNull()`) so a present-but-wrong-shape claim (e.g. `"roles":[1,2]`) is treated as *absent*,
+  reproducing `java-jwt`'s null-on-mismatch semantics → identical `401` (not `500`).
+* A custom `JwtAuthenticationProvider` preserves the `401` `ErrorResponse` body and the
+  `TOKEN_REJECTED` log line via `context.challenge`. `authenticate("auth-jwt")` route wiring is
+  unchanged.
+
+=== ADR-023a — Test token minting migrates to Nimbus `MACSigner` (per-service, Q1=A)
+
+Every service's test suite minted HMAC tokens via `com.auth0.jwt.JWT.create().sign(Algorithm
+.HMAC256(secret))`, reached transitively through the main `ktor-server-auth-jwt`. Dropping that
+artifact breaks test compilation platform-wide. Each service's test minter is rewritten in place to
+Nimbus `SignedJWT` + `MACSigner`, removing `java-jwt` from **test** scope as well.
+
+A shared `kdiab-common` test-fixture was **rejected** (more composite-build refactoring than #1606
+warrants — a possible later DRY follow-up). `testImplementation(nimbus-jose-jwt)` is added once in
+the `kdiab.ktor-service` convention plugin, inherited by every service's `test`/`integrationTest`/
+`e2eTest` source sets.
+
+=== ADR-023b — `TOKEN_REJECTED` log enriched; HTTP contract preserved
+
+The rejection log gains a structured `reason=<…>` and a proxy-aware `remote=<X-Forwarded-For | remoteHost>`.
+The HTTP `401` body is byte-for-byte unchanged.
+
+=== ADR-023c — Jackson force-pin removed (Jackson-only scope; handlebars pin retained)
+
+The two Jackson lines in the `kdiab.kotlin-base` `constraints { }` block are removed. The
+unrelated `handlebars` pin (CVE-2026-55760) is deliberately **retained** — the scope is
+Jackson-only.
+
+== Consequences
+
+* **Jackson is fully removed from the runtime classpath of all nine modules.** Verified via
+  `dependencyInsight --dependency jackson-databind/jackson-core --configuration runtimeClasspath`
+  on `kdiab-common` + all eight services: `No dependencies matching`. `java-jwt` and `jwks-rsa` are
+  likewise absent from every runtime classpath.
+* **Refined finding (deviation from the epic's stated premise).** Removing `ktor-server-auth-jwt`
+  eliminated `java-jwt` from the runtime classpath, but Jackson **remained** at `2.21.4` — the
+  Jackson force-pin constraint itself was materialising it (a Gradle behaviour where the versioned
+  `constraints { implementation(…) }` entries kept the modules resolved even with no real consumer).
+  Once the Swagger (#1607) and JWT (#1606) consumers were both gone, removing the two Jackson
+  constraint lines was the step that actually cleared the classpath. Crucially, no module
+  *downgraded* Jackson to the vulnerable `2.21.3` — Jackson simply vanished.
+* **HS256 now requires a ≥ 32-byte (256-bit) secret.** Nimbus `MACSigner`/`MACVerifier` enforce the
+  RFC 7518 minimum that `java-jwt` did not. `configureSecurity()` fails fast at startup with a clear
+  message when `jwt.test = true` and `jwt.secret` is shorter than 32 bytes. Every test secret was
+  lengthened to ≥ 32 bytes accordingly. **Production is unaffected** — no deployment config sets
+  `jwt.test = true` (production uses JWKS/RS256, where `jwt.secret` is unused), so no
+  `keycloak-realm.json` or environment change is required.
+* **Documented parity deviation — test-path clock skew 0 s → 3 s.** The single shared
+  `DefaultJWTClaimsVerifier` applies `maxClockSkew = 3` to both paths; previously only the JWKS path
+  set leeway. Harmless (3 s) and noted as intentional.
+* **We own a small amount of security-critical wiring** (provider + verifier config) → a mandatory
+  manual security review is required before merge.
+* **Reversible** via a single `git revert` — the change is contained to `Security.kt`, the two build
+  files, per-service test minters, and this ADR.
+
+== Alternatives Rejected
+
+* **Ktor `bearer` provider** — rejected on hard evidence: `BearerAuthenticationProvider$Config` has
+  no `challenge` method, so it cannot reproduce the FR-6 `401` `ErrorResponse` body + `TOKEN_REJECTED`
+  log.
+* **Hand-rolled JOSE verifier** — rejected at Feasibility: for a safety-sensitive auth path an
+  audited JOSE library (Nimbus) minimises owned crypto; the one extra jackson-free transitive
+  (`json-smart`) is acceptable.
+* **Keep `java-jwt` as `testImplementation`** — DoD-valid (test-scope only, never ships) but leaves
+  the library present; the Nimbus test migration removes it entirely and is cleaner.
+* **Shared `kdiab-common` Nimbus test-fixture** — rejected as more composite-build refactoring than
+  #1606 warrants; recorded as a possible later DRY follow-up.

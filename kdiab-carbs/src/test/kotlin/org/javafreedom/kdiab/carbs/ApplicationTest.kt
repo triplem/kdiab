@@ -16,7 +16,7 @@ class ApplicationTest {
                 "jwt.audience"     to "carbs",
                 "jwt.realm"        to "kdiab-carbs",
                 "jwt.test"         to "true",
-                "jwt.secret"       to "test-secret-for-unit-tests-only",
+                "jwt.secret"       to "test-secret-for-unit-tests-only-hs256",
                 "app.initDatabase" to "false",
             )
         }

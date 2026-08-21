@@ -1,7 +1,10 @@
 package org.javafreedom.kdiab.profiles.adapters.inbound.web
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
@@ -51,15 +54,17 @@ class ProfileApiTest {
                 userId: Uuid = Uuid.random(),
                 allowedPatients: List<Uuid> = emptyList()
         ): String {
-                val builder = JWT.create()
-                        .withAudience("profile")
-                        .withIssuer("org.javafreedom.kdiab")
-                        .withSubject(userId.toString())
-                        .withClaim("roles", listOf(role.name))
+                val builder = JWTClaimsSet.Builder()
+                        .audience("profile")
+                        .issuer("org.javafreedom.kdiab")
+                        .subject(userId.toString())
+                        .claim("roles", listOf(role.name))
                 if (allowedPatients.isNotEmpty()) {
-                        builder.withClaim("allowed_patients", allowedPatients.map { it.toString() })
+                        builder.claim("allowed_patients", allowedPatients.map { it.toString() })
                 }
-                return builder.sign(Algorithm.HMAC256("secret"))
+                return SignedJWT(JWSHeader(JWSAlgorithm.HS256), builder.build())
+                        .apply { sign(MACSigner("secret-hs256-min32-bytes-0123456789ab".toByteArray())) }
+                        .serialize()
         }
 
         @Test
@@ -731,7 +736,7 @@ class ProfileApiTest {
                                         "jwt.audience"     to "profile",
                                         "jwt.domain"       to "org.javafreedom.kdiab",
                                         "jwt.realm"        to "kdiab-profiles",
-                                        "jwt.secret"       to "secret",
+                                        "jwt.secret"       to "secret-hs256-min32-bytes-0123456789ab",
                                         "jwt.test"         to "true",
                                         "app.initDatabase" to "false",
                                 )

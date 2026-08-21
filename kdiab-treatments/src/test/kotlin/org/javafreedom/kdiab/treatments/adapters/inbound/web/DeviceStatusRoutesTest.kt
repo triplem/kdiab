@@ -1,8 +1,11 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.treatments.adapters.inbound.web
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
@@ -44,18 +47,18 @@ private fun Application.installMockDi(
 class DeviceStatusRoutesTest {
 
     private companion object {
-        const val JWT_SECRET = "test-secret-for-unit-tests-only"
+        const val JWT_SECRET = "test-secret-for-unit-tests-only-hs256"
         const val AUDIENCE   = "treatment"
         const val ISSUER     = "http://localhost:8081/realms/kdiab-treatments"
         const val SARAH_ID   = "11111111-1111-1111-1111-111111111111"
         const val MIKE_ID    = "22222222-2222-2222-2222-222222222222"
 
-        fun token(userId: String, roles: List<String>): String = JWT.create()
-            .withSubject(userId)
-            .withAudience(AUDIENCE)
-            .withIssuer(ISSUER)
-            .withClaim("roles", roles)
-            .sign(Algorithm.HMAC256(JWT_SECRET))
+        fun token(userId: String, roles: List<String>): String = SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+            .subject(userId)
+            .audience(AUDIENCE)
+            .issuer(ISSUER)
+            .claim("roles", roles)
+            .build()).apply { sign(MACSigner(JWT_SECRET.toByteArray())) }.serialize()
 
         val sarahToken get() = token(SARAH_ID, listOf("PATIENT"))
         val mikeToken  get() = token(MIKE_ID,  listOf("PATIENT"))

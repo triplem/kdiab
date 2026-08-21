@@ -1,8 +1,11 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.calc.adapters.inbound.web
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -74,13 +77,13 @@ class CalcRoutesIntegrationTest {
     )
 
     private fun token(userIdStr: String, roles: List<String>): String =
-        JWT.create()
-            .withSubject(userIdStr)
-            .withAudience(audience)
-            .withIssuer(issuer)
-            .withClaim("roles", roles)
-            .withExpiresAt(Date(System.currentTimeMillis() + 60_000))
-            .sign(Algorithm.HMAC256(jwtSecret))
+        SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+            .subject(userIdStr)
+            .audience(audience)
+            .issuer(issuer)
+            .claim("roles", roles)
+            .expirationTime(Date(System.currentTimeMillis() + 60_000))
+            .build()).apply { sign(MACSigner(jwtSecret.toByteArray())) }.serialize()
 
     @Test
     fun `POST calculateDose - returns 200 with computed dose for authenticated patient`() =

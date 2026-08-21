@@ -30,6 +30,9 @@ dependencies {
     // Unit test deps at project level so they're available to all test suites
     "testImplementation"(bundle("test-unit"))
     "testImplementation"(lib("ktor-client-mock"))
+    // #1606: test token minting migrated to Nimbus MACSigner/SignedJWT (java-jwt removed).
+    // integrationTest/e2eTest inherit this via extendsFrom(testImplementation) below.
+    "testImplementation"(lib("nimbus-jose-jwt"))
 }
 
 kotlin {
