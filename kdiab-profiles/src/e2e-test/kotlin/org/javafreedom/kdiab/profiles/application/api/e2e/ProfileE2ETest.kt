@@ -1,7 +1,10 @@
 package org.javafreedom.kdiab.profiles.adapters.inbound.web.e2e
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -26,21 +29,24 @@ class ProfileE2ETest :
                 val jwtDomain = "https://jwt-provider-domain/"
                 val jwtAudience = "jwt-audience"
                 val jwtRealm = "kdiab-profiles"
-                val jwtSecret = "secret"
+                val jwtSecret = "secret-hs256-min32-bytes-0123456789ab"
 
                 fun generateToken(
                         userId: Uuid,
                         roles: List<String> = listOf("PATIENT"),
                         allowedPatients: List<String> = emptyList()
                 ): String {
-                        return JWT.create()
-                                .withAudience(jwtAudience)
-                                .withIssuer(jwtDomain)
-                                .withSubject(userId.toString())
-                                .withClaim("roles", roles)
-                                .withClaim("allowed_patients", allowedPatients)
-                                .withExpiresAt(Date(System.currentTimeMillis() + 60000))
-                                .sign(Algorithm.HMAC256(jwtSecret))
+                        return SignedJWT(
+                                JWSHeader(JWSAlgorithm.HS256),
+                                JWTClaimsSet.Builder()
+                                        .audience(jwtAudience)
+                                        .issuer(jwtDomain)
+                                        .subject(userId.toString())
+                                        .claim("roles", roles)
+                                        .claim("allowed_patients", allowedPatients)
+                                        .expirationTime(Date(System.currentTimeMillis() + 60000))
+                                        .build()
+                        ).apply { sign(MACSigner(jwtSecret.toByteArray())) }.serialize()
                 }
 
                 given("A running Profile Service") {

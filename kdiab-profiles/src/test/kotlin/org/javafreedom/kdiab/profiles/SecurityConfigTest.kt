@@ -48,7 +48,7 @@ class SecurityConfigTest {
                 "jwt.audience"     to "profile",
                 "jwt.domain"       to "org.javafreedom.kdiab",
                 "jwt.realm"        to "kdiab-profiles",
-                "jwt.secret"       to "test-secret-value",
+                "jwt.secret"       to "test-secret-value-hs256-min32-bytes-ok",
                 "jwt.test"         to "true",
                 "app.initDatabase" to "false",
             )

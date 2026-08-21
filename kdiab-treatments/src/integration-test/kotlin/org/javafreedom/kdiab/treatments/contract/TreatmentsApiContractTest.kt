@@ -1,8 +1,11 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.treatments.contract
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -63,7 +66,7 @@ import org.javafreedom.kdiab.treatments.module
 class TreatmentsApiContractTest {
 
     private companion object {
-        const val JWT_SECRET = "contract-test-secret-only"
+        const val JWT_SECRET = "contract-test-secret-only-hs256-pad0"
         const val AUDIENCE   = "treatment"
         const val ISSUER     = "http://localhost:8081/realms/kdiab-treatments"
 
@@ -71,13 +74,13 @@ class TreatmentsApiContractTest {
         const val TREATMENT_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
 
         fun patientToken(userId: String = USER_ID): String =
-            JWT.create()
-                .withSubject(userId)
-                .withAudience(AUDIENCE)
-                .withIssuer(ISSUER)
-                .withClaim("roles", listOf("PATIENT"))
-                .withExpiresAt(Date(System.currentTimeMillis() + 60_000))
-                .sign(Algorithm.HMAC256(JWT_SECRET))
+            SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+                .subject(userId)
+                .audience(AUDIENCE)
+                .issuer(ISSUER)
+                .claim("roles", listOf("PATIENT"))
+                .expirationTime(Date(System.currentTimeMillis() + 60_000))
+                .build()).apply { sign(MACSigner(JWT_SECRET.toByteArray())) }.serialize()
 
         val testConfig = MapApplicationConfig(
             "jwt.domain"       to ISSUER,

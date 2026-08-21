@@ -1,8 +1,11 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.treatments.adapters.inbound.web.e2e
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.client.plugins.contentnegotiation.*
@@ -22,18 +25,18 @@ import org.javafreedom.kdiab.treatments.module
 class TreatmentE2ETest : BehaviorSpec({
     val ISSUER = "http://localhost:8081/realms/kdiab-treatments"
     val AUDIENCE = "treatment"
-    val JWT_SECRET = "test-secret-for-e2e-tests"
+    val JWT_SECRET = "test-secret-for-e2e-tests-hs256-pad0"
     val SARAH_ID = "11111111-1111-1111-1111-111111111111"
     val MIKE_ID = "22222222-2222-2222-2222-222222222222"
 
     fun token(userId: String, roles: List<String>, allowedPatients: List<String> = emptyList()): String =
-        JWT.create()
-            .withSubject(userId)
-            .withAudience(AUDIENCE)
-            .withIssuer(ISSUER)
-            .withClaim("roles", roles)
-            .apply { if (allowedPatients.isNotEmpty()) withClaim("allowed_patients", allowedPatients) }
-            .sign(Algorithm.HMAC256(JWT_SECRET))
+        SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+            .subject(userId)
+            .audience(AUDIENCE)
+            .issuer(ISSUER)
+            .claim("roles", roles)
+            .apply { if (allowedPatients.isNotEmpty()) claim("allowed_patients", allowedPatients) }
+            .build()).apply { sign(MACSigner(JWT_SECRET.toByteArray())) }.serialize()
 
     fun treatmentsConfig(dbName: String) = MapApplicationConfig(
         "jwt.domain" to ISSUER,

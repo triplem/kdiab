@@ -1,7 +1,10 @@
 package org.javafreedom.kdiab.analyze.adapters.inbound.web.e2e
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.collections.shouldNotBeEmpty
@@ -63,7 +66,7 @@ private fun Application.installMockDi(
 
 class AnalyzeE2ETest : BehaviorSpec({
 
-    val jwtSecret = "test-secret-for-analyze-tests"
+    val jwtSecret = "test-secret-for-analyze-tests-hs256"
     val audience = "analyze"
     val issuer = "http://localhost:8085/realms/kdiab-analyze"
     val sarahId = "11111111-1111-1111-1111-111111111111"
@@ -76,14 +79,14 @@ class AnalyzeE2ETest : BehaviorSpec({
         userId: String,
         roles: List<String>,
         allowedPatients: List<String> = emptyList(),
-    ): String = JWT.create()
-        .withSubject(userId)
-        .withAudience(audience, "measure", "profile", "treatment")
-        .withIssuer(issuer)
-        .withClaim("roles", roles)
-        .withClaim("glucose_unit", "mg/dL")
-        .withClaim("allowed_patients", allowedPatients)
-        .sign(Algorithm.HMAC256(jwtSecret))
+    ): String = SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+        .subject(userId)
+        .audience(listOf(audience, "measure", "profile", "treatment"))
+        .issuer(issuer)
+        .claim("roles", roles)
+        .claim("glucose_unit", "mg/dL")
+        .claim("allowed_patients", allowedPatients)
+        .build()).apply { sign(MACSigner(jwtSecret.toByteArray())) }.serialize()
 
     val sarahToken = token(sarahId, listOf("PATIENT"))
     val mikeToken = token(mikeId, listOf("PATIENT"))

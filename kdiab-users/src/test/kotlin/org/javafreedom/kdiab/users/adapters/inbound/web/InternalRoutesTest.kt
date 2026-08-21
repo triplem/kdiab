@@ -53,7 +53,7 @@ private fun Application.installMockDiWithInvitationService(
 class InternalRoutesTest {
 
     private companion object {
-        const val JWT_SECRET = "test-secret-for-unit-tests-only"
+        const val JWT_SECRET = "test-secret-for-unit-tests-only-hs256"
         const val ISSUER = "http://localhost:8081/realms/kdiab"
         const val INTERNAL_TOKEN = "test-internal-token"
     }

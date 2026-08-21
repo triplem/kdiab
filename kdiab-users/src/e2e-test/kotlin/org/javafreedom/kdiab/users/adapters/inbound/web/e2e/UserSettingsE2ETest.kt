@@ -1,8 +1,11 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.users.adapters.inbound.web.e2e
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
@@ -62,18 +65,18 @@ class UserSettingsE2ETest :
         val jwtDomain = "http://localhost:8081/realms/kdiab"
         val jwtAudience = "users"
         val jwtRealm = "kdiab"
-        val jwtSecret = "secret"
+        val jwtSecret = "secret-hs256-min32-bytes-0123456789ab"
 
         fun generateToken(
             userId: Uuid,
             roles: List<String> = listOf("PATIENT"),
-        ): String = JWT.create()
-            .withAudience(jwtAudience)
-            .withIssuer(jwtDomain)
-            .withSubject(userId.toString())
-            .withClaim("roles", roles)
-            .withExpiresAt(Date(System.currentTimeMillis() + 60_000))
-            .sign(Algorithm.HMAC256(jwtSecret))
+        ): String = SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+            .audience(jwtAudience)
+            .issuer(jwtDomain)
+            .subject(userId.toString())
+            .claim("roles", roles)
+            .expirationTime(Date(System.currentTimeMillis() + 60_000))
+            .build()).apply { sign(MACSigner(jwtSecret.toByteArray())) }.serialize()
 
         fun identityProfile(id: Uuid) = IdentityUserProfile(
             id = id.toString(),

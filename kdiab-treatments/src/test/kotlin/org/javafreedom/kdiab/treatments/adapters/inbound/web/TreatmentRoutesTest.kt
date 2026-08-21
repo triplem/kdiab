@@ -1,8 +1,11 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.treatments.adapters.inbound.web
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.ktor.client.request.*
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
@@ -51,7 +54,7 @@ class TreatmentRoutesTest {
     // ── Test JWT helpers ──────────────────────────────────────────────────────
 
     private companion object {
-        const val JWT_SECRET   = "test-secret-for-unit-tests-only"
+        const val JWT_SECRET   = "test-secret-for-unit-tests-only-hs256"
         const val AUDIENCE     = "treatment"
         const val ISSUER       = "http://localhost:8081/realms/kdiab-treatments"
 
@@ -65,13 +68,13 @@ class TreatmentRoutesTest {
             userId: String,
             roles: List<String>,
             allowedPatients: List<String> = emptyList()
-        ): String = JWT.create()
-            .withSubject(userId)
-            .withAudience(AUDIENCE)
-            .withIssuer(ISSUER)
-            .withClaim("roles", roles)
-            .apply { if (allowedPatients.isNotEmpty()) withClaim("allowed_patients", allowedPatients) }
-            .sign(Algorithm.HMAC256(JWT_SECRET))
+        ): String = SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+            .subject(userId)
+            .audience(AUDIENCE)
+            .issuer(ISSUER)
+            .claim("roles", roles)
+            .apply { if (allowedPatients.isNotEmpty()) claim("allowed_patients", allowedPatients) }
+            .build()).apply { sign(MACSigner(JWT_SECRET.toByteArray())) }.serialize()
 
         val sarahToken  get() = token(SARAH_ID,  listOf("PATIENT"))
         val mikeToken   get() = token(MIKE_ID,   listOf("PATIENT"))

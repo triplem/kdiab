@@ -1,7 +1,10 @@
 package org.javafreedom.kdiab.profiles.application.api
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -41,12 +44,15 @@ private fun Application.installMockDi(
 class InsulinApiTest {
 
     private fun generateToken(role: Role, userId: Uuid = Uuid.random()): String =
-        JWT.create()
-            .withAudience("profile")
-            .withIssuer("org.javafreedom.kdiab")
-            .withSubject(userId.toString())
-            .withClaim("roles", listOf(role.name))
-            .sign(Algorithm.HMAC256("secret"))
+        SignedJWT(
+            JWSHeader(JWSAlgorithm.HS256),
+            JWTClaimsSet.Builder()
+                .audience("profile")
+                .issuer("org.javafreedom.kdiab")
+                .subject(userId.toString())
+                .claim("roles", listOf(role.name))
+                .build()
+        ).apply { sign(MACSigner("secret-hs256-min32-bytes-0123456789ab".toByteArray())) }.serialize()
 
     private fun ApplicationTestBuilder.setupApp(repo: InsulinRepository) {
         environment {
@@ -54,7 +60,7 @@ class InsulinApiTest {
                 "jwt.audience"     to "profile",
                 "jwt.domain"       to "org.javafreedom.kdiab",
                 "jwt.realm"        to "kdiab-profiles",
-                "jwt.secret"       to "secret",
+                "jwt.secret"       to "secret-hs256-min32-bytes-0123456789ab",
                 "jwt.test"         to "true",
                 "app.initDatabase" to "false",
             )

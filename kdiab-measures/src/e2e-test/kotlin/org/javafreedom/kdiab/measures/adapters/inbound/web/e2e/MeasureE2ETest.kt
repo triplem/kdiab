@@ -1,8 +1,11 @@
 @file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
 package org.javafreedom.kdiab.measures.adapters.inbound.web.e2e
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.kotest.core.spec.style.BehaviorSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.client.plugins.contentnegotiation.*
@@ -23,7 +26,7 @@ import org.javafreedom.kdiab.measures.module
 
 private const val ISSUER = "http://localhost:8081/realms/kdiab-measures"
 private const val AUDIENCE = "measure"
-private const val JWT_SECRET = "test-secret-for-unit-tests-only"
+private const val JWT_SECRET = "test-secret-for-unit-tests-only-hs256"
 
 private val userSarahId = Uuid.parse("11111111-1111-1111-1111-111111111111")
 private val userMikeId = Uuid.parse("22222222-2222-2222-2222-222222222222")
@@ -32,14 +35,19 @@ private fun generateJwt(
     userId: String,
     roles: List<String>,
     allowedPatients: List<String> = emptyList(),
-): String = JWT.create()
-    .withSubject(userId)
-    .withAudience(AUDIENCE)
-    .withIssuer(ISSUER)
-    .withClaim("roles", roles)
-    .apply { if (allowedPatients.isNotEmpty()) withClaim("allowed_patients", allowedPatients) }
-    .withExpiresAt(Date(System.currentTimeMillis() + 60_000))
-    .sign(Algorithm.HMAC256(JWT_SECRET))
+): String {
+    val claims = JWTClaimsSet.Builder()
+        .subject(userId)
+        .audience(AUDIENCE)
+        .issuer(ISSUER)
+        .claim("roles", roles)
+        .apply { if (allowedPatients.isNotEmpty()) claim("allowed_patients", allowedPatients) }
+        .expirationTime(Date(System.currentTimeMillis() + 60_000))
+        .build()
+    return SignedJWT(JWSHeader(JWSAlgorithm.HS256), claims)
+        .apply { sign(MACSigner(JWT_SECRET.toByteArray())) }
+        .serialize()
+}
 
 private fun measuresConfig(dbName: String = "e2e_measures") = MapApplicationConfig(
     "jwt.domain" to ISSUER,

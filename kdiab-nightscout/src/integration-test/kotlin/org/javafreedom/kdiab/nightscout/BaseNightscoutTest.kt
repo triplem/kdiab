@@ -1,7 +1,10 @@
 package org.javafreedom.kdiab.nightscout
 
-import com.auth0.jwt.JWT
-import com.auth0.jwt.algorithms.Algorithm
+import com.nimbusds.jose.JWSAlgorithm
+import com.nimbusds.jose.JWSHeader
+import com.nimbusds.jose.crypto.MACSigner
+import com.nimbusds.jwt.JWTClaimsSet
+import com.nimbusds.jwt.SignedJWT
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.MockRequestHandleScope
 import io.ktor.client.engine.mock.respond
@@ -51,13 +54,13 @@ abstract class BaseNightscoutTest {
         )
 
         fun patientToken(userId: String = PATIENT_ID): String =
-            JWT.create()
-                .withSubject(userId)
-                .withAudience(AUDIENCE)
-                .withIssuer(ISSUER)
-                .withClaim("roles", listOf("PATIENT"))
-                .withExpiresAt(Date(System.currentTimeMillis() + 60_000))
-                .sign(Algorithm.HMAC256(JWT_SECRET))
+            SignedJWT(JWSHeader(JWSAlgorithm.HS256), JWTClaimsSet.Builder()
+                .subject(userId)
+                .audience(AUDIENCE)
+                .issuer(ISSUER)
+                .claim("roles", listOf("PATIENT"))
+                .expirationTime(Date(System.currentTimeMillis() + 60_000))
+                .build()).apply { sign(MACSigner(JWT_SECRET.toByteArray())) }.serialize()
 
         fun jsonResponse(
             scope: MockRequestHandleScope,
