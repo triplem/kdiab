@@ -187,7 +187,7 @@ private fun ApplicationCall.clientIp(): String =
         ?.split(",")?.firstOrNull()?.trim()?.takeIf { it.isNotEmpty() }
         ?: request.local.remoteHost
 
-class JwtAuthenticationProvider(config: Config) : AuthenticationProvider(config) {
+class JwtAuthenticationProvider(config: JwtConfig) : AuthenticationProvider(config) {
     private val verifier = config.verifier
     private val challengeKey: String = config.name ?: "auth-jwt"
 
@@ -209,7 +209,7 @@ class JwtAuthenticationProvider(config: Config) : AuthenticationProvider(config)
         }
     }
 
-    class Config(name: String) : AuthenticationProvider.Config(name) {
+    class JwtConfig(name: String) : AuthenticationProvider.Config(name) {
         lateinit var verifier: TokenVerifier
     }
 }
@@ -233,8 +233,8 @@ private fun AuthenticationContext.rejectWith(providerName: String, reason: Rejec
     }
 }
 
-fun AuthenticationConfig.jwtAuth(name: String, configure: JwtAuthenticationProvider.Config.() -> Unit) {
-    register(JwtAuthenticationProvider(JwtAuthenticationProvider.Config(name).apply(configure)))
+fun AuthenticationConfig.jwtAuth(name: String, configure: JwtAuthenticationProvider.JwtConfig.() -> Unit) {
+    register(JwtAuthenticationProvider(JwtAuthenticationProvider.JwtConfig(name).apply(configure)))
 }
 
 fun Application.configureSecurity() {

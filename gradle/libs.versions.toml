@@ -45,8 +45,6 @@ ktor-server-swagger = { module = "io.ktor:ktor-server-swagger-jvm", version.ref 
 ktor-server-call-id = { module = "io.ktor:ktor-server-call-id-jvm", version.ref = "ktor" }
 ktor-server-call-logging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
 ktor-server-auth = { module = "io.ktor:ktor-server-auth-jvm", version.ref = "ktor" }
-# ktor-server-auth-jwt removed (#1606): its transitive com.auth0:java-jwt was the last jackson
-# consumer on the runtime classpath. JWT verification is now a custom provider over Nimbus.
 nimbus-jose-jwt = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus-jose-jwt" }
 ktor-server-metrics = { module = "io.ktor:ktor-server-metrics", version.ref = "ktor" }
 ktor-server-compression = { module = "io.ktor:ktor-server-compression", version.ref = "ktor" }

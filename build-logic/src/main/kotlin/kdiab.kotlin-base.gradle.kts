@@ -18,10 +18,6 @@ private fun lib(alias: String) = catalog().findLibrary(alias).get()
 dependencies {
     "testImplementation"(lib("kotlin-test-junit5"))
 
-    // Force the transitive jackson stack to a patched version to resolve HIGH Trivy findings
-    // CVE-2026-54512 / CVE-2026-54513 (jackson-core / jackson-databind 2.21.3 -> 2.21.4).
-    // A constraint only takes effect when the dependency is actually present on the classpath,
-    // so it is a no-op for modules that do not pull jackson transitively.
     constraints {
         "implementation"(lib("handlebars")) { because("CVE-2026-55760: handlebars 4.3.1 -> 4.5.2") }
     }
