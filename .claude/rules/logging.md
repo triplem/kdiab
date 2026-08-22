@@ -35,8 +35,10 @@ Add contextual fields per event (e.g., `userId`, `orderId`, `durationMs`).
 > The ISO-8601 UTC + canonical-name form remains the target for the **non-JVM** services (the Pino/TS
 > frontend logging). The in-repo OTEL→Loki pipeline ingests backend logs via **OTLP**, not by parsing
 > the stdout JSON field names, so this JVM schema change does not affect Loki labels/parsers (#1023).
-> Note: this change removes only the `logback-contrib` log formatter; jackson remains on the runtime
-> classpath (JWT auth + Swagger) and stays force-pinned — full jackson removal is tracked by epic #1603.
+> Note: the #1605 change removed only the `logback-contrib` log formatter. Jackson has since been
+> removed from the runtime classpath entirely — JWT auth migrated to Nimbus (#1606) and Swagger to a
+> static UI (#1607) — and the jackson force-pin plus its `libs.versions.toml` entries were retired
+> (#1606 / #1608), completing epic #1603. Jackson is no longer on the runtime classpath or force-pinned.
 
 ## Log Level Policy
 
