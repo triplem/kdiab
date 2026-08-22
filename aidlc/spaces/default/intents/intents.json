@@ -12,5 +12,19 @@
     "dirName": "260818-logback-jsonencoder",
     "scope": "refactor",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0187b-d46f-7648-b338-dfe225eef49b",
+    "slug": "jackson-free-jwt",
+    "dirName": "260819-jackson-free-jwt",
+    "scope": "feature",
+    "status": "complete"
+  },
+  {
+    "uuid": "01a028ca-9533-775d-a962-b5a388bcd023",
+    "slug": "release-workflow-fix",
+    "dirName": "260822-release-workflow-fix",
+    "scope": "refactor",
+    "status": "complete"
   }
 ]
