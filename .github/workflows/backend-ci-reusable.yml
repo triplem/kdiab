@@ -95,10 +95,19 @@ jobs:
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=/tmp/backend-image.tar
 
+      - name: Derive short service name
+        id: svc
+        # Strip the kdiab- prefix so the uploaded artifact names match what
+        # release.yml downloads (<service>-backend-{image,bom}). Kept separate from
+        # inputs.service, which the image tags above still use unchanged. (#1617)
+        run: echo "short=${SERVICE#kdiab-}" >> "$GITHUB_OUTPUT"
+        env:
+          SERVICE: ${{ inputs.service }}
+
       - name: Upload Docker Image
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: ${{ inputs.service }}-backend-image
+          name: ${{ steps.svc.outputs.short }}-backend-image
           path: /tmp/backend-image.tar
           retention-days: 7
 
@@ -128,6 +137,6 @@ jobs:
       - name: Upload SBOM
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: ${{ inputs.service }}-backend-bom
+          name: ${{ steps.svc.outputs.short }}-backend-bom
           path: ${{ inputs.service }}/build/reports/cyclonedx/bom.json
           retention-days: 7
