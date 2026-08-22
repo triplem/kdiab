@@ -4,54 +4,36 @@
 
 | Field | Value |
 |---|---|
-| Date performed | 2026-08-16 |
+| Full scan performed | 2026-08-16 (commit d6c8866b) — enterprise scope, whole monorepo |
+| Last freshness refresh | 2026-08-22 (commit 209cd817) — refactor intent #1617 |
 | Repository | kdiab-bkp (single Git repo) |
 | Branch | main |
-| Commit (HEAD) | d6c8866b (`d6c8866bbda504c67f0a914ca4d4a2c006ab1366`) |
 | Project type | Brownfield |
-| Scope preset | enterprise (comprehensive depth, full audit trail) |
-| Intent | "review technology and domain and suggest improvements" (slug: tech-domain-review) |
-| Analysis performer | AI-DLC reverse-engineering stage — developer code scan + architect synthesis |
+| Refresh intent | "fix the Monorepo Release workflow artifact-name mismatch" (slug: release-workflow-fix, #1617) |
+| Refresh performer | AI-DLC reverse-engineering stage — freshness refresh (existing codekb reused) |
 
-## Scope of Analysis
+## Refresh Note (2026-08-22, intent #1617)
 
-This reverse-engineering pass covered the **entire monorepo** at the commit above:
+This pass is a **freshness refresh**, not a re-scan. The 8 codekb content artifacts
+(business-overview, architecture, code-structure, api-documentation, component-inventory,
+technology-stack, dependencies, code-quality-assessment) from the 2026-08-16 full-monorepo scan are
+**reused as-is** — the monorepo module/service structure is unchanged and remains accurate. Rationale:
+Minimal-depth refactor scope; the change under this intent is a ~16-line CI-workflow name fix
+(`.github/workflows/release.yml`), so a full 9-module re-scan is disproportionate.
 
-- **9 backend Gradle modules** — kdiab-common (shared library) plus 8 runnable Ktor services
-  (measures, profiles, treatments, analyze, carbs, calc, nightscout, users).
-- **kdiab-ui** — the React 19 / TypeScript SPA (all feature modules, generated + hand-written clients).
-- **build-logic** — the Gradle included build with the three convention plugins and
-  `UpstreamSpecExtensions.kt`.
-- **8 OpenAPI specifications** — 60 paths / 82 operations, plus the Nightscout v1/v3 external facade.
-- **Build system** — Gradle 9.5.1 composite build, version catalog, convention plugins,
-  spec-first codegen, Docker packaging.
-- **Quality estate** — three-tier tests, Kover 80% floor, per-module Detekt, 18 CI workflows,
-  Trivy/CodeQL/SonarCloud, 23 platform ADRs, SBOMs.
+### Known deltas since the 2026-08-16 full scan (out of scope for #1617)
 
-Everything durable was captured into the sibling artifacts in this directory
-(`aidlc/spaces/default/codekb/kdiab-bkp/`).
+- **#1606 jackson-free JWT** merged 2026-08-21 (commit 209cd817): `kdiab-common` `Security.kt` now uses
+  a custom Nimbus (`com.nimbusds:nimbus-jose-jwt`) `AuthenticationProvider`; `com.auth0:java-jwt`,
+  `jwks-rsa`, and jackson removed from the runtime classpath; jackson force-pins removed (handlebars
+  pin retained). ⇒ `dependencies.md` and `technology-stack.md` are slightly stale on the JWT-library
+  detail only. Not regenerated here — irrelevant to the CI release-workflow fix. Refresh those on the
+  next in-scope reverse-engineering pass.
 
-## Purpose of This File
+## Scope of the codekb (from the 2026-08-16 full scan)
 
-This is the **freshness marker** for the code knowledge base. It records the exact commit and
-date against which the other eight artifacts were synthesized. When the repository advances
-materially past commit `d6c8866b`, re-run reverse engineering and update this marker so
-downstream stages can tell whether the code knowledge base is current or stale.
-
-## Currency Re-verification (subsequent intents)
-
-| Date | Intent | Commit | Verdict |
-|---|---|---|---|
-| 2026-08-18 | logback-jsonencoder (refactor, #1556) | a3acc571 | **Current — reused, no re-scan.** `git diff d6c8866b..a3acc571` for `kdiab-*/src/**`, `**/logback.xml`, `build-logic/**`, `gradle/libs.versions.toml` is empty; intervening commits are docs/review, aidlc records, and kdiab-ui dep bumps only. The codekb (esp. dependencies.md, technology-stack.md) remains authoritative for the backend logging subsystem this intent targets. |
-
-## Artifacts Produced (original pass)
-
-1. business-overview.md
-2. architecture.md
-3. code-structure.md
-4. api-documentation.md
-5. component-inventory.md
-6. technology-stack.md
-7. dependencies.md
-8. code-quality-assessment.md
-9. reverse-engineering-timestamp.md (this file)
+Covered the **entire monorepo**: 9 backend Gradle modules (kdiab-common shared library + 8 runnable
+Ktor services), the React SPA (kdiab-ui), Liquibase migrations, Keycloak config, and the
+`.github/workflows/` CI/CD pipeline set. Directly re-verified for #1617: the CI→release artifact flow
+(`backend-ci-reusable.yml` uploads `kdiab-<service>-backend-{image,bom}`; `release.yml` downloads the
+un-prefixed `<service>-backend-{image,bom}` — the bug).
