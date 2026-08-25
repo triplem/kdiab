@@ -32,7 +32,7 @@ catalog and lockfiles as of HEAD `d6c8866b` (2026-08-16).
 | Logback | 1.5.32 | logging backend (+ logback-contrib JSON 0.1.5) |
 | OpenTelemetry SDK | 1.51.0 | tracing (+ semconv 1.30.1) |
 | OpenTelemetry Ktor instrumentation | 2.27.0-alpha | Ktor tracing (alpha intentional/documented) |
-| auth0 jwk / jwt | (per catalog) | JWKS-based JWT validation |
+| Nimbus JOSE + JWT | 10.0.1 | JWKS (prod) + HMAC (test) JWT validation — jackson-free, #1606 |
 
 ## Build, Codegen, and Quality Tooling
 
@@ -52,8 +52,10 @@ Forced via `kdiab.kotlin-base` constraints across all services:
 
 | Dependency | Version | CVE |
 |---|---|---|
-| Jackson | 2.21.4 | CVE-2026-54512 / CVE-2026-54513 |
 | Handlebars | 4.5.2 | CVE-2026-55760 |
+
+> Jackson force-pin retired (#1606 / #1608) — jackson removed from the runtime classpath (JWT → Nimbus,
+> Swagger → static UI); catalog entries + force-pin dropped, handlebars pin retained.
 
 ## Test Stack (backend)
 

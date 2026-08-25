@@ -50,14 +50,17 @@ dependencies** at runtime — they own their data and are pure providers.
 | Kotlin ecosystem | kotlinx-serialization / datetime / coroutines | 1.10.0 / 0.7.1 / 1.10.2 |
 | Logging | kotlin-logging / Logback / logback-contrib JSON | 8.0.01 / 1.5.32 / 0.1.5 |
 | Tracing | OpenTelemetry SDK / semconv / Ktor instrumentation | 1.51.0 / 1.30.1 / 2.27.0-alpha |
-| Auth | auth0 jwk / jwt (JWKS) | per catalog |
+| Auth | Nimbus JOSE + JWT (JWKS prod / HMAC test) | 10.0.1 |
 
 ### Security-Pinned Transitives (forced)
 
 `kdiab.kotlin-base` forces these across every service to remediate CVEs:
 
-- **Jackson 2.21.4** — CVE-2026-54512 / CVE-2026-54513.
 - **Handlebars 4.5.2** — CVE-2026-55760 (pulled transitively by openapi-generator tooling).
+
+> Jackson force-pin retired (#1606 / #1608): Jackson is no longer on the runtime classpath — JWT
+> auth migrated to Nimbus (#1606) and Swagger to a static UI (#1607), completing epic #1603. The
+> jackson `libs.versions.toml` catalog entries and the force-pin were dropped (handlebars pin kept).
 
 One residual CVE is documented as a false positive in `.trivyignore` with an NVD justification,
 and `docs/security/accepted-risks.md` tracks accepted risks.

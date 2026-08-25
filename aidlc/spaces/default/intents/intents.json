@@ -26,5 +26,12 @@
     "dirName": "260822-release-workflow-fix",
     "scope": "refactor",
     "status": "complete"
+  },
+  {
+    "uuid": "01a0303b-a0bf-7438-a9b4-0c0706df89d9",
+    "slug": "jwt-test-guard",
+    "dirName": "260823-jwt-test-guard",
+    "scope": "security-patch",
+    "status": "complete"
   }
 ]
