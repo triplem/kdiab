@@ -1,0 +1,16 @@
+<!-- INVARIANT: examples are single-line HTML comments so a fresh template parses to total=0 (MEMORY_EMPTY). Do NOT un-comment or split across lines. t100 guards this. -->
+> This file is maintained by the orchestrator during stage execution. Add observations at the gate ritual, not by editing here directly.
+
+## Interpretations
+- 2026-08-25T00:00:00Z — build-and-test produces are stage-level (construction/build-and-test/, no unit segment) per the engine memory_path. Scope of verification: the 36-file change spans all 9 backend modules (8 services + kdiab-common); kdiab-ui is untouched (no TS change), so no frontend build needed.
+
+## Deviations
+- 2026-08-25T00:00:00Z — the team rule is `./gradlew check` (tests + Detekt + Kover 80%). Running root `check` locally is confounded by PRE-EXISTING local detektMain UnreachableCode false-positives (kdiab-common RateLimit/AuditRoutes/Tracing + kdiab-profiles) that are NOT in the CI-passing baseline — a local Detekt-version discrepancy (see project.md learning cid:code-generation:local-detekt-preexisting-unreachablecode-fp-vs-ci). So locally I verify (a) all 9 backend modules' test source sets COMPILE (the real risk of a mechanical propagation), (b) unit tests PASS (guard doesn't break startup), and (c) my change adds no NEW detekt findings (Security.kt clean). The authoritative full gate (all tiers + Kover ≥80% + Trivy + CodeQL + Sonar) runs in CI on the deployment-execution PR — per team rule "wait for every GitHub Actions check green before merge".
+
+## Tradeoffs
+- 2026-08-25T00:00:00Z — integration-test/e2e-test tiers may need external infra (Postgres/Keycloak/testcontainers) not available in this stage; compile them (catches propagation syntax errors) but defer their execution to CI where infra exists.
+
+## Open questions
+- 2026-08-25T00:00:00Z — RESOLVED: all 9 backend modules verify green with the change. 8/9 passed directly (common, profiles, analyze, calc, carbs, measures, treatments, users). nightscout initially FAILED :compileKotlin with Unresolved reference 'Profile'/'CreateProfileRequest' + "Failed to get the schema name: null" in UNTOUCHED main files (NightscoutV3Mapper.kt, ProfilesClient.kt).
+- 2026-08-25T00:00:00Z — DIAGNOSED nightscout failure = #1614 (flaky composite-build apiSpec race), NOT this change: Gradle build cache served a WRONG upstream-profiles generation — build/generated/upstream-profiles/models/ contained carbs/food types (CreateFoodEntryRequest, FoodEntryResponse, PagedFoodResponse) instead of profile types. `clean` reused the cached wrong output (openApiGenerate/generateProfilesModels FROM-CACHE). FIX: rm -rf build/generated/upstream-profiles + `clean compileKotlin --rerun-tasks --no-build-cache --no-parallel` → correct types (Profile.kt, CreateProfileRequest.kt) regenerate, BUILD SUCCESSFUL. The "Failed to get the schema name: null" line prints even on the successful build → benign generator warning, not the cause. Provably unrelated to jwt.allowTestMode (main compile never sees test edits; only kdiab-common Security.kt changed in main).
+- 2026-08-25T00:00:00Z — CI is authoritative and runs on a fresh checkout (no local stale cache), so #1614 does not apply there; deployment-execution PR must be fully green before merge.
