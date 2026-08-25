@@ -75,6 +75,7 @@ class DeviceStatusRoutesTest {
                     "jwt.audience"     to AUDIENCE,
                     "jwt.realm"        to "kdiab-treatments",
                     "jwt.test"         to "true",
+                    "jwt.allowTestMode" to "true",
                     "jwt.secret"       to JWT_SECRET,
                     "app.initDatabase" to "false",
                 )

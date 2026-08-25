@@ -738,6 +738,7 @@ class ProfileApiTest {
                                         "jwt.realm"        to "kdiab-profiles",
                                         "jwt.secret"       to "secret-hs256-min32-bytes-0123456789ab",
                                         "jwt.test"         to "true",
+                                        "jwt.allowTestMode" to "true",
                                         "app.initDatabase" to "false",
                                 )
                 }

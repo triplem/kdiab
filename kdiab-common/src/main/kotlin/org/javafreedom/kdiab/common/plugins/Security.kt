@@ -66,6 +66,12 @@ fun readJwtConfig(environment: ApplicationEnvironment): JwtConfig {
     val domain = environment.config.property("jwt.domain").getString()
     val realm = environment.config.property("jwt.realm").getString()
     val isTest = environment.config.propertyOrNull("jwt.test")?.getString()?.toBoolean() ?: false
+    val allowTestMode = environment.config.propertyOrNull("jwt.allowTestMode")?.getString()?.toBoolean() ?: false
+    check(!isTest || allowTestMode) {
+        "jwt.test=true is not permitted unless jwt.allowTestMode=true (env JWT_ALLOW_TEST_MODE). " +
+            "The symmetric HMAC test verifier must never run in production; for production leave " +
+            "JWT_TEST unset/false, and set JWT_ALLOW_TEST_MODE=true only in non-production/test environments."
+    }
     val secret = environment.config.propertyOrNull("jwt.secret")?.getString()
     check(!isTest || secret != null) {
         "jwt.secret (JWT_SECRET env var) must be set explicitly when jwt.test=true. " +
