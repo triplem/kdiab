@@ -104,6 +104,7 @@ class FoodEntryApiTest {
                     "jwt.audience"     to AUDIENCE,
                     "jwt.realm"        to "kdiab-carbs",
                     "jwt.test"         to "true",
+                    "jwt.allowTestMode" to "true",
                     "jwt.secret"       to JWT_HMAC_SEED,
                     "app.initDatabase" to "false",
                 )

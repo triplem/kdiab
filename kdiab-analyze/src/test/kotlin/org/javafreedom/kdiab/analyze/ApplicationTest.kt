@@ -42,6 +42,7 @@ class ApplicationTest {
                 "jwt.audience" to "analyze",
                 "jwt.realm"    to "kdiab-analyze",
                 "jwt.test"     to "true",
+                "jwt.allowTestMode" to "true",
                 "jwt.secret"   to "test-secret-for-unit-tests-only-hs256",
             )
         }

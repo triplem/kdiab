@@ -67,6 +67,7 @@ class InsulinE2ETest :
                                 "jwt.realm" to jwtRealm,
                                 "jwt.secret" to jwtSecret,
                                 "jwt.test" to "true",
+                                "jwt.allowTestMode" to "true",
                                 "storage.driverClassName" to "org.h2.Driver",
                                 "storage.jdbcUrl" to "jdbc:h2:mem:e2e_insulins;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
                                 "storage.username" to "root",

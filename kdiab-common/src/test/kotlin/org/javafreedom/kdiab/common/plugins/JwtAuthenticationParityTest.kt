@@ -52,6 +52,7 @@ class JwtAuthenticationParityTest {
                 "jwt.domain" to ISSUER,
                 "jwt.realm" to "kdiab",
                 "jwt.test" to "true",
+                "jwt.allowTestMode" to "true",
                 "jwt.secret" to SECRET,
             )
         }

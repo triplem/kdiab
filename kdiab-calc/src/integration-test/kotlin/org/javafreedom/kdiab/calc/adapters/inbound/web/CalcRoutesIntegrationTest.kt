@@ -73,6 +73,7 @@ class CalcRoutesIntegrationTest {
         "jwt.audience" to audience,
         "jwt.realm" to "kdiab",
         "jwt.test" to "true",
+        "jwt.allowTestMode" to "true",
         "jwt.secret" to jwtSecret,
     )
 
