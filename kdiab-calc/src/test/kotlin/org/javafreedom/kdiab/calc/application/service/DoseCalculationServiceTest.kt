@@ -16,6 +16,7 @@ import org.javafreedom.kdiab.calc.domain.repository.ProfilesPort
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class DoseCalculationServiceTest {
@@ -31,6 +32,9 @@ class DoseCalculationServiceTest {
         targets = listOf(GlucoseTarget(startTime = "00:00", low = 100.0, high = 120.0)),
     )
 
+    // Substring the FR-3 zero-IOB transparency warning is identified by (#1563).
+    private val iobZeroMarker = "IOB is zero"
+
     @Test
     fun `calculateDose returns correct breakdown for mgdL input`() = runTest {
         coEvery { profilesPort.getActiveProfile(any(), any(), any()) } returns testProfile
@@ -40,6 +44,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 45.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -58,7 +63,10 @@ class DoseCalculationServiceTest {
         assertEquals(15.0, result.breakdown.icr)
         assertEquals(45.0, result.breakdown.carbsGrams)
         assertEquals("profile-123", result.profileId)
-        assertTrue(result.warnings.isEmpty())
+        // IOB is explicitly 0 and a correction dose is recommended, so the only warning is the
+        // FR-3 zero-IOB transparency notice (#1563) — nothing else.
+        assertEquals(1, result.warnings.size)
+        assertTrue(result.warnings.single().contains(iobZeroMarker))
     }
 
     @Test
@@ -70,6 +78,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mmol/L",
             trend = CgmTrend.FLAT,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -87,6 +96,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -105,6 +115,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.DOUBLE_DOWN,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -123,6 +134,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 30.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -165,6 +177,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.SINGLE_UP,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -188,6 +201,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.DOUBLE_UP,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -207,6 +221,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.SINGLE_DOWN,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -230,6 +245,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -247,6 +263,7 @@ class DoseCalculationServiceTest {
             currentBg = 150.0,
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
+            activeIob = 0.0,
         )
 
         assertFailsWith<ResourceNotFoundException> {
@@ -281,6 +298,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 24.0,
+            activeIob = 0.0,
             useProfileTime = "2026-01-01T14:00:00Z",
         )
 
@@ -313,6 +331,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 0.0,
+            activeIob = 0.0,
             useProfileTime = "2026-01-01T02:00:00Z",
         )
 
@@ -336,6 +355,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -380,6 +400,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FORTY_FIVE_UP,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -398,6 +419,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FORTY_FIVE_DOWN,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -418,6 +440,7 @@ class DoseCalculationServiceTest {
             currentBg = 200.0,
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
+            activeIob = 0.0,
         )
 
         assertFailsWith<BusinessValidationException> {
@@ -447,6 +470,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 0.0,
+            activeIob = 0.0,
             useProfileTime = "2026-01-01T23:00:00Z",
         )
 
@@ -475,6 +499,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 0.0,
+            activeIob = 0.0,
             useProfileTime = "2026-01-01T14:00:00Z",
         )
 
@@ -495,6 +520,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 30.0,
+            activeIob = 0.0,
         )
 
         assertFailsWith<BusinessValidationException> {
@@ -511,6 +537,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mmol/L",
             trend = CgmTrend.FLAT,
             carbsGrams = 0.0,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
@@ -561,6 +588,86 @@ class DoseCalculationServiceTest {
         assertTrue(result.warnings.any { it.contains("IOB covers the full correction") })
     }
 
+    // --- Zero-IOB transparency warning (FR-3, #1563) ---
+
+    @Test
+    fun `calculateDose adds IOB-is-zero warning when IOB is zero and a correction dose is recommended`() = runTest {
+        coEvery { profilesPort.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        // rawCorrection = (200 - 110) / 50 = 1.8 > 0, IOB explicitly 0
+        val request = DoseRequest(
+            currentBg = 200.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+            activeIob = 0.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertTrue(result.correctionDose > 0.0)
+        assertTrue(result.warnings.any { it.contains(iobZeroMarker) })
+    }
+
+    @Test
+    fun `calculateDose omits IOB-is-zero warning when IOB is zero but no correction dose is recommended`() = runTest {
+        coEvery { profilesPort.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        // BG at target midpoint (110) => rawCorrection = 0, so no correction dose; the zero-IOB
+        // warning must be suppressed to keep the warning list high-signal.
+        val request = DoseRequest(
+            currentBg = 110.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+            activeIob = 0.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertEquals(0.0, result.correctionDose)
+        assertFalse(result.warnings.any { it.contains(iobZeroMarker) })
+    }
+
+    @Test
+    fun `calculateDose omits IOB-is-zero warning during hypoglycemia even when IOB is zero`() = runTest {
+        coEvery { profilesPort.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        // BG 55 < 70 => hypo => no correction dose => zero-IOB warning suppressed (hypo warning fires)
+        val request = DoseRequest(
+            currentBg = 55.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+            activeIob = 0.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertFalse(result.warnings.any { it.contains(iobZeroMarker) })
+        assertTrue(result.warnings.any { it.contains("hypoglycemic") })
+    }
+
+    @Test
+    fun `calculateDose omits IOB-is-zero warning when IOB is positive`() = runTest {
+        coEvery { profilesPort.getActiveProfile(any(), any(), any()) } returns testProfile
+
+        // IOB > 0 with a correction dose still recommended (0.8) => zero-IOB warning must NOT fire,
+        // and it is mutually exclusive with the iobCoversFullCorrection warning.
+        val request = DoseRequest(
+            currentBg = 200.0,
+            glucoseUnit = "mg/dL",
+            trend = CgmTrend.FLAT,
+            carbsGrams = 0.0,
+            activeIob = 1.0,
+        )
+
+        val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")
+
+        assertTrue(result.correctionDose > 0.0)
+        assertFalse(result.warnings.any { it.contains(iobZeroMarker) })
+    }
+
     // --- Insulin-to-Meal Interval (SEA) tests ---
 
     @Test
@@ -606,6 +713,7 @@ class DoseCalculationServiceTest {
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
             carbsGrams = 30.0,
+            activeIob = 0.0,
             useProfileTime = "2024-01-15T08:00:00Z", // 08:00 UTC → falls in 06:00 segment
         )
 
@@ -621,6 +729,7 @@ class DoseCalculationServiceTest {
             currentBg = 150.0,
             glucoseUnit = "mg/dL",
             trend = CgmTrend.FLAT,
+            activeIob = 0.0,
         )
 
         val result = service.calculateDose("user-123", request, "Bearer token", "corr-id")

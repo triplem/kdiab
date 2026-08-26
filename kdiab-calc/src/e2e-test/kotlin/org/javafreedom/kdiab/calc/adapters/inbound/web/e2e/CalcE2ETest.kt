@@ -123,10 +123,11 @@ class CalcE2ETest : BehaviorSpec({
                     val response = client.post("/api/v1/users/$patientId/calc/dose") {
                         header(HttpHeaders.Authorization, "Bearer $token")
                         contentType(ContentType.Application.Json)
-                        // BG = 180 mg/dL (above target 100), carbs = 30g
-                        // correction = (180 - 100) / 40 = 2.0, carbDose = 30 / 10 = 3.0, total = 5.0
+                        // BG = 180 mg/dL (above target 100), carbs = 30g, IOB = 1.0 U (required, #1563)
+                        // correction = (180 - 100) / 40 - 1.0 = 1.0, carbDose = 30 / 10 = 3.0, total = 4.0
+                        // IOB > 0 so no zero-IOB transparency warning fires — clean happy path.
                         setBody(
-                            """{"currentBg":180.0,"glucoseUnit":"mg/dL","trend":"FLAT","carbsGrams":30.0}"""
+                            """{"currentBg":180.0,"glucoseUnit":"mg/dL","trend":"FLAT","carbsGrams":30.0,"activeIob":1.0}"""
                         )
                     }
 
@@ -155,7 +156,7 @@ class CalcE2ETest : BehaviorSpec({
                         header(HttpHeaders.Authorization, "Bearer $token")
                         contentType(ContentType.Application.Json)
                         setBody(
-                            """{"currentBg":60.0,"glucoseUnit":"mg/dL","trend":"DOUBLE_DOWN","carbsGrams":0.0}"""
+                            """{"currentBg":60.0,"glucoseUnit":"mg/dL","trend":"DOUBLE_DOWN","carbsGrams":0.0,"activeIob":0.0}"""
                         )
                     }
 

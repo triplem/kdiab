@@ -86,7 +86,7 @@ components:
   schemas:
     DoseRequest:
       type: object
-      required: [currentBg, glucoseUnit, trend]
+      required: [currentBg, glucoseUnit, trend, activeIob]
       properties:
         currentBg:
           type: number
@@ -104,8 +104,14 @@ components:
         activeIob:
           type: number
           format: double
-          default: 0.0
-          description: Active insulin on board (units). When provided, subtracted from the raw correction dose to prevent insulin stacking.
+          minimum: 0
+          description: >-
+            Active insulin on board (units). REQUIRED — subtracted from the raw correction dose to
+            prevent insulin stacking. Must be zero or positive; a negative value is rejected with 400.
+            The service is stateless and does not compute IOB itself, so the caller must supply it; an
+            omitted or null value is rejected with 400 rather than silently assumed to be 0.
+            Breaking change (#1563): previously optional with a default of 0.0. Kept on /api/v1 as a
+            clinical-safety fix — the sole consumer (kdiab-ui) already sends this field.
         useProfileTime:
           type: string
           nullable: true

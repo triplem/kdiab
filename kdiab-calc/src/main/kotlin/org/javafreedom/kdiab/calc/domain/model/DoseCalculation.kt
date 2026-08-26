@@ -7,7 +7,9 @@ data class DoseRequest(
     val glucoseUnit: String,
     val trend: CgmTrend,
     val carbsGrams: Double = 0.0,
-    val activeIob: Double = 0.0,
+    // No default: insulin-on-board is a required, safety-critical input (#1563). A silent 0.0 default
+    // would let a caller omit IOB and receive a correction that ignores active insulin (stacking risk).
+    val activeIob: Double,
     val useProfileTime: String? = null,
 )
 

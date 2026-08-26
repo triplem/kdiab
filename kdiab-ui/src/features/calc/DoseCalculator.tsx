@@ -14,6 +14,7 @@ const WARNING_KEYS: Record<string, string> = {
   'BG is hypoglycemic': 'doseCalc.warning.hypoglycemic',
   'BG is below target': 'doseCalc.warning.belowTarget',
   'IOB covers the full correction': 'doseCalc.warning.iobCoversCorrection',
+  'IOB is zero': 'doseCalc.warning.iobZero',
   'Calculated dose is unusually high': 'doseCalc.warning.unusuallyHighDose',
   'Calculated dose': 'doseCalc.warning.doseCapped', // must follow the longer match above
 }

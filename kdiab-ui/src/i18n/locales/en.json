@@ -488,6 +488,7 @@
       "hypoglycemic": "BG is hypoglycemic — no correction dose recommended; treat hypo first",
       "belowTarget": "BG is below target; carb dose only",
       "iobCoversCorrection": "IOB covers the full correction — no additional correction dose recommended",
+      "iobZero": "IOB is zero — this correction assumes no active insulin on board; confirm no recent bolus before dosing",
       "unusuallyHighDose": "Calculated dose is unusually high — please verify inputs",
       "doseCapped": "Calculated dose exceeds maximum — capped at safety limit; verify with your care team"
     }
