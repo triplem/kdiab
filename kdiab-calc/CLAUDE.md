@@ -16,7 +16,7 @@ adapters/outbound/http/
 application/service/
   DoseCalculationService.kt
 domain/model/
-  DoseRequest.kt           # currentBg, glucoseUnit, trend, carbsGrams, activeIob, useProfileTime
+  DoseRequest.kt           # currentBg, glucoseUnit, trend, carbsGrams, activeIob (REQUIRED, >=0), useProfileTime
   DoseResult.kt            # correctionDose, carbDose, trendAdjustment, totalRecommended, warnings
   DoseBreakdown.kt         # Inputs used for calculation (for UI transparency)
   CgmTrend.kt              # DOUBLE_UP | SINGLE_UP | FORTY_FIVE_UP | FLAT | FORTY_FIVE_DOWN | ...
@@ -45,6 +45,15 @@ Units: if `glucoseUnit = "mmol/L"`, bg is multiplied by 18.0 before calculation.
 | `HYPOGLYCEMIA_THRESHOLD` | 70 mg/dL | No correction recommended if BG < 70 (hypo guard) |
 | `HIGH_DOSE_THRESHOLD` | 20 U | Warning added to `DoseResult.warnings` |
 | `MAX_ABSOLUTE_DOSE` | 30 U | Hard cap — dose is clamped; warning always added |
+
+**`activeIob` is a REQUIRED input (#1563).** The service is stateless and does not compute IOB itself,
+so the caller must supply it. An omitted, `null`, or negative `activeIob` is rejected with **400** at the
+inbound mapper (`CalcMapper.toDomain` → `BusinessValidationException`) rather than being silently treated
+as `0.0` — a silent zero would let repeated corrections stack into delayed hypoglycemia. When `activeIob`
+is genuinely `0.0` **and** a correction dose is recommended, `DoseResult.warnings` carries a transparency
+notice ("IOB is zero — ...", i18n key `doseCalc.warning.iobZero`); it is mutually exclusive with the
+"IOB covers the full correction" warning. This is a breaking change to `DoseRequest` on `/api/v1`, kept
+un-versioned because the sole consumer (kdiab-ui) already sends the field.
 
 Results are labelled as **recommended dose, not a prescription**. The UI must display the `doseCalc.disclaimer` i18n key alongside every result.
 

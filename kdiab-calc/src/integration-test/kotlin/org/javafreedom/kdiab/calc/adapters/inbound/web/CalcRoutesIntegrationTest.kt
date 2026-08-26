@@ -100,7 +100,8 @@ class CalcRoutesIntegrationTest {
                     "currentBg": 200.0,
                     "glucoseUnit": "mg/dL",
                     "trend": "FLAT",
-                    "carbsGrams": 45.0
+                    "carbsGrams": 45.0,
+                    "activeIob": 0.0
                 }
             """.trimIndent()
 
@@ -147,6 +148,53 @@ class CalcRoutesIntegrationTest {
                 response.status == HttpStatusCode.BadRequest ||
                     response.status == HttpStatusCode.UnprocessableEntity,
                 "Expected 400 or 422, got ${response.status}",
+            )
+        }
+
+    @Test
+    fun `POST calculateDose - returns 400 with clinical message when activeIob omitted`() =
+        testApplication {
+            environment { config = calcTestConfig() }
+            application { installMockDi(service); module() }
+
+            val client = createClient { install(ContentNegotiation) { json() } }
+
+            // Valid body EXCEPT activeIob is missing — #1563 requires a hard 400, never a silent 0.
+            val body = """{"currentBg":200.0,"glucoseUnit":"mg/dL","trend":"FLAT","carbsGrams":0.0}"""
+
+            val response = client.post("/api/v1/users/$userId/calc/dose") {
+                header(HttpHeaders.Authorization, "Bearer ${token(userId.toString(), listOf("PATIENT"))}")
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertTrue(
+                response.bodyAsText().contains("activeIob is required"),
+                "Expected the clinical 'activeIob is required' message, got: ${response.bodyAsText()}",
+            )
+        }
+
+    @Test
+    fun `POST calculateDose - returns 400 when activeIob is negative`() =
+        testApplication {
+            environment { config = calcTestConfig() }
+            application { installMockDi(service); module() }
+
+            val client = createClient { install(ContentNegotiation) { json() } }
+
+            val body = """{"currentBg":200.0,"glucoseUnit":"mg/dL","trend":"FLAT","activeIob":-1.0}"""
+
+            val response = client.post("/api/v1/users/$userId/calc/dose") {
+                header(HttpHeaders.Authorization, "Bearer ${token(userId.toString(), listOf("PATIENT"))}")
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertTrue(
+                response.bodyAsText().contains("zero or positive"),
+                "Expected the 'zero or positive' message, got: ${response.bodyAsText()}",
             )
         }
 

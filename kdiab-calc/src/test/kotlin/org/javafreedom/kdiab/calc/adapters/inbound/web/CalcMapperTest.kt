@@ -1,5 +1,6 @@
 package org.javafreedom.kdiab.calc.adapters.inbound.web
 
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 import org.javafreedom.kdiab.calc.domain.model.CgmTrend
 import org.javafreedom.kdiab.calc.domain.model.DoseBreakdown
 import org.javafreedom.kdiab.calc.domain.model.DoseResult
@@ -38,49 +39,49 @@ class CalcMapperTest {
 
     @Test
     fun `toDomain maps DOUBLE_UP trend correctly`() {
-        val dto = DoseRequestDto(currentBg = 180.0, glucoseUnit = "mg/dL", trend = "DOUBLE_UP")
+        val dto = DoseRequestDto(currentBg = 180.0, glucoseUnit = "mg/dL", trend = "DOUBLE_UP", activeIob = 0.0)
         assertEquals(CgmTrend.DOUBLE_UP, dto.toDomain().trend)
     }
 
     @Test
     fun `toDomain maps DOUBLE_DOWN trend correctly`() {
-        val dto = DoseRequestDto(currentBg = 60.0, glucoseUnit = "mg/dL", trend = "DOUBLE_DOWN")
+        val dto = DoseRequestDto(currentBg = 60.0, glucoseUnit = "mg/dL", trend = "DOUBLE_DOWN", activeIob = 0.0)
         assertEquals(CgmTrend.DOUBLE_DOWN, dto.toDomain().trend)
     }
 
     @Test
     fun `toDomain maps SINGLE_UP trend correctly`() {
-        val dto = DoseRequestDto(currentBg = 160.0, glucoseUnit = "mg/dL", trend = "SINGLE_UP")
+        val dto = DoseRequestDto(currentBg = 160.0, glucoseUnit = "mg/dL", trend = "SINGLE_UP", activeIob = 0.0)
         assertEquals(CgmTrend.SINGLE_UP, dto.toDomain().trend)
     }
 
     @Test
     fun `toDomain maps SINGLE_DOWN trend correctly`() {
-        val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = "SINGLE_DOWN")
+        val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = "SINGLE_DOWN", activeIob = 0.0)
         assertEquals(CgmTrend.SINGLE_DOWN, dto.toDomain().trend)
     }
 
     @Test
     fun `toDomain maps FORTY_FIVE_UP trend correctly`() {
-        val dto = DoseRequestDto(currentBg = 140.0, glucoseUnit = "mg/dL", trend = "FORTY_FIVE_UP")
+        val dto = DoseRequestDto(currentBg = 140.0, glucoseUnit = "mg/dL", trend = "FORTY_FIVE_UP", activeIob = 0.0)
         assertEquals(CgmTrend.FORTY_FIVE_UP, dto.toDomain().trend)
     }
 
     @Test
     fun `toDomain maps FORTY_FIVE_DOWN trend correctly`() {
-        val dto = DoseRequestDto(currentBg = 130.0, glucoseUnit = "mg/dL", trend = "FORTY_FIVE_DOWN")
+        val dto = DoseRequestDto(currentBg = 130.0, glucoseUnit = "mg/dL", trend = "FORTY_FIVE_DOWN", activeIob = 0.0)
         assertEquals(CgmTrend.FORTY_FIVE_DOWN, dto.toDomain().trend)
     }
 
     @Test
     fun `toDomain maps NONE trend correctly`() {
-        val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = "NONE")
+        val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = "NONE", activeIob = 0.0)
         assertEquals(CgmTrend.NONE, dto.toDomain().trend)
     }
 
     @Test
-    fun `toDomain applies default values for optional fields`() {
-        val dto = DoseRequestDto(currentBg = 110.0, glucoseUnit = "mmol/L", trend = "FLAT")
+    fun `toDomain applies default values for carbsGrams and useProfileTime when only activeIob supplied`() {
+        val dto = DoseRequestDto(currentBg = 110.0, glucoseUnit = "mmol/L", trend = "FLAT", activeIob = 0.0)
 
         val domain = dto.toDomain()
 
@@ -90,8 +91,42 @@ class CalcMapperTest {
     }
 
     @Test
+    fun `toDomain throws BusinessValidationException when activeIob is omitted`() {
+        // #1563: an omitted IOB must be a hard 400, never a silent 0 (insulin-stacking risk).
+        val dto = DoseRequestDto(currentBg = 180.0, glucoseUnit = "mg/dL", trend = "FLAT")
+
+        val ex = assertFailsWith<BusinessValidationException> { dto.toDomain() }
+        assertTrue(ex.message!!.contains("activeIob is required"))
+    }
+
+    @Test
+    fun `toDomain throws BusinessValidationException when activeIob is explicitly null`() {
+        // An explicit JSON null deserializes to null and must be rejected identically to an omission.
+        val dto = DoseRequestDto(currentBg = 180.0, glucoseUnit = "mg/dL", trend = "FLAT", activeIob = null)
+
+        val ex = assertFailsWith<BusinessValidationException> { dto.toDomain() }
+        assertTrue(ex.message!!.contains("activeIob is required"))
+    }
+
+    @Test
+    fun `toDomain throws BusinessValidationException when activeIob is negative`() {
+        // A negative IOB would INCREASE the correction dose (rawCorrection - negative) — the exact
+        // stacking direction this fix prevents. It must be rejected, never silently clamped.
+        val dto = DoseRequestDto(currentBg = 180.0, glucoseUnit = "mg/dL", trend = "FLAT", activeIob = -0.5)
+
+        val ex = assertFailsWith<BusinessValidationException> { dto.toDomain() }
+        assertTrue(ex.message!!.contains("zero or positive"))
+    }
+
+    @Test
+    fun `toDomain accepts activeIob of exactly zero`() {
+        val dto = DoseRequestDto(currentBg = 180.0, glucoseUnit = "mg/dL", trend = "FLAT", activeIob = 0.0)
+        assertEquals(0.0, dto.toDomain().activeIob)
+    }
+
+    @Test
     fun `toDomain maps mmolL glucoseUnit through unchanged`() {
-        val dto = DoseRequestDto(currentBg = 6.5, glucoseUnit = "mmol/L", trend = "FLAT")
+        val dto = DoseRequestDto(currentBg = 6.5, glucoseUnit = "mmol/L", trend = "FLAT", activeIob = 0.0)
 
         val domain = dto.toDomain()
 
@@ -102,14 +137,14 @@ class CalcMapperTest {
     @Test
     fun `toDomain preserves null useProfileTime`() {
         val dto = DoseRequestDto(
-            currentBg = 100.0, glucoseUnit = "mg/dL", trend = "FLAT", useProfileTime = null,
+            currentBg = 100.0, glucoseUnit = "mg/dL", trend = "FLAT", activeIob = 0.0, useProfileTime = null,
         )
         assertNull(dto.toDomain().useProfileTime)
     }
 
     @Test
     fun `toDomain throws IllegalArgumentException for unknown trend string`() {
-        val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = "RISING_FAST")
+        val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = "RISING_FAST", activeIob = 0.0)
 
         val ex = assertFailsWith<IllegalArgumentException> { dto.toDomain() }
         assertTrue(ex.message!!.contains("Unknown CGM trend: RISING_FAST"))
@@ -117,20 +152,20 @@ class CalcMapperTest {
 
     @Test
     fun `toDomain throws IllegalArgumentException for empty trend string`() {
-        val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = "")
+        val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = "", activeIob = 0.0)
         assertFailsWith<IllegalArgumentException> { dto.toDomain() }
     }
 
     @Test
     fun `toDomain throws IllegalArgumentException for lowercase trend string`() {
-        val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = "flat")
+        val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = "flat", activeIob = 0.0)
         assertFailsWith<IllegalArgumentException> { dto.toDomain() }
     }
 
     @Test
     fun `toDomain maps every CgmTrend entry by name — exhaustive round-trip`() {
         for (trend in CgmTrend.entries) {
-            val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = trend.name)
+            val dto = DoseRequestDto(currentBg = 100.0, glucoseUnit = "mg/dL", trend = trend.name, activeIob = 0.0)
             assertEquals(trend, dto.toDomain().trend, "Expected trend $trend for name '${trend.name}'")
         }
     }

@@ -79,6 +79,15 @@ class DoseCalculationService(private val profilesPort: ProfilesPort) {
             if (iobCoversFullCorrection(request.activeIob, rawCorrection, correctionDose, bgMgDl, target)) {
                 add("IOB covers the full correction — no additional correction dose recommended")
             }
+            // Transparency for a genuine zero IOB (#1563): only when a correction dose is actually
+            // recommended does an unaccounted IOB risk stacking. Mutually exclusive with the
+            // iobCoversFullCorrection warning above (which requires activeIob > 0.0).
+            if (request.activeIob == 0.0 && correctionDose > 0.0) {
+                add(
+                    "IOB is zero — this correction assumes no active insulin on board;" +
+                        " confirm no recent bolus before dosing"
+                )
+            }
             if (uncappedTotal > HIGH_DOSE_THRESHOLD) {
                 add("Calculated dose is unusually high — please verify inputs")
             }

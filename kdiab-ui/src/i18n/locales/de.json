@@ -488,6 +488,7 @@
       "hypoglycemic": "BZ ist hypoglykämisch — keine Korrekturdosis empfohlen; Hypo zuerst behandeln",
       "belowTarget": "BZ liegt unter dem Zielwert; nur KH-Dosis",
       "iobCoversCorrection": "IOB deckt die vollständige Korrektur ab — keine zusätzliche Korrekturdosis erforderlich",
+      "iobZero": "IOB ist null — diese Korrektur geht von keinem aktiven Insulin an Bord aus; vor der Dosierung sicherstellen, dass kein kürzlicher Bolus vorliegt",
       "unusuallyHighDose": "Berechnete Dosis ist ungewöhnlich hoch — bitte Eingaben prüfen",
       "doseCapped": "Berechnete Dosis überschreitet das Maximum — auf Sicherheitsgrenze begrenzt; mit Ihrem Behandlungsteam besprechen"
     }

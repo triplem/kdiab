@@ -5,6 +5,7 @@ import org.javafreedom.kdiab.calc.domain.model.CgmTrend
 import org.javafreedom.kdiab.calc.domain.model.DoseBreakdown
 import org.javafreedom.kdiab.calc.domain.model.DoseRequest
 import org.javafreedom.kdiab.calc.domain.model.DoseResult
+import org.javafreedom.kdiab.common.domain.exception.BusinessValidationException
 
 @Serializable
 data class DoseRequestDto(
@@ -12,7 +13,10 @@ data class DoseRequestDto(
     val glucoseUnit: String,
     val trend: String,
     val carbsGrams: Double = 0.0,
-    val activeIob: Double = 0.0,
+    // Nullable with a null default so an omitted OR explicit-null activeIob both deserialize to null and
+    // are rejected in toDomain() with a clear clinical 400 (rather than the generic SerializationException
+    // "Invalid request body"). Insulin-on-board is required — never silently defaulted to 0 (#1563).
+    val activeIob: Double? = null,
     val useProfileTime: String? = null,
 )
 
@@ -41,12 +45,17 @@ data class DoseResponseDto(
 fun DoseRequestDto.toDomain(): DoseRequest {
     val cgmTrend = runCatching { CgmTrend.valueOf(trend) }
         .getOrElse { throw IllegalArgumentException("Unknown CGM trend: $trend") }
+    val iob = activeIob
+        ?: throw BusinessValidationException(
+            "activeIob is required to prevent insulin stacking — supply the patient's current insulin-on-board"
+        )
+    if (iob < 0.0) throw BusinessValidationException("activeIob must be zero or positive")
     return DoseRequest(
         currentBg = currentBg,
         glucoseUnit = glucoseUnit,
         trend = cgmTrend,
         carbsGrams = carbsGrams,
-        activeIob = activeIob,
+        activeIob = iob,
         useProfileTime = useProfileTime,
     )
 }

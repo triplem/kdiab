@@ -25,7 +25,9 @@ export interface DoseRequestBody {
   glucoseUnit: string
   trend: string
   carbsGrams?: number
-  activeIob?: number
+  /** Required (#1563): active insulin on board (units), must be >= 0. The backend rejects an
+   *  omitted, null, or negative value with 400 to prevent silent insulin stacking. */
+  activeIob: number
   useProfileTime?: string
 }
 
