@@ -30,7 +30,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK 21
-        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -57,7 +57,7 @@ jobs:
       - name: Upload Detekt results to GitHub Security tab
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
         with:
           sarif_file: ${{ inputs.service }}/build/reports/detekt/detekt.sarif
           category: detekt-${{ inputs.service }}
@@ -130,7 +130,7 @@ jobs:
       - name: Upload Trivy scan results to GitHub Security tab
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
         with:
           sarif_file: 'trivy-results.sarif'
 
