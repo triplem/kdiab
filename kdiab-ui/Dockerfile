@@ -1,5 +1,5 @@
 # node 26-alpine (linux/amd64) — update digest after Node.js patch releases
-FROM node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019 AS build
+FROM node:26-alpine@sha256:2d984a15c9b54fd0aeb608b8e0d0d83529eb34d2966db27a1fb4f1edc3d298a3 AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --silent
@@ -14,7 +14,7 @@ RUN npm run build
 
 # nginx:alpine (linux/amd64) — update digest after nginx patch releases
 # Updated 2026-06-04: libxml2 2.13.9-r1 fixes CVE-2026-6732 (HIGH, DoS)
-FROM nginx:alpine@sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752
+FROM nginx:alpine@sha256:db35bfc6b2951e7f8a72db5db120288c127ffaeeb4a6d4b95a26fead017d5913
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY error.html /usr/share/nginx/html/error.html
