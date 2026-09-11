@@ -79,6 +79,13 @@ export function calcIOB(
   for (const t of treatments) {
     if (t.type !== 'BOLUS' && t.type !== 'CORRECTION_BOLUS' && t.type !== 'COMBO_BOLUS' && t.type !== 'MEAL') continue
     const min = (now - new Date(t.treatedAt).getTime()) / 60000
+    // Fail-safe: an unparseable treatedAt yields NaN, which slips through the
+    // bounds check below (NaN comparisons are always false) and would poison the
+    // IOB sum to NaN. Skip the row so calcIOB never returns NaN. Refs #1563.
+    if (Number.isNaN(min)) {
+      console.warn('calcIOB: skipping treatment with unparseable treatedAt')
+      continue
+    }
     if (min < 0 || min > diaMinutes) continue
     const insulin = typeof t.data['insulin'] === 'number' ? t.data['insulin'] : 0
     iob += insulin * (1 - Math.pow(min / diaMinutes, 2))
