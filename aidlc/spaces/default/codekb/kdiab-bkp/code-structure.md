@@ -94,7 +94,7 @@ Three precompiled Gradle script plugins carry the shared construction rules, plu
 
 | Plugin / file | Applied by | Provides |
 |---|---|---|
-| `kdiab.kotlin-base` | all backends | Kotlin/JVM 21 toolchain, Detekt, security-pinned transitive constraints (Jackson, Handlebars) |
+| `kdiab.kotlin-base` | all backends | Kotlin/JVM 21 toolchain, Detekt, security-pinned transitive constraints (Handlebars; Jackson pin retired #1608) |
 | `kdiab.ktor-service` | stateless services + base for db-service | Ktor, OpenAPI codegen, three JvmTestSuites (unit/integration/e2e), Kover 80% floor |
 | `kdiab.ktor-db-service` | domain services | adds Exposed/HikariCP/PostgreSQL/Liquibase persistence conventions |
 | `UpstreamSpecExtensions.kt` | analyze, calc, nightscout | `registerUpstreamSpec` — declares an upstream service's spec as a build input for typed-client generation |
