@@ -52,8 +52,10 @@ Forced via `kdiab.kotlin-base` constraints across all services:
 
 | Dependency | Version | CVE |
 |---|---|---|
-| Jackson | 2.21.4 | CVE-2026-54512 / CVE-2026-54513 |
 | Handlebars | 4.5.2 | CVE-2026-55760 |
+
+Jackson was removed from the runtime classpath entirely (epic #1603, #1605–#1608); its force-pin and
+`libs.versions.toml` entries were retired. Only the Handlebars pin remains.
 
 ## Test Stack (backend)
 

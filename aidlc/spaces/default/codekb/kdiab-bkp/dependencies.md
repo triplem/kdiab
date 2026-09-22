@@ -48,7 +48,7 @@ dependencies** at runtime — they own their data and are pure providers.
 | Persistence | PostgreSQL JDBC | 42.7.10 |
 | Migrations | Liquibase | 5.0.2 |
 | Kotlin ecosystem | kotlinx-serialization / datetime / coroutines | 1.10.0 / 0.7.1 / 1.10.2 |
-| Logging | kotlin-logging / Logback / logback-contrib JSON | 8.0.01 / 1.5.32 / 0.1.5 |
+| Logging | kotlin-logging / Logback (built-in `JsonEncoder`) | 8.0.01 / 1.5.32 |
 | Tracing | OpenTelemetry SDK / semconv / Ktor instrumentation | 1.51.0 / 1.30.1 / 2.27.0-alpha |
 | Auth | auth0 jwk / jwt (JWKS) | per catalog |
 
@@ -56,8 +56,12 @@ dependencies** at runtime — they own their data and are pure providers.
 
 `kdiab.kotlin-base` forces these across every service to remediate CVEs:
 
-- **Jackson 2.21.4** — CVE-2026-54512 / CVE-2026-54513.
 - **Handlebars 4.5.2** — CVE-2026-55760 (pulled transitively by openapi-generator tooling).
+
+Jackson was **removed from the runtime classpath entirely** (epic #1603): the Logback JSON formatter
+moved to Logback's built-in `JsonEncoder` (#1605), JWT auth migrated to Nimbus (#1606), and Swagger
+to a static UI (#1607); the jackson force-pin and its `libs.versions.toml` entries were retired
+(#1606/#1608). No jackson force-pin remains.
 
 One residual CVE is documented as a false positive in `.trivyignore` with an NVD justification,
 and `docs/security/accepted-risks.md` tracks accepted risks.

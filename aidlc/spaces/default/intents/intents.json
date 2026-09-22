@@ -26,5 +26,19 @@
     "dirName": "260822-release-workflow-fix",
     "scope": "refactor",
     "status": "complete"
+  },
+  {
+    "uuid": "01a03a03-407c-76a2-8772-3cff29ff09ce",
+    "slug": "iob-required",
+    "dirName": "260825-iob-required",
+    "scope": "bugfix",
+    "status": "complete"
+  },
+  {
+    "uuid": "01a05294-c2dc-70db-bba3-d81e7c09fe7a",
+    "slug": "agp-tooltip-drift",
+    "dirName": "260830-agp-tooltip-drift",
+    "scope": "bugfix",
+    "status": "in-flight"
   }
 ]
