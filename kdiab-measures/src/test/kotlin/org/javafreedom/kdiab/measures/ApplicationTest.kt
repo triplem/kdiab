@@ -16,6 +16,7 @@ class ApplicationTest {
                 "jwt.audience"    to "measure",
                 "jwt.realm"       to "kdiab-measures",
                 "jwt.test"        to "true",
+                "jwt.allowTestMode" to "true",
                 "jwt.secret"      to "test-secret-for-unit-tests-only-hs256",
                 "app.initDatabase" to "false",
             )

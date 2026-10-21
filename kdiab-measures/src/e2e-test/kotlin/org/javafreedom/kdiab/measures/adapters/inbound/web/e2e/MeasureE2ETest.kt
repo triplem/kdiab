@@ -55,6 +55,7 @@ private fun measuresConfig(dbName: String = "e2e_measures") = MapApplicationConf
     "jwt.realm" to "kdiab-measures",
     "jwt.secret" to JWT_SECRET,
     "jwt.test" to "true",
+    "jwt.allowTestMode" to "true",
     "storage.driverClassName" to "org.h2.Driver",
     "storage.jdbcUrl" to "jdbc:h2:mem:$dbName;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
     "storage.username" to "root",

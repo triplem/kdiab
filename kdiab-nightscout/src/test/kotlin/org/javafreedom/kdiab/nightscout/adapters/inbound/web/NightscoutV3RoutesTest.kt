@@ -82,6 +82,7 @@ class NightscoutV3RoutesTest {
                     "jwt.audience" to AUDIENCE,
                     "jwt.realm" to "kdiab",
                     "jwt.test" to "true",
+                    "jwt.allowTestMode" to "true",
                     "jwt.secret" to JWT_SECRET,
                     "upstream.measuresUrl" to "http://localhost:8080",
                     "upstream.treatmentsUrl" to "http://localhost:8083",

@@ -126,6 +126,7 @@ class AnalyzeRoutesTest {
                     "jwt.audience" to AUDIENCE,
                     "jwt.realm"    to "kdiab-analyze",
                     "jwt.test"     to "true",
+                    "jwt.allowTestMode" to "true",
                     "jwt.secret"   to JWT_SECRET,
                 )
             }

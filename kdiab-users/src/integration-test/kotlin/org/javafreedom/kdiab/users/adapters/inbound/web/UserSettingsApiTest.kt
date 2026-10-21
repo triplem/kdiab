@@ -144,6 +144,7 @@ class UserSettingsApiTest {
                     "jwt.audience"               to AUDIENCE,
                     "jwt.realm"                  to "kdiab",
                     "jwt.test"                   to "true",
+                    "jwt.allowTestMode" to "true",
                     "jwt.secret"                 to JWT_HMAC_SEED,
                     "keycloakAdmin.clientSecret" to "test-client-credential",
                     "keycloakAdmin.url"          to "http://localhost:8081",

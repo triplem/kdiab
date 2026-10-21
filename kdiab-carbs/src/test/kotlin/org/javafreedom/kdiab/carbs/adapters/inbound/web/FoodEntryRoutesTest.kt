@@ -99,6 +99,7 @@ class FoodEntryRoutesTest {
                     "jwt.audience"     to AUDIENCE,
                     "jwt.realm"        to "kdiab-carbs",
                     "jwt.test"         to "true",
+                    "jwt.allowTestMode" to "true",
                     "jwt.secret"       to JWT_SECRET,
                     "app.initDatabase" to "false",
                 )

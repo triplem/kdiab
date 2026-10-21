@@ -135,6 +135,7 @@ class UserRoutesTest {
                     "jwt.audience"               to AUDIENCE,
                     "jwt.realm"                  to "kdiab",
                     "jwt.test"                   to "true",
+                    "jwt.allowTestMode" to "true",
                     "jwt.secret"                 to JWT_SECRET,
                     "keycloakAdmin.clientSecret" to "test-secret",
                     "keycloakAdmin.url"          to "http://localhost:8081",

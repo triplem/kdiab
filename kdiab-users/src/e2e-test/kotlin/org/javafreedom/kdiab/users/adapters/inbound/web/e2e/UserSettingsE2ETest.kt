@@ -92,6 +92,7 @@ class UserSettingsE2ETest :
             "jwt.realm" to jwtRealm,
             "jwt.secret" to jwtSecret,
             "jwt.test" to "true",
+            "jwt.allowTestMode" to "true",
             "keycloakAdmin.clientSecret" to "test-secret",
             "keycloakAdmin.url" to "http://localhost:8081",
             "keycloakAdmin.realm" to jwtRealm,

@@ -119,6 +119,7 @@ class MeasureRoutesTest {
                     "jwt.audience"     to AUDIENCE,
                     "jwt.realm"        to "kdiab-measures",
                     "jwt.test"         to "true",
+                    "jwt.allowTestMode" to "true",
                     "jwt.secret"       to JWT_SECRET,
                     "app.initDatabase" to "false",
                 )
@@ -639,6 +640,7 @@ class MeasureRoutesTest {
                     "jwt.audience"     to AUDIENCE,
                     "jwt.realm"        to "kdiab-measures",
                     "jwt.test"         to "true",
+                    "jwt.allowTestMode" to "true",
                     "jwt.secret"       to JWT_SECRET,
                     "app.initDatabase" to "false",
                 )
