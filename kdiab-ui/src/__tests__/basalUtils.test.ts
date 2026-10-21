@@ -1,6 +1,71 @@
-import { describe, test, expect } from 'vitest'
-import { deriveDeliveredLine, buildBasalProfileLine } from '../features/dashboard/basalUtils'
+import { describe, test, expect, vi, afterEach } from 'vitest'
+import { deriveDeliveredLine, buildBasalProfileLine, calcIOB } from '../features/dashboard/basalUtils'
 import type { BasalBlock } from '../features/dashboard/basalUtils'
+
+// ---------------------------------------------------------------------------
+// calcIOB — NaN guard against unparseable treatment dates (Refs #1563)
+// ---------------------------------------------------------------------------
+
+describe('calcIOB', () => {
+  const DIA_MINUTES = 180
+  // Freeze "now" so elapsed-minutes (and the parabolic decay) are deterministic.
+  const NOW = new Date('2024-01-01T12:00:00Z').getTime()
+  // A bolus of 2.0 U delivered 90 min ago decays to 2.0 * (1 - (90/180)^2) = 1.5 U.
+  const VALID_TREATED_AT = new Date('2024-01-01T10:30:00Z').toISOString()
+  const EXPECTED_VALID_IOB = 1.5
+
+  const bolus = (treatedAt: string, insulin: number) => ({
+    treatedAt,
+    type: 'BOLUS',
+    data: { insulin } as Record<string, unknown>,
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  // BR3.2 — the correct-input computation is unchanged (no clinical regression).
+  test('should compute the parabolic IOB unchanged for a well-formed treatment', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+    const result = calcIOB([bolus(VALID_TREATED_AT, 2.0)], DIA_MINUTES)
+    expect(result).toBeCloseTo(EXPECTED_VALID_IOB, 6)
+  })
+
+  // BR3.1 / FR1.2 / FR1.4 — an unparseable treatedAt is skipped, never poisons the sum.
+  test('should skip a treatment with an unparseable treatedAt and never return NaN', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+    const result = calcIOB(
+      [bolus('not-a-real-date', 3.0), bolus(VALID_TREATED_AT, 2.0)],
+      DIA_MINUTES,
+    )
+    expect(Number.isNaN(result)).toBe(false)
+    expect(Number.isFinite(result)).toBe(true)
+    // Only the valid row contributes; the invalid row adds nothing.
+    expect(result).toBeCloseTo(EXPECTED_VALID_IOB, 6)
+  })
+
+  // BR1.3 — with no valid contributing rows the result is a finite 0, not NaN.
+  test('should return 0 (finite) when every treatment has an unparseable date', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+    const result = calcIOB([bolus('nonsense', 4.0), bolus('', 1.0)], DIA_MINUTES)
+    expect(Number.isNaN(result)).toBe(false)
+    expect(result).toBe(0)
+  })
+
+  // BR1.4 — exactly one guarded, static, PII-free developer log per skipped row.
+  test('should emit a static console.warn for each skipped invalid-date row', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    calcIOB([bolus('not-a-date', 3.0), bolus(VALID_TREATED_AT, 2.0)], DIA_MINUTES)
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith('calcIOB: skipping treatment with unparseable treatedAt')
+  })
+})
 
 describe('deriveDeliveredLine', () => {
   test('returns empty array for empty input', () => {
